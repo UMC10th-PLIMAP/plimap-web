@@ -1,0 +1,47 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Primary */
+  --color-neon: #c8f940;
+  --color-neon-2: #f7fe90;
+  --color-neon-gradient-from: #fcff98;
+  --background-image-gradient-neon: linear-gradient(
+    180deg,
+    var(--color-neon-gradient-from) 0%,
+    var(--color-neon) 100%
+  );
+  --color-green: #14bd83;
+  --color-red: #ec4547;
+
+  /* Semantic */
+  --color-primary: var(--color-neon);
+  --color-background: var(--color-pli-black-100);
+  --color-success: var(--color-green);
+  --color-destructive: var(--color-red);
+
+  /* PLI_black colors */
+  --color-pli-black-100: #0c0d0f;
+  --color-pli-black-85: #18181c;
+  --color-pli-black-75: #242429;
+  --color-pli-black-50: #323238;
+  --color-pli-black-25: #4a4a52;
+  --color-pli-black-10: #757582;
+
+  /* Grayscale colors */
+  --color-grayscale-1300: #0f0f0f;
+  --color-grayscale-1250: #191919;
+  --color-grayscale-1200: #222222;
+  --color-grayscale-1100: #333333;
+  --color-grayscale-1000: #444444;
+  --color-grayscale-900: #555555;
+  --color-grayscale-800: #666666;
+  --color-grayscale-700: #777777;
+  --color-grayscale-600: #888888;
+  --color-grayscale-500: #999999;
+  --color-grayscale-400: #bbbbbb;
+  --color-grayscale-300: #cccccc;
+  --color-grayscale-200: #dddddd;
+  --color-grayscale-100: #efefef;
+  --color-grayscale-30: #f6f6f6;
+  --color-grayscale-0: #fdfdfd;
+}
