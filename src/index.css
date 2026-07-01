@@ -13,12 +13,6 @@
   --color-green: #14bd83;
   --color-red: #ec4547;
 
-  /* Semantic */
-  --color-primary: var(--color-neon);
-  --color-background: var(--color-pli-black-100);
-  --color-success: var(--color-green);
-  --color-destructive: var(--color-red);
-
   /* PLI_black colors */
   --color-pli-black-100: #0c0d0f;
   --color-pli-black-85: #18181c;
