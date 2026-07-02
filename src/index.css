@@ -13,6 +13,12 @@
   );
   --color-green: #14bd83;
   --color-red: #ec4547;
+  --color-kakao: #fee500;
+  --color-kakao-text: #000000d9;
+
+  /* Tag colors */
+  --color-tag-stroke: #6d794d;
+  --color-tag-fill: #c8f94014;
 
   /* PLI_black colors */
   --color-pli-black-100: #0c0d0f;

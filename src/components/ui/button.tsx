@@ -11,11 +11,15 @@ const buttonVariants = cva(
         cta: 'bg-grayscale-300 disabled:bg-grayscale-900 text-grayscale-1250',
         pin: 'bg-gradient-neon text-grayscale-1200 disabled:bg-none disabled:bg-pli-black-75 disabled:text-grayscale-600',
         bt: 'bg-grayscale-100 text-grayscale-1250 disabled:bg-pli-black-50 disabled:text-grayscale-400',
+        kakao: 'bg-kakao text-kakao-text',
+        google: 'bg-grayscale-0 text-grayscale-1300',
+        apple: 'border border-grayscale-700 text-grayscale-200',
       },
       size: {
         cta: 'max-w-92 h-16 rounded-2xl head-20-sb',
         pin: 'max-w-23 h-13 rounded-[50px] body-15-sb',
         bt: 'max-w-[77px] h-11 rounded-[50px] body-17-m',
+        social: 'max-w-81 h-16 rounded-xl body-17-m', // kakao, google, apple
       },
     },
     defaultVariants: {
