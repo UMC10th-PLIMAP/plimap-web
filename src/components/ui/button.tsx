@@ -10,15 +10,11 @@ const buttonVariants = cva(
       variant: {
         cta: 'bg-grayscale-300 disabled:bg-grayscale-900 text-grayscale-1250',
         pin: 'bg-gradient-neon text-grayscale-1200 disabled:bg-none disabled:bg-pli-black-75 disabled:text-grayscale-600',
-        tag: 'disabled:border-grayscale-1100 disabled:text-grayscale-800',
-        chip: 'bg-pli-black-50 text-grayscale-200 border disabled:bg-none disabled:bg-pli-black-100 disabled:border-grayscale-900 disabled:text-grayscale-600',
         bt: 'bg-grayscale-100 text-grayscale-1250 disabled:bg-pli-black-50 disabled:text-grayscale-400',
       },
       size: {
         cta: 'max-w-92 h-16 rounded-2xl head-20-sb',
         pin: 'max-w-23 h-13 rounded-[50px] body-15-sb',
-        tag: 'max-w-[63px] h-[41px] rounded-[50px] body-15-r',
-        chip: 'max-w-[61px] h-[41px] rounded-[50px] body-15-r',
         bt: 'max-w-[77px] h-11 rounded-[50px] body-17-m',
       },
     },
