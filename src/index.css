@@ -1,0 +1,168 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+@import 'tailwindcss';
+
+@theme {
+  /* Primary */
+  --color-neon: #c8f940;
+  --color-neon-2: #f7fe90;
+  --color-neon-gradient-from: #fcff98;
+  --background-image-gradient-neon: linear-gradient(
+    180deg,
+    var(--color-neon-gradient-from) 0%,
+    var(--color-neon) 100%
+  );
+  --color-green: #14bd83;
+  --color-red: #ec4547;
+
+  /* Semantic */
+  --color-primary: var(--color-neon);
+  --color-background: var(--color-pli-black-100);
+  --color-success: var(--color-green);
+  --color-destructive: var(--color-red);
+
+  /* PLI_black colors */
+  --color-pli-black-100: #0c0d0f;
+  --color-pli-black-85: #18181c;
+  --color-pli-black-75: #242429;
+  --color-pli-black-50: #323238;
+  --color-pli-black-25: #4a4a52;
+  --color-pli-black-10: #757582;
+
+  /* Grayscale colors */
+  --color-grayscale-1300: #0f0f0f;
+  --color-grayscale-1250: #191919;
+  --color-grayscale-1200: #222222;
+  --color-grayscale-1100: #333333;
+  --color-grayscale-1000: #444444;
+  --color-grayscale-900: #555555;
+  --color-grayscale-800: #666666;
+  --color-grayscale-700: #777777;
+  --color-grayscale-600: #888888;
+  --color-grayscale-500: #999999;
+  --color-grayscale-400: #bbbbbb;
+  --color-grayscale-300: #cccccc;
+  --color-grayscale-200: #dddddd;
+  --color-grayscale-100: #efefef;
+  --color-grayscale-30: #f6f6f6;
+  --color-grayscale-0: #fdfdfd;
+
+  /* 폰트 설정 */
+  --font-sans: Pretendard, 'Pretendard Variable', system-ui, sans-serif;
+
+  /* 폰트 두께 설정 */
+  --font-weight-semibold: 600;
+  --font-weight-medium: 500;
+  --font-weight-regular: 400;
+
+  /* 폰트 크기 설정 */
+  --font-size-28: 28px;
+  --font-size-24: 24px;
+  --font-size-20: 20px;
+  --font-size-17: 17px;
+  --font-size-18: 18px;
+  --font-size-15: 15px;
+  --font-size-13: 13px;
+  --font-size-12: 12px;
+
+  /* 폰트 라인 높이 설정 */
+  --line-height-tight: 140%;
+}
+
+/* Head utility */
+@utility head-28-m {
+  font-size: var(--font-size-28);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-medium);
+}
+
+@utility head-24-sb {
+  font-size: var(--font-size-24);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+@utility head-20-sb {
+  font-size: var(--font-size-20);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+@utility head-20-m {
+  font-size: var(--font-size-20);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-medium);
+}
+
+@utility head-18-sb {
+  font-size: var(--font-size-18);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Body utility */
+@utility body-24-m {
+  font-size: var(--font-size-24);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-medium);
+}
+
+@utility body-18-r {
+  font-size: var(--font-size-18);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-regular);
+}
+
+@utility body-17-m {
+  font-size: var(--font-size-17);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-medium);
+}
+
+@utility body-17-r {
+  font-size: var(--font-size-17);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-regular);
+}
+
+@utility body-15-sb {
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+@utility body-15-m {
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-medium);
+}
+
+@utility body-15-r {
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-regular);
+}
+
+/* Etc utility */
+@utility etc-13-sb {
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+@utility etc-13-r {
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-regular);
+}
+
+@utility etc-12-r {
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-regular);
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased;
+  }
+}
