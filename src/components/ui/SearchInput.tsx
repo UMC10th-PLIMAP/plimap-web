@@ -81,12 +81,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
         className={cn(searchInputVariants({ variant }), containerClassName)}
       >
         {showBackArrow ? (
-          <button
-            type="button"
-            onClick={handleBack}
-            aria-label="뒤로 가기"
-            className="flex size-5  items-center justify-center text-grayscale-30"
-          >
+          <button type="button" onClick={handleBack} aria-label="뒤로 가기">
             <BackIcon className="size-7 text-grayscale-400" />
           </button>
         ) : (
@@ -110,12 +105,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
           {...props}
         />
         {showClearButton ? (
-          <button
-            type="button"
-            onClick={handleClear}
-            aria-label="검색어 지우기"
-            className="flex size-5 shrink-0 items-center justify-center text-grayscale-30"
-          >
+          <button type="button" onClick={handleClear} aria-label="검색어 지우기">
             <CloseIcon className="size-6 text-grayscale-400" />
           </button>
         ) : null}
