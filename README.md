@@ -99,13 +99,14 @@ pnpm dev
 | `DEPLOY_HOST_USER`  | SSH 접속 사용자              | `deploy`                  |
 | `VITE_API_BASE_URL` | 프론트엔드가 호출할 API 주소 | `https://api.example.com` |
 
-운영 설정값은 동일한 이름의 GitHub Secret과 Variable이 모두 있으면 Secret을 우선 사용하고, 값이 없으면 Variable, 기본값 순서로 적용합니다. 단, 실제 민감값인 `DEPLOY_HOST`, `DEPLOY_HOST_SSH_KEY`, `GHCR_PULL_TOKEN`, `VITE_NAVER_MAP_CLIENT_ID`, `VITE_KAKAO_REST_API_KEY`는 Secret만 사용합니다.
+운영 설정값은 동일한 이름의 GitHub Secret과 Variable이 모두 있으면 Secret을 우선 사용하고, 값이 없으면 Variable, 기본값 순서로 적용합니다. 단, `DEPLOY_HOST`, `DEPLOY_HOST_KNOWN_HOSTS`, `DEPLOY_HOST_SSH_KEY`, `GHCR_PULL_TOKEN`, `VITE_NAVER_MAP_CLIENT_ID`, `VITE_KAKAO_REST_API_KEY`는 Secret만 사용합니다.
 
 ### GitHub Secrets
 
 | 이름                       | 설명                               | 예시              |
 | -------------------------- | ---------------------------------- | ----------------- |
 | `DEPLOY_HOST`              | 배포 대상 서버 호스트 또는 IP      |                   |
+| `DEPLOY_HOST_KNOWN_HOSTS`  | 배포 서버의 pinned known_hosts 값  |                   |
 | `DEPLOY_HOST_SSH_KEY`      | 배포 서버에 접속할 SSH private key |                   |
 | `DEPLOY_HOST_PORT`         | SSH 포트                           | `22`              |
 | `DEPLOY_PATH`              | 서버 배포 디렉터리                 | `/opt/plimap-web` |

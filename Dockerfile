@@ -19,11 +19,11 @@ ENV VITE_KAKAO_REST_API_KEY=$VITE_KAKAO_REST_API_KEY
 
 RUN ./node_modules/.bin/tsc -b && ./node_modules/.bin/vite build
 
-FROM nginx:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.27-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]

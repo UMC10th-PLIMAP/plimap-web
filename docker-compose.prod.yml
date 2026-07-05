@@ -3,4 +3,4 @@ services:
     image: ghcr.io/${GHCR_OWNER}/plimap-web:${IMAGE_TAG}
     restart: unless-stopped
     ports:
-      - '${HOST_PORT:-3000}:80'
+      - '${HOST_PORT:-3000}:8080'
