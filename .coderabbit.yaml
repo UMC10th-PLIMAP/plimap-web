@@ -1,4 +1,18 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 language: 'ko-KR'
 reviews:
+  profile: 'chill'
   request_changes_workflow: true
+  high_level_summary: true
+  review_status: true
+  review_details: false
+  poem: false
+  pre_merge_checks:
+    docstrings:
+      mode: 'off'
+  auto_review:
+    enabled: true
+    drafts: false
+
+chat:
+  auto_reply: true
