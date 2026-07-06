@@ -7,7 +7,7 @@ type PlaceResultRowProps = ComponentProps<'button'> & {
 };
 
 export function PlaceResultRow({ place, ...props }: PlaceResultRowProps) {
-  const { name, category, address, distance } = place;
+  const { creatorName, category, placeName, distance } = place;
 
   return (
     <button
@@ -16,13 +16,14 @@ export function PlaceResultRow({ place, ...props }: PlaceResultRowProps) {
       {...props}
     >
       <div className="flex items-center gap-[6px]">
-        <span className="body-17-r text-grayscale-30">{address}</span>
+        <span className="body-17-r text-grayscale-30">{placeName}</span>
         <span className="etc-13-r text-grayscale-400">{category}</span>
       </div>
 
       <div className="flex items-center gap-[6px]">
         <span className="body-15-r text-grayscale-30">
-          {name} <span className="body-15-m text-grayscale-400">님이 생성한 PIN ∙ {distance}m</span>
+          {creatorName}{' '}
+          <span className="body-15-m text-grayscale-400">님이 생성한 PIN ∙ {distance}m</span>
         </span>
       </div>
     </button>

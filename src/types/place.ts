@@ -1,7 +1,7 @@
 export type PlaceResult = {
   id: string;
-  name: string;
+  creatorName: string;
   category: string;
-  address: string;
+  placeName: string;
   distance: number;
 };
