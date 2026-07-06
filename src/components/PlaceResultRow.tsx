@@ -7,12 +7,12 @@ type PlaceResultRowProps = ComponentProps<'button'> & {
   place: PlaceResult;
 };
 
-export function PlaceResultRow({ place, type, className, ...props }: PlaceResultRowProps) {
+export function PlaceResultRow({ place, className, ...props }: PlaceResultRowProps) {
   const { name, category, address, distance } = place;
 
   return (
     <button
-      type={type}
+      type="button"
       className={cn(
         'flex w-full max-w-[402px] flex-col items-start gap-[6px] px-6 py-2',
         className,
