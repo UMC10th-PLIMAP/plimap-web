@@ -27,7 +27,7 @@ PLIMAP은 지도 위 장소에 어울리는 음악을 핀으로 남기고, 주�
 | API Client               | axios            |
 | Server State             | TanStack Query   |
 | Routing                  | React Router     |
-| Map API                  | Naver Maps       |
+| Map API                  | Google Maps      |
 | Place Search / Geocoding | Kakao Local      |
 | Code Convention          | ESLint, Prettier |
 
@@ -99,7 +99,7 @@ pnpm dev
 | `DEPLOY_HOST_USER`  | SSH 접속 사용자              | `deploy`                  |
 | `VITE_API_BASE_URL` | 프론트엔드가 호출할 API 주소 | `https://api.example.com` |
 
-운영 설정값은 동일한 이름의 GitHub Secret과 Variable이 모두 있으면 Secret을 우선 사용하고, 값이 없으면 Variable, 기본값 순서로 적용합니다. 단, `DEPLOY_HOST`, `DEPLOY_HOST_KNOWN_HOSTS`, `DEPLOY_HOST_SSH_KEY`, `GHCR_PULL_TOKEN`, `VITE_NAVER_MAP_CLIENT_ID`, `VITE_KAKAO_REST_API_KEY`는 Secret만 사용합니다.
+운영 설정값은 동일한 이름의 GitHub Secret과 Variable이 모두 있으면 Secret을 우선 사용하고, 값이 없으면 Variable, 기본값 순서로 적용합니다. 단, `DEPLOY_HOST`, `DEPLOY_HOST_KNOWN_HOSTS`, `DEPLOY_HOST_SSH_KEY`, `GHCR_PULL_TOKEN`, `VITE_GOOGLE_MAPS_API_KEY`, `VITE_KAKAO_REST_API_KEY`는 Secret만 사용합니다.
 
 ### GitHub Secrets
 
@@ -113,7 +113,7 @@ pnpm dev
 | `HOST_PORT`                | 서버에서 노출할 웹 포트            | `3000`            |
 | `GHCR_PULL_USERNAME`       | 서버에서 GHCR 이미지를 pull할 계정 |                   |
 | `GHCR_PULL_TOKEN`          | GHCR pull 권한이 있는 토큰         |                   |
-| `VITE_NAVER_MAP_CLIENT_ID` | Naver Maps 클라이언트 ID           |                   |
+| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps API 키                 |                   |
 | `VITE_KAKAO_REST_API_KEY`  | Kakao Local REST API 키            |                   |
 
 `VITE_`로 시작하는 값은 GitHub Secrets로 관리하더라도 프론트엔드 빌드 결과물에는 포함될 수 있습니다.
