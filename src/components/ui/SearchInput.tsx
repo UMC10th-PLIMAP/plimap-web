@@ -49,7 +49,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     const hasValue = currentValue.length > 0;
 
     const showBackArrow = variant === 'map' && hasValue;
-    const showClearButton = variant === 'song' || hasValue;
+    const showClearButton = hasValue;
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       if (!isControlled) {
