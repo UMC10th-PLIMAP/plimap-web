@@ -40,7 +40,7 @@ export const generateMapStyles = (currentColors: ColorSettings, currentToggles: 
       stylers: [{ color: currentColors.water }],
     },
     {
-      featureType: 'natural',
+      featureType: 'landscape.natural',
       elementType: 'geometry',
       stylers: [{ color: currentColors.natural }],
     },

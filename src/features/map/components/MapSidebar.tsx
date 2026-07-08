@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ColorSettings, ToggleSettings } from '../types';
+import { ColorSettings, ToggleSettings, MapSize, MAP_SIZE_PRESETS } from '../types';
 import { generateMapStyles } from '../utils';
 
 type MapSidebarProps = {
@@ -7,10 +7,12 @@ type MapSidebarProps = {
   colors: ColorSettings;
   toggles: ToggleSettings;
   zoom: number;
+  mapSize: MapSize;
   onToggleDarkMode: () => void;
   onColorChange: (key: keyof ColorSettings, value: string) => void;
   onToggleChange: (key: keyof ToggleSettings) => void;
   onZoomChange: (zoom: number) => void;
+  onMapSizeChange: (size: MapSize) => void;
 };
 
 // --- 토글 스위치 공통 UI 컴포넌트 ---
@@ -50,10 +52,12 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
   colors,
   toggles,
   zoom,
+  mapSize,
   onToggleDarkMode,
   onColorChange,
   onToggleChange,
   onZoomChange,
+  onMapSizeChange,
 }) => {
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -104,6 +108,70 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
           onChange={(e) => onZoomChange(Number(e.target.value))}
           className="w-full accent-blue-500 cursor-pointer"
         />
+      </div>
+
+      {/* --- 지도 크기 (Map Size) 설정 --- */}
+      <div className="flex flex-col gap-3 mb-8">
+        <div className="flex justify-between items-center mb-1">
+          <h2 className={`text-sm font-semibold uppercase tracking-wider ${sectionTitleClass}`}>
+            지도 크기
+          </h2>
+          <span className={`text-xs font-mono ${sectionTitleClass}`}>
+            {mapSize.width} × {mapSize.height}
+          </span>
+        </div>
+
+        <div className="flex gap-2">
+          {MAP_SIZE_PRESETS.map((preset) => {
+            const isActive =
+              mapSize.width === preset.size.width && mapSize.height === preset.size.height;
+            return (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => onMapSizeChange(preset.size)}
+                className={`flex-1 text-xs py-2 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : isDarkMode
+                      ? 'bg-[#1A1C1E] text-[#9A9A9A] hover:bg-[#24272b]'
+                      : 'bg-white text-gray-600 hover:bg-gray-100 shadow-sm'
+                }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex gap-2">
+          <label
+            className={`flex-1 flex flex-col gap-1 p-3 rounded-lg ${isDarkMode ? 'bg-[#1A1C1E]' : 'bg-white shadow-sm'}`}
+          >
+            <span className={`text-xs ${sectionTitleClass}`}>너비 (px)</span>
+            <input
+              type="number"
+              min={200}
+              max={2000}
+              value={mapSize.width}
+              onChange={(e) => onMapSizeChange({ ...mapSize, width: Number(e.target.value) })}
+              className={`bg-transparent text-sm font-mono outline-none ${textClass}`}
+            />
+          </label>
+          <label
+            className={`flex-1 flex flex-col gap-1 p-3 rounded-lg ${isDarkMode ? 'bg-[#1A1C1E]' : 'bg-white shadow-sm'}`}
+          >
+            <span className={`text-xs ${sectionTitleClass}`}>높이 (px)</span>
+            <input
+              type="number"
+              min={200}
+              max={2000}
+              value={mapSize.height}
+              onChange={(e) => onMapSizeChange({ ...mapSize, height: Number(e.target.value) })}
+              className={`bg-transparent text-sm font-mono outline-none ${textClass}`}
+            />
+          </label>
+        </div>
       </div>
 
       {/* --- 색상 (Colors) 설정 --- */}

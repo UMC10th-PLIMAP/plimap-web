@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ColorSettings, ToggleSettings } from '../types';
+import { ColorSettings, ToggleSettings, MapSize } from '../types';
 import { generateMapStyles } from '../utils';
 
 type MapViewerProps = {
@@ -7,6 +7,7 @@ type MapViewerProps = {
   colors: ColorSettings;
   toggles: ToggleSettings;
   zoom: number;
+  mapSize: MapSize;
   onZoomChanged?: (newZoom: number) => void;
 };
 
@@ -15,6 +16,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   colors,
   toggles,
   zoom,
+  mapSize,
   onZoomChanged,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -54,14 +56,29 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     }
   }, [isLoaded, colors, toggles, zoom, onZoomChanged]);
 
+  // --- 지도 크기 변경 시 구글맵에 리사이즈 알림 (중심점 유지) ---
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const center = map.getCenter();
+    window.google.maps.event.trigger(map, 'resize');
+    if (center) map.setCenter(center);
+  }, [mapSize]);
+
   return (
-    <main className="flex-1 h-full relative">
+    <main className="flex-1 h-full relative flex items-center justify-center overflow-auto">
       {!isLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#1c2128]">
           <span className="text-[#9A9A9A]">Loading Google Maps...</span>
         </div>
       )}
-      <div ref={mapRef} className="w-full h-full" />
+      <div
+        style={{ width: mapSize.width, height: mapSize.height }}
+        className="max-w-full max-h-full shadow-2xl overflow-hidden shrink-0"
+      >
+        <div ref={mapRef} className="w-full h-full" />
+      </div>
     </main>
   );
 };

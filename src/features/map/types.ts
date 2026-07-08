@@ -55,6 +55,25 @@ export const DEFAULT_LIGHT_COLORS: ColorSettings = {
   subway: '#9fa8da',
 };
 
+export type MapSize = {
+  width: number;
+  height: number;
+};
+
+export type MapSizePreset = {
+  label: string;
+  size: MapSize;
+};
+
+// 실제 서비스 메인 지도 화면 크기 (Figma node 2262:11234, 모바일 풀스크린 기준)
+export const DEFAULT_MAP_SIZE: MapSize = { width: 402, height: 874 };
+
+export const MAP_SIZE_PRESETS: MapSizePreset[] = [
+  { label: 'Mobile', size: { width: 402, height: 874 } },
+  { label: 'Tablet', size: { width: 768, height: 1024 } },
+  { label: 'Desktop', size: { width: 1280, height: 800 } },
+];
+
 // 제어 토글 기본값 설정
 export const DEFAULT_TOGGLES: ToggleSettings = {
   allLabels: false,
