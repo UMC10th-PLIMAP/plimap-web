@@ -59,10 +59,13 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
 
   const handleCopyCode = () => {
     const styles = generateMapStyles(colors, toggles);
-    navigator.clipboard.writeText(JSON.stringify(styles, null, 2)).then(() => {
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    });
+    navigator.clipboard
+      .writeText(JSON.stringify(styles, null, 2))
+      .then(() => {
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      })
+      .catch((err) => console.error('클립보드 복사 실패:', err));
   };
 
   const bgClass = isDarkMode ? 'bg-[#0C0D0F]' : 'bg-gray-50';
