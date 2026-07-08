@@ -27,7 +27,7 @@ PLIMAP은 지도 위 장소에 어울리는 음악을 핀으로 남기고, 주�
 | API Client               | axios            |
 | Server State             | TanStack Query   |
 | Routing                  | React Router     |
-| Map API                  | Naver Maps       |
+| Map API                  | Google Maps      |
 | Place Search / Geocoding | Kakao Local      |
 | Code Convention          | ESLint, Prettier |
 
@@ -85,6 +85,44 @@ pnpm format
 
 ```bash
 pnpm install
+pnpm dev
+```
+
+## 배포
+
+이 저장소는 `develop` 브랜치 push 또는 GitHub Actions 수동 실행으로 테스트용 GHCR 이미지를 빌드한 뒤 배포 서버의 Docker Compose 서비스로 배포합니다. 실제 웹 서비스 배포는 별도로 Vercel에서도 진행합니다.
+
+### GitHub Variables
+
+| 이름                | 설명                         | 예시                      |
+| ------------------- | ---------------------------- | ------------------------- |
+| `DEPLOY_HOST_USER`  | SSH 접속 사용자              | `deploy`                  |
+| `VITE_API_BASE_URL` | 프론트엔드가 호출할 API 주소 | `https://api.example.com` |
+
+운영 설정값은 동일한 이름의 GitHub Secret과 Variable이 모두 있으면 Secret을 우선 사용하고, 값이 없으면 Variable, 기본값 순서로 적용합니다. 단, `DEPLOY_HOST`, `DEPLOY_HOST_KNOWN_HOSTS`, `DEPLOY_HOST_SSH_KEY`, `GHCR_PULL_TOKEN`, `VITE_GOOGLE_MAPS_API_KEY`, `VITE_KAKAO_REST_API_KEY`는 Secret만 사용합니다.
+
+### GitHub Secrets
+
+| 이름                       | 설명                               | 예시              |
+| -------------------------- | ---------------------------------- | ----------------- |
+| `DEPLOY_HOST`              | 배포 대상 서버 호스트 또는 IP      |                   |
+| `DEPLOY_HOST_KNOWN_HOSTS`  | 배포 서버의 pinned known_hosts 값  |                   |
+| `DEPLOY_HOST_SSH_KEY`      | 배포 서버에 접속할 SSH private key |                   |
+| `DEPLOY_HOST_PORT`         | SSH 포트                           | `22`              |
+| `DEPLOY_PATH`              | 서버 배포 디렉터리                 | `/opt/plimap-web` |
+| `HOST_PORT`                | 서버에서 노출할 웹 포트            | `3000`            |
+| `GHCR_PULL_USERNAME`       | 서버에서 GHCR 이미지를 pull할 계정 |                   |
+| `GHCR_PULL_TOKEN`          | GHCR pull 권한이 있는 토큰         |                   |
+| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps API 키                 |                   |
+| `VITE_KAKAO_REST_API_KEY`  | Kakao Local REST API 키            |                   |
+
+`VITE_`로 시작하는 값은 GitHub Secrets로 관리하더라도 프론트엔드 빌드 결과물에는 포함될 수 있습니다.
+
+### 수동 배포 검증
+
+```bash
+pnpm build
+env GHCR_OWNER=owner IMAGE_TAG=test HOST_PORT=3000 docker compose -f docker-compose.prod.yml config
 ```
 
 ## 화면 목록 및 플로우
