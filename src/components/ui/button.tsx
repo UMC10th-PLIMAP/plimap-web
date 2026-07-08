@@ -4,7 +4,7 @@ import { Slot } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'w-full inline-flex items-center justify-center transition-all outline-none',
+  'w-fit inline-flex items-center justify-center transition-all outline-none',
   {
     variants: {
       variant: {
@@ -17,10 +17,10 @@ const buttonVariants = cva(
         apple: 'border border-grayscale-700 text-grayscale-200',
       },
       size: {
-        cta: 'max-w-92 h-16 rounded-2xl head-20-sb',
-        pin: 'max-w-23 h-13 rounded-[50px] body-15-sb',
-        bt: 'max-w-[77px] h-11 rounded-[50px] body-17-m', // cancel, cta
-        social: 'max-w-81 h-16 rounded-xl body-17-m', // kakao, google, apple
+        cta: 'min-w-92 h-16 rounded-2xl head-20-sb',
+        pin: 'min-w-23 h-13 rounded-[50px] px-4 py-3.5 body-15-sb',
+        bt: 'min-w-[77px] h-11 rounded-[50px] px-4 py-2.5 body-17-m', // confirm, cancel
+        social: 'min-w-81 h-16 rounded-xl body-17-m', // kakao, google, apple
       },
     },
     defaultVariants: {

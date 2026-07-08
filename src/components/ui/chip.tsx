@@ -4,32 +4,32 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const chipVariants = cva(
-  'inline-flex w-full max-w-[61px] h-[41px] items-center justify-center rounded-[50px] transition-colors outline-none body-15-r',
+  'inline-flex w-fit min-w-[61px] h-[41px] px-4 py-2.5 items-center justify-center rounded-[50px] transition-colors outline-none body-15-r',
   {
     variants: {
-      selected: {
-        true: 'bg-pli-black-50 text-grayscale-200',
-        false: 'border border-grayscale-900 text-grayscale-600',
+      variant: {
+        default: 'border border-grayscale-900 text-grayscale-600',
+        selected: 'bg-pli-black-50 text-grayscale-200 ',
       },
     },
     defaultVariants: {
-      selected: false,
+      variant: 'default',
     },
   },
 );
 
 type ChipProps = React.ComponentProps<'button'> &
   VariantProps<typeof chipVariants> & {
-    selected?: boolean;
+    variant?: 'default' | 'selected';
   };
 
-function Chip({ className, selected = false, type = 'button', ...props }: ChipProps) {
+function Chip({ className, variant = 'default', type = 'button', ...props }: ChipProps) {
   return (
     <button
       type={type}
       data-slot="chip"
-      aria-pressed={selected}
-      className={cn(chipVariants({ selected }), className)}
+      aria-pressed={variant === 'selected'}
+      className={cn(chipVariants({ variant }), className)}
       {...props}
     />
   );
