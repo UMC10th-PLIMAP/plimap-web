@@ -13,7 +13,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: plimap-web
-  DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || vars.DEPLOY_PATH || '/opt/plimap-web' }}
+  DEPLOY_PATH: ${{ vars.DEPLOY_PATH || secrets.DEPLOY_PATH || '/opt/plimap-web' }}
   DOCKER_BUILD_RECORD_UPLOAD: 'false'
 
 jobs:
@@ -47,9 +47,49 @@ jobs:
         shell: bash
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || vars.VITE_API_BASE_URL }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_KNOWN_HOSTS: ${{ secrets.DEPLOY_HOST_KNOWN_HOSTS }}
+          DEPLOY_HOST_SSH_KEY: ${{ secrets.DEPLOY_HOST_SSH_KEY }}
+          DEPLOY_HOST_PORT: ${{ secrets.DEPLOY_HOST_PORT || vars.DEPLOY_HOST_PORT || 22 }}
+          DEPLOY_HOST_USER: ${{ secrets.DEPLOY_HOST_USER || vars.DEPLOY_HOST_USER || 'deploy' }}
+          HOST_PORT: ${{ secrets.HOST_PORT || vars.HOST_PORT || 3000 }}
+          GHCR_PULL_USERNAME: ${{ secrets.GHCR_PULL_USERNAME || vars.GHCR_PULL_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
         run: |
-          if [[ -z "$VITE_API_BASE_URL" ]]; then
-            echo "VITE_API_BASE_URL must be set as a GitHub Secret or Variable." >&2
+          required_vars=(
+            VITE_API_BASE_URL
+            DEPLOY_HOST
+            DEPLOY_HOST_KNOWN_HOSTS
+            DEPLOY_HOST_SSH_KEY
+            DEPLOY_HOST_USER
+            GHCR_PULL_USERNAME
+            GHCR_PULL_TOKEN
+          )
+
+          for name in "${required_vars[@]}"; do
+            if [[ -z "${!name}" ]]; then
+              echo "${name} must be configured for this workflow." >&2
+              exit 1
+            fi
+          done
+
+          if [[ ! "$GHCR_PULL_USERNAME" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "GHCR_PULL_USERNAME may contain only letters, numbers, dots, underscores, and dashes." >&2
+            exit 1
+          fi
+
+          if [[ ! "$DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ ]]; then
+            echo "DEPLOY_PATH must be an absolute path containing only letters, numbers, dots, underscores, dashes, and slashes." >&2
+            exit 1
+          fi
+
+          if [[ ! "$DEPLOY_HOST_PORT" =~ ^[0-9]+$ ]] || (( DEPLOY_HOST_PORT < 1 || DEPLOY_HOST_PORT > 65535 )); then
+            echo "DEPLOY_HOST_PORT must be a TCP port between 1 and 65535." >&2
+            exit 1
+          fi
+
+          if [[ ! "$HOST_PORT" =~ ^[0-9]+$ ]] || (( HOST_PORT < 1 || HOST_PORT > 65535 )); then
+            echo "HOST_PORT must be a TCP port between 1 and 65535." >&2
             exit 1
           fi
 
@@ -114,6 +154,12 @@ jobs:
           cat > deploy.sh <<'REMOTE'
           set -euo pipefail
 
+          : "${DEPLOY_PATH:?DEPLOY_PATH is required}"
+          : "${GHCR_OWNER:?GHCR_OWNER is required}"
+          : "${IMAGE_TAG:?IMAGE_TAG is required}"
+          : "${HOST_PORT:?HOST_PORT is required}"
+          : "${GHCR_PULL_USERNAME:?GHCR_PULL_USERNAME is required}"
+
           cd "$DEPLOY_PATH"
 
           umask 077
@@ -149,10 +195,16 @@ jobs:
           DEPLOY_HOST_PORT: ${{ secrets.DEPLOY_HOST_PORT || vars.DEPLOY_HOST_PORT || 22 }}
           DEPLOY_HOST_USER: ${{ secrets.DEPLOY_HOST_USER || vars.DEPLOY_HOST_USER || 'deploy' }}
         run: |
-          printf '%s\n' "$GHCR_PULL_TOKEN" | ssh -p "$DEPLOY_HOST_PORT" "$DEPLOY_HOST_USER@$DEPLOY_HOST" \
-            GHCR_OWNER="$GHCR_OWNER" \
-            IMAGE_TAG="$IMAGE_TAG" \
-            HOST_PORT="$HOST_PORT" \
-            GHCR_PULL_USERNAME="$GHCR_PULL_USERNAME" \
-            DEPLOY_PATH="$DEPLOY_PATH" \
-            'bash "$DEPLOY_PATH/deploy.sh"'
+          quote() {
+            printf '%q' "$1"
+          }
+
+          remote_command=$(printf 'GHCR_OWNER=%s IMAGE_TAG=%s HOST_PORT=%s GHCR_PULL_USERNAME=%s DEPLOY_PATH=%s bash %s' \
+            "$(quote "$GHCR_OWNER")" \
+            "$(quote "$IMAGE_TAG")" \
+            "$(quote "$HOST_PORT")" \
+            "$(quote "$GHCR_PULL_USERNAME")" \
+            "$(quote "$DEPLOY_PATH")" \
+            "$(quote "$DEPLOY_PATH/deploy.sh")")
+
+          printf '%s\n' "$GHCR_PULL_TOKEN" | ssh -p "$DEPLOY_HOST_PORT" "$DEPLOY_HOST_USER@$DEPLOY_HOST" "$remote_command"
