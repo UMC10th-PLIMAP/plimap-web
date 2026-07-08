@@ -61,6 +61,31 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
 }) => {
   const [copySuccess, setCopySuccess] = useState(false);
 
+  // --- 지도 크기 입력 로컬 상태 (타이핑 중에는 자유 입력, blur 시점에 200~2000으로 보정) ---
+  const [widthText, setWidthText] = useState(String(mapSize.width));
+  const [heightText, setHeightText] = useState(String(mapSize.height));
+  const [syncedSize, setSyncedSize] = useState(mapSize);
+
+  if (mapSize.width !== syncedSize.width || mapSize.height !== syncedSize.height) {
+    setSyncedSize(mapSize);
+    setWidthText(String(mapSize.width));
+    setHeightText(String(mapSize.height));
+  }
+
+  const commitWidth = () => {
+    const parsed = Number(widthText);
+    const clamped = Number.isNaN(parsed) ? mapSize.width : Math.min(2000, Math.max(200, parsed));
+    setWidthText(String(clamped));
+    onMapSizeChange({ ...mapSize, width: clamped });
+  };
+
+  const commitHeight = () => {
+    const parsed = Number(heightText);
+    const clamped = Number.isNaN(parsed) ? mapSize.height : Math.min(2000, Math.max(200, parsed));
+    setHeightText(String(clamped));
+    onMapSizeChange({ ...mapSize, height: clamped });
+  };
+
   const handleCopyCode = () => {
     const styles = generateMapStyles(colors, toggles);
     navigator.clipboard
@@ -150,12 +175,15 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
           >
             <span className={`text-xs ${sectionTitleClass}`}>너비 (px)</span>
             <input
-              type="number"
-              min={200}
-              max={2000}
-              value={mapSize.width}
-              onChange={(e) => onMapSizeChange({ ...mapSize, width: Number(e.target.value) })}
-              className={`bg-transparent text-sm font-mono outline-none ${textClass}`}
+              type="text"
+              inputMode="numeric"
+              value={widthText}
+              onChange={(e) => setWidthText(e.target.value.replace(/[^0-9]/g, ''))}
+              onBlur={commitWidth}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur();
+              }}
+              className={`w-full bg-transparent text-sm font-mono outline-none ${textClass}`}
             />
           </label>
           <label
@@ -163,12 +191,15 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
           >
             <span className={`text-xs ${sectionTitleClass}`}>높이 (px)</span>
             <input
-              type="number"
-              min={200}
-              max={2000}
-              value={mapSize.height}
-              onChange={(e) => onMapSizeChange({ ...mapSize, height: Number(e.target.value) })}
-              className={`bg-transparent text-sm font-mono outline-none ${textClass}`}
+              type="text"
+              inputMode="numeric"
+              value={heightText}
+              onChange={(e) => setHeightText(e.target.value.replace(/[^0-9]/g, ''))}
+              onBlur={commitHeight}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur();
+              }}
+              className={`w-full bg-transparent text-sm font-mono outline-none ${textClass}`}
             />
           </label>
         </div>

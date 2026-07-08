@@ -65,7 +65,7 @@ export type MapSizePreset = {
   size: MapSize;
 };
 
-// 실제 서비스 메인 지도 화면 크기 (Figma node 2262:11234, 모바일 풀스크린 기준)
+// 실제 서비스 메인 지도 화면 크기
 export const DEFAULT_MAP_SIZE: MapSize = { width: 402, height: 874 };
 
 export const MAP_SIZE_PRESETS: MapSizePreset[] = [
