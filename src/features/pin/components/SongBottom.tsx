@@ -65,6 +65,7 @@ export default function SongPage({ songs = MOCK_SONGS, onSelect }: SongCardProps
                   onClick={() => {
                     onSelect?.(song);
                     setOpen(false);
+                    setQuery('');
                   }}
                 />
               </li>

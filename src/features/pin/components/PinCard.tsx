@@ -7,7 +7,6 @@ import HeartIcon from '@/assets/icons/heart.svg?react';
 type PingCardProps = {
   pin: Pin;
   onClick?: () => void;
-  className?: string;
 };
 
 export function PinCard({ pin, onClick }: PingCardProps) {
