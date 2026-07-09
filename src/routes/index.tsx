@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 import RootLayout from '@/layouts/RootLayout';
 import MapDemoPage from '@/features/map/MapDemoPage';
-import NicknameSetupPage from '@/features/profile/pages/NicknameSetupPage';
+import NicknameSetupPage from '@/features/auth/pages/NicknameSetupPage';
 
 export const router = createBrowserRouter([
   {

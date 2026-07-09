@@ -6,7 +6,7 @@ import {
   NICKNAME_MAX_LENGTH,
   NICKNAME_MIN_LENGTH,
   validateNickname,
-} from '@/features/profile/utils/validateNickname';
+} from '@/features/auth/utils/validateNickname';
 import { Button } from '@/components/ui/button';
 
 type NicknameMessageTone = 'neutral' | 'success' | 'error';
