@@ -88,8 +88,11 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   useEffect(() => {
     if (!isLoaded || markerRef.current || !navigator.geolocation) return;
 
+    let ignore = false;
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (ignore) return;
         const map = mapInstanceRef.current;
         if (!map) return;
 
@@ -103,9 +106,14 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         });
       },
       (error) => {
+        if (ignore) return;
         console.warn('현재 위치를 가져올 수 없습니다:', error.message);
       },
     );
+
+    return () => {
+      ignore = true;
+    };
   }, [isLoaded]);
 
   // --- 마커 색상 변경 시 반영 ---
