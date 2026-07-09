@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { PinSongCard } from '@/features/pin/components/PinSongCard';
+import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
-import { Bookmark } from '@/assets/icons';
+import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import type { PinSong, PinSort, PlaceInfo } from '@/types/pin';
 
 type PinListSheetProps = {
@@ -40,6 +40,7 @@ export function PinListSheet({
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
+      {/* 지도 부분 onclick시 바텀시트 열기 */}
       <p className="body-15-r text-grayscale-400">PIN 목록 바텀시트 미리보기</p>
 
       <button
@@ -68,7 +69,7 @@ export function PinListSheet({
               aria-label="북마크"
               className="flex size-11 items-center justify-center rounded-full bg-pli-black-75"
             >
-              <Bookmark className="size-7" />
+              <BookmarkIcon className="size-7" />
             </button>
           </div>
           <div className="mt-6">
@@ -77,10 +78,10 @@ export function PinListSheet({
         </BottomSheet.Header>
 
         <BottomSheet.Content className="mt-5">
-          <ul className="flex flex-col gap-3 pb-4">
+          <ul className="flex flex-col gap-4.5">
             {pins.map((pin) => (
               <li key={pin.id}>
-                <PinSongCard pin={pin} onClick={() => onPinClick?.(pin)} />
+                <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
               </li>
             ))}
           </ul>
