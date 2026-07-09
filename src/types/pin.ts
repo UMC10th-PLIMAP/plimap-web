@@ -7,12 +7,17 @@ export type PlaceInfo = {
   distance: number;
 };
 
-export type PinSong = {
+export type Pin = {
   id: string;
   title: string;
   artist: string;
   pinCount: number;
   likeCount?: number;
   liked?: boolean;
-  thumbnailUrl?: string;
+};
+
+export type Song = {
+  id: string;
+  title: string;
+  artist: string;
 };

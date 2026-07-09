@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils';
-import type { PinSong } from '@/types/pin';
+import type { Pin } from '@/types/pin';
 
 import NextIcon from '@/assets/icons/next.svg?react';
 import HeartIcon from '@/assets/icons/heart.svg?react';
 
 type PingCardProps = {
-  pin: PinSong;
+  pin: Pin;
   onClick?: () => void;
   className?: string;
 };

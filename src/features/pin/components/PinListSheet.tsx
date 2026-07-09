@@ -4,12 +4,12 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
-import type { PinSong, PinSort, PlaceInfo } from '@/types/pin';
+import type { Pin, PinSort, PlaceInfo } from '@/types/pin';
 
 type PinListSheetProps = {
   place?: PlaceInfo;
-  pins?: PinSong[];
-  onPinClick?: (pin: PinSong) => void;
+  pins?: Pin[];
+  onPinClick?: (pin: Pin) => void;
 };
 
 const MOCK_PLACE: PlaceInfo = {
@@ -19,7 +19,7 @@ const MOCK_PLACE: PlaceInfo = {
   distance: 100,
 };
 
-const MOCK_PINS: PinSong[] = [
+const MOCK_PINS: Pin[] = [
   {
     id: '1',
     title: 'LOVE ATTACK',
