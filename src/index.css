@@ -8,11 +8,17 @@
   --color-neon-gradient-from: #fcff98;
   --background-image-gradient-neon: linear-gradient(
     180deg,
-    var(--color-neon-gradient-from) 0%,
-    var(--color-neon) 100%
+    var(--color-neon) 0%,
+    var(--color-neon-gradient-from) 100%
   );
   --color-green: #14bd83;
   --color-red: #ec4547;
+  --color-kakao: #fee500;
+  --color-kakao-text: #000000d9;
+
+  /* Tag colors */
+  --color-tag-stroke: #6d794d;
+  --color-tag-fill: #c8f94014;
 
   /* PLI_black colors */
   --color-pli-black-100: #0c0d0f;

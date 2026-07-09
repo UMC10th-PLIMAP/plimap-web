@@ -1,0 +1,15 @@
+.git
+.github
+.husky
+.codex
+.pnpm-store
+node_modules
+dist
+.env
+.env.*
+!.env.example
+*.local
+*.tsbuildinfo
+Dockerfile
+docker-compose*.yml
+README.md
