@@ -34,6 +34,7 @@
   "devDependencies": {
     "@eslint/js": "latest",
     "@tailwindcss/vite": "latest",
+    "@types/google.maps": "^3.65.2",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",

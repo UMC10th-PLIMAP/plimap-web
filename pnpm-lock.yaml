@@ -47,6 +47,9 @@ importers:
       '@tailwindcss/vite':
         specifier: latest
         version: 4.3.2(vite@8.1.3(@types/node@26.1.0)(jiti@2.7.0)(yaml@2.9.0))
+      '@types/google.maps':
+        specifier: ^3.65.2
+        version: 3.65.2
       '@types/node':
         specifier: latest
         version: 26.1.0
@@ -1878,6 +1881,12 @@ packages:
     resolution:
       {
         integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==,
+      }
+
+  '@types/google.maps@3.65.2':
+    resolution:
+      {
+        integrity: sha512-e52bmOhGCQSNabFpL48iQlwJybq6rfns8NUVJ20MR7CdPlHQ2RmSCnPbJfrUYJfogrE4OiHQTZ4LXpop+eer1w==,
       }
 
   '@types/json-schema@7.0.15':
@@ -6283,6 +6292,8 @@ snapshots:
   '@types/esrecurse@4.3.1': {}
 
   '@types/estree@1.0.9': {}
+
+  '@types/google.maps@3.65.2': {}
 
   '@types/json-schema@7.0.15': {}
 
