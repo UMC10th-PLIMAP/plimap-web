@@ -60,6 +60,25 @@ export type MapSize = {
   height: number;
 };
 
+export type MapCoordinate = {
+  lat: number;
+  lng: number;
+};
+
+export type KakaoLocalPlace = {
+  id: string;
+  placeName: string;
+  categoryName: string;
+  categoryGroupName: string;
+  phone: string;
+  addressName: string;
+  roadAddressName: string;
+  placeUrl: string;
+  x: number;
+  y: number;
+  distance?: number;
+};
+
 export type MapSizePreset = {
   label: string;
   size: MapSize;
