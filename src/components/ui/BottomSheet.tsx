@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
-import { ChevronLeft, X } from 'lucide-react';
+import BackIcon from '@/assets/icons/back.svg?react';
+import CloseIcon from '@/assets/icons/close.svg?react';
 
 import { cn } from '@/lib/utils';
 
@@ -185,7 +186,7 @@ function BottomSheetFullPageNav({ className }: FullPageNavProps) {
         onClick={collapse}
         className="flex size-10 items-center justify-center text-grayscale-30"
       >
-        <ChevronLeft className="size-6" aria-hidden />
+        <BackIcon className="size-7" aria-hidden />
       </button>
       <button
         type="button"
@@ -193,7 +194,7 @@ function BottomSheetFullPageNav({ className }: FullPageNavProps) {
         onClick={onClose}
         className="flex size-10 items-center justify-center text-grayscale-30"
       >
-        <X className="size-6" aria-hidden />
+        <CloseIcon className="size-6" aria-hidden />
       </button>
     </div>
   );
