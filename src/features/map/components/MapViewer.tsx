@@ -2,12 +2,23 @@ import React, { useEffect, useRef } from 'react';
 import { ColorSettings, ToggleSettings, MapSize } from '../types';
 import { generateMapStyles } from '../utils';
 
+// 현재 위치를 나타내는 "블루닷" 스타일 아이콘 — Map ID 없이도 동작하는 클래식 Marker용
+const createMarkerIcon = (color: string): google.maps.Symbol => ({
+  path: window.google.maps.SymbolPath.CIRCLE,
+  fillColor: color,
+  fillOpacity: 1,
+  strokeColor: '#ffffff',
+  strokeWeight: 3,
+  scale: 9,
+});
+
 type MapViewerProps = {
   isLoaded: boolean;
   colors: ColorSettings;
   toggles: ToggleSettings;
   zoom: number;
   mapSize: MapSize;
+  markerColor: string;
   onZoomChanged?: (newZoom: number) => void;
 };
 
@@ -17,10 +28,17 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   toggles,
   zoom,
   mapSize,
+  markerColor,
   onZoomChanged,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
+  const markerColorRef = useRef(markerColor);
+
+  useEffect(() => {
+    markerColorRef.current = markerColor;
+  }, [markerColor]);
 
   useEffect(() => {
     // 맵 스크립트가 로드되지 않았거나 컨테이너가 없으면 실행 안함
@@ -65,6 +83,38 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     window.google.maps.event.trigger(map, 'resize');
     if (center) map.setCenter(center);
   }, [mapSize]);
+
+  // --- 브라우저 위치 조회 및 현재 위치 마커 생성 (최초 1회) ---
+  useEffect(() => {
+    if (!isLoaded || markerRef.current || !navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+        map.setCenter(pos);
+
+        markerRef.current = new window.google.maps.Marker({
+          map,
+          position: pos,
+          icon: createMarkerIcon(markerColorRef.current),
+        });
+      },
+      (error) => {
+        console.warn('현재 위치를 가져올 수 없습니다:', error.message);
+      },
+    );
+  }, [isLoaded]);
+
+  // --- 마커 색상 변경 시 반영 ---
+  useEffect(() => {
+    const marker = markerRef.current;
+    if (!marker) return;
+
+    marker.setIcon(createMarkerIcon(markerColor));
+  }, [markerColor]);
 
   return (
     <main className="flex-1 h-full relative flex items-center justify-center overflow-auto">

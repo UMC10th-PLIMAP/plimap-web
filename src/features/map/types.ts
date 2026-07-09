@@ -74,6 +74,9 @@ export const MAP_SIZE_PRESETS: MapSizePreset[] = [
   { label: 'Desktop', size: { width: 1280, height: 800 } },
 ];
 
+// 현재 위치 마커 기본 색상
+export const DEFAULT_MARKER_COLOR = '#4285F4';
+
 // 제어 토글 기본값 설정
 export const DEFAULT_TOGGLES: ToggleSettings = {
   allLabels: false,
