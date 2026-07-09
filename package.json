@@ -24,6 +24,7 @@
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "latest",
+    "zod": "^4.4.3",
     "zustand": "latest"
   },
   "devDependencies": {
