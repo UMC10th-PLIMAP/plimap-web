@@ -7,6 +7,7 @@ import {
   NICKNAME_MIN_LENGTH,
   validateNickname,
 } from '@/features/profile/utils/validateNickname';
+import { Button } from '@/components/ui/button';
 
 type NicknameMessageTone = 'neutral' | 'success' | 'error';
 
@@ -84,17 +85,9 @@ export default function NicknameSetupPage() {
       </div>
 
       <div className="mt-auto flex flex-col items-center px-[10px] pb-[52px]">
-        {/* #38 PR Merge되면 Button 컴포넌트로 변경 */}
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!isValid}
-          className={`head-20-sb flex h-16 w-full max-w-[368px] items-center justify-center rounded-2xl ${
-            isValid ? 'bg-grayscale-300 text-pli-black-100' : 'bg-grayscale-900 text-grayscale-1200'
-          }`}
-        >
+        <Button variant={'cta'} size={'cta'} disabled={!isValid} onClick={handleSubmit}>
           다음
-        </button>
+        </Button>
       </div>
     </div>
   );
