@@ -8,11 +8,13 @@ type MapSidebarProps = {
   toggles: ToggleSettings;
   zoom: number;
   mapSize: MapSize;
+  markerColor: string;
   onToggleDarkMode: () => void;
   onColorChange: (key: keyof ColorSettings, value: string) => void;
   onToggleChange: (key: keyof ToggleSettings) => void;
   onZoomChange: (zoom: number) => void;
   onMapSizeChange: (size: MapSize) => void;
+  onMarkerColorChange: (color: string) => void;
 };
 
 // --- 토글 스위치 공통 UI 컴포넌트 ---
@@ -53,11 +55,13 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
   toggles,
   zoom,
   mapSize,
+  markerColor,
   onToggleDarkMode,
   onColorChange,
   onToggleChange,
   onZoomChange,
   onMapSizeChange,
+  onMarkerColorChange,
 }) => {
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -232,6 +236,32 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* --- 현재 위치 마커 색상 --- */}
+      <div className="flex flex-col gap-4 mb-8">
+        <h2 className={`text-sm font-semibold uppercase tracking-wider ${sectionTitleClass}`}>
+          현재 위치 마커
+        </h2>
+        <div
+          className={`flex justify-between items-center p-3 rounded-lg ${isDarkMode ? 'bg-[#1A1C1E]' : 'bg-white shadow-sm'}`}
+        >
+          <label htmlFor="markerColor" className={`text-sm ${textClass}`}>
+            마커 색상
+          </label>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-mono w-16 text-right ${sectionTitleClass}`}>
+              {markerColor}
+            </span>
+            <input
+              id="markerColor"
+              type="color"
+              value={markerColor}
+              onChange={(e) => onMarkerColorChange(e.target.value)}
+              className="w-6 h-6 border-0 p-0 rounded cursor-pointer bg-transparent"
+            />
+          </div>
+        </div>
       </div>
 
       {/* --- 요소 토글 설정 --- */}

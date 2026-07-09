@@ -7,6 +7,7 @@ import {
   DEFAULT_LIGHT_COLORS,
   DEFAULT_TOGGLES,
   DEFAULT_MAP_SIZE,
+  DEFAULT_MARKER_COLOR,
 } from './types';
 import { loadGoogleMapsScript } from './utils';
 import { MapSidebar } from './components/MapSidebar';
@@ -19,6 +20,7 @@ const MapDemoPage: React.FC = () => {
   const [toggles, setToggles] = useState<ToggleSettings>(DEFAULT_TOGGLES);
   const [zoom, setZoom] = useState<number>(15);
   const [mapSize, setMapSize] = useState<MapSize>(DEFAULT_MAP_SIZE);
+  const [markerColor, setMarkerColor] = useState<string>(DEFAULT_MARKER_COLOR);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   // --- 구글맵 API 동적 로드 ---
@@ -65,6 +67,11 @@ const MapDemoPage: React.FC = () => {
     setMapSize(newSize);
   };
 
+  // --- 현재 위치 마커 색상 변경 핸들러 ---
+  const handleMarkerColorChange = (color: string) => {
+    setMarkerColor(color);
+  };
+
   return (
     <div
       className={`flex w-full h-[100vh] overflow-hidden font-sans ${isDarkMode ? 'bg-[#0C0D0F]' : 'bg-gray-100'}`}
@@ -76,11 +83,13 @@ const MapDemoPage: React.FC = () => {
         toggles={toggles}
         zoom={zoom}
         mapSize={mapSize}
+        markerColor={markerColor}
         onToggleDarkMode={handleToggleDarkMode}
         onColorChange={handleColorChange}
         onToggleChange={handleToggleChange}
         onZoomChange={handleZoomChange}
         onMapSizeChange={handleMapSizeChange}
+        onMarkerColorChange={handleMarkerColorChange}
       />
       {/* 2. 우측 구글맵 뷰어 */}
       <MapViewer
@@ -89,6 +98,7 @@ const MapDemoPage: React.FC = () => {
         toggles={toggles}
         zoom={zoom}
         mapSize={mapSize}
+        markerColor={markerColor}
         onZoomChanged={handleZoomChange}
       />
     </div>

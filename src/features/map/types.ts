@@ -33,14 +33,14 @@ export type ToggleSettings = {
 
 // 다크 모드 기본 색상 (PLIMAP 스타일)
 export const DEFAULT_DARK_COLORS: ColorSettings = {
-  background: '#1c2128',
-  road: '#373d45',
-  highway: '#4c5741',
-  highwayRamp: '#8fae2b',
+  background: '#252f3c',
+  road: '#2e3238',
+  highway: '#394069',
+  highwayRamp: '#696e7f',
   water: '#2d485f',
-  natural: '#2a482a',
-  building: '#49546a',
-  subway: '#394066',
+  natural: '#2a3433',
+  building: '#22272f',
+  subway: '#5a6255',
 };
 
 // 라이트 모드 기본 색상
@@ -74,6 +74,9 @@ export const MAP_SIZE_PRESETS: MapSizePreset[] = [
   { label: 'Desktop', size: { width: 1280, height: 800 } },
 ];
 
+// 현재 위치 마커 기본 색상
+export const DEFAULT_MARKER_COLOR = '#4285F4';
+
 // 제어 토글 기본값 설정
 export const DEFAULT_TOGGLES: ToggleSettings = {
   allLabels: false,
@@ -86,9 +89,9 @@ export const DEFAULT_TOGGLES: ToggleSettings = {
   roadLocal: true,
   transitLine: true,
   transitStation: true,
-  poiBusiness: false,
-  poiAttraction: false,
+  poiBusiness: true,
+  poiAttraction: true,
   poiMedical: false,
-  poiPark: false,
+  poiPark: true,
   poiSchool: false,
 };
