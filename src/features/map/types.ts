@@ -60,6 +60,27 @@ export type MapSize = {
   height: number;
 };
 
+export type MapCoordinate = {
+  lat: number;
+  lng: number;
+};
+
+export const DEFAULT_CENTER: MapCoordinate = { lat: 37.5665, lng: 126.978 };
+
+export type KakaoLocalPlace = {
+  id: string;
+  placeName: string;
+  categoryName: string;
+  categoryGroupName: string;
+  phone: string;
+  addressName: string;
+  roadAddressName: string;
+  placeUrl: string;
+  x: number;
+  y: number;
+  distance?: number;
+};
+
 export type MapSizePreset = {
   label: string;
   size: MapSize;
