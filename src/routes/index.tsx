@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 import RootLayout from '@/layouts/RootLayout';
 import MapDemoPage from '@/features/map/MapDemoPage';
+import LoginPage from '@/features/auth/pages/LoginPage';
 
 export const router = createBrowserRouter([
   {
@@ -13,6 +14,10 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
+      },
+      {
+        path: 'login',
+        element: <LoginPage />,
       },
     ],
   },
