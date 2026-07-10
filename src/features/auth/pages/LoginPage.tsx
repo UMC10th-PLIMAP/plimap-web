@@ -3,10 +3,18 @@ import GoogleIcon from '@/assets/icons/google.svg?react';
 import KakaoIcon from '@/assets/icons/kakao.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { Button } from '@/components/ui/button';
+import { KAKAO_REDIRECT_URI, loadKakaoSdk } from '@/features/auth/utils/kakao';
 
 export default function LoginPage() {
-  const handleKakaoLogin = () => {
-    // TODO: 카카오 로그인 연동
+  const handleKakaoLogin = async () => {
+    const javascriptKey = import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY || '';
+    if (!javascriptKey) {
+      console.error('VITE_KAKAO_JAVASCRIPT_KEY is missing in environment variables');
+      return;
+    }
+
+    await loadKakaoSdk(javascriptKey);
+    window.Kakao?.Auth.authorize({ redirectUri: KAKAO_REDIRECT_URI });
   };
 
   const handleGoogleLogin = () => {

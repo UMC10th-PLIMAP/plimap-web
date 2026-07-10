@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import RootLayout from '@/layouts/RootLayout';
 import MapDemoPage from '@/features/map/MapDemoPage';
 import LoginPage from '@/features/auth/pages/LoginPage';
+import KakaoCallbackPage from '@/features/auth/pages/KakaoCallbackPage';
 
 export const router = createBrowserRouter([
   {
@@ -18,6 +19,10 @@ export const router = createBrowserRouter([
       {
         path: 'login',
         element: <LoginPage />,
+      },
+      {
+        path: 'login/kakao/callback',
+        element: <KakaoCallbackPage />,
       },
     ],
   },
