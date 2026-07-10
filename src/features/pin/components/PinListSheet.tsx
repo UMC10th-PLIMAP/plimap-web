@@ -57,7 +57,9 @@ export function PinListSheet({
         <BottomSheet.Header className="mt-[26.75px] px-4 ">
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-2">
-              <h2 className="head-24-sb text-grayscale-100">{place.name}</h2>
+              <BottomSheet.Title className="head-24-sb text-grayscale-100">
+                {place.name}
+              </BottomSheet.Title>
               <p className="body-15-m text-grayscale-500">
                 <span className="body-15-r text-grayscale-200">{place.creatorName}</span> 님이
                 생성한 PIN · <span className="text-red">{place.distance}</span>m

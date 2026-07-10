@@ -46,7 +46,9 @@ export default function SongPage({ songs = MOCK_SONGS, onSelect }: SongCardProps
 
       <BottomSheet open={open} onClose={() => setOpen(false)}>
         <BottomSheet.Header className="space-y-4 px-[15px]">
-          <h2 className="mt-5.5 text-center body-15-r text-grayscale-300 ">노래 선택하기</h2>
+          <BottomSheet.Title className="mt-5.5 text-center body-15-r text-grayscale-300">
+            노래 선택하기
+          </BottomSheet.Title>
 
           <SearchInput
             variant="song"

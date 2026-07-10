@@ -153,9 +153,16 @@ function BottomSheet({
 
 type SectionProps = React.ComponentProps<'div'>;
 
+type TitleProps = React.ComponentProps<typeof DrawerPrimitive.Title>;
+
 /** 시트 상단 고정 영역. 제목·검색창 등 스크롤되지 않는 헤더에 사용한다. */
 function BottomSheetHeader({ className, ...props }: SectionProps) {
   return <div className={className} {...props} />;
+}
+
+/** 시트 접근성 제목. Header 안의 h2를 이 컴포넌트로 감싼다. */
+function BottomSheetTitle({ className, ...props }: TitleProps) {
+  return <DrawerPrimitive.Title data-slot="bottom-sheet-title" className={className} {...props} />;
 }
 
 /** 시트 본문 스크롤 영역. 리스트·카드 등 긴 콘텐츠를 담는다. */
@@ -201,6 +208,7 @@ function BottomSheetFullPageNav({ className }: FullPageNavProps) {
 }
 
 BottomSheet.Header = BottomSheetHeader;
+BottomSheet.Title = BottomSheetTitle;
 BottomSheet.Content = BottomSheetContent;
 BottomSheet.FullPageNav = BottomSheetFullPageNav;
 
