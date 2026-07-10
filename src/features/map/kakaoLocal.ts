@@ -93,6 +93,7 @@ const rankPlaces = (places: KakaoLocalPlace[], query: string) => {
   });
 };
 
+// TODO: 운영 환경에서는 REST API 키가 클라이언트 번들에 노출되지 않도록 Kakao Local 요청을 백엔드에서 프록시한다.
 const getKakaoRestApiKey = () => import.meta.env.VITE_KAKAO_REST_API_KEY?.trim() ?? '';
 
 const requestKakaoLocal = async <TDocument>(
