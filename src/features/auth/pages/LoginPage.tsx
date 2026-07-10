@@ -36,15 +36,15 @@ export default function LoginPage() {
 
       <div className="flex w-full flex-col items-center gap-3">
         <Button variant="kakao" size="social" className="w-full gap-3" onClick={handleKakaoLogin}>
-          <KakaoIcon className="size-6" />
+          <KakaoIcon className="size-6 shrink-0" />
           카카오로 시작하기
         </Button>
         <Button variant="google" size="social" className="w-full gap-3" onClick={handleGoogleLogin}>
-          <GoogleIcon className="size-6" />
+          <GoogleIcon className="size-6 shrink-0" />
           Google로 시작하기
         </Button>
         <Button variant="apple" size="social" className="w-full gap-3" onClick={handleAppleLogin}>
-          <AppleIcon className="size-6" />
+          <AppleIcon className="size-6 shrink-0" />
           Apple로 시작하기
         </Button>
       </div>
