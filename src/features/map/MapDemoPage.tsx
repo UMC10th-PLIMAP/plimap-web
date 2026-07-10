@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ColorSettings,
   KakaoLocalPlace,
@@ -10,13 +10,12 @@ import {
   DEFAULT_TOGGLES,
   DEFAULT_MAP_SIZE,
   DEFAULT_MARKER_COLOR,
+  DEFAULT_CENTER,
 } from './types';
 import { loadGoogleMapsScript } from './utils';
 import { searchKakaoLocal } from './kakaoLocal';
 import { MapSidebar } from './components/MapSidebar';
 import { MapViewer } from './components/MapViewer';
-
-const DEFAULT_CENTER: MapCoordinate = { lat: 37.5665, lng: 126.978 };
 
 const MapDemoPage: React.FC = () => {
   // --- 상태 관리 ---
@@ -33,6 +32,7 @@ const MapDemoPage: React.FC = () => {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [isPlaceSearching, setIsPlaceSearching] = useState(false);
   const [placeSearchError, setPlaceSearchError] = useState<string | null>(null);
+  const searchRequestIdRef = useRef(0);
 
   // --- 구글맵 API 동적 로드 ---
   useEffect(() => {
@@ -87,12 +87,15 @@ const MapDemoPage: React.FC = () => {
     const query = placeQuery.trim();
 
     if (!query) {
+      searchRequestIdRef.current += 1;
       setPlaceResults([]);
       setSelectedPlaceId(null);
+      setIsPlaceSearching(false);
       setPlaceSearchError(null);
       return;
     }
 
+    const requestId = ++searchRequestIdRef.current;
     setIsPlaceSearching(true);
     setPlaceSearchError(null);
 
@@ -102,12 +105,14 @@ const MapDemoPage: React.FC = () => {
         x: mapCenter.lng,
         y: mapCenter.lat,
       });
+      if (searchRequestIdRef.current !== requestId) return;
       setPlaceResults(results);
       setSelectedPlaceId(results[0]?.id ?? null);
       if (results.length === 0) {
         setPlaceSearchError('검색 결과가 없습니다.');
       }
     } catch (error) {
+      if (searchRequestIdRef.current !== requestId) return;
       console.error(error);
       setPlaceResults([]);
       setSelectedPlaceId(null);
@@ -115,14 +120,18 @@ const MapDemoPage: React.FC = () => {
         error instanceof Error ? error.message : 'Kakao Local API 검색에 실패했습니다.',
       );
     } finally {
-      setIsPlaceSearching(false);
+      if (searchRequestIdRef.current === requestId) {
+        setIsPlaceSearching(false);
+      }
     }
   }, [mapCenter.lat, mapCenter.lng, placeQuery]);
 
   const handleClearPlaceSearch = () => {
+    searchRequestIdRef.current += 1;
     setPlaceQuery('');
     setPlaceResults([]);
     setSelectedPlaceId(null);
+    setIsPlaceSearching(false);
     setPlaceSearchError(null);
   };
 

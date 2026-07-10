@@ -65,6 +65,8 @@ export type MapCoordinate = {
   lng: number;
 };
 
+export const DEFAULT_CENTER: MapCoordinate = { lat: 37.5665, lng: 126.978 };
+
 export type KakaoLocalPlace = {
   id: string;
   placeName: string;

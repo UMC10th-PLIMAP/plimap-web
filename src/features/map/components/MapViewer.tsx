@@ -1,10 +1,17 @@
 import React, { useEffect, useRef } from 'react';
-import { ColorSettings, KakaoLocalPlace, MapCoordinate, ToggleSettings, MapSize } from '../types';
+import {
+  ColorSettings,
+  KakaoLocalPlace,
+  MapCoordinate,
+  ToggleSettings,
+  MapSize,
+  DEFAULT_CENTER,
+} from '../types';
 import { generateMapStyles } from '../utils';
 
 // 현재 위치를 나타내는 "블루닷" 스타일 아이콘 — Map ID 없이도 동작하는 클래식 Marker용
-const createMarkerIcon = (color: string): google.maps.Symbol => ({
-  path: window.google.maps.SymbolPath.CIRCLE,
+const createMarkerIcon = (mapsApi: typeof google.maps, color: string): google.maps.Symbol => ({
+  path: mapsApi.SymbolPath.CIRCLE,
   fillColor: color,
   fillOpacity: 1,
   strokeColor: '#ffffff',
@@ -12,8 +19,11 @@ const createMarkerIcon = (color: string): google.maps.Symbol => ({
   scale: 9,
 });
 
-const createPlaceMarkerIcon = (isSelected: boolean): google.maps.Symbol => ({
-  path: window.google.maps.SymbolPath.CIRCLE,
+const createPlaceMarkerIcon = (
+  mapsApi: typeof google.maps,
+  isSelected: boolean,
+): google.maps.Symbol => ({
+  path: mapsApi.SymbolPath.CIRCLE,
   fillColor: isSelected ? '#2563eb' : '#111827',
   fillOpacity: 1,
   strokeColor: isSelected ? '#bfdbfe' : '#ffffff',
@@ -110,13 +120,13 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   useEffect(() => {
     // 맵 스크립트가 로드되지 않았거나 컨테이너가 없으면 실행 안함
-    if (!isLoaded || !mapRef.current) return;
+    const mapsApi = window.google?.maps;
+    if (!isLoaded || !mapRef.current || !mapsApi) return;
 
     if (!mapInstanceRef.current) {
       // --- 구글맵 인스턴스 초기 생성 ---
-      const center = { lat: 37.5665, lng: 126.978 };
-      const map = new window.google.maps.Map(mapRef.current, {
-        center,
+      const map = new mapsApi.Map(mapRef.current, {
+        center: DEFAULT_CENTER,
         zoom,
         disableDefaultUI: true,
         styles: generateMapStyles(colors, toggles),
@@ -154,17 +164,19 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // --- 지도 크기 변경 시 구글맵에 리사이즈 알림 (중심점 유지) ---
   useEffect(() => {
+    const mapsApi = window.google?.maps;
     const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!mapsApi || !map) return;
 
     const center = map.getCenter();
-    window.google.maps.event.trigger(map, 'resize');
+    mapsApi.event.trigger(map, 'resize');
     if (center) map.setCenter(center);
   }, [mapSize]);
 
   // --- 브라우저 위치 조회 및 현재 위치 마커 생성 (최초 1회) ---
   useEffect(() => {
-    if (!isLoaded || markerRef.current || !navigator.geolocation) return;
+    const mapsApi = window.google?.maps;
+    if (!isLoaded || !mapsApi || markerRef.current || !navigator.geolocation) return;
 
     let ignore = false;
 
@@ -177,10 +189,10 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
         map.setCenter(pos);
 
-        markerRef.current = new window.google.maps.Marker({
+        markerRef.current = new mapsApi.Marker({
           map,
           position: pos,
-          icon: createMarkerIcon(markerColorRef.current),
+          icon: createMarkerIcon(mapsApi, markerColorRef.current),
         });
         onCenterChangedRef.current?.(pos);
       },
@@ -197,16 +209,18 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // --- 마커 색상 변경 시 반영 ---
   useEffect(() => {
+    const mapsApi = window.google?.maps;
     const marker = markerRef.current;
-    if (!marker) return;
+    if (!mapsApi || !marker) return;
 
-    marker.setIcon(createMarkerIcon(markerColor));
+    marker.setIcon(createMarkerIcon(mapsApi, markerColor));
   }, [markerColor]);
 
   // --- Kakao Local 검색 결과 마커 렌더링 ---
   useEffect(() => {
+    const mapsApi = window.google?.maps;
     const map = mapInstanceRef.current;
-    if (!isLoaded || !map) return;
+    if (!isLoaded || !mapsApi || !map) return;
 
     placeMarkersRef.current.forEach(({ marker }) => marker.setMap(null));
     placeMarkersRef.current = [];
@@ -215,15 +229,15 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     if (placeResults.length === 0) return;
 
     if (!infoWindowRef.current) {
-      infoWindowRef.current = new window.google.maps.InfoWindow();
+      infoWindowRef.current = new mapsApi.InfoWindow();
     }
 
-    const bounds = new window.google.maps.LatLngBounds();
+    const bounds = new mapsApi.LatLngBounds();
     const selectedId = selectedPlaceIdRef.current;
 
     placeMarkersRef.current = placeResults.map((place, index) => {
       const position = { lat: place.y, lng: place.x };
-      const marker = new window.google.maps.Marker({
+      const marker = new mapsApi.Marker({
         map,
         position,
         title: place.placeName,
@@ -233,7 +247,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
           fontSize: '12px',
           fontWeight: '700',
         },
-        icon: createPlaceMarkerIcon(place.id === selectedId),
+        icon: createPlaceMarkerIcon(mapsApi, place.id === selectedId),
       });
 
       marker.addListener('click', () => {
@@ -254,14 +268,15 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // --- 선택된 Kakao 장소 강조 및 정보창 표시 ---
   useEffect(() => {
+    const mapsApi = window.google?.maps;
     const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!mapsApi || !map) return;
 
     const infoWindow = infoWindowRef.current;
 
     placeMarkersRef.current.forEach((placeMarker) => {
       const isSelected = placeMarker.id === selectedPlaceId;
-      placeMarker.marker.setIcon(createPlaceMarkerIcon(isSelected));
+      placeMarker.marker.setIcon(createPlaceMarkerIcon(mapsApi, isSelected));
       placeMarker.marker.setZIndex(isSelected ? 1000 : undefined);
     });
 

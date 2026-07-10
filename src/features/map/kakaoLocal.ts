@@ -1,6 +1,7 @@
 import type { KakaoLocalPlace } from './types';
 
 const KAKAO_LOCAL_BASE_URL = 'https://dapi.kakao.com/v2/local';
+const KAKAO_LOCAL_REQUEST_TIMEOUT_MS = 8000;
 
 type KakaoKeywordDocument = {
   id: string;
@@ -41,9 +42,12 @@ type SearchKakaoLocalParams = {
 
 const CIVIC_OFFICE_KEYWORDS = ['시청', '구청', '군청', '도청'];
 
-const toNumber = (value: string) => {
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? 0 : parsed;
+const toFiniteNumber = (value: string) => {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return null;
+
+  const parsed = Number(trimmedValue);
+  return Number.isFinite(parsed) ? parsed : null;
 };
 
 const normalizeSearchText = (value: string) => value.replace(/\s/g, '').toLowerCase();
@@ -106,46 +110,82 @@ const requestKakaoLocal = async <TDocument>(
     if (value) url.searchParams.set(key, value);
   });
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `KakaoAK ${apiKey}`,
-    },
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), KAKAO_LOCAL_REQUEST_TIMEOUT_MS);
 
-  if (!response.ok) {
-    throw new Error(`Kakao Local API request failed (${response.status})`);
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `KakaoAK ${apiKey}`,
+      },
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Kakao Local API request failed (${response.status})`);
+    }
+
+    return (await response.json()) as KakaoLocalResponse<TDocument>;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Kakao Local API request timed out', { cause: error });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.json() as Promise<KakaoLocalResponse<TDocument>>;
 };
 
-const mapKeywordDocument = (document: KakaoKeywordDocument): KakaoLocalPlace => ({
-  id: document.id,
-  placeName: document.place_name,
-  categoryName: document.category_name,
-  categoryGroupName: document.category_group_name,
-  phone: document.phone,
-  addressName: document.address_name,
-  roadAddressName: document.road_address_name,
-  placeUrl: document.place_url,
-  x: toNumber(document.x),
-  y: toNumber(document.y),
-  distance: document.distance ? toNumber(document.distance) : undefined,
-});
+const isKakaoLocalPlace = (place: KakaoLocalPlace | null): place is KakaoLocalPlace => {
+  return place !== null;
+};
 
-const mapAddressDocument = (document: KakaoAddressDocument, index: number): KakaoLocalPlace => ({
-  id: `address-${document.x}-${document.y}-${index}`,
-  placeName:
-    document.road_address?.address_name ?? document.address?.address_name ?? document.address_name,
-  categoryName: document.address_type || '주소',
-  categoryGroupName: '주소',
-  phone: '',
-  addressName: document.address?.address_name ?? document.address_name,
-  roadAddressName: document.road_address?.address_name ?? '',
-  placeUrl: '',
-  x: toNumber(document.x),
-  y: toNumber(document.y),
-});
+const mapKeywordDocument = (document: KakaoKeywordDocument): KakaoLocalPlace | null => {
+  const x = toFiniteNumber(document.x);
+  const y = toFiniteNumber(document.y);
+
+  if (x === null || y === null) return null;
+
+  return {
+    id: document.id,
+    placeName: document.place_name,
+    categoryName: document.category_name,
+    categoryGroupName: document.category_group_name,
+    phone: document.phone,
+    addressName: document.address_name,
+    roadAddressName: document.road_address_name,
+    placeUrl: document.place_url,
+    x,
+    y,
+    distance: document.distance ? (toFiniteNumber(document.distance) ?? undefined) : undefined,
+  };
+};
+
+const mapAddressDocument = (
+  document: KakaoAddressDocument,
+  index: number,
+): KakaoLocalPlace | null => {
+  const x = toFiniteNumber(document.x);
+  const y = toFiniteNumber(document.y);
+
+  if (x === null || y === null) return null;
+
+  return {
+    id: `address-${document.x}-${document.y}-${index}`,
+    placeName:
+      document.road_address?.address_name ??
+      document.address?.address_name ??
+      document.address_name,
+    categoryName: document.address_type || '주소',
+    categoryGroupName: '주소',
+    phone: '',
+    addressName: document.address?.address_name ?? document.address_name,
+    roadAddressName: document.road_address?.address_name ?? '',
+    placeUrl: '',
+    x,
+    y,
+  };
+};
 
 export const searchKakaoLocal = async ({
   query,
@@ -172,7 +212,10 @@ export const searchKakaoLocal = async ({
     '/search/keyword.json',
     keywordParams,
   );
-  const keywordPlaces = rankPlaces(keywordResponse.documents.map(mapKeywordDocument), trimmedQuery);
+  const keywordPlaces = rankPlaces(
+    keywordResponse.documents.map(mapKeywordDocument).filter(isKakaoLocalPlace),
+    trimmedQuery,
+  );
 
   if (keywordPlaces.length > 0) {
     return keywordPlaces;
@@ -183,5 +226,8 @@ export const searchKakaoLocal = async ({
     size: '15',
   });
 
-  return rankPlaces(addressResponse.documents.map(mapAddressDocument), trimmedQuery);
+  return rankPlaces(
+    addressResponse.documents.map(mapAddressDocument).filter(isKakaoLocalPlace),
+    trimmedQuery,
+  );
 };
