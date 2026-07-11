@@ -4,8 +4,14 @@ import KakaoIcon from '@/assets/icons/kakao.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { Button } from '@/components/ui/button';
 
-const KAKAO_LOGIN_URL = `${import.meta.env.VITE_API_BASE_URL}/oauth/authorization/kakao`;
-const GOOGLE_LOGIN_URL = `${import.meta.env.VITE_API_BASE_URL}/oauth/authorization/google`;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '');
+
+if (!API_BASE_URL) {
+  console.error('VITE_API_BASE_URL is missing in environment variables');
+}
+
+const KAKAO_LOGIN_URL = `${API_BASE_URL}/oauth/authorization/kakao`;
+const GOOGLE_LOGIN_URL = `${API_BASE_URL}/oauth/authorization/google`;
 
 export default function LoginPage() {
   return (
