@@ -12,9 +12,11 @@ const buttonVariants = cva(
         pin: 'bg-gradient-neon text-grayscale-1200 disabled:bg-none disabled:bg-pli-black-75 disabled:text-grayscale-600',
         confirm: 'bg-grayscale-100 text-grayscale-1250',
         cancel: 'bg-pli-black-50 text-grayscale-400',
-        kakao: 'bg-kakao text-kakao-text',
-        google: 'bg-grayscale-0 text-grayscale-1300',
-        apple: 'border border-grayscale-700 text-grayscale-200',
+        kakao: 'bg-kakao text-kakao-text disabled:opacity-50 disabled:cursor-not-allowed',
+        google:
+          'bg-grayscale-0 text-grayscale-1300 disabled:opacity-50 disabled:cursor-not-allowed',
+        apple:
+          'border border-grayscale-700 text-grayscale-200 disabled:opacity-50 disabled:cursor-not-allowed',
       },
       size: {
         cta: 'min-w-92 h-16 rounded-2xl head-20-sb',
