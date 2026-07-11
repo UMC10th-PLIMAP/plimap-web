@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { ColorSettings, ToggleSettings, MapSize, MAP_SIZE_PRESETS } from '../types';
+import { SearchInput } from '@/components/ui/SearchInput';
+import {
+  ColorSettings,
+  KakaoLocalPlace,
+  ToggleSettings,
+  MapSize,
+  MAP_SIZE_PRESETS,
+} from '../types';
 import { generateMapStyles } from '../utils';
 
 type MapSidebarProps = {
@@ -9,12 +16,21 @@ type MapSidebarProps = {
   zoom: number;
   mapSize: MapSize;
   markerColor: string;
+  placeQuery: string;
+  placeResults: KakaoLocalPlace[];
+  selectedPlaceId: string | null;
+  isPlaceSearching: boolean;
+  placeSearchError: string | null;
   onToggleDarkMode: () => void;
   onColorChange: (key: keyof ColorSettings, value: string) => void;
   onToggleChange: (key: keyof ToggleSettings) => void;
   onZoomChange: (zoom: number) => void;
   onMapSizeChange: (size: MapSize) => void;
   onMarkerColorChange: (color: string) => void;
+  onPlaceQueryChange: (query: string) => void;
+  onPlaceSearch: () => void;
+  onClearPlaceSearch: () => void;
+  onSelectPlace: (placeId: string) => void;
 };
 
 // --- 토글 스위치 공통 UI 컴포넌트 ---
@@ -56,12 +72,21 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
   zoom,
   mapSize,
   markerColor,
+  placeQuery,
+  placeResults,
+  selectedPlaceId,
+  isPlaceSearching,
+  placeSearchError,
   onToggleDarkMode,
   onColorChange,
   onToggleChange,
   onZoomChange,
   onMapSizeChange,
   onMarkerColorChange,
+  onPlaceQueryChange,
+  onPlaceSearch,
+  onClearPlaceSearch,
+  onSelectPlace,
 }) => {
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -119,6 +144,87 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
         >
           {isDarkMode ? '🌙' : '☀️'}
         </button>
+      </div>
+
+      {/* --- Kakao Local 장소 검색 --- */}
+      <div className="flex flex-col gap-3 mb-8">
+        <div className="flex justify-between items-center mb-1">
+          <h2 className={`text-sm font-semibold uppercase tracking-wider ${sectionTitleClass}`}>
+            Kakao Local
+          </h2>
+          <span className={`text-xs ${sectionTitleClass}`}>{placeResults.length} places</span>
+        </div>
+
+        <form
+          className="grid grid-cols-[minmax(0,1fr)_52px] gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onPlaceSearch();
+          }}
+        >
+          <SearchInput
+            value={placeQuery}
+            onChange={(event) => onPlaceQueryChange(event.target.value)}
+            onClear={onClearPlaceSearch}
+            placeholder="장소를 검색하세요"
+            containerClassName={`max-w-none min-w-0 ${isDarkMode ? 'bg-[#1A1C1E]' : 'bg-white shadow-sm'}`}
+          />
+          <button
+            type="submit"
+            disabled={isPlaceSearching}
+            className="h-10 w-[52px] rounded-lg bg-blue-600 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-500"
+          >
+            {isPlaceSearching ? '검색중' : '검색'}
+          </button>
+        </form>
+
+        {placeSearchError ? (
+          <p className={`text-xs ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+            {placeSearchError}
+          </p>
+        ) : null}
+
+        {placeResults.length > 0 ? (
+          <div className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1 scrollbar-hide">
+            {placeResults.map((place, index) => {
+              const isSelected = place.id === selectedPlaceId;
+              const address = place.roadAddressName || place.addressName;
+              const category = place.categoryGroupName || place.categoryName || '장소';
+
+              return (
+                <button
+                  key={place.id}
+                  type="button"
+                  onClick={() => onSelectPlace(place.id)}
+                  className={`flex flex-col items-start gap-1 rounded-lg p-3 text-left transition-colors ${
+                    isSelected
+                      ? 'bg-blue-600 text-white'
+                      : isDarkMode
+                        ? 'bg-[#1A1C1E] text-[#EFEFEF] hover:bg-[#24272b]'
+                        : 'bg-white text-gray-900 shadow-sm hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="text-sm font-medium">
+                    {index + 1}. {place.placeName}
+                  </span>
+                  <span className={`text-xs ${isSelected ? 'text-blue-100' : sectionTitleClass}`}>
+                    {category}
+                    {place.distance !== undefined ? ` · ${place.distance.toLocaleString()}m` : ''}
+                  </span>
+                  {address ? (
+                    <span
+                      className={`text-xs leading-tight ${
+                        isSelected ? 'text-blue-100' : sectionTitleClass
+                      }`}
+                    >
+                      {address}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       {/* --- 배율 (Zoom) 설정 --- */}
