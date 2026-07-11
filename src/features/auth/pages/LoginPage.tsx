@@ -4,6 +4,7 @@ import KakaoIcon from '@/assets/icons/kakao.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { Button } from '@/components/ui/button';
 import { KAKAO_REDIRECT_URI, loadKakaoSdk } from '@/features/auth/utils/kakao';
+import { GOOGLE_REDIRECT_URI, loadGoogleGis } from '@/features/auth/utils/google';
 
 export default function LoginPage() {
   const handleKakaoLogin = async () => {
@@ -17,8 +18,22 @@ export default function LoginPage() {
     window.Kakao?.Auth.authorize({ redirectUri: KAKAO_REDIRECT_URI });
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: 구글 로그인 연동
+  const handleGoogleLogin = async () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+    if (!clientId) {
+      console.error('VITE_GOOGLE_CLIENT_ID is missing in environment variables');
+      return;
+    }
+
+    await loadGoogleGis();
+    window.google?.accounts.oauth2
+      .initCodeClient({
+        client_id: clientId,
+        scope: 'email profile',
+        ux_mode: 'redirect',
+        redirect_uri: GOOGLE_REDIRECT_URI,
+      })
+      .requestCode();
   };
 
   const handleAppleLogin = () => {

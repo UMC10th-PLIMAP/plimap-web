@@ -31,11 +31,3 @@ export function loadKakaoSdk(javascriptKey: string) {
     document.head.appendChild(script);
   });
 }
-
-export function getKakaoAuthCodeFromUrl(search: string) {
-  const params = new URLSearchParams(search);
-  return {
-    code: params.get('code'),
-    error: params.get('error'),
-  };
-}
