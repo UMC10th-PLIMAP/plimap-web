@@ -84,7 +84,7 @@ export function PinPlaceSearchPage({ onPlaceSelect }: PinPlaceSearchPageProps) {
       <section
         aria-label={isShowingRecentPlaces ? '최근 검색' : '장소 검색 결과'}
         aria-live="polite"
-        className={`min-h-0 flex-1 overflow-y-auto scrollbar-hide ${normalizedQuery ? '-mt-1.5' : ''}`}
+        className="min-h-0 flex-1 overflow-y-auto scrollbar-hide"
       >
         {visiblePlaces.length > 0 ? (
           <ul>
