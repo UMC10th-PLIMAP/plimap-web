@@ -1,65 +1,13 @@
-import { useState } from 'react';
-import { LoaderCircle } from 'lucide-react';
 import AppleIcon from '@/assets/icons/apple.svg?react';
 import GoogleIcon from '@/assets/icons/google.svg?react';
 import KakaoIcon from '@/assets/icons/kakao.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { Button } from '@/components/ui/button';
-import { KAKAO_REDIRECT_URI, loadKakaoSdk } from '@/features/auth/utils/kakao';
-import { GOOGLE_REDIRECT_URI, loadGoogleGis } from '@/features/auth/utils/google';
 
-type SocialProvider = 'kakao' | 'google';
+const KAKAO_LOGIN_URL = `${import.meta.env.VITE_API_BASE_URL}/oauth/authorization/kakao`;
+const GOOGLE_LOGIN_URL = `${import.meta.env.VITE_API_BASE_URL}/oauth/authorization/google`;
 
 export default function LoginPage() {
-  const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
-
-  const handleKakaoLogin = async () => {
-    const javascriptKey = import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY || '';
-    if (!javascriptKey) {
-      console.error('VITE_KAKAO_JAVASCRIPT_KEY is missing in environment variables');
-      return;
-    }
-
-    setLoadingProvider('kakao');
-    try {
-      await loadKakaoSdk(javascriptKey);
-      window.Kakao?.Auth.authorize({ redirectUri: KAKAO_REDIRECT_URI });
-    } catch (error) {
-      console.error(error);
-      setLoadingProvider(null);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-    if (!clientId) {
-      console.error('VITE_GOOGLE_CLIENT_ID is missing in environment variables');
-      return;
-    }
-
-    setLoadingProvider('google');
-    try {
-      await loadGoogleGis();
-      window.google?.accounts.oauth2
-        .initCodeClient({
-          client_id: clientId,
-          scope: 'email profile',
-          ux_mode: 'redirect',
-          redirect_uri: GOOGLE_REDIRECT_URI,
-        })
-        .requestCode();
-    } catch (error) {
-      console.error(error);
-      setLoadingProvider(null);
-    }
-  };
-
-  const handleAppleLogin = () => {
-    // TODO: 애플 로그인 연동
-  };
-
-  const isAnyLoading = loadingProvider !== null;
-
   return (
     <div className="flex h-full min-h-screen flex-col items-center bg-pli-black-100 px-[39px]">
       <div className="flex-[1.7]" />
@@ -70,41 +18,19 @@ export default function LoginPage() {
       <div className="flex-1" />
 
       <div className="flex w-full flex-col items-center gap-3">
-        <Button
-          variant="kakao"
-          size="social"
-          className="w-full gap-3"
-          onClick={handleKakaoLogin}
-          disabled={isAnyLoading}
-        >
-          {loadingProvider === 'kakao' ? (
-            <LoaderCircle className="size-6 shrink-0 animate-spin" />
-          ) : (
+        <Button variant="kakao" size="social" className="w-full gap-3" asChild>
+          <a href={KAKAO_LOGIN_URL}>
             <KakaoIcon className="size-6 shrink-0" />
-          )}
-          카카오로 시작하기
+            카카오로 시작하기
+          </a>
         </Button>
-        <Button
-          variant="google"
-          size="social"
-          className="w-full gap-3"
-          onClick={handleGoogleLogin}
-          disabled={isAnyLoading}
-        >
-          {loadingProvider === 'google' ? (
-            <LoaderCircle className="size-6 shrink-0 animate-spin" />
-          ) : (
+        <Button variant="google" size="social" className="w-full gap-3" asChild>
+          <a href={GOOGLE_LOGIN_URL}>
             <GoogleIcon className="size-6 shrink-0" />
-          )}
-          Google로 시작하기
+            Google로 시작하기
+          </a>
         </Button>
-        <Button
-          variant="apple"
-          size="social"
-          className="w-full gap-3"
-          onClick={handleAppleLogin}
-          disabled={isAnyLoading}
-        >
+        <Button variant="apple" size="social" className="w-full gap-3">
           <AppleIcon className="size-6 shrink-0" />
           Apple로 시작하기
         </Button>
