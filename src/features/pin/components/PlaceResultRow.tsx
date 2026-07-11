@@ -14,7 +14,7 @@ export function PlaceResultRow({ place, className, ...props }: PlaceResultRowPro
     <button
       type="button"
       className={cn(
-        'flex w-full max-w-[402px] flex-col items-start justify-center px-6 py-2 text-left',
+        'flex w-full max-w-[402px] flex-col items-start justify-center px-6 py-2 text-left transition-colors hover:bg-pli-black-75 focus-visible:bg-pli-black-75 focus-visible:outline-none',
         className,
       )}
       {...props}
