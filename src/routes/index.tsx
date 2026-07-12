@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import RootLayout from '@/layouts/RootLayout';
 import MapDemoPage from '@/features/map/MapDemoPage';
 import NicknameSetupPage from '@/features/auth/pages/NicknameSetupPage';
+import ProfileImageSetupPage from '@/features/auth/pages/ProfileImageSetupPage';
 
 export const router = createBrowserRouter([
   {
@@ -18,6 +19,10 @@ export const router = createBrowserRouter([
       {
         path: 'profile/nickname',
         element: <NicknameSetupPage />,
+      },
+      {
+        path: 'profile/image',
+        element: <ProfileImageSetupPage />,
       },
     ],
   },
