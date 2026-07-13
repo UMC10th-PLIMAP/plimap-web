@@ -1,4 +1,4 @@
-import { type ChangeEvent, useRef, useState } from 'react';
+import { type ChangeEvent, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Cropper, { type Area, type Point } from 'react-easy-crop';
 
@@ -30,6 +30,10 @@ export default function ProfileImageSetupPage() {
     event.target.value = '';
     if (!file) return;
 
+    if (imageSrc) {
+      URL.revokeObjectURL(imageSrc);
+    }
+
     setImageSrc(URL.createObjectURL(file));
     setCrop({ x: 0, y: 0 });
     setZoom(1);
@@ -45,6 +49,9 @@ export default function ProfileImageSetupPage() {
     if (!imageSrc || !croppedAreaPixels) return;
 
     const blob = await getCroppedImageBlob(imageSrc, croppedAreaPixels);
+    URL.revokeObjectURL(imageSrc);
+    setImageSrc(null);
+
     if (croppedImageUrl) {
       URL.revokeObjectURL(croppedImageUrl);
     }
@@ -67,6 +74,19 @@ export default function ProfileImageSetupPage() {
   const handleSkip = () => {
     // TODO: 프로필 사진 등록 건너뛰고 다음 화면으로 이동
   };
+
+  // 컴포넌트 언마운트 시 메모리 누수 방지
+  useEffect(() => {
+    return () => {
+      if (imageSrc) URL.revokeObjectURL(imageSrc);
+    };
+  }, [imageSrc]);
+
+  useEffect(() => {
+    return () => {
+      if (croppedImageUrl) URL.revokeObjectURL(croppedImageUrl);
+    };
+  }, [croppedImageUrl]);
 
   if (step === 'crop' && imageSrc) {
     return (
