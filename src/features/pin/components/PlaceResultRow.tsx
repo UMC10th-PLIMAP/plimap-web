@@ -21,8 +21,8 @@ export function PlaceResultRow({ place, className, ...props }: PlaceResultRowPro
     >
       <div className="flex w-full max-w-[342px] items-center justify-between pb-3 pt-4">
         <div className="flex w-[189px] max-w-full flex-col items-start gap-[6px] whitespace-nowrap">
-          <div className="flex w-full items-center gap-[6px]">
-            <span className="shrink-0 body-17-r text-grayscale-100">{placeName}</span>
+          <div className="flex w-full min-w-0 items-center gap-[6px] overflow-hidden">
+            <span className="min-w-0 truncate body-17-r text-grayscale-100">{placeName}</span>
             <span className="shrink-0 etc-13-r text-grayscale-400">{category}</span>
           </div>
 
