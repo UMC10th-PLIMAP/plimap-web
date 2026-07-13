@@ -1,30 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ColorSettings,
-  KakaoLocalPlace,
-  MapCoordinate,
-  ToggleSettings,
-  MapSize,
-  DEFAULT_DARK_COLORS,
-  DEFAULT_LIGHT_COLORS,
-  DEFAULT_TOGGLES,
-  DEFAULT_MAP_SIZE,
-  DEFAULT_MARKER_COLOR,
-  DEFAULT_CENTER,
-} from './types';
-import { loadGoogleMapsScript } from './utils';
-import { searchKakaoLocal } from './kakaoLocal';
-import { MapSidebar } from './components/MapSidebar';
-import { MapViewer } from './components/MapViewer';
+import { SearchInput } from '@/components/ui/SearchInput';
+import { KakaoLocalPlace, MapCoordinate, DEFAULT_CENTER } from '@/features/map/types';
+import { loadGoogleMapsScript } from '@/features/map/utils';
+import { searchKakaoLocal } from '@/features/map/kakaoLocal';
+import { MapViewer } from '@/features/map/components/MapViewer';
 
-const MapDemoPage: React.FC = () => {
+const MapPage: React.FC = () => {
   // --- 상태 관리 ---
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [colors, setColors] = useState<ColorSettings>(DEFAULT_DARK_COLORS);
-  const [toggles, setToggles] = useState<ToggleSettings>(DEFAULT_TOGGLES);
   const [zoom, setZoom] = useState<number>(15);
-  const [mapSize, setMapSize] = useState<MapSize>(DEFAULT_MAP_SIZE);
-  const [markerColor, setMarkerColor] = useState<string>(DEFAULT_MARKER_COLOR);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapCenter, setMapCenter] = useState<MapCoordinate>(DEFAULT_CENTER);
   const [placeQuery, setPlaceQuery] = useState('');
@@ -49,40 +32,12 @@ const MapDemoPage: React.FC = () => {
       .catch(console.error);
   }, []);
 
-  // --- 테마(다크/라이트) 전환 핸들러 ---
-  const handleToggleDarkMode = () => {
-    setIsDarkMode((prev) => {
-      const nextMode = !prev;
-      setColors(nextMode ? DEFAULT_DARK_COLORS : DEFAULT_LIGHT_COLORS);
-      return nextMode;
-    });
-  };
-
-  // --- 개별 색상 변경 핸들러 ---
-  const handleColorChange = (key: keyof ColorSettings, value: string) => {
-    setColors((prev) => ({ ...prev, [key]: value }));
-  };
-
-  // --- 요소 표시 토글 핸들러 ---
-  const handleToggleChange = (key: keyof ToggleSettings) => {
-    setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
   // --- 줌(배율) 변경 핸들러 ---
   const handleZoomChange = (newZoom: number) => {
     setZoom(newZoom);
   };
 
-  // --- 지도 크기 변경 핸들러 ---
-  const handleMapSizeChange = (newSize: MapSize) => {
-    setMapSize(newSize);
-  };
-
-  // --- 현재 위치 마커 색상 변경 핸들러 ---
-  const handleMarkerColorChange = (color: string) => {
-    setMarkerColor(color);
-  };
-
+  // --- 장소 검색 핸들러 ---
   const handlePlaceSearch = useCallback(async () => {
     const query = placeQuery.trim();
 
@@ -136,41 +91,34 @@ const MapDemoPage: React.FC = () => {
   };
 
   return (
-    <div
-      className={`flex w-full h-[100vh] overflow-hidden font-sans ${isDarkMode ? 'bg-[#0C0D0F]' : 'bg-gray-100'}`}
-    >
-      {/* 1. 좌측 커스텀 사이드바 */}
-      <MapSidebar
-        isDarkMode={isDarkMode}
-        colors={colors}
-        toggles={toggles}
-        zoom={zoom}
-        mapSize={mapSize}
-        markerColor={markerColor}
-        placeQuery={placeQuery}
-        placeResults={placeResults}
-        selectedPlaceId={selectedPlaceId}
-        isPlaceSearching={isPlaceSearching}
-        placeSearchError={placeSearchError}
-        onToggleDarkMode={handleToggleDarkMode}
-        onColorChange={handleColorChange}
-        onToggleChange={handleToggleChange}
-        onZoomChange={handleZoomChange}
-        onMapSizeChange={handleMapSizeChange}
-        onMarkerColorChange={handleMarkerColorChange}
-        onPlaceQueryChange={setPlaceQuery}
-        onPlaceSearch={handlePlaceSearch}
-        onClearPlaceSearch={handleClearPlaceSearch}
-        onSelectPlace={setSelectedPlaceId}
-      />
-      {/* 2. 우측 구글맵 뷰어 */}
+    <div className="relative h-full w-full">
+      {/* 상단 장소 검색 바 */}
+      <div className="absolute inset-x-0 top-0 z-20 p-3">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            handlePlaceSearch();
+          }}
+        >
+          <SearchInput
+            variant="map"
+            value={placeQuery}
+            onChange={(event) => setPlaceQuery(event.target.value)}
+            onClear={handleClearPlaceSearch}
+            placeholder={isPlaceSearching ? '검색 중...' : '장소를 검색하세요'}
+            disabled={isPlaceSearching}
+          />
+        </form>
+        {placeSearchError && (
+          <p className="mt-2 rounded-lg bg-pli-black-85 px-3 py-2 text-xs text-red">
+            {placeSearchError}
+          </p>
+        )}
+      </div>
+
       <MapViewer
         isLoaded={isMapLoaded}
-        colors={colors}
-        toggles={toggles}
         zoom={zoom}
-        mapSize={mapSize}
-        markerColor={markerColor}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
         onZoomChanged={handleZoomChange}
@@ -181,4 +129,4 @@ const MapDemoPage: React.FC = () => {
   );
 };
 
-export default MapDemoPage;
+export default MapPage;
