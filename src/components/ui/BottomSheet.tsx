@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
-import BackIcon from '@/assets/icons/back.svg?react';
-import CloseIcon from '@/assets/icons/close.svg?react';
+import { TopBar } from '@/components/ui/TopBar';
 
 import { cn } from '@/lib/utils';
 
@@ -175,36 +174,15 @@ function BottomSheetContent({ className, ...props }: SectionProps) {
   );
 }
 
-type FullPageNavProps = {
-  className?: string;
-};
+type FullPageNavProps = React.ComponentProps<typeof TopBar>;
 
 /** 풀페이지 모드에서만 표시되는 상단 네비. 뒤로(접기)·닫기 버튼을 제공한다. */
-function BottomSheetFullPageNav({ className }: FullPageNavProps) {
+function BottomSheetFullPageNav(props: FullPageNavProps) {
   const { isFullPage, collapse, onClose } = useBottomSheet();
 
   if (!isFullPage) return null;
 
-  return (
-    <div className={cn('flex shrink-0 items-center justify-between px-5 py-3', className)}>
-      <button
-        type="button"
-        aria-label="뒤로"
-        onClick={collapse}
-        className="flex size-10 items-center justify-center text-grayscale-30"
-      >
-        <BackIcon className="size-7" aria-hidden />
-      </button>
-      <button
-        type="button"
-        aria-label="닫기"
-        onClick={onClose}
-        className="flex size-10 items-center justify-center text-grayscale-30"
-      >
-        <CloseIcon className="size-6" aria-hidden />
-      </button>
-    </div>
-  );
+  return <TopBar {...props} onBack={collapse} onClose={onClose} />;
 }
 
 BottomSheet.Header = BottomSheetHeader;
