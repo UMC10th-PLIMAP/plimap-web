@@ -20,6 +20,7 @@ export default function ProfileImageSetupPage() {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handlePickImage = () => {
     fileInputRef.current?.click();
@@ -46,17 +47,24 @@ export default function ProfileImageSetupPage() {
   };
 
   const handleConfirmCrop = async () => {
-    if (!imageSrc || !croppedAreaPixels) return;
+    if (!imageSrc || !croppedAreaPixels || isProcessing) return;
+    setIsProcessing(true);
 
-    const blob = await getCroppedImageBlob(imageSrc, croppedAreaPixels);
-    URL.revokeObjectURL(imageSrc);
-    setImageSrc(null);
+    try {
+      const blob = await getCroppedImageBlob(imageSrc, croppedAreaPixels);
+      URL.revokeObjectURL(imageSrc);
+      setImageSrc(null);
 
-    if (croppedImageUrl) {
-      URL.revokeObjectURL(croppedImageUrl);
+      if (croppedImageUrl) {
+        URL.revokeObjectURL(croppedImageUrl);
+      }
+      setCroppedImageUrl(URL.createObjectURL(blob));
+      setStep('done');
+    } catch (error) {
+      console.error('크롭 실패:', error);
+    } finally {
+      setIsProcessing(false);
     }
-    setCroppedImageUrl(URL.createObjectURL(blob));
-    setStep('done');
   };
 
   const handleCropBack = () => {
@@ -104,7 +112,7 @@ export default function ProfileImageSetupPage() {
         />
         <TopBar onBack={handleCropBack} className="absolute top-[55px] left-0 z-10 w-full" />
         <div className="absolute bottom-0 left-1/2 z-10 flex w-full max-w-[402px] -translate-x-1/2 flex-col items-center px-[10px] pb-[52px]">
-          <Button variant="cta" size="cta" onClick={handleConfirmCrop}>
+          <Button variant="cta" size="cta" onClick={handleConfirmCrop} disabled={isProcessing}>
             완료
           </Button>
         </div>
