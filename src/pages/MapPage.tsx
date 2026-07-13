@@ -29,14 +29,8 @@ const MapPage: React.FC = () => {
   const searchRequestIdRef = useRef(0);
   const mapViewerRef = useRef<MapViewerHandle>(null);
 
-  // --- 구글맵 API 동적 로드 (API 키가 없으면 시도하지 않음) ---
-  const attemptLoadMap = useCallback(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-    if (!apiKey) {
-      console.error('VITE_GOOGLE_MAPS_API_KEY is missing in environment variables');
-      return;
-    }
-
+  // --- 구글맵 스크립트 로드 (setState는 전부 프로미스 콜백 안에서만 일어나 effect에서 안전하게 호출 가능) ---
+  const startGoogleMapsLoad = useCallback((apiKey: string) => {
     loadGoogleMapsScript(apiKey)
       .then(() => {
         setMapLoadStatus('ready');
@@ -49,15 +43,26 @@ const MapPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    attemptLoadMap();
-  }, [attemptLoadMap]);
+    // 키가 없으면 상태는 이미 초기값(error)이므로 로드를 시도하지 않는다.
+    if (!hasApiKey) return;
+    startGoogleMapsLoad(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+  }, [startGoogleMapsLoad, hasApiKey]);
 
-  // --- 지도 로드 재시도 (실패한 스크립트 태그를 지우고 다시 요청) ---
+  // --- 지도 로드 재시도 (실패한 스크립트 태그를 지우고 다시 요청, 클릭 핸들러이므로 동기 setState 가능) ---
   const handleRetryMapLoad = () => {
     document.getElementById('google-maps-script')?.remove();
     setMapLoadStatus('loading');
     setMapLoadError(null);
-    attemptLoadMap();
+
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+    if (!apiKey) {
+      console.error('VITE_GOOGLE_MAPS_API_KEY is missing in environment variables');
+      setMapLoadStatus('error');
+      setMapLoadError('지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    startGoogleMapsLoad(apiKey);
   };
 
   // --- 줌(배율) 변경 핸들러 ---
