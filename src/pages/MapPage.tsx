@@ -3,12 +3,23 @@ import { SearchInput } from '@/components/ui/SearchInput';
 import { KakaoLocalPlace, MapCoordinate, DEFAULT_CENTER } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { searchKakaoLocal } from '@/features/map/kakaoLocal';
-import { MapViewer } from '@/features/map/components/MapViewer';
+import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
+import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
+import FocusIcon from '@/assets/icons/focus.svg?react';
+
+type MapLoadStatus = 'loading' | 'ready' | 'error';
 
 const MapPage: React.FC = () => {
+  const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+
   // --- 상태 관리 ---
   const [zoom, setZoom] = useState<number>(15);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapLoadStatus, setMapLoadStatus] = useState<MapLoadStatus>(
+    hasApiKey ? 'loading' : 'error',
+  );
+  const [mapLoadError, setMapLoadError] = useState<string | null>(
+    hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
+  );
   const [mapCenter, setMapCenter] = useState<MapCoordinate>(DEFAULT_CENTER);
   const [placeQuery, setPlaceQuery] = useState('');
   const [placeResults, setPlaceResults] = useState<KakaoLocalPlace[]>([]);
@@ -16,9 +27,10 @@ const MapPage: React.FC = () => {
   const [isPlaceSearching, setIsPlaceSearching] = useState(false);
   const [placeSearchError, setPlaceSearchError] = useState<string | null>(null);
   const searchRequestIdRef = useRef(0);
+  const mapViewerRef = useRef<MapViewerHandle>(null);
 
-  // --- 구글맵 API 동적 로드 ---
-  useEffect(() => {
+  // --- 구글맵 API 동적 로드 (API 키가 없으면 시도하지 않음) ---
+  const attemptLoadMap = useCallback(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
     if (!apiKey) {
       console.error('VITE_GOOGLE_MAPS_API_KEY is missing in environment variables');
@@ -27,10 +39,26 @@ const MapPage: React.FC = () => {
 
     loadGoogleMapsScript(apiKey)
       .then(() => {
-        setIsMapLoaded(true);
+        setMapLoadStatus('ready');
       })
-      .catch(console.error);
+      .catch((error) => {
+        console.error(error);
+        setMapLoadStatus('error');
+        setMapLoadError('지도를 불러오지 못했어요. 네트워크 상태를 확인해주세요.');
+      });
   }, []);
+
+  useEffect(() => {
+    attemptLoadMap();
+  }, [attemptLoadMap]);
+
+  // --- 지도 로드 재시도 (실패한 스크립트 태그를 지우고 다시 요청) ---
+  const handleRetryMapLoad = () => {
+    document.getElementById('google-maps-script')?.remove();
+    setMapLoadStatus('loading');
+    setMapLoadError(null);
+    attemptLoadMap();
+  };
 
   // --- 줌(배율) 변경 핸들러 ---
   const handleZoomChange = (newZoom: number) => {
@@ -90,10 +118,25 @@ const MapPage: React.FC = () => {
     setPlaceSearchError(null);
   };
 
+  if (mapLoadStatus === 'error') {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-pli-black-100 p-6 text-center">
+        <p className="body-15-r text-grayscale-300">{mapLoadError}</p>
+        <button
+          type="button"
+          onClick={handleRetryMapLoad}
+          className="rounded-full bg-neon px-6 py-3 body-15-sb text-grayscale-1250"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full w-full">
-      {/* 상단 장소 검색 바 */}
-      <div className="absolute inset-x-0 top-0 z-20 p-3">
+      {/* 상단 장소 검색 바 + 북마크/현재 위치 버튼 */}
+      <div className="absolute inset-x-0 top-0 z-20 flex flex-col gap-3 p-3">
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -110,14 +153,33 @@ const MapPage: React.FC = () => {
           />
         </form>
         {placeSearchError && (
-          <p className="mt-2 rounded-lg bg-pli-black-85 px-3 py-2 text-xs text-red">
+          <p className="rounded-lg bg-pli-black-85 px-3 py-2 text-xs text-red">
             {placeSearchError}
           </p>
         )}
+
+        <div className="flex flex-col items-end gap-3">
+          <button
+            type="button"
+            aria-label="북마크"
+            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4px_rgba(0,0,0,0.15)]"
+          >
+            <BookmarkIcon className="size-7" />
+          </button>
+          <button
+            type="button"
+            aria-label="현재 위치로 이동"
+            onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
+            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4px_rgba(0,0,0,0.15)]"
+          >
+            <FocusIcon className="size-[27px]" />
+          </button>
+        </div>
       </div>
 
       <MapViewer
-        isLoaded={isMapLoaded}
+        ref={mapViewerRef}
+        isLoaded={mapLoadStatus === 'ready'}
         zoom={zoom}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}

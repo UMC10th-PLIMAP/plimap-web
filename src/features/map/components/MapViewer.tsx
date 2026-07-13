@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import { KakaoLocalPlace, MapCoordinate, DEFAULT_CENTER, DEFAULT_MARKER_COLOR } from '../types';
 
 // 지도 줌 하한선 (레벨 단위 유지, 상한선은 API 지원 한도까지 허용)
@@ -79,13 +79,13 @@ const createMarkerIcon = (mapsApi: typeof google.maps, color: string) => {
   };
 };
 
-// 기기 방향 이벤트에서 나침반 방향 추출
+// 기기 방향 이벤트에서 나침반 방향 추출 (절대 방위 기준일 때만 alpha를 신뢰)
 const getCompassHeading = (event: DeviceOrientationEvent): number | null => {
   const iosEvent = event as DeviceOrientationEvent & { webkitCompassHeading?: number };
   if (typeof iosEvent.webkitCompassHeading === 'number') {
     return iosEvent.webkitCompassHeading;
   }
-  if (typeof event.alpha === 'number') {
+  if (event.absolute && typeof event.alpha === 'number') {
     return (360 - event.alpha) % 360;
   }
   return null;
@@ -161,15 +161,15 @@ type MapViewerProps = {
   onSelectPlace?: (placeId: string) => void;
 };
 
-export const MapViewer: React.FC<MapViewerProps> = ({
-  isLoaded,
-  zoom,
-  placeResults,
-  selectedPlaceId,
-  onZoomChanged,
-  onCenterChanged,
-  onSelectPlace,
-}) => {
+export type MapViewerHandle = {
+  /** 지도를 현재 위치 마커로 이동시킨다. 위치를 아직 못 받았으면 아무 동작도 하지 않는다. */
+  recenterToCurrentLocation: () => void;
+};
+
+export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function MapViewer(
+  { isLoaded, zoom, placeResults, selectedPlaceId, onZoomChanged, onCenterChanged, onSelectPlace },
+  ref,
+) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
@@ -222,11 +222,39 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     }
   }, []);
 
-  // --- 컴포넌트 마운트 시 즉시 방향 이벤트 리스너 등록 ---
-  useEffect(() => {
-    window.addEventListener('deviceorientationabsolute', handleOrientation);
-    window.addEventListener('deviceorientation', handleOrientation);
+  // --- 나침반 리스너 등록 (iOS는 사용자 제스처 안에서 권한 요청 후에만 이벤트가 발생함) ---
+  const compassRegisteredRef = useRef(false);
 
+  const enableCompassIfNeeded = useCallback(() => {
+    if (compassRegisteredRef.current) return;
+
+    const register = () => {
+      if (compassRegisteredRef.current) return;
+      compassRegisteredRef.current = true;
+      window.addEventListener('deviceorientationabsolute', handleOrientation);
+      window.addEventListener('deviceorientation', handleOrientation);
+    };
+
+    const OrientationEventCtor = window.DeviceOrientationEvent as
+      | (typeof DeviceOrientationEvent & {
+          requestPermission?: () => Promise<'granted' | 'denied'>;
+        })
+      | undefined;
+
+    if (!OrientationEventCtor) return;
+
+    if (typeof OrientationEventCtor.requestPermission === 'function') {
+      OrientationEventCtor.requestPermission()
+        .then((result) => {
+          if (result === 'granted') register();
+        })
+        .catch(() => {});
+    } else {
+      register();
+    }
+  }, [handleOrientation]);
+
+  useEffect(() => {
     return () => {
       window.removeEventListener('deviceorientationabsolute', handleOrientation);
       window.removeEventListener('deviceorientation', handleOrientation);
@@ -319,6 +347,23 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     };
   }, [isLoaded]);
 
+  // --- "현재 위치" 버튼에서 호출할 재중심 이동 ---
+  const recenterToCurrentLocation = useCallback(() => {
+    // 사용자 제스처 안에서 호출되므로 나침반 권한도 함께 요청한다 (iOS 요구사항)
+    enableCompassIfNeeded();
+
+    const map = mapInstanceRef.current;
+    const position = markerRef.current?.getPosition();
+    if (!map || !position) return;
+
+    map.panTo(position);
+    if ((map.getZoom() ?? 0) < 16) {
+      map.setZoom(16);
+    }
+  }, [enableCompassIfNeeded]);
+
+  useImperativeHandle(ref, () => ({ recenterToCurrentLocation }), [recenterToCurrentLocation]);
+
   // --- Kakao Local 검색 결과 마커 렌더링 ---
   useEffect(() => {
     const mapsApi = window.google?.maps;
@@ -404,7 +449,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     if (pos) {
       map.panTo(pos);
     }
-  }, [selectedPlaceId]);
+  }, [selectedPlaceId, placeResults]);
 
   return (
     <main className="relative h-full w-full">
@@ -416,4 +461,4 @@ export const MapViewer: React.FC<MapViewerProps> = ({
       <div ref={mapRef} className="h-full w-full" />
     </main>
   );
-};
+});

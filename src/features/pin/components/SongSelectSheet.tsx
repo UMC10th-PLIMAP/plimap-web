@@ -14,6 +14,15 @@ type SongSelectSheetProps = {
 
 export function SongSelectSheet({ open, onClose, songs, onSelect }: SongSelectSheetProps) {
   const [query, setQuery] = useState('');
+  const [prevOpen, setPrevOpen] = useState(open);
+
+  // 스와이프/뒤로가기 등 onClick을 거치지 않는 닫힘까지 포함해 검색어를 리셋한다.
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (!open) {
+      setQuery('');
+    }
+  }
 
   const filteredSongs = useMemo(() => {
     const keyword = query.trim().toLowerCase();

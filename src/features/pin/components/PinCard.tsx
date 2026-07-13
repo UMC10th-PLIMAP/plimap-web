@@ -33,7 +33,7 @@ export function PinCard({ pin, onClick }: PinCardProps) {
             className={cn('size-4', liked ? 'fill-red text-red' : 'text-grayscale-400')}
             aria-hidden
           />
-          {likeCount}
+          {likeCount ?? 0}
         </div>
       </div>
 

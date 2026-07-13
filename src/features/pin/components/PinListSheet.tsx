@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { PinCard } from '@/features/pin/components/PinCard';
@@ -16,6 +16,14 @@ type PinListSheetProps = {
 
 export function PinListSheet({ open, onClose, place, pins, onPinClick }: PinListSheetProps) {
   const [sort, setSort] = useState<PinSort>('popular');
+
+  // Pin에는 생성 시각이 없어 latest는 원본 배열(등록 순)을 역순으로 처리한다.
+  const sortedPins = useMemo(() => {
+    if (sort === 'latest') {
+      return [...pins].reverse();
+    }
+    return [...pins].sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0));
+  }, [pins, sort]);
 
   return (
     <BottomSheet open={open} onClose={onClose}>
@@ -48,7 +56,7 @@ export function PinListSheet({ open, onClose, place, pins, onPinClick }: PinList
 
       <BottomSheet.Content className="mt-5">
         <ul className="flex flex-col gap-4.5">
-          {pins.map((pin) => (
+          {sortedPins.map((pin) => (
             <li key={pin.id}>
               <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
             </li>
