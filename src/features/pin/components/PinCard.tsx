@@ -4,12 +4,12 @@ import type { Pin } from '@/types/pin';
 import NextIcon from '@/assets/icons/next.svg?react';
 import HeartIcon from '@/assets/icons/heart.svg?react';
 
-type PingCardProps = {
+type PinCardProps = {
   pin: Pin;
   onClick?: () => void;
 };
 
-export function PinCard({ pin, onClick }: PingCardProps) {
+export function PinCard({ pin, onClick }: PinCardProps) {
   const { title, artist, pinCount, likeCount, liked } = pin;
 
   return (
