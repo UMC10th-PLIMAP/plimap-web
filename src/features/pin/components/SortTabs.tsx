@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import type { PinSort } from '@/types/pin';
+import type { PinSort } from '@/features/pin/types';
 
 type SortTabsProps = {
   value: PinSort;
