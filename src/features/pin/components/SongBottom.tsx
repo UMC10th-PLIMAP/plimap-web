@@ -1,25 +1,31 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { BottomSheet } from '@/components/ui/BottomSheet';
+import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { SongCard } from '@/features/pin/components/SongCard';
+import { SongDetailContent } from '@/features/pin/components/SongDetailContent';
+import { MOCK_SONGS } from '@/features/pin/constants/songPreview';
 import type { Song } from '@/types/pin';
 
-type SongCardProps = {
+type SongBottomProps = {
   songs?: Song[];
   onSelect?: (song: Song) => void;
 };
 
-const MOCK_SONGS: Song[] = [
-  { id: '1', title: 'Hype Boy', artist: 'NewJeans' },
-  { id: '2', title: 'Hype Boy (250 Remix)', artist: 'NewJeans' },
-  { id: '3', title: 'Hype Boy (Instrumental)', artist: 'NewJeans' },
-  { id: '4', title: 'Attention', artist: 'NewJeans' },
-];
+type SongBottomSheetContentProps = {
+  songs: Song[];
+  onSelect?: (song: Song) => void;
+  onClose: () => void;
+};
 
-export default function SongPage({ songs = MOCK_SONGS, onSelect }: SongCardProps) {
-  const [open, setOpen] = useState(false);
+type SongBottomStep = 'search' | 'detail';
+
+function SongBottomSheetContent({ songs, onSelect, onClose }: SongBottomSheetContentProps) {
+  const { expand, collapse, isFullPage } = useBottomSheet();
+  const [step, setStep] = useState<SongBottomStep>('search');
   const [query, setQuery] = useState('');
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const prevFullPageRef = useRef(isFullPage);
 
   const filteredSongs = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -31,9 +37,79 @@ export default function SongPage({ songs = MOCK_SONGS, onSelect }: SongCardProps
     );
   }, [query, songs]);
 
+  useEffect(() => {
+    if (prevFullPageRef.current && !isFullPage && step === 'detail') {
+      setStep('search');
+    }
+
+    prevFullPageRef.current = isFullPage;
+  }, [isFullPage, step]);
+
+  const handleSongClick = (song: Song) => {
+    setSelectedSong(song);
+    setStep('detail');
+    expand();
+  };
+
+  const handleCancelDetail = () => {
+    setStep('search');
+    collapse();
+  };
+
+  const handleRegister = () => {
+    if (!selectedSong) return;
+
+    onSelect?.(selectedSong);
+    onClose();
+  };
+
+  if (step === 'detail' && selectedSong) {
+    return (
+      <SongDetailContent
+        song={selectedSong}
+        onCancel={handleCancelDetail}
+        onRegister={handleRegister}
+      />
+    );
+  }
+
+  return (
+    <>
+      <BottomSheet.Header className="space-y-4 px-[15px]">
+        <BottomSheet.Title className="mt-5.5 text-center body-15-r text-grayscale-300">
+          노래 선택하기
+        </BottomSheet.Title>
+
+        <SearchInput
+          variant="song"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="노래를 검색하세요"
+        />
+      </BottomSheet.Header>
+
+      <BottomSheet.Content className="mt-5.5 px-4">
+        <ul>
+          {filteredSongs.map((song) => (
+            <li key={song.id}>
+              <SongCard song={song} onClick={() => handleSongClick(song)} />
+            </li>
+          ))}
+        </ul>
+      </BottomSheet.Content>
+    </>
+  );
+}
+
+export default function SongBottom({ songs = MOCK_SONGS, onSelect }: SongBottomProps) {
+  const [open, setOpen] = useState(false);
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
-      {/* 지도 부분 onclick시 바텀시트 열기 */}
       <p className="body-15-r text-grayscale-400">노래 선택 바텀시트 미리보기</p>
 
       <button
@@ -44,36 +120,10 @@ export default function SongPage({ songs = MOCK_SONGS, onSelect }: SongCardProps
         노래 선택 시트 열기
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)}>
-        <BottomSheet.Header className="space-y-4 px-[15px]">
-          <BottomSheet.Title className="mt-5.5 text-center body-15-r text-grayscale-300">
-            노래 선택하기
-          </BottomSheet.Title>
-
-          <SearchInput
-            variant="song"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="노래를 검색하세요"
-          />
-        </BottomSheet.Header>
-
-        <BottomSheet.Content className="mt-5.5 px-4">
-          <ul>
-            {filteredSongs.map((song) => (
-              <li key={song.id}>
-                <SongCard
-                  song={song}
-                  onClick={() => {
-                    onSelect?.(song);
-                    setOpen(false);
-                    setQuery('');
-                  }}
-                />
-              </li>
-            ))}
-          </ul>
-        </BottomSheet.Content>
+      <BottomSheet open={open} onClose={handleClose}>
+        {open ? (
+          <SongBottomSheetContent songs={songs} onSelect={onSelect} onClose={handleClose} />
+        ) : null}
       </BottomSheet>
     </div>
   );
