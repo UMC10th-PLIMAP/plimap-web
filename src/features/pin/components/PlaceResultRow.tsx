@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 
+import type { PlaceResult } from '@/features/pin/types';
 import { cn } from '@/lib/utils';
-import type { PlaceResult } from '@/types/place';
 
 type PlaceResultRowProps = ComponentProps<'button'> & {
   place: PlaceResult;

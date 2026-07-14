@@ -6,9 +6,9 @@ import {
   MOCK_PIN_SEARCH_PLACES,
   MOCK_RECENT_PIN_SEARCH_PLACES,
 } from '@/features/pin/data/mockPinSearchPlaces';
-import type { PinSearchPlace } from '@/types/place';
+import type { PinSearchPlace } from '@/features/pin/types';
 
-export type PinPlaceSearchPageProps = {
+export type PinPlaceSearchProps = {
   onPlaceSelect?: (place: PinSearchPlace) => void;
 };
 
@@ -23,7 +23,7 @@ const matchesQuery = (place: PinSearchPlace, query: string) => {
   return searchableText.includes(normalizedQuery);
 };
 
-export function PinPlaceSearchPage({ onPlaceSelect }: PinPlaceSearchPageProps) {
+export function PinPlaceSearch({ onPlaceSelect }: PinPlaceSearchProps) {
   const [query, setQuery] = useState('');
   const [selectedPlace, setSelectedPlace] = useState<PinSearchPlace | null>(null);
   const normalizedQuery = normalizeSearchText(query);

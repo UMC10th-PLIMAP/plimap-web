@@ -1,10 +1,10 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { PinPlaceSearchPage } from '@/features/pin/PinPlaceSearchPage';
 import RootLayout from '@/layouts/RootLayout';
 import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
 import LoginPage from '@/pages/LoginPage';
 import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import MapPage from '@/pages/MapPage';
+import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 
 export const router = createBrowserRouter([
   {

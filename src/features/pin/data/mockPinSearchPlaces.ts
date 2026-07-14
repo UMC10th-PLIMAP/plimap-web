@@ -1,4 +1,4 @@
-import type { PinSearchPlace } from '@/types/place';
+import type { PinSearchPlace } from '@/features/pin/types';
 
 const HAN_RIVER: PinSearchPlace = {
   id: 'han-river',
