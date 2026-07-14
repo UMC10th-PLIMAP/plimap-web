@@ -8,11 +8,16 @@ import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
+import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <Navigate to="/app" replace />,
+  },
+  {
+    path: '/preview/pin-radius',
+    element: <PinRadiusOverlayPreviewPage />,
   },
   {
     path: '/app',

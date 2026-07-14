@@ -70,7 +70,7 @@ export function PinRadiusOverlay({
         {radiusPixels > 0 ? (
           <div
             aria-hidden="true"
-            className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-[4px] border-[rgba(247,247,247,0.35)]"
+            className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-[4px] border-[rgba(247,247,247,0.35)] transition-[width,height] duration-300 ease-out motion-reduce:transition-none"
             style={radiusStyle}
           />
         ) : (
