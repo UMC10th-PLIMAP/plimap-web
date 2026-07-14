@@ -56,6 +56,8 @@ type BottomSheetContextValue = {
   onClose: () => void;
   /** 풀페이지 → 이전 스냅(절반)으로 내리기 */
   collapse: () => void;
+  /** 절반 → 풀페이지로 올리기 */
+  expand: () => void;
 };
 
 const BottomSheetContext = React.createContext<BottomSheetContextValue | null>(null);
@@ -116,8 +118,12 @@ function BottomSheet({
     setActiveSnap(firstSnap);
   }, [firstSnap]);
 
+  const expand = React.useCallback(() => {
+    setActiveSnap(lastSnap);
+  }, [lastSnap]);
+
   return (
-    <BottomSheetContext.Provider value={{ isFullPage, onClose, collapse }}>
+    <BottomSheetContext.Provider value={{ isFullPage, onClose, collapse, expand }}>
       <SheetRoot
         open={open}
         dismissible={dismissible}
