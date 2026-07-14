@@ -1,9 +1,17 @@
 import { useState } from 'react';
-import { Pencil } from 'lucide-react';
+import PlayIcon from '@/assets/icons/play.svg?react';
+import PencilIcon from '@/assets/icons/pencil.svg?react';
 import rectangleBg from '@/assets/Rectangle.png';
 import { Tag } from '@/components/ui/tag';
-import { SongPreviewPlayer } from '@/features/pin/components/SongPreviewPlayer';
-import { MOCK_WAVEFORM_PEAKS, TAG_OPTIONS } from '@/features/pin/constants/songPreview';
+import {
+  DEFAULT_TRIM_END_INDEX,
+  DEFAULT_TRIM_START_INDEX,
+  MOCK_PREVIEW_DURATION,
+  MOCK_WAVEFORM_PEAKS,
+  peaksToTrimRange,
+  TAG_OPTIONS,
+  timeToPercent,
+} from '@/features/pin/constants/songPreview';
 import { cn } from '@/lib/utils';
 import type { Song } from '@/types/pin';
 
@@ -15,6 +23,101 @@ type SongDetailContentProps = {
   onCancel: () => void;
   onRegister: () => void;
 };
+
+type TrimBarProps = {
+  trimStartPercent: number;
+  trimEndPercent: number;
+};
+
+function TrimBar({ trimStartPercent, trimEndPercent }: TrimBarProps) {
+  return (
+    <div className="relative h-1.5 w-[244px] rounded-full bg-pli-black-50">
+      <div
+        className="absolute inset-y-0 rounded-full bg-neon"
+        style={{
+          left: `${trimStartPercent}%`,
+          right: `${100 - trimEndPercent}%`,
+        }}
+      />
+
+      <span
+        aria-hidden
+        className="absolute top-1/2 z-10 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-grayscale-0"
+        style={{ left: `${trimStartPercent}%` }}
+      />
+      <span
+        aria-hidden
+        className="absolute top-1/2 z-10 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-grayscale-0"
+        style={{ left: `${trimEndPercent}%` }}
+      />
+    </div>
+  );
+}
+
+type SongWaveformProps = {
+  peaks: readonly number[];
+  trimStartIndex: number;
+  trimEndIndex: number;
+};
+
+function SongWaveform({ peaks, trimStartIndex, trimEndIndex }: SongWaveformProps) {
+  return (
+    <div className="flex h-[72px] items-center gap-[2px]" aria-hidden>
+      {peaks.map((height, index) => {
+        const isSelected = index >= trimStartIndex && index <= trimEndIndex;
+
+        return (
+          <span
+            key={index}
+            className={cn(
+              'w-[3px] rounded-full',
+              isSelected ? 'bg-gradient-neon' : 'bg-pli-black-50',
+            )}
+            style={{ height: `${height * 70}%` }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+type SongPreviewSectionProps = {
+  waveformPeaks: readonly number[];
+};
+
+function SongPreviewSection({ waveformPeaks }: SongPreviewSectionProps) {
+  const trim = peaksToTrimRange(
+    DEFAULT_TRIM_START_INDEX,
+    DEFAULT_TRIM_END_INDEX,
+    waveformPeaks,
+    MOCK_PREVIEW_DURATION,
+  );
+
+  const trimStartPercent = timeToPercent(trim.start, MOCK_PREVIEW_DURATION);
+  const trimEndPercent = timeToPercent(trim.end, MOCK_PREVIEW_DURATION);
+
+  return (
+    <div className="flex w-full flex-col">
+      <div className="mx-auto flex h-11 w-[297px] items-center gap-[25px]">
+        <TrimBar trimStartPercent={trimStartPercent} trimEndPercent={trimEndPercent} />
+
+        <button
+          type="button"
+          aria-label="재생"
+          className="flex size-7 items-center justify-center rounded-full bg-grayscale-100"
+        >
+          <PlayIcon className="size-4.5  text-grayscale-1200" aria-hidden />
+        </button>
+      </div>
+
+      <SongWaveform
+        peaks={waveformPeaks}
+        trimStartIndex={DEFAULT_TRIM_START_INDEX}
+        trimEndIndex={DEFAULT_TRIM_END_INDEX}
+      />
+    </div>
+  );
+}
 
 function FeedVisibilityToggle({
   checked,
@@ -50,6 +153,8 @@ export function SongDetailContent({ song, onCancel, onRegister }: SongDetailCont
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isFeedPublic, setIsFeedPublic] = useState(true);
 
+  const waveformPeaks = song.waveformPeaks ?? MOCK_WAVEFORM_PEAKS;
+
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => {
       if (prev.includes(tag)) {
@@ -66,7 +171,7 @@ export function SongDetailContent({ song, onCancel, onRegister }: SongDetailCont
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-      <section className="relative w-full shrink-0 overflow-hidden pb-4">
+      <section className="relative w-full overflow-hidden pb-4">
         <img
           src={rectangleBg}
           alt=""
@@ -98,7 +203,9 @@ export function SongDetailContent({ song, onCancel, onRegister }: SongDetailCont
                 aria-label="앨범 이미지 수정"
                 className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-pli-black-75 text-grayscale-300"
               >
-                <Pencil className="size-3.5" aria-hidden />
+                <div className="size-6 rounded-full bg-grayscale-0">
+                  <PencilIcon aria-hidden />
+                </div>
               </button>
             </div>
 
@@ -107,11 +214,7 @@ export function SongDetailContent({ song, onCancel, onRegister }: SongDetailCont
               <p className="body-15-r text-grayscale-500">{song.artist}</p>
             </div>
 
-            <SongPreviewPlayer
-              previewUrl={song.previewUrl}
-              duration={song.duration}
-              waveformPeaks={song.waveformPeaks ?? MOCK_WAVEFORM_PEAKS}
-            />
+            <SongPreviewSection waveformPeaks={waveformPeaks} />
           </div>
         </div>
       </section>
