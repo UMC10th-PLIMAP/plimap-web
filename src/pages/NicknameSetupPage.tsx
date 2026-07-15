@@ -44,7 +44,13 @@ export default function NicknameSetupPage() {
   };
 
   return (
-    <div className="flex h-full min-h-screen flex-col">
+    <form
+      className="flex h-full min-h-screen flex-col"
+      onSubmit={(event) => {
+        event.preventDefault();
+        handleSubmit();
+      }}
+    >
       <TopBar onBack={() => navigate(-1)} />
 
       <div className="flex flex-col gap-8 px-4 pt-[44px]">
@@ -70,6 +76,7 @@ export default function NicknameSetupPage() {
               maxLength={NICKNAME_MAX_LENGTH}
               placeholder="닉네임 입력"
               aria-invalid={message.tone === 'error'}
+              aria-describedby="nickname-message"
               className="body-18-r w-full bg-transparent text-grayscale-100 outline-none placeholder:text-grayscale-700"
             />
             <span
@@ -80,15 +87,21 @@ export default function NicknameSetupPage() {
               {nickname.length}/{NICKNAME_MAX_LENGTH}
             </span>
           </div>
-          <p className={`body-15-r ${NICKNAME_MESSAGE_TONE_CLASS[message.tone]}`}>{message.text}</p>
+          <p
+            id="nickname-message"
+            aria-live="polite"
+            className={`body-15-r ${NICKNAME_MESSAGE_TONE_CLASS[message.tone]}`}
+          >
+            {message.text}
+          </p>
         </div>
       </div>
 
       <div className="mt-auto flex flex-col items-center px-[10px] pb-[52px]">
-        <Button variant={'cta'} size={'cta'} disabled={!isValid} onClick={handleSubmit}>
+        <Button type="submit" variant={'cta'} size={'cta'} disabled={!isValid}>
           다음
         </Button>
       </div>
-    </div>
+    </form>
   );
 }
