@@ -1,11 +1,11 @@
 import HomeIcon from '@/assets/icons/home.svg?react';
 import PlimapIcon from '@/assets/icons/plimap.svg?react';
-import UserIcon from '@/assets/icons/my.svg?react';
+import MyIcon from '@/assets/icons/user-placeholder.svg?react';
 
 const NAV_ITEMS = [
   { id: 'home', label: 'HOME', icon: HomeIcon },
   { id: 'plimap', label: 'PLIMAP', icon: PlimapIcon },
-  { id: 'my', label: 'MY', icon: UserIcon },
+  { id: 'my', label: 'MY', icon: MyIcon },
 ] as const;
 
 export type NavItemId = (typeof NAV_ITEMS)[number]['id'];
