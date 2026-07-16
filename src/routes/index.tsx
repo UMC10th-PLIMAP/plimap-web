@@ -23,11 +23,11 @@ export const router = createBrowserRouter([
         element: <LoginPage />,
       },
       {
-        path: 'profile/nickname',
+        path: 'onboarding/nickname',
         element: <NicknameSetupPage />,
       },
       {
-        path: 'profile/image',
+        path: 'onboarding/profile-image',
         element: <ProfileImageSetupPage />,
       },
     ],
