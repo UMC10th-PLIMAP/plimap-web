@@ -143,15 +143,15 @@ export default function ProfileImageSetupPage() {
           aria-label="프로필 사진 선택"
           className="relative size-[236px] shrink-0"
         >
-          <div className="flex size-full items-center justify-center overflow-hidden rounded-full bg-grayscale-1000">
+          <div className="flex size-full items-center justify-center overflow-hidden rounded-full bg-pli-black-75">
             {step === 'done' && croppedImageUrl ? (
               <img src={croppedImageUrl} alt="" className="size-full object-cover" />
             ) : (
-              <UserPlaceholderIcon className="size-[140px] text-grayscale-800" />
+              <UserPlaceholderIcon className="size-[140px] text-pli-black-50" />
             )}
           </div>
           <span className="absolute right-0 bottom-0 flex size-[72px] items-center justify-center rounded-full bg-grayscale-300">
-            <CameraIcon className="size-10 text-grayscale-1200" />
+            <CameraIcon className="size-10 text-grayscale-1250" />
           </span>
         </button>
       </div>
