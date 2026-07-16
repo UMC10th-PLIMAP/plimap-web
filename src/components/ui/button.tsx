@@ -20,7 +20,7 @@ const buttonVariants = cva(
         cta: 'min-w-92 h-16 rounded-2xl head-20-sb',
         pin: 'min-w-23 h-13 rounded-[50px] px-4 py-3.5 body-15-sb',
         bt: 'min-w-[77px] h-11 rounded-[50px] px-4 py-2.5 body-17-m', // confirm, cancel
-        social: 'min-w-81 h-16 rounded-xl body-17-m', // kakao, google, apple
+        social: 'max-w-81 h-16 rounded-xl body-17-m', // kakao, google, apple
       },
     },
     defaultVariants: {

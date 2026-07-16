@@ -1,13 +1,14 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import RootLayout from '@/layouts/RootLayout';
-import MapDemoPage from '@/features/map/MapDemoPage';
-import NicknameSetupPage from '@/features/auth/pages/NicknameSetupPage';
-import ProfileImageSetupPage from '@/features/auth/pages/ProfileImageSetupPage';
+import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
+import LoginPage from '@/pages/LoginPage';
+import NicknameSetupPage from '@/pages/NicknameSetupPage';
+import MapPage from '@/pages/MapPage';
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <MapDemoPage />, // 디자이너 확인용 데모 페이지를 최상단 라우트로 설정
+    element: <Navigate to="/app" replace />,
   },
   {
     path: '/app',
@@ -15,6 +16,11 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
+        element: <MapPage />,
+      },
+      {
+        path: 'login',
+        element: <LoginPage />,
       },
       {
         path: 'profile/nickname',

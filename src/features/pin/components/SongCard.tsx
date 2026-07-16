@@ -1,4 +1,4 @@
-import type { Song } from '@/types/pin';
+import type { Song } from '@/features/pin/types';
 
 type SongCardProps = {
   song: Song;
