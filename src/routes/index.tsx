@@ -31,14 +31,8 @@ export const router = createBrowserRouter([
         path: 'onboarding/profile-image',
         element: <ProfileImageSetupPage />,
       },
-    ],
-  },
-  {
-    path: '/pin/search',
-    element: <RootLayout />,
-    children: [
       {
-        index: true,
+        path: 'pin/search',
         element: <PinPlaceSearchPage />,
       },
     ],

@@ -27,6 +27,7 @@ export type PlaceResult = {
   creatorName?: string;
   category: string;
   placeName: string;
+  address: string;
   distance: number;
 };
 

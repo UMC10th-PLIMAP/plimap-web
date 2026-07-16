@@ -1,5 +1,9 @@
+import { useNavigate } from 'react-router-dom';
+
 import { PinPlaceSearch } from '@/features/pin/components/PinPlaceSearch';
 
 export default function PinPlaceSearchPage() {
-  return <PinPlaceSearch />;
+  const navigate = useNavigate();
+
+  return <PinPlaceSearch onBack={() => navigate(-1)} />;
 }

@@ -63,10 +63,6 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     const handleClear = () => {
       if (!isControlled) {
         setInternalValue('');
-      } else if (onChange) {
-        onChange({
-          target: { value: '' },
-        } as React.ChangeEvent<HTMLInputElement>);
       }
       onClear?.();
     };

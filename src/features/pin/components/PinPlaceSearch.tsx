@@ -10,20 +10,19 @@ import type { PinSearchPlace } from '@/features/pin/types';
 
 export type PinPlaceSearchProps = {
   onPlaceSelect?: (place: PinSearchPlace) => void;
+  onBack?: () => void;
 };
 
 const normalizeSearchText = (value: string) => value.trim().toLowerCase();
 
 const matchesQuery = (place: PinSearchPlace, query: string) => {
   const normalizedQuery = normalizeSearchText(query);
-  const searchableText = normalizeSearchText(
-    `${place.placeName} ${place.category} ${place.creatorName ?? ''}`,
-  );
+  const searchableText = normalizeSearchText(`${place.placeName} ${place.category}`);
 
   return searchableText.includes(normalizedQuery);
 };
 
-export function PinPlaceSearch({ onPlaceSelect }: PinPlaceSearchProps) {
+export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
   const [query, setQuery] = useState('');
   const [selectedPlace, setSelectedPlace] = useState<PinSearchPlace | null>(null);
   const normalizedQuery = normalizeSearchText(query);
@@ -69,7 +68,7 @@ export function PinPlaceSearch({ onPlaceSelect }: PinPlaceSearchProps) {
           value={query}
           onChange={handleQueryChange}
           onClear={resetSearch}
-          onBack={resetSearch}
+          onBack={onBack}
           placeholder="장소를 검색하세요"
           aria-label="핀 조회 장소 검색"
           leadingIcon="back"

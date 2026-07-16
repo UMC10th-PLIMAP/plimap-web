@@ -8,7 +8,7 @@ type PlaceResultRowProps = ComponentProps<'button'> & {
 };
 
 export function PlaceResultRow({ place, className, ...props }: PlaceResultRowProps) {
-  const { creatorName, category, placeName, distance } = place;
+  const { creatorName, category, placeName, address, distance } = place;
 
   return (
     <button
@@ -20,11 +20,13 @@ export function PlaceResultRow({ place, className, ...props }: PlaceResultRowPro
       {...props}
     >
       <div className="flex w-full max-w-[342px] items-center justify-between pb-3 pt-4">
-        <div className="flex w-[189px] max-w-full flex-col items-start gap-[6px] whitespace-nowrap">
+        <div className="flex w-[189px] max-w-full flex-col items-start gap-[6px] overflow-hidden whitespace-nowrap">
           <div className="flex w-full min-w-0 items-center gap-[6px] overflow-hidden">
             <span className="min-w-0 truncate body-17-r text-grayscale-100">{placeName}</span>
             <span className="shrink-0 etc-13-r text-grayscale-400">{category}</span>
           </div>
+
+          <span className="w-full truncate etc-13-r text-grayscale-500">{address}</span>
 
           <div className="flex items-start gap-1 text-grayscale-500">
             {creatorName ? (
