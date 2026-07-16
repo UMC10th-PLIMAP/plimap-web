@@ -33,7 +33,7 @@ export function BottomNav({ activeId, onTabChange }: BottomNavProps) {
               aria-label={label}
               aria-current={isActive ? 'page' : undefined}
               className={`flex  flex-col w-[120px] items-center justify-center gap-1 rounded-[24px] py-2.5 ${
-                isActive ? 'bg-pli-black-75 text-grayscale-100' : 'text-grayscale-700'
+                isActive ? 'bg-pli-black-75 text-grayscale-100' : 'text-grayscale-800'
               }`}
             >
               <Icon className="size-6 " aria-hidden />
