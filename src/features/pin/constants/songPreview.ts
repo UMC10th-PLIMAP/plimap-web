@@ -31,7 +31,7 @@ export const MOCK_SONGS: Song[] = [
 ];
 
 export const TAG_OPTIONS = [
-  '태그',
+  '감성',
   '고독',
   '낭만',
   '몽환',
