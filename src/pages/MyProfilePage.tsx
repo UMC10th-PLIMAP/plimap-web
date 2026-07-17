@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import MenuIcon from '@/assets/icons/menu.svg?react';
+import ShareIcon from '@/assets/icons/share.svg?react';
 
 import { BottomNav } from '@/components/BottomNav';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
@@ -30,13 +31,26 @@ export default function MyProfilePage() {
       <div className="mt-[3px] flex flex-col ">
         <ProfileInfo profile={profile} />
         <ProfileActions
-          onEditProfile={() => {
-            // TODO: 프로필 편집 화면 연결
-          }}
-          onMyPlimap={() => navigate('/app')}
-          onShare={() => {
-            // TODO: 프로필 공유 연동
-          }}
+          actions={[
+            {
+              label: '프로필 편집',
+              onClick: () => {
+                // TODO: 프로필 편집 화면 연결
+              },
+            },
+            {
+              label: '내 PLIMAP',
+              onClick: () => navigate('/app'),
+            },
+            {
+              label: <ShareIcon className="size-5" />,
+              onClick: () => {
+                // TODO: 프로필 공유 연동
+              },
+              'aria-label': '프로필 공유',
+              className: 'size-9',
+            },
+          ]}
         />
       </div>
       <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
