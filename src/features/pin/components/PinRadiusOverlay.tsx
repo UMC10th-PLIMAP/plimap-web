@@ -32,8 +32,7 @@ export function PinRadiusOverlay({
   onComplete,
   className,
 }: PinRadiusOverlayProps) {
-  const [isConflictToastVisible, setIsConflictToastVisible] = useState(false);
-  const [toastKey, setToastKey] = useState(0);
+  const [conflictToastAttempt, setConflictToastAttempt] = useState(0);
   const radiusPixels = calculateMapRadiusPixels(
     PIN_REGISTRATION_RADIUS_METERS,
     zoom,
@@ -51,14 +50,13 @@ export function PinRadiusOverlay({
   };
 
   const handleComplete = () => {
-    if (!hasNearbyPinConflict) {
-      setIsConflictToastVisible(false);
-      onComplete();
+    if (hasNearbyPinConflict) {
+      setConflictToastAttempt((currentAttempt) => currentAttempt + 1);
       return;
     }
 
-    setToastKey((currentKey) => currentKey + 1);
-    setIsConflictToastVisible(true);
+    setConflictToastAttempt(0);
+    onComplete();
   };
 
   return (
@@ -104,14 +102,11 @@ export function PinRadiusOverlay({
         </div>
 
         <div className="absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] flex flex-col items-center gap-[50px]">
-          <Toast
-            key={toastKey}
-            open={isConflictToastVisible}
-            onOpenChange={setIsConflictToastVisible}
-            className="mx-[15px]"
-          >
-            이미 근처 20m 이내에 PIN이 있어요
-          </Toast>
+          {conflictToastAttempt > 0 && (
+            <Toast key={conflictToastAttempt} defaultOpen>
+              이미 근처 20m 이내에 PIN이 있어요
+            </Toast>
+          )}
           <ToastViewport />
 
           <p className="max-w-full px-6 py-4 text-center body-15-m text-grayscale-200 [text-shadow:0_1px_4px_#000]">
