@@ -4,28 +4,45 @@ import { useNavigate } from 'react-router-dom';
 import CameraIcon from '@/assets/icons/camera.svg?react';
 import { Button } from '@/components/ui/button';
 import { TopBar } from '@/components/ui/TopBar';
-// 닉네임 검증
 import {
   NICKNAME_MAX_LENGTH,
   NICKNAME_MIN_LENGTH,
   validateNickname,
 } from '@/features/auth/utils/validateNickname';
 import { MOCK_MY_PROFILE } from '@/features/profile/constants/mockMyProfile';
-
 import {
   BIO_MAX_LENGTH,
   NAME_MAX_LENGTH,
-  validateBio,
-  validateName,
+  bioSchema,
+  nameSchema,
 } from '@/features/profile/utils/validateProfileEdit';
 import { cn } from '@/lib/utils';
 
 type FieldMessageTone = 'neutral' | 'error';
 
 const MESSAGE_TONE_CLASS: Record<FieldMessageTone, string> = {
-  neutral: 'text-grayscale-400',
+  neutral: 'text-grayscale-500',
   error: 'text-red',
 };
+
+const FIELD_ROW_CLASS = 'flex items-start gap-[41px]';
+const FIELD_LABEL_CLASS = 'mt-3 w-12 body-15-r text-grayscale-300';
+const FIELD_CONTROL_CLASS = 'flex flex-col gap-2';
+const INPUT_BOX_CLASS =
+  'flex h-[45px] w-[288px] items-center justify-between rounded-lg border border-grayscale-1000 px-3';
+const TEXTAREA_BOX_CLASS = 'relative w-[288px] rounded-lg border border-grayscale-1000 px-3';
+const INPUT_CLASS =
+  'body-15-r w-full bg-transparent text-grayscale-100 outline-none placeholder:text-grayscale-700';
+const COUNTER_CLASS = 'body-15-r shrink-0 text-right';
+const FIELD_MESSAGE_CLASS = 'etc-13-r';
+
+const NICKNAME_HELPER = `한글, 영어, 숫자 포함 ${NICKNAME_MIN_LENGTH}~${NICKNAME_MAX_LENGTH}자까지 가능해요.`;
+const NAME_HELPER = `한글 ${NAME_MAX_LENGTH}자까지 가능해요.`;
+const BIO_HELPER = `한글, 영어, 숫자, 특수문자 포함 ${BIO_MAX_LENGTH}자까지 가능해요.`;
+
+function getCounterClass(tone: FieldMessageTone) {
+  return cn(COUNTER_CLASS, tone === 'error' ? 'text-red' : 'text-grayscale-400');
+}
 
 export default function ProfileEditPage() {
   const navigate = useNavigate();
@@ -40,8 +57,10 @@ export default function ProfileEditPage() {
   const [bioTouched, setBioTouched] = useState(false);
 
   const nicknameError = validateNickname(nickname);
-  const nameError = validateName(name);
-  const bioError = validateBio(bio);
+  const nameResult = nameSchema.safeParse(name);
+  const bioResult = bioSchema.safeParse(bio);
+  const nameError = nameResult.success ? null : nameResult.error.issues[0].message;
+  const bioError = bioResult.success ? null : bioResult.error.issues[0].message;
 
   const isNicknameValid = nicknameError === null;
   const isNameValid = nameError === null;
@@ -49,33 +68,20 @@ export default function ProfileEditPage() {
   const canSubmit = isNicknameValid && isNameValid && isBioValid;
 
   const nicknameMessage = !nicknameTouched
-    ? {
-        text: `한글, 영어, 숫자 포함 ${NICKNAME_MIN_LENGTH}~${NICKNAME_MAX_LENGTH}자까지 가능해요.`,
-        tone: 'neutral' as const,
-      }
+    ? { text: NICKNAME_HELPER, tone: 'neutral' as const }
     : isNicknameValid
-      ? {
-          text: `한글, 영어, 숫자 포함 ${NICKNAME_MIN_LENGTH}~${NICKNAME_MAX_LENGTH}자까지 가능해요.`,
-          tone: 'neutral' as const,
-        }
+      ? { text: NICKNAME_HELPER, tone: 'neutral' as const }
       : { text: nicknameError, tone: 'error' as const };
 
-  const nameMessage = !nameTouched
-    ? { text: `한글 ${NAME_MAX_LENGTH}자까지 가능해요.`, tone: 'neutral' as const }
-    : isNameValid
-      ? { text: `한글 ${NAME_MAX_LENGTH}자까지 가능해요.`, tone: 'neutral' as const }
+  const nameMessage =
+    !nameTouched || name.length === 0 || isNameValid
+      ? { text: NAME_HELPER, tone: 'neutral' as const }
       : { text: nameError, tone: 'error' as const };
 
   const bioMessage = !bioTouched
-    ? {
-        text: `한글, 영어, 숫자, 특수문자 포함 ${BIO_MAX_LENGTH}자까지 가능해요.`,
-        tone: 'neutral' as const,
-      }
+    ? { text: BIO_HELPER, tone: 'neutral' as const }
     : isBioValid
-      ? {
-          text: `한글, 영어, 숫자, 특수문자 포함 ${BIO_MAX_LENGTH}자까지 가능해요.`,
-          tone: 'neutral' as const,
-        }
+      ? { text: BIO_HELPER, tone: 'neutral' as const }
       : { text: bioError, tone: 'error' as const };
 
   const handleSubmit = () => {
@@ -103,24 +109,20 @@ export default function ProfileEditPage() {
                 type="button"
                 aria-label="프로필 사진 변경"
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 flex size-[27px] items-center justify-center rounded-full bg-grayscale-300 cursor-pointer"
+                className="absolute bottom-0 right-0 flex size-[27px] cursor-pointer items-center justify-center rounded-full bg-grayscale-300"
               >
-                <CameraIcon className="px-[7px] py-[8px]  text-grayscale-1250" />
+                <CameraIcon className="px-[7px] py-[8px] text-grayscale-1250" />
               </button>
             </div>
           </div>
 
-          <div className="pt-[48px] flex flex-col gap-5">
-            <div className="flex items-start gap-[41px]">
-              <label htmlFor="edit-nickname" className="mt-3 w-12 body-15-r text-grayscale-300">
+          <div className="flex flex-col gap-5 pt-[48px]">
+            <div className={FIELD_ROW_CLASS}>
+              <label htmlFor="edit-nickname" className={FIELD_LABEL_CLASS}>
                 닉네임
               </label>
-              <div className="flex flex-col gap-2">
-                <div
-                  className={cn(
-                    'flex w-[288px] h-[45px] items-center justify-between rounded-lg border border-grayscale-1000 px-3',
-                  )}
-                >
+              <div className={FIELD_CONTROL_CLASS}>
+                <div className={INPUT_BOX_CLASS}>
                   <input
                     id="edit-nickname"
                     type="text"
@@ -133,41 +135,29 @@ export default function ProfileEditPage() {
                     }}
                     aria-invalid={nicknameMessage.tone === 'error'}
                     aria-describedby="edit-nickname-message"
-                    className="body-15-r w-full text-grayscale-100 outline-none placeholder:text-grayscale-700"
+                    className={INPUT_CLASS}
                     placeholder="내용 입력"
                   />
-                  {/* 숫자 부분은 오른쪽에 위치 */}
-                  <span
-                    className={`body-15-r text-right
-                      ${nicknameMessage.tone === 'error' ? 'text-red' : 'text-grayscale-400'}`}
-                  >
+                  <span className={getCounterClass(nicknameMessage.tone)}>
                     {nickname.length}/{NICKNAME_MAX_LENGTH}
                   </span>
                 </div>
                 <p
                   id="edit-nickname-message"
                   aria-live="polite"
-                  className={`body-15-r ${MESSAGE_TONE_CLASS[nicknameMessage.tone]}`}
+                  className={cn(FIELD_MESSAGE_CLASS, MESSAGE_TONE_CLASS[nicknameMessage.tone])}
                 >
                   {nicknameMessage.text}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <label
-                htmlFor="edit-name"
-                className="mt-3 w-12 shrink-0 body-15-r text-grayscale-300"
-              >
+            <div className={FIELD_ROW_CLASS}>
+              <label htmlFor="edit-name" className={FIELD_LABEL_CLASS}>
                 이름
               </label>
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <div
-                  className={cn(
-                    'flex h-11 items-center justify-between rounded-xl border px-4',
-                    name.length > 0 ? 'border-grayscale-600' : 'border-grayscale-1000',
-                  )}
-                >
+              <div className={FIELD_CONTROL_CLASS}>
+                <div className={INPUT_BOX_CLASS}>
                   <input
                     id="edit-name"
                     type="text"
@@ -180,34 +170,29 @@ export default function ProfileEditPage() {
                     }}
                     aria-invalid={nameMessage.tone === 'error'}
                     aria-describedby="edit-name-message"
-                    className="body-15-r w-full bg-transparent text-grayscale-100 outline-none placeholder:text-grayscale-700"
+                    className={INPUT_CLASS}
                     placeholder="내용 입력"
                   />
-                  <span className="body-15-r shrink-0 text-grayscale-500">
+                  <span className={getCounterClass(nameMessage.tone)}>
                     {name.length}/{NAME_MAX_LENGTH}
                   </span>
                 </div>
                 <p
                   id="edit-name-message"
                   aria-live="polite"
-                  className={`body-15-r ${MESSAGE_TONE_CLASS[nameMessage.tone]}`}
+                  className={cn(FIELD_MESSAGE_CLASS, MESSAGE_TONE_CLASS[nameMessage.tone])}
                 >
                   {nameMessage.text}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <label htmlFor="edit-bio" className="mt-3 w-12 shrink-0 body-15-r text-grayscale-300">
+            <div className={FIELD_ROW_CLASS}>
+              <label htmlFor="edit-bio" className={FIELD_LABEL_CLASS}>
                 소개
               </label>
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <div
-                  className={cn(
-                    'relative rounded-xl border px-4 py-3',
-                    bio.length > 0 ? 'border-grayscale-600' : 'border-grayscale-1000',
-                  )}
-                >
+              <div className={FIELD_CONTROL_CLASS}>
+                <div className={TEXTAREA_BOX_CLASS}>
                   <textarea
                     id="edit-bio"
                     value={bio}
@@ -219,17 +204,17 @@ export default function ProfileEditPage() {
                     }}
                     aria-invalid={bioMessage.tone === 'error'}
                     aria-describedby="edit-bio-message"
-                    className="body-15-r w-full resize-none bg-transparent text-grayscale-100 outline-none placeholder:text-grayscale-700"
+                    className={cn(INPUT_CLASS, 'resize-none pt-3')}
                     placeholder="내용 입력"
                   />
-                  <span className="body-15-r absolute bottom-3 right-4 text-grayscale-500">
+                  <span className="body-15-r absolute right-4 bottom-3 text-grayscale-500">
                     {bio.length}/{BIO_MAX_LENGTH}
                   </span>
                 </div>
                 <p
                   id="edit-bio-message"
                   aria-live="polite"
-                  className={`body-15-r ${MESSAGE_TONE_CLASS[bioMessage.tone]}`}
+                  className={cn(FIELD_MESSAGE_CLASS, MESSAGE_TONE_CLASS[bioMessage.tone])}
                 >
                   {bioMessage.text}
                 </p>
@@ -238,8 +223,8 @@ export default function ProfileEditPage() {
           </div>
         </div>
 
-        <div className="mt-auto flex flex-col items-center px-[10px] pb-[52px] pt-6">
-          <Button type="submit" variant="cta" size="cta" disabled={canSubmit}>
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-[calc(env(safe-area-inset-bottom)+52px)] ">
+          <Button type="submit" variant="cta" size="cta" disabled={!canSubmit}>
             저장하기
           </Button>
         </div>

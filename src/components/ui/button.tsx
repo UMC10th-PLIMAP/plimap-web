@@ -4,7 +4,7 @@ import { Slot } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'w-fit inline-flex items-center justify-center transition-all outline-none',
+  'w-fit inline-flex items-center justify-center transition-all outline-none ',
   {
     variants: {
       variant: {
