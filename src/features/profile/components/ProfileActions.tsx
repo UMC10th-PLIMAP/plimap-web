@@ -31,7 +31,7 @@ function ProfileButton({
       onClick={onClick}
       aria-label={ariaLabel}
       className={cn(
-        'flex h-[37px] w-[158px] items-center justify-center rounded-lg bg-pli-black-50 body-15-m text-grayscale-100',
+        'flex h-[37px] w-[158px] items-center justify-center rounded-lg bg-pli-black-50 body-15-m text-grayscale-100 cursor-pointer',
         className,
       )}
     >

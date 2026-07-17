@@ -21,7 +21,7 @@ export function ProfilePinGrid({ pins, onPinClick, onRegisterPin }: ProfilePinGr
         <button
           type="button"
           onClick={onRegisterPin}
-          className="mt-5 w-[144px] h-10 rounded-xl bg-grayscale-0 body-15-m text-grayscale-1250"
+          className="mt-5 w-[144px] h-10 rounded-xl bg-grayscale-0 body-15-m text-grayscale-1250 cursor-pointer"
         >
           핀 등록하러 가기
         </button>
@@ -39,7 +39,11 @@ export function ProfilePinGrid({ pins, onPinClick, onRegisterPin }: ProfilePinGr
             className="size-full"
             aria-label="핀 보기"
           >
-            <img src={pin.imageUrl} alt="" className="size-full object-cover rounded-[4.5px]" />
+            <img
+              src={pin.imageUrl}
+              alt=""
+              className="size-full object-cover rounded-[4.5px] cursor-pointer"
+            />
           </button>
         </li>
       ))}
