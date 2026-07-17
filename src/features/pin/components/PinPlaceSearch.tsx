@@ -59,7 +59,7 @@ export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
   const hasNoResults = normalizedQuery.length > 0 && filteredPlaces.length === 0 && !selectedPlace;
 
   return (
-    <main className="flex h-full min-h-0 w-full flex-col bg-pli-black-85">
+    <main className="flex h-full flex-col bg-pli-black-85">
       <h1 className="sr-only">핀 조회 장소 검색</h1>
 
       <div className="shrink-0 px-[15px] pt-[calc(env(safe-area-inset-top)+16px)]">
@@ -72,7 +72,6 @@ export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
           placeholder="장소를 검색하세요"
           aria-label="핀 조회 장소 검색"
           leadingIcon="back"
-          containerClassName="mx-auto"
         />
       </div>
 
@@ -83,12 +82,12 @@ export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
       <section
         aria-label={isShowingRecentPlaces ? '최근 검색' : '장소 검색 결과'}
         aria-live="polite"
-        className="min-h-0 flex-1 overflow-y-auto scrollbar-hide"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-hide"
       >
         {visiblePlaces.length > 0 ? (
           <ul>
             {visiblePlaces.map((place) => (
-              <li key={place.id}>
+              <li key={place.id} className="mx-2">
                 <PlaceResultRow place={place} onClick={() => handlePlaceSelect(place)} />
               </li>
             ))}
@@ -96,7 +95,7 @@ export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
         ) : null}
 
         {hasNoResults ? (
-          <p className="mx-auto mt-[300px] h-[21px] w-[116px] whitespace-nowrap text-center body-15-r text-grayscale-600">
+          <p className="m-auto whitespace-nowrap body-15-r text-grayscale-600">
             검색 결과가 없어요.
           </p>
         ) : null}

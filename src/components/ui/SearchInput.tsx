@@ -6,20 +6,17 @@ import CloseIcon from '@/assets/icons/close.svg?react';
 
 import { cn } from '@/lib/utils';
 
-const searchInputVariants = cva(
-  'flex w-full max-w-[372px] items-center rounded-[50px] transition-colors',
-  {
-    variants: {
-      variant: {
-        map: 'h-12 gap-3 bg-pli-black-100 px-5 py-2.5 backdrop-blur-[1.95px]',
-        song: 'h-10 gap-2 bg-pli-black-75 px-4 body-15-r',
-      },
-    },
-    defaultVariants: {
-      variant: 'map',
+const searchInputVariants = cva('flex w-full items-center rounded-[50px] transition-colors', {
+  variants: {
+    variant: {
+      map: 'h-12 gap-3 bg-pli-black-100 px-5 py-2.5 backdrop-blur-[1.95px]',
+      song: 'h-10 gap-2 bg-pli-black-75 px-4 body-15-r',
     },
   },
-);
+  defaultVariants: {
+    variant: 'map',
+  },
+});
 
 const searchInputFieldVariants = cva(
   'flex-1 outline-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-ms-clear]:hidden',
