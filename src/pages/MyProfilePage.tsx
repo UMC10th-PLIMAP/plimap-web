@@ -14,7 +14,6 @@ export default function MyProfilePage() {
   const profile = MOCK_MY_PROFILE;
 
   return (
-    // 완료
     <div className="flex flex-col">
       <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
         <div />
