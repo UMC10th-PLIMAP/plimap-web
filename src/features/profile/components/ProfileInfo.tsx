@@ -17,7 +17,11 @@ export function ProfileInfo({ profile }: ProfileInfoProps) {
   return (
     <section className="flex flex-col items-center px-4">
       <div className="flex size-22 rounded-full">
-        <img src={profile.avatarUrl} alt="프로필 이미지" className="size-full object-cover" />
+        {profile.avatarUrl ? (
+          <img src={profile.avatarUrl} alt="프로필 이미지" className="size-full object-cover" />
+        ) : (
+          <div className="size-full  bg-pli-black-50" />
+        )}
       </div>
 
       <p className="mt-2.5 body-16-r text-grayscale-500">{profile.name}</p>

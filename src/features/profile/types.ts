@@ -7,7 +7,7 @@ export type MyProfile = {
   nickname: string;
   name: string;
   bio: string;
-  avatarUrl?: string;
+  avatarUrl: string;
   followingCount: number;
   followerCount: number;
   postCount: number;
