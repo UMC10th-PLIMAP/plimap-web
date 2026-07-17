@@ -5,6 +5,7 @@ import LoginPage from '@/pages/LoginPage';
 import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import MapPage from '@/pages/MapPage';
 import MyProfilePage from '@/pages/MyProfilePage';
+import ProfileEditPage from '@/pages/ProfileEditPage';
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
       {
         path: 'my',
         element: <MyProfilePage />,
+      },
+      {
+        path: 'my/edit',
+        element: <ProfileEditPage />,
       },
     ],
   },

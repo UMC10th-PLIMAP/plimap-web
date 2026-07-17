@@ -33,9 +33,7 @@ export default function MyProfilePage() {
           actions={[
             {
               label: '프로필 편집',
-              onClick: () => {
-                // TODO: 프로필 편집 화면 연결
-              },
+              onClick: () => navigate('/app/my/edit'),
             },
             {
               label: '내 PLIMAP',
