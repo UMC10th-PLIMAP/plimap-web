@@ -25,7 +25,7 @@ export function PlaceResultRow({ place, className, ...props }: PlaceResultRowPro
           <span className="shrink-0 etc-13-r text-grayscale-400">{category}</span>
         </div>
 
-        <span className="w-full truncate etc-13-r text-grayscale-500">{address}</span>
+        <span className="w-full truncate body-15-r text-grayscale-500">{address}</span>
 
         <div className="flex w-full min-w-0 items-start gap-1 text-grayscale-500">
           {creatorName ? (
