@@ -332,14 +332,16 @@ jobs:
           readonly host_port=$((PREVIEW_PORT_BASE + PR_NUMBER))
           readonly project_name="plimap-pr-${PR_NUMBER}"
           readonly compose_file="${preview_path}/docker-compose.preview.yml"
+          readonly candidate_compose_file="${preview_path}/docker-compose.preview.candidate.yml"
           readonly env_file="${preview_path}/.env"
+          readonly previous_env_file="${preview_path}/.env.previous"
           readonly diagnostic_log="${preview_path}/.deploy-last.log"
           readonly image_ref="ghcr.io/${GHCR_OWNER}/plimap-web@${IMAGE_DIGEST}"
           readonly capacity_lock="${PREVIEW_DEPLOY_ROOT}/.capacity.lock"
           readonly pr_lock="${PREVIEW_DEPLOY_ROOT}/.pr-${PR_NUMBER}.lock"
 
           if [[ ! -d "$preview_path" || -L "$preview_path" ||
-                ! -f "$compose_file" || -L "$compose_file" ||
+                ! -f "$candidate_compose_file" || -L "$candidate_compose_file" ||
                 -L "$diagnostic_log" ||
                 ( -e "$diagnostic_log" && ! -f "$diagnostic_log" ) ||
                 ! -x "$PREVIEW_ROUTE_HELPER" || -L "$PREVIEW_ROUTE_HELPER" ||
@@ -348,13 +350,20 @@ jobs:
             exit 1
           fi
 
+          for state_file in "$compose_file" "$env_file" "$previous_env_file"; do
+            if [[ -L "$state_file" || ( -e "$state_file" && ! -f "$state_file" ) ]]; then
+              echo "Existing preview state is unsafe." >&2
+              exit 1
+            fi
+          done
+
           exec 8>"$capacity_lock"
           flock -w 60 8
           exec 9>"$pr_lock"
           flock -w 60 9
 
           if [[ ! -d "$preview_path" || -L "$preview_path" ||
-                ! -f "$compose_file" || -L "$compose_file" ]]; then
+                ! -f "$candidate_compose_file" || -L "$candidate_compose_file" ]]; then
             echo "Preview files changed while waiting for the host lock." >&2
             exit 1
           fi
@@ -372,39 +381,97 @@ jobs:
             exit 1
           fi
 
-          previous_image=''
-          if [[ -L "$env_file" || ( -e "$env_file" && ! -f "$env_file" ) ]]; then
-            echo "Existing preview environment file is unsafe." >&2
+          if [[ -e "$previous_env_file" ]]; then
+            echo "An incomplete preview deployment requires cleanup before retrying." >&2
             exit 1
           fi
 
+          had_previous=no
+          previous_image=''
           if [[ -f "$env_file" ]]; then
+            if [[ ! -f "$compose_file" || -L "$compose_file" ]]; then
+              echo "Existing preview Compose state is missing or unsafe." >&2
+              exit 1
+            fi
+
+            had_previous=yes
             previous_owner="$(sed -n 's/^GHCR_OWNER=//p' "$env_file")"
             previous_digest="$(sed -n 's/^IMAGE_DIGEST=//p' "$env_file")"
-            if [[ "$previous_owner" =~ ^[a-z0-9._-]+$ &&
-                  "$previous_digest" =~ ^sha256:[0-9a-f]{64}$ &&
-                  "$previous_owner/$previous_digest" != "$GHCR_OWNER/$IMAGE_DIGEST" ]]; then
-              previous_image="ghcr.io/${previous_owner}/plimap-web@${previous_digest}"
+            if [[ ! "$previous_owner" =~ ^[a-z0-9._-]+$ ||
+                  ! "$previous_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "Existing preview image metadata is invalid." >&2
+              exit 1
             fi
+            previous_image="ghcr.io/${previous_owner}/plimap-web@${previous_digest}"
           fi
 
           env_tmp="$(mktemp "${preview_path}/.env.tmp.XXXXXX")"
+          deployed_at_tmp=''
           docker_config="$(mktemp -d)"
-          route_installed=no
+          new_image_pulled=no
+          transaction_started=no
           deployment_ready=no
 
           : > "$diagnostic_log"
           chmod 0600 "$diagnostic_log"
 
           cleanup() {
-            rm -f -- "$env_tmp"
-            rm -rf -- "$docker_config"
-            if [[ "$route_installed" == yes && "$deployment_ready" != yes ]]; then
-              sudo -n "$PREVIEW_ROUTE_HELPER" down "$PR_NUMBER" \
-                >> "$diagnostic_log" 2>&1 || true
+            exit_status=$?
+            trap - EXIT
+            set +e
+
+            if [[ -n "$env_tmp" ]]; then
+              rm -f -- "$env_tmp"
             fi
+            if [[ -n "$deployed_at_tmp" ]]; then
+              rm -f -- "$deployed_at_tmp"
+            fi
+
+            if [[ "$deployment_ready" != yes ]]; then
+              if [[ "$transaction_started" == yes && "$had_previous" == yes ]]; then
+                if mv -fT -- "$previous_env_file" "$env_file"; then
+                  if timeout 3m docker compose \
+                    --project-name "$project_name" \
+                    --file "$compose_file" \
+                    --env-file "$env_file" \
+                    up -d --remove-orphans >> "$diagnostic_log" 2>&1
+                  then
+                    sudo -n "$PREVIEW_ROUTE_HELPER" up "$PR_NUMBER" \
+                      >> "$diagnostic_log" 2>&1 || true
+                  fi
+                fi
+              elif [[ "$transaction_started" == yes ]]; then
+                timeout 2m docker compose \
+                  --project-name "$project_name" \
+                  --file "$candidate_compose_file" \
+                  --env-file "$env_file" \
+                  down --remove-orphans >> "$diagnostic_log" 2>&1 || true
+                sudo -n "$PREVIEW_ROUTE_HELPER" down "$PR_NUMBER" \
+                  >> "$diagnostic_log" 2>&1 || true
+                rm -f -- "$env_file"
+              fi
+
+              rm -f -- "$candidate_compose_file"
+              if [[ "$new_image_pulled" == yes && "$image_ref" != "$previous_image" ]]; then
+                docker image rm -- "$image_ref" >> "$diagnostic_log" 2>&1 || true
+              fi
+            fi
+
+            rm -rf -- "$docker_config"
+            exit "$exit_status"
           }
           trap cleanup EXIT
+
+          if [[ "$had_previous" == yes ]] &&
+             ! docker compose \
+               --project-name "$project_name" \
+               --file "$compose_file" \
+               --env-file "$env_file" \
+               config --quiet >> "$diagnostic_log" 2>&1
+          then
+            echo "Existing preview Compose state is invalid." >&2
+            exit 1
+          fi
 
           export DOCKER_CONFIG="$docker_config"
           IFS= read -r ghcr_pull_token
@@ -422,10 +489,11 @@ jobs:
             echo "Preview image pull failed; inspect the protected host diagnostic." >&2
             exit 1
           fi
+          new_image_pulled=yes
+
           image_size="$(docker image inspect "$image_ref" --format '{{.Size}}')"
           if [[ ! "$image_size" =~ ^[0-9]+$ ||
                 "$image_size" -gt "$PREVIEW_MAX_IMAGE_BYTES" ]]; then
-            docker image rm -- "$image_ref" >> "$diagnostic_log" 2>&1 || true
             echo "Preview image exceeds the configured size limit." >&2
             exit 1
           fi
@@ -440,7 +508,7 @@ jobs:
 
           if ! docker compose \
             --project-name "$project_name" \
-            --file "$compose_file" \
+            --file "$candidate_compose_file" \
             --env-file "$env_tmp" \
             config --quiet >> "$diagnostic_log" 2>&1
           then
@@ -448,10 +516,18 @@ jobs:
             exit 1
           fi
 
+          if [[ "$had_previous" == yes ]]; then
+            cp -p -- "$env_file" "$previous_env_file"
+            chmod 0600 "$previous_env_file"
+          fi
+          mv -fT -- "$env_tmp" "$env_file"
+          env_tmp=''
+          transaction_started=yes
+
           if ! timeout 3m docker compose \
             --project-name "$project_name" \
-            --file "$compose_file" \
-            --env-file "$env_tmp" \
+            --file "$candidate_compose_file" \
+            --env-file "$env_file" \
             up -d --remove-orphans >> "$diagnostic_log" 2>&1
           then
             echo "Preview container startup failed; inspect the protected host diagnostic." >&2
@@ -461,8 +537,8 @@ jobs:
           mapfile -t container_ids < <(
             docker compose \
               --project-name "$project_name" \
-              --file "$compose_file" \
-              --env-file "$env_tmp" \
+              --file "$candidate_compose_file" \
+              --env-file "$env_file" \
               ps -q web 2>> "$diagnostic_log"
           )
 
@@ -505,7 +581,6 @@ jobs:
             echo "Preview route installation failed; inspect the protected host diagnostic." >&2
             exit 1
           fi
-          route_installed=yes
 
           public_ready=no
           for attempt in $(seq 1 30); do
@@ -527,13 +602,16 @@ jobs:
             exit 1
           fi
 
-          mv -fT -- "$env_tmp" "$env_file"
-          env_tmp=''
-          date -u +%Y-%m-%dT%H:%M:%SZ > "${preview_path}/.deployed-at"
-          chmod 0600 "${preview_path}/.deployed-at"
+          deployed_at_tmp="$(mktemp "${preview_path}/.deployed-at.tmp.XXXXXX")"
+          date -u +%Y-%m-%dT%H:%M:%SZ > "$deployed_at_tmp"
+          chmod 0600 "$deployed_at_tmp"
+          mv -fT -- "$deployed_at_tmp" "${preview_path}/.deployed-at"
+          deployed_at_tmp=''
+          mv -fT -- "$candidate_compose_file" "$compose_file"
           deployment_ready=yes
+          rm -f -- "$previous_env_file"
 
-          if [[ -n "$previous_image" ]]; then
+          if [[ -n "$previous_image" && "$previous_image" != "$image_ref" ]]; then
             docker image rm -- "$previous_image" >> "$diagnostic_log" 2>&1 || true
           fi
 
@@ -553,7 +631,7 @@ jobs:
 
           timeout 60s scp "${ssh_options[@]}" -P "$DEPLOY_HOST_PORT" \
             docker-compose.preview.yml \
-            "$DEPLOY_HOST_USER@$DEPLOY_HOST:${preview_path}/docker-compose.preview.yml"
+            "$DEPLOY_HOST_USER@$DEPLOY_HOST:${preview_path}/docker-compose.preview.candidate.yml"
 
           timeout 60s scp "${ssh_options[@]}" -P "$DEPLOY_HOST_PORT" \
             deploy-preview.sh \
@@ -561,7 +639,7 @@ jobs:
 
           timeout 60s ssh "${ssh_options[@]}" -p "$DEPLOY_HOST_PORT" \
             "$DEPLOY_HOST_USER@$DEPLOY_HOST" \
-            "chmod 0640 '${preview_path}/docker-compose.preview.yml' && chmod 0700 '${preview_path}/deploy-preview.sh'"
+            "chmod 0640 '${preview_path}/docker-compose.preview.candidate.yml' && chmod 0700 '${preview_path}/deploy-preview.sh'"
 
       - name: Deploy preview on host
         shell: bash
@@ -623,8 +701,7 @@ jobs:
       contents: read
       deployments: write
     environment:
-      name: preview
-      url: ${{ format('https://pli-{0}.onebone.me', github.event.pull_request.number) }}
+      name: preview-maintenance
 
     steps:
       - name: Validate cleanup configuration
@@ -708,6 +785,7 @@ jobs:
           readonly host_port=$((PREVIEW_PORT_BASE + PR_NUMBER))
           readonly project_name="plimap-pr-${PR_NUMBER}"
           readonly compose_file="${preview_path}/docker-compose.preview.yml"
+          readonly candidate_compose_file="${preview_path}/docker-compose.preview.candidate.yml"
           readonly capacity_lock="${PREVIEW_DEPLOY_ROOT}/.capacity.lock"
           readonly pr_lock="${PREVIEW_DEPLOY_ROOT}/.pr-${PR_NUMBER}.lock"
 
@@ -739,13 +817,21 @@ jobs:
             exit 1
           fi
 
-          image_ref=''
           env_file="${preview_path}/.env"
+          previous_env_file="${preview_path}/.env.previous"
           diagnostic_log="${preview_path}/.deploy-last.log"
-          if [[ -L "$env_file" || ( -e "$env_file" && ! -f "$env_file" ) ]]; then
-            echo "Preview environment path is not a regular file." >&2
-            exit 1
-          fi
+
+          for state_file in \
+            "$env_file" \
+            "$previous_env_file" \
+            "$compose_file" \
+            "$candidate_compose_file"
+          do
+            if [[ -L "$state_file" || ( -e "$state_file" && ! -f "$state_file" ) ]]; then
+              echo "Preview cleanup state contains an unsafe file." >&2
+              exit 1
+            fi
+          done
 
           if [[ -L "$diagnostic_log" ||
                 ( -e "$diagnostic_log" && ! -f "$diagnostic_log" ) ]]; then
@@ -755,38 +841,46 @@ jobs:
           : > "$diagnostic_log"
           chmod 0600 "$diagnostic_log"
 
-          if [[ -f "$env_file" ]]; then
-            image_owner="$(sed -n 's/^GHCR_OWNER=//p' "$env_file")"
-            image_digest="$(sed -n 's/^IMAGE_DIGEST=//p' "$env_file")"
+          image_refs=()
+          for image_env_file in "$env_file" "$previous_env_file"; do
+            [[ -f "$image_env_file" ]] || continue
+            image_owner="$(sed -n 's/^GHCR_OWNER=//p' "$image_env_file")"
+            image_digest="$(sed -n 's/^IMAGE_DIGEST=//p' "$image_env_file")"
             if [[ "$image_owner" =~ ^[a-z0-9._-]+$ &&
                   "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-              image_ref="ghcr.io/${image_owner}/plimap-web@${image_digest}"
+              image_refs+=("ghcr.io/${image_owner}/plimap-web@${image_digest}")
             fi
+          done
+
+          cleanup_compose_file=''
+          if [[ -f "$compose_file" ]]; then
+            cleanup_compose_file="$compose_file"
+          elif [[ -f "$candidate_compose_file" ]]; then
+            cleanup_compose_file="$candidate_compose_file"
           fi
 
-          if [[ -f "$compose_file" && ! -L "$compose_file" ]]; then
+          if [[ -n "$cleanup_compose_file" ]]; then
             GHCR_OWNER=cleanup \
             IMAGE_TAG=pr-1-000000000000 \
             IMAGE_DIGEST=sha256:0000000000000000000000000000000000000000000000000000000000000000 \
             HOST_PORT="$host_port" \
               timeout 2m docker compose \
                 --project-name "$project_name" \
-                --file "$compose_file" \
+                --file "$cleanup_compose_file" \
                 down --remove-orphans >> "$diagnostic_log" 2>&1
-          elif [[ -e "$compose_file" ]]; then
-            echo "Preview Compose path is not a regular file." >&2
-            exit 1
           fi
 
-          if [[ -n "$image_ref" ]]; then
+          for image_ref in "${image_refs[@]}"; do
             docker image rm -- "$image_ref" >> "$diagnostic_log" 2>&1 || true
-          fi
+          done
 
           for target in \
             "${preview_path}/.env" \
+            "${preview_path}/.env.previous" \
             "${preview_path}/.deployed-at" \
             "${preview_path}/.deploy-last.log" \
             "${preview_path}/docker-compose.preview.yml" \
+            "${preview_path}/docker-compose.preview.candidate.yml" \
             "${preview_path}/deploy-preview.sh"
           do
             if [[ -L "$target" || ( -e "$target" && ! -f "$target" ) ]]; then

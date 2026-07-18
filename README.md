@@ -126,11 +126,11 @@ pnpm dev
 
 미리보기 주소는 `https://pli-<PR_NUMBER>.onebone.me` 형식입니다. 동시에 최대 6개를 유지하고, 개별 이미지 크기는 256 MiB로 제한하며, 기본 TTL은 7일입니다. 컨테이너는 localhost에만 publish되고 non-root, read-only filesystem, 제한된 tmpfs, 내부 network, capability 제거, CPU·메모리·PID·로그 제한을 사용합니다.
 
-GitHub에는 `preview` Environment가 필요합니다. required reviewer와 `Prevent self-review`를 켜고 관리자 bypass를 끄는 것을 권장합니다. 배포와 정리 작업 모두 이 Environment를 통과합니다. 배포 워크플로는 기존 `DEPLOY_HOST`, `DEPLOY_HOST_KNOWN_HOSTS`, `DEPLOY_HOST_SSH_KEY`, `GHCR_PULL_TOKEN`, 프론트엔드 빌드용 Secret과 Variable을 재사용합니다. 따라서 미리보기 생성과 갱신은 Environment 승인을 받은 뒤 진행됩니다.
+GitHub에는 배포용 `preview`와 자동 정리용 `preview-maintenance` Environment가 필요합니다. `preview`에는 required reviewer와 `Prevent self-review`를 켜고 관리자 bypass를 끄는 것을 권장합니다. `preview-maintenance`에는 required reviewer를 두지 않아 PR 종료 및 TTL 정리가 자동으로 실행되게 합니다. 배포 워크플로는 기존 `DEPLOY_HOST`, `DEPLOY_HOST_KNOWN_HOSTS`, `DEPLOY_HOST_SSH_KEY`, `GHCR_PULL_TOKEN`, 프론트엔드 빌드용 Secret과 Variable을 재사용합니다. 따라서 미리보기 생성과 갱신만 `preview` Environment 승인을 받은 뒤 진행됩니다.
 
 미리보기는 프론트엔드만 격리하며 `VITE_API_BASE_URL`에 설정된 API와 기존 `VITE_*` 값을 공유합니다. `VITE_*` 값은 PR의 Docker build에서 읽을 수 있고 브라우저 번들에도 포함되므로 공개 가능한 값으로 취급하고 provider quota/referrer 제한을 적용해야 합니다. `pli-*.onebone.me`가 운영 서비스와 같은 registrable domain을 사용하는 결정에 따라 인증 쿠키는 반드시 host-only로 발급하고, CORS 및 OAuth callback은 필요한 hostname만 정확히 허용하며, CSRF 보호를 별도로 적용해야 합니다.
 
-워크플로 정의에 포함된 호스트 계약은 공개 정보로 취급합니다. 실행 중 생성되는 상세 진단은 GitHub Actions로 전달하지 않고 호스트의 권한 제한 파일에 보관합니다. `.github/workflows/preview-reconcile.yml`은 매일 만료된 미리보기를 정리하며, `preview` Environment에 required reviewer가 있으면 예약 정리도 승인이 있어야 실행됩니다.
+워크플로 정의에 포함된 호스트 계약은 공개 정보로 취급합니다. 실행 중 생성되는 상세 진단은 GitHub Actions로 전달하지 않고 호스트의 권한 제한 파일에 보관합니다. `.github/workflows/preview-reconcile.yml`은 `preview-maintenance` Environment를 사용해 매일 만료된 미리보기를 자동 정리합니다.
 
 ### 수동 배포 검증
 

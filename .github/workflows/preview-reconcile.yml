@@ -23,7 +23,7 @@ jobs:
     permissions:
       deployments: write
     environment:
-      name: preview
+      name: preview-maintenance
 
     steps:
       - name: Validate reconcile configuration
@@ -195,30 +195,46 @@ jobs:
               docker network ls -q --filter "label=com.docker.compose.project=${project_name}"
             )
             if [[ "${#network_ids[@]}" -gt 0 ]]; then
-              docker network rm -- "${network_ids[@]}" > /dev/null 2>&1 || true
-            fi
-
-            env_file="${preview_path}/.env"
-            image_ref=''
-            if [[ -f "$env_file" && ! -L "$env_file" ]]; then
-              image_owner="$(sed -n 's/^GHCR_OWNER=//p' "$env_file")"
-              image_digest="$(sed -n 's/^IMAGE_DIGEST=//p' "$env_file")"
-              if [[ "$image_owner" =~ ^[a-z0-9._-]+$ &&
-                    "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-                image_ref="ghcr.io/${image_owner}/plimap-web@${image_digest}"
+              if ! docker network rm -- "${network_ids[@]}" > /dev/null 2>&1; then
+                echo "Expired preview network cleanup failed." >&2
+                exec {pr_lock_fd}>&-
+                continue
               fi
             fi
 
-            if [[ -n "$image_ref" ]]; then
+            image_refs=()
+            for image_env_file in \
+              "${preview_path}/.env" \
+              "${preview_path}/.env.previous"
+            do
+              if [[ -L "$image_env_file" ||
+                    ( -e "$image_env_file" && ! -f "$image_env_file" ) ]]; then
+                echo "Expired preview image metadata is unsafe." >&2
+                image_refs=()
+                break
+              fi
+
+              [[ -f "$image_env_file" ]] || continue
+              image_owner="$(sed -n 's/^GHCR_OWNER=//p' "$image_env_file")"
+              image_digest="$(sed -n 's/^IMAGE_DIGEST=//p' "$image_env_file")"
+              if [[ "$image_owner" =~ ^[a-z0-9._-]+$ &&
+                    "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+                image_refs+=("ghcr.io/${image_owner}/plimap-web@${image_digest}")
+              fi
+            done
+
+            for image_ref in "${image_refs[@]}"; do
               docker image rm -- "$image_ref" > /dev/null 2>&1 || true
-            fi
+            done
 
             unsafe_target=no
             for target in \
               "${preview_path}/.env" \
+              "${preview_path}/.env.previous" \
               "${preview_path}/.deployed-at" \
               "${preview_path}/.deploy-last.log" \
               "${preview_path}/docker-compose.preview.yml" \
+              "${preview_path}/docker-compose.preview.candidate.yml" \
               "${preview_path}/deploy-preview.sh"
             do
               if [[ -L "$target" || ( -e "$target" && ! -f "$target" ) ]]; then
