@@ -59,12 +59,13 @@ export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
   const hasNoResults = normalizedQuery.length > 0 && filteredPlaces.length === 0 && !selectedPlace;
 
   return (
-    <main className="flex h-full flex-col bg-pli-black-85">
+    <main data-page="pin-place-search" className="flex h-full flex-col bg-pli-black-85">
       <h1 className="sr-only">핀 조회 장소 검색</h1>
 
       <div className="shrink-0 px-[15px] pt-[calc(env(safe-area-inset-top)+16px)]">
         <SearchInput
           autoFocus
+          containerClassName="map-search-hero"
           value={query}
           onChange={handleQueryChange}
           onClear={resetSearch}
@@ -76,7 +77,7 @@ export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
       </div>
 
       {isShowingRecentPlaces ? (
-        <h2 className="mt-5 shrink-0 px-[18px] body-15-m text-grayscale-600">최근 검색</h2>
+        <h2 className="mt-3 shrink-0 px-[18px] body-15-m text-grayscale-600">최근 검색</h2>
       ) : null}
 
       <section
