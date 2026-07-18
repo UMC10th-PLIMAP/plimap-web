@@ -92,6 +92,10 @@ pnpm dev
 
 이 저장소는 `develop` 브랜치 push 또는 GitHub Actions 수동 실행으로 테스트용 GHCR 이미지를 빌드한 뒤 배포 서버의 Docker Compose 서비스로 배포합니다. 실제 웹 서비스 배포는 별도로 Vercel에서도 진행합니다.
 
+`develop` 브랜치를 대상으로 같은 저장소에서 생성한 Pull Request는 별도의 미리보기 환경도 생성합니다. PR 번호가 70이면 `https://pli-70.onebone.me`에서 확인할 수 있으며, 새 커밋이 push되면 같은 주소의 컨테이너가 교체됩니다. PR이 닫히거나 병합되면 해당 Traefik 라우트, Docker Compose 프로젝트, 배포 파일을 제거합니다. Fork에서 생성된 PR은 미리보기 배포 대상에서 제외합니다.
+
+워크플로는 `pull_request_target`으로 base branch의 검토된 정의를 실행합니다. PR head 코드는 빌드 작업에서만 checkout하며, 배포 작업은 base commit의 `docker-compose.preview.yml`과 워크플로에 포함된 원격 스크립트만 사용합니다. 빌드가 반환한 OCI digest를 검증하고 같은 digest를 서버에서 pull하므로 배포 중 tag가 바뀌어도 다른 이미지가 실행되지 않습니다.
+
 ### GitHub Variables
 
 | 이름                | 설명                         | 예시                      |
@@ -118,11 +122,22 @@ pnpm dev
 
 `VITE_`로 시작하는 값은 GitHub Secrets로 관리하더라도 프론트엔드 빌드 결과물에는 포함될 수 있습니다.
 
+### PR 미리보기 호스트 설정
+
+미리보기 주소는 `https://pli-<PR_NUMBER>.onebone.me` 형식입니다. 동시에 최대 6개를 유지하고, 개별 이미지 크기는 256 MiB로 제한하며, 기본 TTL은 7일입니다. 컨테이너는 localhost에만 publish되고 non-root, read-only filesystem, 제한된 tmpfs, 내부 network, capability 제거, CPU·메모리·PID·로그 제한을 사용합니다.
+
+GitHub에는 `preview` Environment가 필요합니다. required reviewer와 `Prevent self-review`를 켜고 관리자 bypass를 끄는 것을 권장합니다. 배포와 정리 작업 모두 이 Environment를 통과합니다. 배포 워크플로는 기존 `DEPLOY_HOST`, `DEPLOY_HOST_KNOWN_HOSTS`, `DEPLOY_HOST_SSH_KEY`, `GHCR_PULL_TOKEN`, 프론트엔드 빌드용 Secret과 Variable을 재사용합니다. 따라서 미리보기 생성과 갱신은 Environment 승인을 받은 뒤 진행됩니다.
+
+미리보기는 프론트엔드만 격리하며 `VITE_API_BASE_URL`에 설정된 API와 기존 `VITE_*` 값을 공유합니다. `VITE_*` 값은 PR의 Docker build에서 읽을 수 있고 브라우저 번들에도 포함되므로 공개 가능한 값으로 취급하고 provider quota/referrer 제한을 적용해야 합니다. `pli-*.onebone.me`가 운영 서비스와 같은 registrable domain을 사용하는 결정에 따라 인증 쿠키는 반드시 host-only로 발급하고, CORS 및 OAuth callback은 필요한 hostname만 정확히 허용하며, CSRF 보호를 별도로 적용해야 합니다.
+
+워크플로 정의에 포함된 호스트 계약은 공개 정보로 취급합니다. 실행 중 생성되는 상세 진단은 GitHub Actions로 전달하지 않고 호스트의 권한 제한 파일에 보관합니다. `.github/workflows/preview-reconcile.yml`은 매일 만료된 미리보기를 정리하며, `preview` Environment에 required reviewer가 있으면 예약 정리도 승인이 있어야 실행됩니다.
+
 ### 수동 배포 검증
 
 ```bash
 pnpm build
 env GHCR_OWNER=owner IMAGE_TAG=test HOST_PORT=3000 docker compose -f docker-compose.prod.yml config
+env GHCR_OWNER=owner IMAGE_TAG=pr-70-000000000000 IMAGE_DIGEST=sha256:0000000000000000000000000000000000000000000000000000000000000000 HOST_PORT=20070 docker compose -f docker-compose.preview.yml config
 ```
 
 ## 화면 목록 및 플로우

@@ -1,0 +1,247 @@
+name: preview-reconcile
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: preview-reconcile
+  cancel-in-progress: false
+
+env:
+  PREVIEW_DEPLOY_ROOT: /home/deploy/product/plimap-web-previews
+  PREVIEW_ROUTE_HELPER: /usr/local/sbin/plimap-preview-route
+  PREVIEW_TTL_SECONDS: 604800
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      deployments: write
+    environment:
+      name: preview
+
+    steps:
+      - name: Validate reconcile configuration
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_KNOWN_HOSTS: ${{ secrets.DEPLOY_HOST_KNOWN_HOSTS }}
+          DEPLOY_HOST_SSH_KEY: ${{ secrets.DEPLOY_HOST_SSH_KEY }}
+          DEPLOY_HOST_PORT: ${{ secrets.DEPLOY_HOST_PORT || vars.DEPLOY_HOST_PORT || 22 }}
+          DEPLOY_HOST_USER: ${{ secrets.DEPLOY_HOST_USER || vars.DEPLOY_HOST_USER || 'deploy' }}
+        run: |
+          set -euo pipefail
+          required_vars=(DEPLOY_HOST DEPLOY_HOST_KNOWN_HOSTS DEPLOY_HOST_SSH_KEY DEPLOY_HOST_USER)
+          for name in "${required_vars[@]}"; do
+            if [[ -z "${!name}" ]]; then
+              echo "${name} must be configured for preview reconciliation." >&2
+              exit 1
+            fi
+          done
+
+          if [[ ! "$DEPLOY_HOST_PORT" =~ ^[0-9]+$ ||
+                ! "$DEPLOY_HOST_USER" =~ ^[A-Za-z0-9._-]+$ ]] ||
+             (( DEPLOY_HOST_PORT < 1 || DEPLOY_HOST_PORT > 65535 )); then
+            echo "Invalid reconcile SSH metadata." >&2
+            exit 1
+          fi
+
+      - name: Configure pinned SSH access
+        shell: bash
+        env:
+          DEPLOY_HOST_KNOWN_HOSTS: ${{ secrets.DEPLOY_HOST_KNOWN_HOSTS }}
+          DEPLOY_HOST_SSH_KEY: ${{ secrets.DEPLOY_HOST_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_HOST_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_HOST_SSH_KEY" > ~/.ssh/preview_deploy_key
+
+      - name: Remove expired previews
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_PORT: ${{ secrets.DEPLOY_HOST_PORT || vars.DEPLOY_HOST_PORT || 22 }}
+          DEPLOY_HOST_USER: ${{ secrets.DEPLOY_HOST_USER || vars.DEPLOY_HOST_USER || 'deploy' }}
+        run: |
+          set -euo pipefail
+
+          quote() {
+            printf '%q' "$1"
+          }
+
+          remote_command=$(printf 'PREVIEW_DEPLOY_ROOT=%s PREVIEW_ROUTE_HELPER=%s PREVIEW_TTL_SECONDS=%s /bin/bash -s' \
+            "$(quote "$PREVIEW_DEPLOY_ROOT")" \
+            "$(quote "$PREVIEW_ROUTE_HELPER")" \
+            "$(quote "$PREVIEW_TTL_SECONDS")")
+
+          ssh_options=(
+            -i ~/.ssh/preview_deploy_key
+            -o IdentitiesOnly=yes
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=yes
+            -o ConnectTimeout=10
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=2
+            -p "$DEPLOY_HOST_PORT"
+          )
+
+          timeout 8m ssh "${ssh_options[@]}" \
+            "$DEPLOY_HOST_USER@$DEPLOY_HOST" "$remote_command" <<'REMOTE'
+          set -euo pipefail
+
+          PATH=/usr/sbin:/usr/bin:/sbin:/bin
+          export PATH
+
+          readonly expected_root=/home/deploy/product/plimap-web-previews
+          readonly expected_helper=/usr/local/sbin/plimap-preview-route
+
+          : "${PREVIEW_DEPLOY_ROOT:?PREVIEW_DEPLOY_ROOT is required}"
+          : "${PREVIEW_ROUTE_HELPER:?PREVIEW_ROUTE_HELPER is required}"
+          : "${PREVIEW_TTL_SECONDS:?PREVIEW_TTL_SECONDS is required}"
+
+          if [[ "$PREVIEW_DEPLOY_ROOT" != "$expected_root" ||
+                "$PREVIEW_ROUTE_HELPER" != "$expected_helper" ||
+                ! "$PREVIEW_TTL_SECONDS" =~ ^[1-9][0-9]*$ ||
+                ! -d "$PREVIEW_DEPLOY_ROOT" || -L "$PREVIEW_DEPLOY_ROOT" ||
+                ! -x "$PREVIEW_ROUTE_HELPER" || -L "$PREVIEW_ROUTE_HELPER" ]]; then
+            echo "Preview reconcile contract is invalid." >&2
+            exit 1
+          fi
+
+          capacity_lock="${PREVIEW_DEPLOY_ROOT}/.capacity.lock"
+          if [[ -L "$capacity_lock" ]]; then
+            echo "Capacity lock is a symlink." >&2
+            exit 1
+          fi
+
+          exec 8>"$capacity_lock"
+          flock -w 60 8
+
+          now="$(date +%s)"
+          removed_count=0
+          shopt -s nullglob
+
+          for preview_path in "$PREVIEW_DEPLOY_ROOT"/pr-*; do
+            [[ -d "$preview_path" && ! -L "$preview_path" ]] || continue
+            preview_name="${preview_path##*/}"
+            if [[ ! "$preview_name" =~ ^pr-([1-9][0-9]{0,3})$ ]]; then
+              echo "Skipping an unexpected preview directory." >&2
+              continue
+            fi
+
+            pr_number="${BASH_REMATCH[1]}"
+            deployed_at="${preview_path}/.deployed-at"
+            if [[ -L "$deployed_at" || ( -e "$deployed_at" && ! -f "$deployed_at" ) ]]; then
+              echo "Skipping a preview with an unsafe timestamp." >&2
+              continue
+            fi
+
+            if [[ -f "$deployed_at" ]]; then
+              deployed_epoch="$(stat -c %Y "$deployed_at")"
+            else
+              deployed_epoch="$(stat -c %Y "$preview_path")"
+            fi
+
+            if (( now - deployed_epoch < PREVIEW_TTL_SECONDS )); then
+              continue
+            fi
+
+            pr_lock="${PREVIEW_DEPLOY_ROOT}/.pr-${pr_number}.lock"
+            if [[ -L "$pr_lock" ]]; then
+              echo "Skipping a preview with an unsafe lock." >&2
+              continue
+            fi
+
+            exec {pr_lock_fd}>"$pr_lock"
+            if ! flock -w 60 "$pr_lock_fd"; then
+              echo "Could not lock an expired preview." >&2
+              exec {pr_lock_fd}>&-
+              continue
+            fi
+
+            if [[ ! -d "$preview_path" || -L "$preview_path" ]]; then
+              exec {pr_lock_fd}>&-
+              continue
+            fi
+
+            if ! sudo -n "$PREVIEW_ROUTE_HELPER" down "$pr_number" \
+              > /dev/null 2>&1
+            then
+              echo "Expired preview route cleanup failed." >&2
+              exec {pr_lock_fd}>&-
+              continue
+            fi
+            project_name="plimap-pr-${pr_number}"
+
+            mapfile -t container_ids < <(
+              docker ps -aq --filter "label=com.docker.compose.project=${project_name}"
+            )
+            if [[ "${#container_ids[@]}" -gt 0 ]]; then
+              if ! docker rm -f -- "${container_ids[@]}" > /dev/null 2>&1; then
+                echo "Expired preview container cleanup failed." >&2
+                exec {pr_lock_fd}>&-
+                continue
+              fi
+            fi
+
+            mapfile -t network_ids < <(
+              docker network ls -q --filter "label=com.docker.compose.project=${project_name}"
+            )
+            if [[ "${#network_ids[@]}" -gt 0 ]]; then
+              docker network rm -- "${network_ids[@]}" > /dev/null 2>&1 || true
+            fi
+
+            env_file="${preview_path}/.env"
+            image_ref=''
+            if [[ -f "$env_file" && ! -L "$env_file" ]]; then
+              image_owner="$(sed -n 's/^GHCR_OWNER=//p' "$env_file")"
+              image_digest="$(sed -n 's/^IMAGE_DIGEST=//p' "$env_file")"
+              if [[ "$image_owner" =~ ^[a-z0-9._-]+$ &&
+                    "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+                image_ref="ghcr.io/${image_owner}/plimap-web@${image_digest}"
+              fi
+            fi
+
+            if [[ -n "$image_ref" ]]; then
+              docker image rm -- "$image_ref" > /dev/null 2>&1 || true
+            fi
+
+            unsafe_target=no
+            for target in \
+              "${preview_path}/.env" \
+              "${preview_path}/.deployed-at" \
+              "${preview_path}/.deploy-last.log" \
+              "${preview_path}/docker-compose.preview.yml" \
+              "${preview_path}/deploy-preview.sh"
+            do
+              if [[ -L "$target" || ( -e "$target" && ! -f "$target" ) ]]; then
+                echo "Refusing an unsafe expired-preview cleanup target." >&2
+                unsafe_target=yes
+                break
+              fi
+              rm -f -- "$target"
+            done
+
+            if [[ "$unsafe_target" == yes ]]; then
+              exec {pr_lock_fd}>&-
+              continue
+            fi
+
+            if rmdir -- "$preview_path" 2> /dev/null; then
+              removed_count=$((removed_count + 1))
+            else
+              echo "An expired preview directory was not empty." >&2
+            fi
+
+            exec {pr_lock_fd}>&-
+          done
+
+          echo "Expired preview reconciliation complete; removed=${removed_count}."
+          REMOTE
