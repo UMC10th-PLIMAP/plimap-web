@@ -140,7 +140,7 @@ jobs:
     permissions:
       contents: read
       deployments: write
-      issues: write
+      pull-requests: write
     environment:
       name: preview
       url: ${{ format('https://pli-{0}.onebone.me', github.event.pull_request.number) }}
