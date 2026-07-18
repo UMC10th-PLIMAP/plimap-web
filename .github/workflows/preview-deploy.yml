@@ -23,7 +23,6 @@ env:
   IMAGE_NAME: plimap-web
   PREVIEW_DEPLOY_ROOT: /home/deploy/product/plimap-web-previews
   PREVIEW_DOMAIN: onebone.me
-  PREVIEW_PORT_BASE: 20000
   PREVIEW_ROUTE_HELPER: /usr/local/sbin/plimap-preview-route
   PREVIEW_MAX_ACTIVE: 6
   PREVIEW_MAX_IMAGE_BYTES: 268435456
@@ -293,12 +292,10 @@ jobs:
 
           readonly expected_root=/home/deploy/product/plimap-web-previews
           readonly expected_domain=onebone.me
-          readonly expected_port_base=20000
           readonly expected_helper=/usr/local/sbin/plimap-preview-route
 
           : "${PREVIEW_DEPLOY_ROOT:?PREVIEW_DEPLOY_ROOT is required}"
           : "${PREVIEW_DOMAIN:?PREVIEW_DOMAIN is required}"
-          : "${PREVIEW_PORT_BASE:?PREVIEW_PORT_BASE is required}"
           : "${PREVIEW_ROUTE_HELPER:?PREVIEW_ROUTE_HELPER is required}"
           : "${PREVIEW_MAX_ACTIVE:?PREVIEW_MAX_ACTIVE is required}"
           : "${PREVIEW_MAX_IMAGE_BYTES:?PREVIEW_MAX_IMAGE_BYTES is required}"
@@ -310,7 +307,6 @@ jobs:
 
           if [[ "$PREVIEW_DEPLOY_ROOT" != "$expected_root" ||
                 "$PREVIEW_DOMAIN" != "$expected_domain" ||
-                "$PREVIEW_PORT_BASE" != "$expected_port_base" ||
                 "$PREVIEW_ROUTE_HELPER" != "$expected_helper" ]]; then
             echo "Preview deployment contract does not match the host." >&2
             exit 1
@@ -327,10 +323,24 @@ jobs:
             exit 1
           fi
 
+          is_ipv4() {
+            local address=$1
+            local octet
+            local -a octets
+
+            IFS=. read -r -a octets <<< "$address"
+            [[ "${#octets[@]}" -eq 4 ]] || return 1
+
+            for octet in "${octets[@]}"; do
+              [[ "$octet" =~ ^[0-9]{1,3}$ ]] || return 1
+              (( 10#$octet <= 255 )) || return 1
+            done
+          }
+
           readonly preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
           readonly preview_host="pli-${PR_NUMBER}.${PREVIEW_DOMAIN}"
-          readonly host_port=$((PREVIEW_PORT_BASE + PR_NUMBER))
           readonly project_name="plimap-pr-${PR_NUMBER}"
+          readonly network_name="${project_name}_preview-internal"
           readonly compose_file="${preview_path}/docker-compose.preview.yml"
           readonly candidate_compose_file="${preview_path}/docker-compose.preview.candidate.yml"
           readonly env_file="${preview_path}/.env"
@@ -502,7 +512,6 @@ jobs:
             "GHCR_OWNER=$GHCR_OWNER" \
             "IMAGE_TAG=$IMAGE_TAG" \
             "IMAGE_DIGEST=$IMAGE_DIGEST" \
-            "HOST_PORT=$host_port" \
             > "$env_tmp"
           chmod 0600 "$env_tmp"
 
@@ -571,9 +580,39 @@ jobs:
             exit 1
           fi
 
-          curl --noproxy '*' --fail --show-error --silent \
-            --connect-timeout 3 --max-time 10 --output /dev/null \
-            "http://127.0.0.1:${host_port}/"
+          if ! network_internal="$(
+            docker network inspect "$network_name" --format '{{.Internal}}' \
+              2>> "$diagnostic_log"
+          )" || [[ "$network_internal" != true ]]; then
+            echo "Preview container network is not internally isolated." >&2
+            exit 1
+          fi
+
+          if ! container_ip="$(
+            docker inspect "$container_id" \
+              --format "{{with index .NetworkSettings.Networks \"${network_name}\"}}{{.IPAddress}}{{end}}" \
+              2>> "$diagnostic_log"
+          )" || ! is_ipv4 "$container_ip"; then
+            echo "Preview container did not receive a valid internal address." >&2
+            exit 1
+          fi
+
+          direct_ready=no
+          for attempt in $(seq 1 15); do
+            if curl --noproxy '*' --fail --show-error --silent \
+              --connect-timeout 3 --max-time 10 --output /dev/null \
+              "http://${container_ip}:8080/" >> "$diagnostic_log" 2>&1
+            then
+              direct_ready=yes
+              break
+            fi
+            sleep 1
+          done
+
+          if [[ "$direct_ready" != yes ]]; then
+            echo "Preview container is not reachable from the host network." >&2
+            exit 1
+          fi
 
           if ! sudo -n "$PREVIEW_ROUTE_HELPER" up "$PR_NUMBER" \
             >> "$diagnostic_log" 2>&1
@@ -661,10 +700,9 @@ jobs:
           }
 
           preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
-          remote_command=$(printf 'PREVIEW_DEPLOY_ROOT=%s PREVIEW_DOMAIN=%s PREVIEW_PORT_BASE=%s PREVIEW_ROUTE_HELPER=%s PREVIEW_MAX_ACTIVE=%s PREVIEW_MAX_IMAGE_BYTES=%s PR_NUMBER=%s GHCR_OWNER=%s IMAGE_TAG=%s IMAGE_DIGEST=%s GHCR_PULL_USERNAME=%s /bin/bash %s' \
+          remote_command=$(printf 'PREVIEW_DEPLOY_ROOT=%s PREVIEW_DOMAIN=%s PREVIEW_ROUTE_HELPER=%s PREVIEW_MAX_ACTIVE=%s PREVIEW_MAX_IMAGE_BYTES=%s PR_NUMBER=%s GHCR_OWNER=%s IMAGE_TAG=%s IMAGE_DIGEST=%s GHCR_PULL_USERNAME=%s /bin/bash %s' \
             "$(quote "$PREVIEW_DEPLOY_ROOT")" \
             "$(quote "$PREVIEW_DOMAIN")" \
-            "$(quote "$PREVIEW_PORT_BASE")" \
             "$(quote "$PREVIEW_ROUTE_HELPER")" \
             "$(quote "$PREVIEW_MAX_ACTIVE")" \
             "$(quote "$PREVIEW_MAX_IMAGE_BYTES")" \
@@ -762,18 +800,15 @@ jobs:
 
           readonly expected_root=/home/deploy/product/plimap-web-previews
           readonly expected_domain=onebone.me
-          readonly expected_port_base=20000
           readonly expected_helper=/usr/local/sbin/plimap-preview-route
 
           : "${PREVIEW_DEPLOY_ROOT:?PREVIEW_DEPLOY_ROOT is required}"
           : "${PREVIEW_DOMAIN:?PREVIEW_DOMAIN is required}"
-          : "${PREVIEW_PORT_BASE:?PREVIEW_PORT_BASE is required}"
           : "${PREVIEW_ROUTE_HELPER:?PREVIEW_ROUTE_HELPER is required}"
           : "${PR_NUMBER:?PR_NUMBER is required}"
 
           if [[ "$PREVIEW_DEPLOY_ROOT" != "$expected_root" ||
                 "$PREVIEW_DOMAIN" != "$expected_domain" ||
-                "$PREVIEW_PORT_BASE" != "$expected_port_base" ||
                 "$PREVIEW_ROUTE_HELPER" != "$expected_helper" ||
                 ! "$PR_NUMBER" =~ ^[1-9][0-9]{0,3}$ ]]; then
             echo "Preview cleanup contract is invalid." >&2
@@ -782,7 +817,6 @@ jobs:
 
           readonly preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
           readonly preview_host="pli-${PR_NUMBER}.${PREVIEW_DOMAIN}"
-          readonly host_port=$((PREVIEW_PORT_BASE + PR_NUMBER))
           readonly project_name="plimap-pr-${PR_NUMBER}"
           readonly compose_file="${preview_path}/docker-compose.preview.yml"
           readonly candidate_compose_file="${preview_path}/docker-compose.preview.candidate.yml"
@@ -860,10 +894,12 @@ jobs:
           fi
 
           if [[ -n "$cleanup_compose_file" ]]; then
+            # HOST_PORT keeps cleanup compatible with previews created by the
+            # previous port-publishing Compose contract. `down` never binds it.
             GHCR_OWNER=cleanup \
             IMAGE_TAG=pr-1-000000000000 \
             IMAGE_DIGEST=sha256:0000000000000000000000000000000000000000000000000000000000000000 \
-            HOST_PORT="$host_port" \
+            HOST_PORT=1 \
               timeout 2m docker compose \
                 --project-name "$project_name" \
                 --file "$cleanup_compose_file" \
@@ -913,10 +949,9 @@ jobs:
             printf '%q' "$1"
           }
 
-          remote_command=$(printf 'PREVIEW_DEPLOY_ROOT=%s PREVIEW_DOMAIN=%s PREVIEW_PORT_BASE=%s PREVIEW_ROUTE_HELPER=%s PR_NUMBER=%s /bin/bash -s' \
+          remote_command=$(printf 'PREVIEW_DEPLOY_ROOT=%s PREVIEW_DOMAIN=%s PREVIEW_ROUTE_HELPER=%s PR_NUMBER=%s /bin/bash -s' \
             "$(quote "$PREVIEW_DEPLOY_ROOT")" \
             "$(quote "$PREVIEW_DOMAIN")" \
-            "$(quote "$PREVIEW_PORT_BASE")" \
             "$(quote "$PREVIEW_ROUTE_HELPER")" \
             "$(quote "$PR_NUMBER")")
 
