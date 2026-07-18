@@ -2,30 +2,15 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
-import type { KakaoLocalPlace } from '@/features/map/types';
+import type { MapPlace } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
-import type { PinSearchPlace } from '@/features/pin/types';
 import type { AppOutletContext } from '@/layouts/RootLayout';
 import { shouldUseViewTransition } from '@/lib/viewTransitions';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
-
-const toKakaoLocalPlace = (place: PinSearchPlace): KakaoLocalPlace => ({
-  id: place.id,
-  placeName: place.placeName,
-  categoryName: place.category,
-  categoryGroupName: place.category,
-  phone: '',
-  addressName: place.address,
-  roadAddressName: place.address,
-  placeUrl: '',
-  x: place.coordinates.lng,
-  y: place.coordinates.lat,
-  distance: place.distance,
-});
 
 const MapPage: React.FC = () => {
   const navigate = useNavigate();
@@ -40,8 +25,8 @@ const MapPage: React.FC = () => {
   const [mapLoadError, setMapLoadError] = useState<string | null>(
     hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
-  const placeResults = useMemo(
-    () => (selectedMapPlace ? [toKakaoLocalPlace(selectedMapPlace)] : []),
+  const placeResults = useMemo<MapPlace[]>(
+    () => (selectedMapPlace ? [selectedMapPlace] : []),
     [selectedMapPlace],
   );
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(
