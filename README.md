@@ -92,7 +92,7 @@ pnpm dev
 
 이 저장소는 `develop` 브랜치 push 또는 GitHub Actions 수동 실행으로 테스트용 GHCR 이미지를 빌드한 뒤 배포 서버의 Docker Compose 서비스로 배포합니다. 실제 웹 서비스 배포는 별도로 Vercel에서도 진행합니다.
 
-`develop` 브랜치를 대상으로 같은 저장소에서 생성한 Pull Request는 별도의 미리보기 환경도 생성합니다. PR 번호가 70이면 `https://pli-70.onebone.me`에서 확인할 수 있으며, 새 커밋이 push되면 같은 주소의 컨테이너가 교체됩니다. PR이 닫히거나 병합되면 해당 Traefik 라우트, Docker Compose 프로젝트, 배포 파일을 제거합니다. Fork에서 생성된 PR은 미리보기 배포 대상에서 제외합니다.
+`develop` 브랜치를 대상으로 같은 저장소에서 생성한 Pull Request는 별도의 미리보기 환경도 생성합니다. PR 번호가 70이면 `https://pli-70.onebone.me`에서 확인할 수 있으며, 새 커밋이 push되면 같은 주소의 컨테이너가 교체됩니다. 공개 상태 확인까지 성공하면 워크플로가 PR에 미리보기 URL을 한 번만 댓글로 남깁니다. PR이 닫히거나 병합되면 해당 Traefik 라우트, Docker Compose 프로젝트, 배포 파일을 제거합니다. Fork에서 생성된 PR은 미리보기 배포 대상에서 제외합니다.
 
 워크플로는 `pull_request_target`으로 base branch의 검토된 정의를 실행합니다. PR head 코드는 빌드 작업에서만 checkout하며, 배포 작업은 base commit의 `docker-compose.preview.yml`과 워크플로에 포함된 원격 스크립트만 사용합니다. 빌드가 반환한 OCI digest를 검증하고 같은 digest를 서버에서 pull하므로 배포 중 tag가 바뀌어도 다른 이미지가 실행되지 않습니다.
 

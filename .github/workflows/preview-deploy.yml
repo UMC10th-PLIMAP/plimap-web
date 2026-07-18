@@ -140,6 +140,7 @@ jobs:
     permissions:
       contents: read
       deployments: write
+      issues: write
     environment:
       name: preview
       url: ${{ format('https://pli-{0}.onebone.me', github.event.pull_request.number) }}
@@ -727,6 +728,30 @@ jobs:
           printf '%s\n' "$GHCR_PULL_TOKEN" |
             timeout 15m ssh "${ssh_options[@]}" \
               "$DEPLOY_HOST_USER@$DEPLOY_HOST" "$remote_command"
+
+      - name: Comment preview URL
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PREVIEW_URL: ${{ format('https://pli-{0}.onebone.me', github.event.pull_request.number) }}
+        run: |
+          set -euo pipefail
+
+          existing_comment_id="$(
+            gh api --paginate \
+              "repos/${GH_REPO}/issues/${PR_NUMBER}/comments?per_page=100" |
+              jq --slurp --raw-output --arg url "$PREVIEW_URL" \
+                '[.[][] | select(.user.login == "github-actions[bot]" and .body == $url) | .id][0] // empty'
+          )"
+
+          if [[ -z "$existing_comment_id" ]]; then
+            gh api --method POST \
+              "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" \
+              --field body="$PREVIEW_URL" \
+              > /dev/null
+          fi
 
   cleanup:
     if: >-
