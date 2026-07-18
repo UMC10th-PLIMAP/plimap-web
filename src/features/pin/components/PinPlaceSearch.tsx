@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 
 import { SearchInput } from '@/components/ui/SearchInput';
 import { PlaceResultRow } from '@/features/pin/components/PlaceResultRow';
@@ -23,9 +23,31 @@ const matchesQuery = (place: PinSearchPlace, query: string) => {
 };
 
 export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [selectedPlace, setSelectedPlace] = useState<PinSearchPlace | null>(null);
   const normalizedQuery = normalizeSearchText(query);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const focusSearchInput = () => {
+      if (!isCancelled) searchInputRef.current?.focus({ preventScroll: true });
+    };
+    const activeViewTransition = (
+      document as Document & { activeViewTransition?: { finished: Promise<void> } | null }
+    ).activeViewTransition;
+
+    if (!activeViewTransition) {
+      focusSearchInput();
+      return;
+    }
+
+    void activeViewTransition.finished.then(focusSearchInput, focusSearchInput);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const filteredPlaces = useMemo(() => {
     if (!normalizedQuery || selectedPlace) return [];
@@ -64,7 +86,7 @@ export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
 
       <div className="shrink-0 px-[15px] pt-[calc(env(safe-area-inset-top)+16px)]">
         <SearchInput
-          autoFocus
+          ref={searchInputRef}
           containerClassName="map-search-hero"
           value={query}
           onChange={handleQueryChange}
