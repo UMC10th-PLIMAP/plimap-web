@@ -25,3 +25,19 @@ export type Song = {
   waveformPeaks?: number[];
   albumImageUrl?: string;
 };
+
+export type PlaceResult = {
+  id: string;
+  creatorName?: string;
+  category: string;
+  placeName: string;
+  address: string;
+  distance: number;
+};
+
+export type PinSearchPlace = PlaceResult & {
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+};

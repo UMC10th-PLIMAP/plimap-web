@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import type { Pin } from '@/types/pin';
+import type { Pin } from '@/features/pin/types';
 
 import NextIcon from '@/assets/icons/next.svg?react';
 import HeartIcon from '@/assets/icons/heart.svg?react';
@@ -33,7 +33,7 @@ export function PinCard({ pin, onClick }: PinCardProps) {
             className={cn('size-4', liked ? 'fill-red text-red' : 'text-grayscale-400')}
             aria-hidden
           />
-          {likeCount}
+          {likeCount ?? 0}
         </div>
       </div>
 

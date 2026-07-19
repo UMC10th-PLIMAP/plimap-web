@@ -14,7 +14,10 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: plimap-web
   DEPLOY_PATH: ${{ vars.DEPLOY_PATH || secrets.DEPLOY_PATH || '/opt/plimap-web' }}
+  BUILDKIT_PROGRESS: quiet
+  DOCKER_BUILD_CHECKS_ANNOTATIONS: 'false'
   DOCKER_BUILD_RECORD_UPLOAD: 'false'
+  DOCKER_BUILD_SUMMARY: 'false'
 
 jobs:
   build-and-deploy:
@@ -170,14 +173,43 @@ jobs:
             > .env
 
           docker_config="$(mktemp -d)"
+          diagnostic_log="${DEPLOY_PATH}/.deploy-last.log"
+
+          if [[ -L "$diagnostic_log" ||
+                ( -e "$diagnostic_log" && ! -f "$diagnostic_log" ) ]]; then
+            echo "Deployment diagnostic path is unsafe." >&2
+            exit 1
+          fi
+
+          : > "$diagnostic_log"
+          chmod 0600 "$diagnostic_log"
           export DOCKER_CONFIG="$docker_config"
           trap 'rm -rf "$docker_config"' EXIT
 
           IFS= read -r ghcr_pull_token
-          printf '%s' "$ghcr_pull_token" | docker login ghcr.io -u "$GHCR_PULL_USERNAME" --password-stdin
-          docker compose -f docker-compose.prod.yml pull
-          docker compose -f docker-compose.prod.yml up -d --remove-orphans
-          docker image prune -f
+          if ! printf '%s' "$ghcr_pull_token" |
+            docker login ghcr.io -u "$GHCR_PULL_USERNAME" --password-stdin \
+              >> "$diagnostic_log" 2>&1
+          then
+            echo "Registry authentication failed; inspect the protected host diagnostic." >&2
+            exit 1
+          fi
+
+          if ! docker compose -f docker-compose.prod.yml pull --quiet \
+            >> "$diagnostic_log" 2>&1
+          then
+            echo "Production image pull failed; inspect the protected host diagnostic." >&2
+            exit 1
+          fi
+
+          if ! docker compose -f docker-compose.prod.yml up -d --remove-orphans \
+            >> "$diagnostic_log" 2>&1
+          then
+            echo "Production container update failed; inspect the protected host diagnostic." >&2
+            exit 1
+          fi
+
+          docker image prune -f >> "$diagnostic_log" 2>&1 || true
           REMOTE
 
           scp -P "$DEPLOY_HOST_PORT" deploy.sh "$DEPLOY_HOST_USER@$DEPLOY_HOST:${DEPLOY_PATH}/deploy.sh"
