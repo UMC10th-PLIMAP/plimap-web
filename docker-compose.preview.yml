@@ -15,7 +15,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 6
-    mem_limit: 128m
+    mem_limit: 16m
     cpus: 0.25
     pids_limit: 50
     security_opt:
