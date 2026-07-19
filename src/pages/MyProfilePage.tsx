@@ -42,12 +42,12 @@ export default function MyProfilePage() {
               onClick: () => navigate('/app'),
             },
             {
-              label: <ShareIcon className="size-5" />,
+              label: <ShareIcon />,
               onClick: () => {
                 // TODO: 프로필 공유 연동
               },
               'aria-label': '프로필 공유',
-              className: 'size-9',
+              className: 'max-w-9 max-h-9',
             },
           ]}
         />
