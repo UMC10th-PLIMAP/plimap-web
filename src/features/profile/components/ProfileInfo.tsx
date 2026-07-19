@@ -7,7 +7,7 @@ type ProfileInfoProps = {
 function StatItem({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex flex-col min-w-[34px] items-center ">
-      <span className="body-18-sb text-grayscale-100">{value}</span>
+      <span className="head-18-sb text-grayscale-100">{value}</span>
       <span className="body-15-r text-grayscale-400">{label}</span>
     </div>
   );
