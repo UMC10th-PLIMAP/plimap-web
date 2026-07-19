@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 import { PinPlaceSearch } from '@/features/pin/components/PinPlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
 import type { AppOutletContext } from '@/layouts/RootLayout';
-import { runViewTransition, shouldUseViewTransition } from '@/lib/viewTransitions';
 
 type PinSearchLocationState = {
   fromMap?: boolean;
@@ -17,13 +16,12 @@ export default function PinPlaceSearchPage() {
 
   const returnToMap = () => {
     if (cameFromMap) {
-      runViewTransition(() => navigate(-1));
+      navigate(-1);
       return;
     }
 
     navigate('/app', {
       replace: true,
-      viewTransition: shouldUseViewTransition(),
     });
   };
 

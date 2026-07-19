@@ -1,20 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
 import type { MapPlace } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
-import type { AppOutletContext } from '@/layouts/RootLayout';
-import { shouldUseViewTransition } from '@/lib/viewTransitions';
+import type { PinSearchPlace } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 
-const MapPage: React.FC = () => {
+type MapPageProps = {
+  selectedMapPlace: PinSearchPlace | null;
+};
+
+const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace }) => {
   const navigate = useNavigate();
-  const { selectedMapPlace } = useOutletContext<AppOutletContext>();
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
@@ -29,9 +31,7 @@ const MapPage: React.FC = () => {
     () => (selectedMapPlace ? [selectedMapPlace] : []),
     [selectedMapPlace],
   );
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(
-    selectedMapPlace?.id ?? null,
-  );
+  const selectedPlaceId = selectedMapPlace?.id ?? null;
   const mapViewerRef = useRef<MapViewerHandle>(null);
 
   // --- 구글맵 스크립트 로드 (setState는 전부 프로미스 콜백 안에서만 일어나 effect에서 안전하게 호출 가능) ---
@@ -102,7 +102,6 @@ const MapPage: React.FC = () => {
             onClick={() =>
               navigate('/app/pin/search', {
                 state: { fromMap: true },
-                viewTransition: shouldUseViewTransition(),
               })
             }
           />
@@ -134,7 +133,6 @@ const MapPage: React.FC = () => {
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
         onZoomChanged={handleZoomChange}
-        onSelectPlace={setSelectedPlaceId}
       />
     </div>
   );

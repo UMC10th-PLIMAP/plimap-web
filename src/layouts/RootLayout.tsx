@@ -13,10 +13,11 @@ const RootLayout = () => {
   const selectMapPlace = useCallback((place: PinSearchPlace) => {
     setSelectedMapPlace(place);
   }, []);
+  const outletContext = { selectedMapPlace, selectMapPlace } satisfies AppOutletContext;
 
   return (
-    <div className="max-w-[402px] h-screen mx-auto bg-pli-black-100 overflow-y-auto scrollbar-hide">
-      <Outlet context={{ selectedMapPlace, selectMapPlace } satisfies AppOutletContext} />
+    <div className="mx-auto h-screen max-w-[402px] overflow-y-auto bg-pli-black-100 scrollbar-hide">
+      <Outlet context={outletContext} />
     </div>
   );
 };
