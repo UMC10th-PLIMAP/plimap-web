@@ -24,7 +24,7 @@ env:
   PREVIEW_DEPLOY_ROOT: /home/deploy/product/plimap-web-previews
   PREVIEW_DOMAIN: onebone.me
   PREVIEW_ROUTE_HELPER: /usr/local/sbin/plimap-preview-route
-  PREVIEW_MAX_ACTIVE: 6
+  PREVIEW_MAX_ACTIVE: 12
   PREVIEW_MAX_IMAGE_BYTES: 268435456
   BUILDKIT_PROGRESS: quiet
   DOCKER_BUILD_CHECKS_ANNOTATIONS: 'false'

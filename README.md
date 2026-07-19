@@ -124,7 +124,7 @@ pnpm dev
 
 ### PR 미리보기 호스트 설정
 
-미리보기 주소는 `https://pli-<PR_NUMBER>.onebone.me` 형식입니다. 동시에 최대 6개를 유지하고, 개별 이미지 크기는 256 MiB로 제한하며, 기본 TTL은 7일입니다. 컨테이너 포트는 호스트에 publish하지 않으며, host-network Traefik이 격리된 Docker network의 컨테이너 IP로 직접 연결합니다. 컨테이너는 non-root, read-only filesystem, 제한된 tmpfs, 내부 network, capability 제거, CPU·메모리·PID·로그 제한을 사용합니다.
+미리보기 주소는 `https://pli-<PR_NUMBER>.onebone.me` 형식입니다. 동시에 최대 12개를 유지하고, 개별 이미지 크기는 256 MiB로 제한하며, 기본 TTL은 7일입니다. 컨테이너 포트는 호스트에 publish하지 않으며, host-network Traefik이 격리된 Docker network의 컨테이너 IP로 직접 연결합니다. 컨테이너는 non-root, read-only filesystem, 제한된 tmpfs, 내부 network, capability 제거, CPU·메모리·PID·로그 제한을 사용합니다.
 
 GitHub에는 배포용 `preview`와 자동 정리용 `preview-maintenance` Environment가 필요합니다. `preview`에는 required reviewer와 `Prevent self-review`를 켜고 관리자 bypass를 끄는 것을 권장합니다. `preview-maintenance`에는 required reviewer를 두지 않아 PR 종료 및 TTL 정리가 자동으로 실행되게 합니다. 배포 워크플로는 기존 `DEPLOY_HOST`, `DEPLOY_HOST_KNOWN_HOSTS`, `DEPLOY_HOST_SSH_KEY`, `GHCR_PULL_TOKEN`, 프론트엔드 빌드용 Secret과 Variable을 재사용합니다. 따라서 미리보기 생성과 갱신만 `preview` Environment 승인을 받은 뒤 진행됩니다.
 
