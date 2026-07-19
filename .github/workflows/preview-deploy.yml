@@ -1,0 +1,995 @@
+name: preview-deploy
+
+# pull_request_target keeps this workflow definition on the trusted base branch.
+# PR-controlled code is checked out only for the isolated Docker build job.
+on:
+  pull_request_target:
+    branches:
+      - develop
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+
+permissions: {}
+
+concurrency:
+  group: preview-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: plimap-web
+  PREVIEW_DEPLOY_ROOT: /home/deploy/product/plimap-web-previews
+  PREVIEW_DOMAIN: onebone.me
+  PREVIEW_ROUTE_HELPER: /usr/local/sbin/plimap-preview-route
+  PREVIEW_MAX_ACTIVE: 12
+  PREVIEW_MAX_IMAGE_BYTES: 268435456
+  BUILDKIT_PROGRESS: quiet
+  DOCKER_BUILD_CHECKS_ANNOTATIONS: 'false'
+  DOCKER_BUILD_RECORD_UPLOAD: 'false'
+  DOCKER_BUILD_SUMMARY: 'false'
+
+jobs:
+  build:
+    if: >-
+      github.event.action != 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_owner: ${{ steps.meta.outputs.image_owner }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+      image_digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout pull request head
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Resolve preview metadata
+        id: meta
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]{0,3}$ ]]; then
+            echo "PR number must be between 1 and 9999." >&2
+            exit 1
+          fi
+
+          if [[ ! "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "PR head SHA is invalid." >&2
+            exit 1
+          fi
+
+          IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          IMAGE_TAG="pr-${PR_NUMBER}-${HEAD_SHA::12}"
+
+          echo "image_owner=${IMAGE_OWNER}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate build configuration
+        shell: bash
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || vars.VITE_API_BASE_URL }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          VITE_KAKAO_REST_API_KEY: ${{ secrets.VITE_KAKAO_REST_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          required_vars=(
+            VITE_API_BASE_URL
+            VITE_GOOGLE_MAPS_API_KEY
+            VITE_KAKAO_REST_API_KEY
+          )
+
+          for name in "${required_vars[@]}"; do
+            if [[ -z "${!name}" ]]; then
+              echo "${name} must be configured for preview builds." >&2
+              exit 1
+            fi
+          done
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push preview image
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ steps.meta.outputs.image_owner }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+          build-args: |
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL || vars.VITE_API_BASE_URL }}
+            VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+            VITE_KAKAO_REST_API_KEY=${{ secrets.VITE_KAKAO_REST_API_KEY }}
+
+      - name: Validate immutable image digest
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Build did not return a valid image digest." >&2
+            exit 1
+          fi
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+    environment:
+      name: preview
+      url: ${{ format('https://pli-{0}.onebone.me', github.event.pull_request.number) }}
+
+    steps:
+      - name: Checkout trusted deployment files
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Validate deployment configuration
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          IMAGE_OWNER: ${{ needs.build.outputs.image_owner }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+          IMAGE_DIGEST: ${{ needs.build.outputs.image_digest }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_KNOWN_HOSTS: ${{ secrets.DEPLOY_HOST_KNOWN_HOSTS }}
+          DEPLOY_HOST_SSH_KEY: ${{ secrets.DEPLOY_HOST_SSH_KEY }}
+          DEPLOY_HOST_PORT: ${{ secrets.DEPLOY_HOST_PORT || vars.DEPLOY_HOST_PORT || 22 }}
+          DEPLOY_HOST_USER: ${{ secrets.DEPLOY_HOST_USER || vars.DEPLOY_HOST_USER || 'deploy' }}
+          GHCR_PULL_USERNAME: ${{ secrets.GHCR_PULL_USERNAME || vars.GHCR_PULL_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          required_vars=(
+            DEPLOY_HOST
+            DEPLOY_HOST_KNOWN_HOSTS
+            DEPLOY_HOST_SSH_KEY
+            DEPLOY_HOST_USER
+            GHCR_PULL_USERNAME
+            GHCR_PULL_TOKEN
+          )
+
+          for name in "${required_vars[@]}"; do
+            if [[ -z "${!name}" ]]; then
+              echo "${name} must be configured for preview deployments." >&2
+              exit 1
+            fi
+          done
+
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]{0,3}$ ||
+                ! "$IMAGE_OWNER" =~ ^[a-z0-9._-]+$ ||
+                ! "$IMAGE_TAG" =~ ^pr-[1-9][0-9]{0,3}-[0-9a-f]{12}$ ||
+                ! "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Invalid PR or image metadata." >&2
+            exit 1
+          fi
+
+          if [[ ! "$DEPLOY_HOST_PORT" =~ ^[0-9]+$ ]] ||
+             (( DEPLOY_HOST_PORT < 1 || DEPLOY_HOST_PORT > 65535 )); then
+            echo "DEPLOY_HOST_PORT must be a TCP port between 1 and 65535." >&2
+            exit 1
+          fi
+
+          if [[ ! "$DEPLOY_HOST_USER" =~ ^[A-Za-z0-9._-]+$ ||
+                ! "$GHCR_PULL_USERNAME" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Deploy or registry username contains unsupported characters." >&2
+            exit 1
+          fi
+
+      - name: Configure pinned SSH access
+        shell: bash
+        env:
+          DEPLOY_HOST_KNOWN_HOSTS: ${{ secrets.DEPLOY_HOST_KNOWN_HOSTS }}
+          DEPLOY_HOST_SSH_KEY: ${{ secrets.DEPLOY_HOST_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_HOST_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_HOST_SSH_KEY" > ~/.ssh/preview_deploy_key
+
+      - name: Prepare preview directory
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_PORT: ${{ secrets.DEPLOY_HOST_PORT || vars.DEPLOY_HOST_PORT || 22 }}
+          DEPLOY_HOST_USER: ${{ secrets.DEPLOY_HOST_USER || vars.DEPLOY_HOST_USER || 'deploy' }}
+        run: |
+          set -euo pipefail
+
+          quote() {
+            printf '%q' "$1"
+          }
+
+          remote_command=$(printf 'PREVIEW_DEPLOY_ROOT=%s PR_NUMBER=%s /bin/bash -s' \
+            "$(quote "$PREVIEW_DEPLOY_ROOT")" \
+            "$(quote "$PR_NUMBER")")
+
+          ssh_options=(
+            -i ~/.ssh/preview_deploy_key
+            -o IdentitiesOnly=yes
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=yes
+            -o ConnectTimeout=10
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=2
+            -p "$DEPLOY_HOST_PORT"
+          )
+
+          timeout 60s ssh "${ssh_options[@]}" \
+            "$DEPLOY_HOST_USER@$DEPLOY_HOST" "$remote_command" <<'REMOTE'
+          set -euo pipefail
+
+          readonly expected_root=/home/deploy/product/plimap-web-previews
+
+          if [[ "$PREVIEW_DEPLOY_ROOT" != "$expected_root" ||
+                ! "$PR_NUMBER" =~ ^[1-9][0-9]{0,3}$ ]]; then
+            echo "Invalid preview directory request." >&2
+            exit 1
+          fi
+
+          if [[ ! -d "$PREVIEW_DEPLOY_ROOT" || -L "$PREVIEW_DEPLOY_ROOT" ]]; then
+            echo "Preview deployment root is missing or is a symlink." >&2
+            exit 1
+          fi
+
+          preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
+          if [[ -L "$preview_path" || ( -e "$preview_path" && ! -d "$preview_path" ) ]]; then
+            echo "Preview path is not a safe directory." >&2
+            exit 1
+          fi
+
+          install -d -m 0750 "$preview_path"
+          REMOTE
+
+      - name: Upload trusted preview files
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_PORT: ${{ secrets.DEPLOY_HOST_PORT || vars.DEPLOY_HOST_PORT || 22 }}
+          DEPLOY_HOST_USER: ${{ secrets.DEPLOY_HOST_USER || vars.DEPLOY_HOST_USER || 'deploy' }}
+        run: |
+          set -euo pipefail
+          preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
+
+          cat > deploy-preview.sh <<'REMOTE'
+          #!/bin/bash
+          set -euo pipefail
+
+          PATH=/usr/sbin:/usr/bin:/sbin:/bin
+          export PATH
+          umask 077
+
+          readonly expected_root=/home/deploy/product/plimap-web-previews
+          readonly expected_domain=onebone.me
+          readonly expected_helper=/usr/local/sbin/plimap-preview-route
+
+          : "${PREVIEW_DEPLOY_ROOT:?PREVIEW_DEPLOY_ROOT is required}"
+          : "${PREVIEW_DOMAIN:?PREVIEW_DOMAIN is required}"
+          : "${PREVIEW_ROUTE_HELPER:?PREVIEW_ROUTE_HELPER is required}"
+          : "${PREVIEW_MAX_ACTIVE:?PREVIEW_MAX_ACTIVE is required}"
+          : "${PREVIEW_MAX_IMAGE_BYTES:?PREVIEW_MAX_IMAGE_BYTES is required}"
+          : "${PR_NUMBER:?PR_NUMBER is required}"
+          : "${GHCR_OWNER:?GHCR_OWNER is required}"
+          : "${IMAGE_TAG:?IMAGE_TAG is required}"
+          : "${IMAGE_DIGEST:?IMAGE_DIGEST is required}"
+          : "${GHCR_PULL_USERNAME:?GHCR_PULL_USERNAME is required}"
+
+          if [[ "$PREVIEW_DEPLOY_ROOT" != "$expected_root" ||
+                "$PREVIEW_DOMAIN" != "$expected_domain" ||
+                "$PREVIEW_ROUTE_HELPER" != "$expected_helper" ]]; then
+            echo "Preview deployment contract does not match the host." >&2
+            exit 1
+          fi
+
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]{0,3}$ ||
+                ! "$GHCR_OWNER" =~ ^[a-z0-9._-]+$ ||
+                ! "$IMAGE_TAG" =~ ^pr-[1-9][0-9]{0,3}-[0-9a-f]{12}$ ||
+                ! "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ||
+                ! "$GHCR_PULL_USERNAME" =~ ^[A-Za-z0-9._-]+$ ||
+                ! "$PREVIEW_MAX_ACTIVE" =~ ^[1-9][0-9]*$ ||
+                ! "$PREVIEW_MAX_IMAGE_BYTES" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid preview deployment metadata." >&2
+            exit 1
+          fi
+
+          is_ipv4() {
+            local address=$1
+            local octet
+            local -a octets
+
+            IFS=. read -r -a octets <<< "$address"
+            [[ "${#octets[@]}" -eq 4 ]] || return 1
+
+            for octet in "${octets[@]}"; do
+              [[ "$octet" =~ ^[0-9]{1,3}$ ]] || return 1
+              (( 10#$octet <= 255 )) || return 1
+            done
+          }
+
+          readonly preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
+          readonly preview_host="pli-${PR_NUMBER}.${PREVIEW_DOMAIN}"
+          readonly project_name="plimap-pr-${PR_NUMBER}"
+          readonly network_name="${project_name}_preview-internal"
+          readonly compose_file="${preview_path}/docker-compose.preview.yml"
+          readonly candidate_compose_file="${preview_path}/docker-compose.preview.candidate.yml"
+          readonly env_file="${preview_path}/.env"
+          readonly previous_env_file="${preview_path}/.env.previous"
+          readonly diagnostic_log="${preview_path}/.deploy-last.log"
+          readonly image_ref="ghcr.io/${GHCR_OWNER}/plimap-web@${IMAGE_DIGEST}"
+          readonly capacity_lock="${PREVIEW_DEPLOY_ROOT}/.capacity.lock"
+          readonly pr_lock="${PREVIEW_DEPLOY_ROOT}/.pr-${PR_NUMBER}.lock"
+
+          if [[ ! -d "$preview_path" || -L "$preview_path" ||
+                ! -f "$candidate_compose_file" || -L "$candidate_compose_file" ||
+                -L "$diagnostic_log" ||
+                ( -e "$diagnostic_log" && ! -f "$diagnostic_log" ) ||
+                ! -x "$PREVIEW_ROUTE_HELPER" || -L "$PREVIEW_ROUTE_HELPER" ||
+                -L "$capacity_lock" || -L "$pr_lock" ]]; then
+            echo "Preview files, locks, or route helper are invalid." >&2
+            exit 1
+          fi
+
+          for state_file in "$compose_file" "$env_file" "$previous_env_file"; do
+            if [[ -L "$state_file" || ( -e "$state_file" && ! -f "$state_file" ) ]]; then
+              echo "Existing preview state is unsafe." >&2
+              exit 1
+            fi
+          done
+
+          exec 8>"$capacity_lock"
+          flock -w 60 8
+          exec 9>"$pr_lock"
+          flock -w 60 9
+
+          if [[ ! -d "$preview_path" || -L "$preview_path" ||
+                ! -f "$candidate_compose_file" || -L "$candidate_compose_file" ]]; then
+            echo "Preview files changed while waiting for the host lock." >&2
+            exit 1
+          fi
+
+          active_count=0
+          shopt -s nullglob
+          for candidate in "$PREVIEW_DEPLOY_ROOT"/pr-*; do
+            if [[ -d "$candidate" && ! -L "$candidate" && -f "$candidate/.env" ]]; then
+              active_count=$((active_count + 1))
+            fi
+          done
+
+          if [[ ! -f "$env_file" && "$active_count" -ge "$PREVIEW_MAX_ACTIVE" ]]; then
+            echo "Preview capacity is full (${active_count}/${PREVIEW_MAX_ACTIVE})." >&2
+            exit 1
+          fi
+
+          if [[ -e "$previous_env_file" ]]; then
+            echo "An incomplete preview deployment requires cleanup before retrying." >&2
+            exit 1
+          fi
+
+          had_previous=no
+          previous_image=''
+          if [[ -f "$env_file" ]]; then
+            if [[ ! -f "$compose_file" || -L "$compose_file" ]]; then
+              echo "Existing preview Compose state is missing or unsafe." >&2
+              exit 1
+            fi
+
+            had_previous=yes
+            previous_owner="$(sed -n 's/^GHCR_OWNER=//p' "$env_file")"
+            previous_digest="$(sed -n 's/^IMAGE_DIGEST=//p' "$env_file")"
+            if [[ ! "$previous_owner" =~ ^[a-z0-9._-]+$ ||
+                  ! "$previous_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "Existing preview image metadata is invalid." >&2
+              exit 1
+            fi
+            previous_image="ghcr.io/${previous_owner}/plimap-web@${previous_digest}"
+          fi
+
+          env_tmp="$(mktemp "${preview_path}/.env.tmp.XXXXXX")"
+          deployed_at_tmp=''
+          docker_config="$(mktemp -d)"
+          new_image_pulled=no
+          transaction_started=no
+          deployment_ready=no
+
+          : > "$diagnostic_log"
+          chmod 0600 "$diagnostic_log"
+
+          cleanup() {
+            exit_status=$?
+            trap - EXIT
+            set +e
+
+            if [[ -n "$env_tmp" ]]; then
+              rm -f -- "$env_tmp"
+            fi
+            if [[ -n "$deployed_at_tmp" ]]; then
+              rm -f -- "$deployed_at_tmp"
+            fi
+
+            if [[ "$deployment_ready" != yes ]]; then
+              if [[ "$transaction_started" == yes && "$had_previous" == yes ]]; then
+                if mv -fT -- "$previous_env_file" "$env_file"; then
+                  if timeout 3m docker compose \
+                    --project-name "$project_name" \
+                    --file "$compose_file" \
+                    --env-file "$env_file" \
+                    up -d --remove-orphans >> "$diagnostic_log" 2>&1
+                  then
+                    sudo -n "$PREVIEW_ROUTE_HELPER" up "$PR_NUMBER" \
+                      >> "$diagnostic_log" 2>&1 || true
+                  fi
+                fi
+              elif [[ "$transaction_started" == yes ]]; then
+                timeout 2m docker compose \
+                  --project-name "$project_name" \
+                  --file "$candidate_compose_file" \
+                  --env-file "$env_file" \
+                  down --remove-orphans >> "$diagnostic_log" 2>&1 || true
+                sudo -n "$PREVIEW_ROUTE_HELPER" down "$PR_NUMBER" \
+                  >> "$diagnostic_log" 2>&1 || true
+                rm -f -- "$env_file"
+              fi
+
+              rm -f -- "$candidate_compose_file"
+              if [[ "$new_image_pulled" == yes && "$image_ref" != "$previous_image" ]]; then
+                docker image rm -- "$image_ref" >> "$diagnostic_log" 2>&1 || true
+              fi
+            fi
+
+            rm -rf -- "$docker_config"
+            exit "$exit_status"
+          }
+          trap cleanup EXIT
+
+          if [[ "$had_previous" == yes ]] &&
+             ! docker compose \
+               --project-name "$project_name" \
+               --file "$compose_file" \
+               --env-file "$env_file" \
+               config --quiet >> "$diagnostic_log" 2>&1
+          then
+            echo "Existing preview Compose state is invalid." >&2
+            exit 1
+          fi
+
+          export DOCKER_CONFIG="$docker_config"
+          IFS= read -r ghcr_pull_token
+          if ! printf '%s' "$ghcr_pull_token" |
+            docker login ghcr.io -u "$GHCR_PULL_USERNAME" --password-stdin \
+              >> "$diagnostic_log" 2>&1
+          then
+            echo "Preview registry authentication failed; inspect the protected host diagnostic." >&2
+            exit 1
+          fi
+
+          if ! timeout 5m docker pull --quiet "$image_ref" \
+            >> "$diagnostic_log" 2>&1
+          then
+            echo "Preview image pull failed; inspect the protected host diagnostic." >&2
+            exit 1
+          fi
+          new_image_pulled=yes
+
+          image_size="$(docker image inspect "$image_ref" --format '{{.Size}}')"
+          if [[ ! "$image_size" =~ ^[0-9]+$ ||
+                "$image_size" -gt "$PREVIEW_MAX_IMAGE_BYTES" ]]; then
+            echo "Preview image exceeds the configured size limit." >&2
+            exit 1
+          fi
+
+          printf '%s\n' \
+            "GHCR_OWNER=$GHCR_OWNER" \
+            "IMAGE_TAG=$IMAGE_TAG" \
+            "IMAGE_DIGEST=$IMAGE_DIGEST" \
+            > "$env_tmp"
+          chmod 0600 "$env_tmp"
+
+          if ! docker compose \
+            --project-name "$project_name" \
+            --file "$candidate_compose_file" \
+            --env-file "$env_tmp" \
+            config --quiet >> "$diagnostic_log" 2>&1
+          then
+            echo "Preview Compose validation failed; inspect the protected host diagnostic." >&2
+            exit 1
+          fi
+
+          if [[ "$had_previous" == yes ]]; then
+            cp -p -- "$env_file" "$previous_env_file"
+            chmod 0600 "$previous_env_file"
+          fi
+          mv -fT -- "$env_tmp" "$env_file"
+          env_tmp=''
+          transaction_started=yes
+
+          if ! timeout 3m docker compose \
+            --project-name "$project_name" \
+            --file "$candidate_compose_file" \
+            --env-file "$env_file" \
+            up -d --remove-orphans >> "$diagnostic_log" 2>&1
+          then
+            echo "Preview container startup failed; inspect the protected host diagnostic." >&2
+            exit 1
+          fi
+
+          mapfile -t container_ids < <(
+            docker compose \
+              --project-name "$project_name" \
+              --file "$candidate_compose_file" \
+              --env-file "$env_file" \
+              ps -q web 2>> "$diagnostic_log"
+          )
+
+          if [[ "${#container_ids[@]}" -ne 1 || -z "${container_ids[0]}" ]]; then
+            echo "Expected exactly one preview container." >&2
+            exit 1
+          fi
+
+          container_id="${container_ids[0]}"
+          healthy=no
+          for attempt in $(seq 1 30); do
+            health="$(docker inspect "$container_id" --format '{{.State.Health.Status}}' \
+              2>> "$diagnostic_log")"
+            if [[ "$health" == healthy ]]; then
+              healthy=yes
+              break
+            fi
+            if [[ "$health" == unhealthy ]]; then
+              {
+                printf '%s\n' '--- bounded container diagnostic ---'
+                docker logs --tail 50 "$container_id" 2>&1 | head -c 65536
+                printf '\n'
+              } >> "$diagnostic_log" 2>&1 || true
+            fi
+            sleep 2
+          done
+
+          if [[ "$healthy" != yes ]]; then
+            echo "Preview container did not become healthy." >&2
+            exit 1
+          fi
+
+          if ! network_internal="$(
+            docker network inspect "$network_name" --format '{{.Internal}}' \
+              2>> "$diagnostic_log"
+          )" || [[ "$network_internal" != true ]]; then
+            echo "Preview container network is not internally isolated." >&2
+            exit 1
+          fi
+
+          if ! container_ip="$(
+            docker inspect "$container_id" \
+              --format "{{with index .NetworkSettings.Networks \"${network_name}\"}}{{.IPAddress}}{{end}}" \
+              2>> "$diagnostic_log"
+          )" || ! is_ipv4 "$container_ip"; then
+            echo "Preview container did not receive a valid internal address." >&2
+            exit 1
+          fi
+
+          direct_ready=no
+          for attempt in $(seq 1 15); do
+            if curl --noproxy '*' --fail --show-error --silent \
+              --connect-timeout 3 --max-time 10 --output /dev/null \
+              "http://${container_ip}:8080/" >> "$diagnostic_log" 2>&1
+            then
+              direct_ready=yes
+              break
+            fi
+            sleep 1
+          done
+
+          if [[ "$direct_ready" != yes ]]; then
+            echo "Preview container is not reachable from the host network." >&2
+            exit 1
+          fi
+
+          if ! sudo -n "$PREVIEW_ROUTE_HELPER" up "$PR_NUMBER" \
+            >> "$diagnostic_log" 2>&1
+          then
+            echo "Preview route installation failed; inspect the protected host diagnostic." >&2
+            exit 1
+          fi
+
+          public_ready=no
+          for attempt in $(seq 1 30); do
+            code="$(
+              curl --fail --show-error --silent \
+                --connect-timeout 5 --max-time 15 \
+                --output /dev/null --write-out '%{http_code}' \
+                "https://${preview_host}/?deploy=${IMAGE_TAG}-${attempt}" || true
+            )"
+            if [[ "$code" == 200 ]]; then
+              public_ready=yes
+              break
+            fi
+            sleep 2
+          done
+
+          if [[ "$public_ready" != yes ]]; then
+            echo "Preview route did not become publicly reachable." >&2
+            exit 1
+          fi
+
+          deployed_at_tmp="$(mktemp "${preview_path}/.deployed-at.tmp.XXXXXX")"
+          date -u +%Y-%m-%dT%H:%M:%SZ > "$deployed_at_tmp"
+          chmod 0600 "$deployed_at_tmp"
+          mv -fT -- "$deployed_at_tmp" "${preview_path}/.deployed-at"
+          deployed_at_tmp=''
+          mv -fT -- "$candidate_compose_file" "$compose_file"
+          deployment_ready=yes
+          rm -f -- "$previous_env_file"
+
+          if [[ -n "$previous_image" && "$previous_image" != "$image_ref" ]]; then
+            docker image rm -- "$previous_image" >> "$diagnostic_log" 2>&1 || true
+          fi
+
+          echo "Preview deployed at https://${preview_host}"
+          REMOTE
+
+          chmod 0700 deploy-preview.sh
+          ssh_options=(
+            -i ~/.ssh/preview_deploy_key
+            -o IdentitiesOnly=yes
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=yes
+            -o ConnectTimeout=10
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=2
+          )
+
+          timeout 60s scp "${ssh_options[@]}" -P "$DEPLOY_HOST_PORT" \
+            docker-compose.preview.yml \
+            "$DEPLOY_HOST_USER@$DEPLOY_HOST:${preview_path}/docker-compose.preview.candidate.yml"
+
+          timeout 60s scp "${ssh_options[@]}" -P "$DEPLOY_HOST_PORT" \
+            deploy-preview.sh \
+            "$DEPLOY_HOST_USER@$DEPLOY_HOST:${preview_path}/deploy-preview.sh"
+
+          timeout 60s ssh "${ssh_options[@]}" -p "$DEPLOY_HOST_PORT" \
+            "$DEPLOY_HOST_USER@$DEPLOY_HOST" \
+            "chmod 0640 '${preview_path}/docker-compose.preview.candidate.yml' && chmod 0700 '${preview_path}/deploy-preview.sh'"
+
+      - name: Deploy preview on host
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GHCR_OWNER: ${{ needs.build.outputs.image_owner }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+          IMAGE_DIGEST: ${{ needs.build.outputs.image_digest }}
+          GHCR_PULL_USERNAME: ${{ secrets.GHCR_PULL_USERNAME || vars.GHCR_PULL_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_PORT: ${{ secrets.DEPLOY_HOST_PORT || vars.DEPLOY_HOST_PORT || 22 }}
+          DEPLOY_HOST_USER: ${{ secrets.DEPLOY_HOST_USER || vars.DEPLOY_HOST_USER || 'deploy' }}
+        run: |
+          set -euo pipefail
+
+          quote() {
+            printf '%q' "$1"
+          }
+
+          preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
+          remote_command=$(printf 'PREVIEW_DEPLOY_ROOT=%s PREVIEW_DOMAIN=%s PREVIEW_ROUTE_HELPER=%s PREVIEW_MAX_ACTIVE=%s PREVIEW_MAX_IMAGE_BYTES=%s PR_NUMBER=%s GHCR_OWNER=%s IMAGE_TAG=%s IMAGE_DIGEST=%s GHCR_PULL_USERNAME=%s /bin/bash %s' \
+            "$(quote "$PREVIEW_DEPLOY_ROOT")" \
+            "$(quote "$PREVIEW_DOMAIN")" \
+            "$(quote "$PREVIEW_ROUTE_HELPER")" \
+            "$(quote "$PREVIEW_MAX_ACTIVE")" \
+            "$(quote "$PREVIEW_MAX_IMAGE_BYTES")" \
+            "$(quote "$PR_NUMBER")" \
+            "$(quote "$GHCR_OWNER")" \
+            "$(quote "$IMAGE_TAG")" \
+            "$(quote "$IMAGE_DIGEST")" \
+            "$(quote "$GHCR_PULL_USERNAME")" \
+            "$(quote "$preview_path/deploy-preview.sh")")
+
+          ssh_options=(
+            -i ~/.ssh/preview_deploy_key
+            -o IdentitiesOnly=yes
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=yes
+            -o ConnectTimeout=10
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=2
+            -p "$DEPLOY_HOST_PORT"
+          )
+
+          printf '%s\n' "$GHCR_PULL_TOKEN" |
+            timeout 15m ssh "${ssh_options[@]}" \
+              "$DEPLOY_HOST_USER@$DEPLOY_HOST" "$remote_command"
+
+      - name: Comment preview URL
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PREVIEW_URL: ${{ format('https://pli-{0}.onebone.me', github.event.pull_request.number) }}
+        run: |
+          set -euo pipefail
+
+          existing_comment_id="$(
+            gh api --paginate \
+              "repos/${GH_REPO}/issues/${PR_NUMBER}/comments?per_page=100" |
+              jq --slurp --raw-output --arg url "$PREVIEW_URL" \
+                '[.[][] | select(.user.login == "github-actions[bot]" and .body == $url) | .id][0] // empty'
+          )"
+
+          if [[ -z "$existing_comment_id" ]]; then
+            gh api --method POST \
+              "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" \
+              --field body="$PREVIEW_URL" \
+              > /dev/null
+          fi
+
+  cleanup:
+    if: >-
+      always() &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      deployments: write
+    environment:
+      name: preview-maintenance
+
+    steps:
+      - name: Validate cleanup configuration
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_KNOWN_HOSTS: ${{ secrets.DEPLOY_HOST_KNOWN_HOSTS }}
+          DEPLOY_HOST_SSH_KEY: ${{ secrets.DEPLOY_HOST_SSH_KEY }}
+          DEPLOY_HOST_PORT: ${{ secrets.DEPLOY_HOST_PORT || vars.DEPLOY_HOST_PORT || 22 }}
+          DEPLOY_HOST_USER: ${{ secrets.DEPLOY_HOST_USER || vars.DEPLOY_HOST_USER || 'deploy' }}
+        run: |
+          set -euo pipefail
+          required_vars=(DEPLOY_HOST DEPLOY_HOST_KNOWN_HOSTS DEPLOY_HOST_SSH_KEY DEPLOY_HOST_USER)
+          for name in "${required_vars[@]}"; do
+            if [[ -z "${!name}" ]]; then
+              echo "${name} must be configured for preview cleanup." >&2
+              exit 1
+            fi
+          done
+
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]{0,3}$ ||
+                ! "$DEPLOY_HOST_PORT" =~ ^[0-9]+$ ||
+                ! "$DEPLOY_HOST_USER" =~ ^[A-Za-z0-9._-]+$ ]] ||
+             (( DEPLOY_HOST_PORT < 1 || DEPLOY_HOST_PORT > 65535 )); then
+            echo "Invalid cleanup metadata." >&2
+            exit 1
+          fi
+
+      - name: Configure pinned SSH access
+        shell: bash
+        env:
+          DEPLOY_HOST_KNOWN_HOSTS: ${{ secrets.DEPLOY_HOST_KNOWN_HOSTS }}
+          DEPLOY_HOST_SSH_KEY: ${{ secrets.DEPLOY_HOST_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_HOST_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_HOST_SSH_KEY" > ~/.ssh/preview_deploy_key
+
+      - name: Remove preview from host
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_PORT: ${{ secrets.DEPLOY_HOST_PORT || vars.DEPLOY_HOST_PORT || 22 }}
+          DEPLOY_HOST_USER: ${{ secrets.DEPLOY_HOST_USER || vars.DEPLOY_HOST_USER || 'deploy' }}
+        run: |
+          set -euo pipefail
+
+          cat > cleanup-preview.sh <<'REMOTE'
+          #!/bin/bash
+          set -euo pipefail
+
+          PATH=/usr/sbin:/usr/bin:/sbin:/bin
+          export PATH
+
+          readonly expected_root=/home/deploy/product/plimap-web-previews
+          readonly expected_domain=onebone.me
+          readonly expected_helper=/usr/local/sbin/plimap-preview-route
+
+          : "${PREVIEW_DEPLOY_ROOT:?PREVIEW_DEPLOY_ROOT is required}"
+          : "${PREVIEW_DOMAIN:?PREVIEW_DOMAIN is required}"
+          : "${PREVIEW_ROUTE_HELPER:?PREVIEW_ROUTE_HELPER is required}"
+          : "${PR_NUMBER:?PR_NUMBER is required}"
+
+          if [[ "$PREVIEW_DEPLOY_ROOT" != "$expected_root" ||
+                "$PREVIEW_DOMAIN" != "$expected_domain" ||
+                "$PREVIEW_ROUTE_HELPER" != "$expected_helper" ||
+                ! "$PR_NUMBER" =~ ^[1-9][0-9]{0,3}$ ]]; then
+            echo "Preview cleanup contract is invalid." >&2
+            exit 1
+          fi
+
+          readonly preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
+          readonly preview_host="pli-${PR_NUMBER}.${PREVIEW_DOMAIN}"
+          readonly project_name="plimap-pr-${PR_NUMBER}"
+          readonly compose_file="${preview_path}/docker-compose.preview.yml"
+          readonly candidate_compose_file="${preview_path}/docker-compose.preview.candidate.yml"
+          readonly capacity_lock="${PREVIEW_DEPLOY_ROOT}/.capacity.lock"
+          readonly pr_lock="${PREVIEW_DEPLOY_ROOT}/.pr-${PR_NUMBER}.lock"
+
+          if [[ ! -d "$PREVIEW_DEPLOY_ROOT" || -L "$PREVIEW_DEPLOY_ROOT" ||
+                -L "$capacity_lock" || -L "$pr_lock" ]]; then
+            echo "Preview deployment root or locks are invalid." >&2
+            exit 1
+          fi
+
+          exec 8>"$capacity_lock"
+          flock -w 60 8
+          exec 9>"$pr_lock"
+          flock -w 60 9
+
+          if ! sudo -n "$PREVIEW_ROUTE_HELPER" down "$PR_NUMBER" \
+            > /dev/null 2>&1
+          then
+            echo "Preview route cleanup failed." >&2
+            exit 1
+          fi
+
+          if [[ ! -e "$preview_path" ]]; then
+            echo "Preview directory is already absent."
+            exit 0
+          fi
+
+          if [[ ! -d "$preview_path" || -L "$preview_path" ]]; then
+            echo "Preview path is not a safe directory." >&2
+            exit 1
+          fi
+
+          env_file="${preview_path}/.env"
+          previous_env_file="${preview_path}/.env.previous"
+          diagnostic_log="${preview_path}/.deploy-last.log"
+
+          for state_file in \
+            "$env_file" \
+            "$previous_env_file" \
+            "$compose_file" \
+            "$candidate_compose_file"
+          do
+            if [[ -L "$state_file" || ( -e "$state_file" && ! -f "$state_file" ) ]]; then
+              echo "Preview cleanup state contains an unsafe file." >&2
+              exit 1
+            fi
+          done
+
+          if [[ -L "$diagnostic_log" ||
+                ( -e "$diagnostic_log" && ! -f "$diagnostic_log" ) ]]; then
+            echo "Preview diagnostic path is not a regular file." >&2
+            exit 1
+          fi
+          : > "$diagnostic_log"
+          chmod 0600 "$diagnostic_log"
+
+          image_refs=()
+          for image_env_file in "$env_file" "$previous_env_file"; do
+            [[ -f "$image_env_file" ]] || continue
+            image_owner="$(sed -n 's/^GHCR_OWNER=//p' "$image_env_file")"
+            image_digest="$(sed -n 's/^IMAGE_DIGEST=//p' "$image_env_file")"
+            if [[ "$image_owner" =~ ^[a-z0-9._-]+$ &&
+                  "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              image_refs+=("ghcr.io/${image_owner}/plimap-web@${image_digest}")
+            fi
+          done
+
+          cleanup_compose_file=''
+          if [[ -f "$compose_file" ]]; then
+            cleanup_compose_file="$compose_file"
+          elif [[ -f "$candidate_compose_file" ]]; then
+            cleanup_compose_file="$candidate_compose_file"
+          fi
+
+          if [[ -n "$cleanup_compose_file" ]]; then
+            # HOST_PORT keeps cleanup compatible with previews created by the
+            # previous port-publishing Compose contract. `down` never binds it.
+            GHCR_OWNER=cleanup \
+            IMAGE_TAG=pr-1-000000000000 \
+            IMAGE_DIGEST=sha256:0000000000000000000000000000000000000000000000000000000000000000 \
+            HOST_PORT=1 \
+              timeout 2m docker compose \
+                --project-name "$project_name" \
+                --file "$cleanup_compose_file" \
+                down --remove-orphans >> "$diagnostic_log" 2>&1
+          fi
+
+          for image_ref in "${image_refs[@]}"; do
+            docker image rm -- "$image_ref" >> "$diagnostic_log" 2>&1 || true
+          done
+
+          for target in \
+            "${preview_path}/.env" \
+            "${preview_path}/.env.previous" \
+            "${preview_path}/.deployed-at" \
+            "${preview_path}/.deploy-last.log" \
+            "${preview_path}/docker-compose.preview.yml" \
+            "${preview_path}/docker-compose.preview.candidate.yml" \
+            "${preview_path}/deploy-preview.sh"
+          do
+            if [[ -L "$target" || ( -e "$target" && ! -f "$target" ) ]]; then
+              echo "Refusing an unsafe preview cleanup target." >&2
+              exit 1
+            fi
+            rm -f -- "$target"
+          done
+
+          rmdir -- "$preview_path"
+
+          for attempt in $(seq 1 15); do
+            code="$(
+              curl --fail --show-error --silent \
+                --connect-timeout 5 --max-time 10 \
+                --output /dev/null --write-out '%{http_code}' \
+                "https://${preview_host}/?removed=${attempt}" || true
+            )"
+            if [[ "$code" == 404 ]]; then
+              echo "Preview removed."
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "Warning: public route removal could not be confirmed through Cloudflare." >&2
+          REMOTE
+
+          quote() {
+            printf '%q' "$1"
+          }
+
+          remote_command=$(printf 'PREVIEW_DEPLOY_ROOT=%s PREVIEW_DOMAIN=%s PREVIEW_ROUTE_HELPER=%s PR_NUMBER=%s /bin/bash -s' \
+            "$(quote "$PREVIEW_DEPLOY_ROOT")" \
+            "$(quote "$PREVIEW_DOMAIN")" \
+            "$(quote "$PREVIEW_ROUTE_HELPER")" \
+            "$(quote "$PR_NUMBER")")
+
+          ssh_options=(
+            -i ~/.ssh/preview_deploy_key
+            -o IdentitiesOnly=yes
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=yes
+            -o ConnectTimeout=10
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=2
+            -p "$DEPLOY_HOST_PORT"
+          )
+
+          timeout 8m ssh "${ssh_options[@]}" \
+            "$DEPLOY_HOST_USER@$DEPLOY_HOST" "$remote_command" < cleanup-preview.sh
