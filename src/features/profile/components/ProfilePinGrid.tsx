@@ -41,8 +41,9 @@ export function ProfilePinGrid({ pins, onPinClick, onRegisterPin }: ProfilePinGr
           >
             <img
               src={pin.imageUrl}
-              alt=""
-              className="size-full object-cover rounded-[4.5px] cursor-pointer"
+              alt="핀 이미지"
+              aria-label="핀 이미지"
+              className="size-full object-cover rounded-[4.5px] cusor-pointer"
             />
           </button>
         </li>

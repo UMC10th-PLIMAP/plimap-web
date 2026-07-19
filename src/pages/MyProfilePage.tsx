@@ -14,7 +14,7 @@ export default function MyProfilePage() {
   const profile = MOCK_MY_PROFILE;
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col pb-[calc(env(safe-area-inset-bottom)+108px)]">
       <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
         <div />
         <h1 className="text-center head-24-sb text-grayscale-100">{profile.nickname}</h1>
