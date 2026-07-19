@@ -171,6 +171,12 @@
 }
 
 @layer base {
+  html,
+  body,
+  #root {
+    @apply min-h-dvh bg-[#000000];
+  }
+
   body {
     @apply text-grayscale-30 font-sans antialiased;
   }
