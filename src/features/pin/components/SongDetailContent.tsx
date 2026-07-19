@@ -13,7 +13,7 @@ import {
   timeToPercent,
 } from '@/features/pin/constants/songPreview';
 import { cn } from '@/lib/utils';
-import type { Song } from '@/types/pin';
+import type { Song } from '@/features/pin/types';
 
 const INTRO_MAX_LENGTH = 100;
 const MAX_TAG_COUNT = 4;
