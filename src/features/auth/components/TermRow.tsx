@@ -12,7 +12,9 @@ export function TermRow({ label, checked, onToggle, onViewDetail }: TermRowProps
   return (
     <div className="flex w-full items-center gap-3">
       <TermCheckbox checked={checked} onToggle={onToggle} label={label} />
-      <span className="body-17-r flex-1 text-grayscale-300">{label}</span>
+      <span onClick={onToggle} className="body-17-r flex-1 cursor-pointer text-grayscale-300">
+        {label}
+      </span>
       <button
         type="button"
         onClick={onViewDetail}

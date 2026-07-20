@@ -64,7 +64,9 @@ export default function TermsAgreementPage() {
 
           <div className="flex h-[60px] items-center gap-3 rounded-xl bg-pli-black-85 px-4">
             <TermCheckbox checked={allChecked} onToggle={toggleAll} label="약관 전체 동의" />
-            <span className="head-18-sb text-grayscale-300">약관 전체 동의</span>
+            <span onClick={toggleAll} className="head-18-sb cursor-pointer text-grayscale-300">
+              약관 전체 동의
+            </span>
           </div>
         </div>
 
