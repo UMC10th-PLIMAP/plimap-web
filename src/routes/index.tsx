@@ -5,6 +5,7 @@ import LoginPage from '@/pages/LoginPage';
 import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import MapPage from '@/pages/MapPage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
+import PinRegisterPage from '@/pages/PinRegisterPage';
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
       {
         path: 'pin/search',
         element: <PinPlaceSearchPage />,
+      },
+      {
+        path: 'pin/register',
+        element: <PinRegisterPage />,
       },
     ],
   },

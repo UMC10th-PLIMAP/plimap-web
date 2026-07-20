@@ -1,15 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { KakaoLocalPlace, MapCoordinate, DEFAULT_CENTER } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { searchKakaoLocal } from '@/features/map/kakaoLocal';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
+import { BottomNav, type NavItemId } from '@/components/BottomNav';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
+import PlusIcon from '@/assets/icons/plus.svg?react';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 
 const MapPage: React.FC = () => {
+  const navigate = useNavigate();
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
@@ -26,6 +30,7 @@ const MapPage: React.FC = () => {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [isPlaceSearching, setIsPlaceSearching] = useState(false);
   const [placeSearchError, setPlaceSearchError] = useState<string | null>(null);
+  const [activeNavId, setActiveNavId] = useState<NavItemId>('plimap');
   const searchRequestIdRef = useRef(0);
   const mapViewerRef = useRef<MapViewerHandle>(null);
 
@@ -140,8 +145,8 @@ const MapPage: React.FC = () => {
 
   return (
     <div className="relative h-full w-full">
-      {/* 상단 장소 검색 바 + 북마크/현재 위치 버튼 */}
-      <div className="absolute inset-x-0 top-0 z-20 flex flex-col gap-3 p-3">
+      {/* 상단 장소 검색 바 */}
+      <div className="absolute inset-x-0 top-0 z-20 px-2.5 pt-4">
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -158,29 +163,42 @@ const MapPage: React.FC = () => {
           />
         </form>
         {placeSearchError && (
-          <p className="rounded-lg bg-pli-black-85 px-3 py-2 text-xs text-red">
+          <p className="mt-3 rounded-lg bg-pli-black-85 px-3 py-2 text-xs text-red">
             {placeSearchError}
           </p>
         )}
-
-        <div className="flex flex-col items-end gap-3">
-          <button
-            type="button"
-            aria-label="북마크"
-            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4px_rgba(0,0,0,0.15)]"
-          >
-            <BookmarkIcon className="size-7" />
-          </button>
-          <button
-            type="button"
-            aria-label="현재 위치로 이동"
-            onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
-            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4px_rgba(0,0,0,0.15)]"
-          >
-            <FocusIcon className="size-[27px]" />
-          </button>
-        </div>
       </div>
+
+      {/* 북마크/현재 위치 버튼 */}
+      <div className="absolute inset-x-0 top-[76px] z-20 flex flex-col items-end gap-3 p-4">
+        <button
+          type="button"
+          aria-label="북마크"
+          className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
+        >
+          <BookmarkIcon className="size-7" />
+        </button>
+        <button
+          type="button"
+          aria-label="현재 위치로 이동"
+          onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
+          className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
+        >
+          <FocusIcon className="size-7" />
+        </button>
+      </div>
+
+      {/* 핀 등록 버튼 */}
+      <button
+        type="button"
+        aria-label="핀 등록"
+        onClick={() => navigate('/app/pin/register')}
+        className="absolute bottom-[calc(env(safe-area-inset-bottom)+128px)] right-8 z-20 flex size-16 items-center justify-center rounded-full bg-gradient-neon text-grayscale-1200 shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
+      >
+        <PlusIcon className="size-7" />
+      </button>
+
+      <BottomNav activeId={activeNavId} onTabChange={setActiveNavId} />
 
       <MapViewer
         ref={mapViewerRef}

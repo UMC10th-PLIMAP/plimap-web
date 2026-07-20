@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 const searchInputVariants = cva('flex w-full items-center rounded-[50px] transition-colors', {
   variants: {
     variant: {
-      map: 'h-12 gap-3 bg-pli-black-100 px-5 py-2.5 backdrop-blur-[1.95px]',
+      map: 'h-[60px] gap-2.5 bg-pli-black-100 px-5 py-2.5 backdrop-blur-[1.95px]',
       song: 'h-10 gap-2 bg-pli-black-75 px-4 body-15-r',
     },
   },
