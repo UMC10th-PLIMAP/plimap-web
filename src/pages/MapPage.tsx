@@ -4,6 +4,7 @@ import { KakaoLocalPlace, MapCoordinate, DEFAULT_CENTER } from '@/features/map/t
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { searchKakaoLocal } from '@/features/map/kakaoLocal';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
+import { MOCK_MAP_PINS } from '@/features/map/constants/mockMapPins';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 
@@ -26,6 +27,7 @@ const MapPage: React.FC = () => {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [isPlaceSearching, setIsPlaceSearching] = useState(false);
   const [placeSearchError, setPlaceSearchError] = useState<string | null>(null);
+  const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
   const searchRequestIdRef = useRef(0);
   const mapViewerRef = useRef<MapViewerHandle>(null);
 
@@ -188,9 +190,12 @@ const MapPage: React.FC = () => {
         zoom={zoom}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
+        mapPins={MOCK_MAP_PINS}
+        selectedMapPinId={selectedMapPinId}
         onZoomChanged={handleZoomChange}
         onCenterChanged={setMapCenter}
         onSelectPlace={setSelectedPlaceId}
+        onSelectMapPin={setSelectedMapPinId}
       />
     </div>
   );
