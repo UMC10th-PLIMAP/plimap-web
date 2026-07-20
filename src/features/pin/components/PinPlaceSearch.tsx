@@ -9,6 +9,8 @@ import {
 import type { PinSearchPlace } from '@/features/pin/types';
 
 export type PinPlaceSearchProps = {
+  isReturningToMap?: boolean;
+  onCloseAnimationEnd?: () => void;
   onPlaceSelect?: (place: PinSearchPlace) => void;
   onBack?: () => void;
 };
@@ -22,7 +24,12 @@ const matchesQuery = (place: PinSearchPlace, query: string) => {
   return searchableText.includes(normalizedQuery);
 };
 
-export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
+export function PinPlaceSearch({
+  isReturningToMap = false,
+  onCloseAnimationEnd,
+  onPlaceSelect,
+  onBack,
+}: PinPlaceSearchProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [selectedPlace, setSelectedPlace] = useState<PinSearchPlace | null>(null);
@@ -81,7 +88,20 @@ export function PinPlaceSearch({ onPlaceSelect, onBack }: PinPlaceSearchProps) {
   const hasNoResults = normalizedQuery.length > 0 && filteredPlaces.length === 0 && !selectedPlace;
 
   return (
-    <main data-page="pin-place-search" className="flex h-full flex-col bg-pli-black-85">
+    <main
+      data-page="pin-place-search"
+      className={`flex h-full flex-col bg-pli-black-85 ${
+        isReturningToMap ? 'map-search-overlay-closing pointer-events-none' : ''
+      }`}
+      onAnimationEnd={(event) => {
+        if (
+          event.target === event.currentTarget &&
+          event.animationName === 'map-search-circle-conceal'
+        ) {
+          onCloseAnimationEnd?.();
+        }
+      }}
+    >
       <h1 className="sr-only">핀 조회 장소 검색</h1>
 
       <div className="shrink-0 px-[15px] pt-[calc(env(safe-area-inset-top)+16px)]">
