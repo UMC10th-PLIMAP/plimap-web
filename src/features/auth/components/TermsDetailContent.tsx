@@ -8,8 +8,8 @@ function TermBlockView({ block }: { block: TermBlock }) {
   if (block.type === 'orderedList') {
     return (
       <ol className="etc-13-r list-decimal px-1 text-grayscale-500">
-        {block.items.map((item) => (
-          <li key={item} className="ms-[19.5px]">
+        {block.items.map((item, index) => (
+          <li key={index} className="ms-[19.5px]">
             {item}
           </li>
         ))}
@@ -19,8 +19,8 @@ function TermBlockView({ block }: { block: TermBlock }) {
 
   return (
     <ul className="etc-13-r list-disc px-1 text-grayscale-500">
-      {block.items.map((item) => (
-        <li key={item} className="ms-[19.5px]">
+      {block.items.map((item, index) => (
+        <li key={index} className="ms-[19.5px]">
           {item}
         </li>
       ))}
