@@ -46,7 +46,13 @@ export default function TermsAgreementPage() {
         <TopBar onBack={() => setDetailTermId(null)} />
         <TermsDetailContent term={term} />
         <div className="mt-auto flex flex-col items-center px-[10px] pb-[52px]">
-          <Button type="button" variant="cta" size="cta" onClick={() => setDetailTermId(null)}>
+          <Button
+            key="confirm"
+            type="button"
+            variant="cta"
+            size="cta"
+            onClick={() => setDetailTermId(null)}
+          >
             확인
           </Button>
         </div>
@@ -87,7 +93,14 @@ export default function TermsAgreementPage() {
       </div>
 
       <div className="mt-auto flex flex-col items-center px-[10px] pb-[52px]">
-        <Button type="button" variant="cta" size="cta" disabled={!isValid} onClick={handleSubmit}>
+        <Button
+          key="next"
+          type="button"
+          variant="cta"
+          size="cta"
+          disabled={!isValid}
+          onClick={handleSubmit}
+        >
           다음
         </Button>
       </div>
