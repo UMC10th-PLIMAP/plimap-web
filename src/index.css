@@ -177,7 +177,7 @@
     @apply min-h-dvh bg-[#000000];
   }
 
-  @media (min-width: 402px) {
+  @media (min-width: 500px) {
     html,
     body,
     #root {
