@@ -94,6 +94,8 @@ pnpm dev
 
 같은 저장소에서 `develop`을 대상으로 생성한 Pull Request에는 PR별 미리보기 환경이 제공됩니다. 미리보기 주소는 `https://pr-<PR_NUMBER>.plimap.kr` 형식이며, 예를 들어 PR #70은 `https://pr-70.plimap.kr`에서 확인할 수 있습니다. 새 커밋을 push하면 같은 주소의 미리보기가 갱신되고, 준비가 완료되면 PR에 주소가 댓글로 남습니다. PR을 닫거나 병합하면 미리보기는 제거됩니다. Fork에서 생성된 PR은 미리보기 대상이 아닙니다.
 
+`API_DOMAIN` GitHub Variable을 `plimap.kr`로 설정합니다. 미리보기 API는 `https://pr-<PR_NUMBER>.<API_DOMAIN>/api`, 개발 API는 `https://dev.<API_DOMAIN>/api`를 사용합니다.
+
 ## 화면 목록 및 플로우
 
 ### 인증 및 온보딩
