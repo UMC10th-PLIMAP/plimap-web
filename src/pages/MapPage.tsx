@@ -145,8 +145,8 @@ const MapPage: React.FC = () => {
 
   return (
     <div className="relative h-full w-full">
-      {/* 상단 장소 검색 바 */}
-      <div className="absolute inset-x-0 top-0 z-20 px-2.5 pt-4">
+      {/* 상단 장소 검색 바 + 북마크/현재 위치 버튼 (오류 메시지가 늘어나면 버튼도 같이 밀려나도록 같은 세로 흐름에 배치) */}
+      <div className="absolute inset-x-0 top-0 z-20 flex flex-col gap-3 px-2.5 pt-4">
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -163,29 +163,28 @@ const MapPage: React.FC = () => {
           />
         </form>
         {placeSearchError && (
-          <p className="mt-3 rounded-lg bg-pli-black-85 px-3 py-2 text-xs text-red">
+          <p className="rounded-lg bg-pli-black-85 px-3 py-2 text-xs text-red">
             {placeSearchError}
           </p>
         )}
-      </div>
 
-      {/* 북마크/현재 위치 버튼 */}
-      <div className="absolute inset-x-0 top-[76px] z-20 flex flex-col items-end gap-3 p-4">
-        <button
-          type="button"
-          aria-label="북마크"
-          className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
-        >
-          <BookmarkIcon className="size-7" />
-        </button>
-        <button
-          type="button"
-          aria-label="현재 위치로 이동"
-          onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
-          className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
-        >
-          <FocusIcon className="size-7" />
-        </button>
+        <div className="flex flex-col items-end gap-3 pr-1.5">
+          <button
+            type="button"
+            aria-label="북마크"
+            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
+          >
+            <BookmarkIcon className="size-7" />
+          </button>
+          <button
+            type="button"
+            aria-label="현재 위치로 이동"
+            onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
+            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
+          >
+            <FocusIcon className="size-7" />
+          </button>
+        </div>
       </div>
 
       <BottomNav activeId={activeNavId} onTabChange={setActiveNavId}>
