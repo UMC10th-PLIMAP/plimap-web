@@ -43,17 +43,23 @@ export default function TermsAgreementPage() {
     const term = TERMS_BY_ID[detailTermId];
     return (
       <div className="flex min-h-screen flex-col">
-        <TopBar onBack={() => setDetailTermId(null)} />
         <TermsDetailContent term={term} />
-        <div className="mt-auto flex flex-col items-center px-[10px] pb-[52px]">
+        {/* 고정 CTA에 가려지지 않도록 스크롤 영역 하단에 여백 확보 */}
+        <div aria-hidden className="h-[116px]" />
+        <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-[10px] pb-[52px]">
           <Button
             key="confirm"
             type="button"
             variant="cta"
             size="cta"
-            onClick={() => setDetailTermId(null)}
+            onClick={() => {
+              if (term.required) {
+                setChecked((prev) => ({ ...prev, [term.id]: true }));
+              }
+              setDetailTermId(null);
+            }}
           >
-            확인
+            {term.required ? '확인' : '닫기'}
           </Button>
         </div>
       </div>
