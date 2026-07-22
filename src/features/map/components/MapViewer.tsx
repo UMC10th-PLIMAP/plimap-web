@@ -507,8 +507,6 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     const map = mapInstanceRef.current;
     if (!isLoaded || !map) return;
 
-    mapPinOverlaysRef.current.forEach(({ entry }) => disposeMapPinOverlay(entry));
-
     const selectedId = selectedMapPinIdRef.current;
 
     mapPinOverlaysRef.current = mapPins.map((pin) => {
@@ -522,6 +520,11 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
 
       return { id: pin.id, entry };
     });
+
+    return () => {
+      mapPinOverlaysRef.current.forEach(({ entry }) => disposeMapPinOverlay(entry));
+      mapPinOverlaysRef.current = [];
+    };
   }, [isLoaded, mapPins]);
 
   // --- 선택된 지도 핀 강조 ---
