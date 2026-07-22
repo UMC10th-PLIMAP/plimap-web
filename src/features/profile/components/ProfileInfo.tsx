@@ -23,18 +23,16 @@ export function ProfileInfo({ profile }: ProfileInfoProps) {
           <div className="size-full  bg-pli-black-50" />
         )}
       </div>
-
-      <p className="mt-2.5 body-16-r text-grayscale-500">{profile.name}</p>
-
+      {profile.name && <p className="mt-2.5 body-16-r text-grayscale-500">{profile.name}</p>}
       <div className="mt-4 flex w-full max-w-[236px] h-[46px] items-center justify-between">
         <StatItem label="팔로잉" value={profile.followingCount} />
         <StatItem label="팔로워" value={profile.followerCount} />
         <StatItem label="게시물" value={profile.postCount} />
       </div>
 
-      {profile.bio ? (
-        <p className="my-5 text-center body-15-r text-grayscale-200">{profile.bio}</p>
-      ) : null}
+      {profile.bio && (
+        <p className="mt-5 text-center body-15-r text-grayscale-200">{profile.bio}</p>
+      )}
     </section>
   );
 }

@@ -5,8 +5,8 @@ export type ProfilePin = {
 
 export type MyProfile = {
   nickname: string;
-  name: string;
-  bio: string;
+  name?: string;
+  bio?: string;
   avatarUrl: string;
   followingCount: number;
   followerCount: number;

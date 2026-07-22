@@ -42,7 +42,7 @@ function ProfileButton({
 
 export function ProfileActions({ actions }: ProfileActionsProps) {
   return (
-    <div className="flex items-center gap-2 px-[17px] pt-1 pb-[12px]">
+    <div className="flex items-center gap-2 px-[17px] mt-6 pb-[12px]">
       {actions.map((action, index) => (
         <ProfileButton
           key={action['aria-label'] ?? `profile-action-${index}`}
