@@ -22,7 +22,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: plimap-web
   PREVIEW_DEPLOY_ROOT: /home/deploy/product/plimap-web-previews
-  PREVIEW_DOMAIN: onebone.me
+  PREVIEW_DOMAIN: plimap.kr
   PREVIEW_ROUTE_HELPER: /usr/local/sbin/plimap-preview-route
   PREVIEW_MAX_ACTIVE: 12
   PREVIEW_MAX_IMAGE_BYTES: 268435456
@@ -143,7 +143,7 @@ jobs:
       pull-requests: write
     environment:
       name: preview
-      url: ${{ format('https://pli-{0}.onebone.me', github.event.pull_request.number) }}
+      url: ${{ format('https://pr-{0}.plimap.kr', github.event.pull_request.number) }}
 
     steps:
       - name: Checkout trusted deployment files
@@ -292,7 +292,7 @@ jobs:
           umask 077
 
           readonly expected_root=/home/deploy/product/plimap-web-previews
-          readonly expected_domain=onebone.me
+          readonly expected_domain=plimap.kr
           readonly expected_helper=/usr/local/sbin/plimap-preview-route
 
           : "${PREVIEW_DEPLOY_ROOT:?PREVIEW_DEPLOY_ROOT is required}"
@@ -339,7 +339,7 @@ jobs:
           }
 
           readonly preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
-          readonly preview_host="pli-${PR_NUMBER}.${PREVIEW_DOMAIN}"
+          readonly preview_host="pr-${PR_NUMBER}.${PREVIEW_DOMAIN}"
           readonly project_name="plimap-pr-${PR_NUMBER}"
           readonly network_name="${project_name}_preview-internal"
           readonly compose_file="${preview_path}/docker-compose.preview.yml"
@@ -735,7 +735,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          PREVIEW_URL: ${{ format('https://pli-{0}.onebone.me', github.event.pull_request.number) }}
+          PREVIEW_URL: ${{ format('https://pr-{0}.plimap.kr', github.event.pull_request.number) }}
         run: |
           set -euo pipefail
 
@@ -824,7 +824,7 @@ jobs:
           export PATH
 
           readonly expected_root=/home/deploy/product/plimap-web-previews
-          readonly expected_domain=onebone.me
+          readonly expected_domain=plimap.kr
           readonly expected_helper=/usr/local/sbin/plimap-preview-route
 
           : "${PREVIEW_DEPLOY_ROOT:?PREVIEW_DEPLOY_ROOT is required}"
@@ -841,7 +841,7 @@ jobs:
           fi
 
           readonly preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
-          readonly preview_host="pli-${PR_NUMBER}.${PREVIEW_DOMAIN}"
+          readonly preview_host="pr-${PR_NUMBER}.${PREVIEW_DOMAIN}"
           readonly project_name="plimap-pr-${PR_NUMBER}"
           readonly compose_file="${preview_path}/docker-compose.preview.yml"
           readonly candidate_compose_file="${preview_path}/docker-compose.preview.candidate.yml"
