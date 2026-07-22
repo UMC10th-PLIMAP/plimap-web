@@ -188,17 +188,17 @@ const MapPage: React.FC = () => {
         </button>
       </div>
 
-      {/* 핀 등록 버튼 */}
-      <button
-        type="button"
-        aria-label="핀 등록"
-        onClick={() => navigate('/app/pin/register')}
-        className="absolute bottom-[calc(env(safe-area-inset-bottom)+128px)] right-8 z-20 flex size-16 items-center justify-center rounded-full bg-gradient-neon text-grayscale-1200 shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
-      >
-        <PlusIcon className="size-7" />
-      </button>
-
-      <BottomNav activeId={activeNavId} onTabChange={setActiveNavId} />
+      <BottomNav activeId={activeNavId} onTabChange={setActiveNavId}>
+        {/* 핀 등록 버튼: BottomNav와의 간격은 BottomNav가 관리하므로 여기선 위치를 계산하지 않는다 */}
+        <button
+          type="button"
+          aria-label="핀 등록"
+          onClick={() => navigate('/app/pin/register')}
+          className="flex size-16 items-center justify-center rounded-full bg-gradient-neon text-grayscale-1200 shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
+        >
+          <PlusIcon className="size-7" />
+        </button>
+      </BottomNav>
 
       <MapViewer
         ref={mapViewerRef}
