@@ -193,14 +193,14 @@ export default function SongDetailPage() {
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="body-17-r text-grayscale-400"
+              className="body-17-r text-grayscale-400 cursor-pointer"
             >
               취소
             </button>
             <button
               type="button"
-              onClick={() => navigate(-1)}
-              className="body-17-m text-grayscale-0"
+              onClick={() => {}}
+              className="body-17-m text-grayscale-0 cursor-pointer"
             >
               등록
             </button>
@@ -214,9 +214,9 @@ export default function SongDetailPage() {
                 type="button"
                 aria-label="노래 변경"
                 onClick={() => setIsSongSelectOpen(true)}
-                className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-pli-black-75 text-grayscale-300"
+                className="absolute -bottom-3 -right-4 flex cursor-pointer items-center justify-center rounded-[50px] border-4 border-transparent bg-origin-border [background-clip:padding-box,border-box] [background-image:linear-gradient(#777777,#777777),linear-gradient(135deg,#1C1D21_0%,#1C1D21_100%)]"
               >
-                <div className="size-6 rounded-full bg-grayscale-0">
+                <div className="size-6">
                   <PencilIcon aria-hidden />
                 </div>
               </button>
@@ -251,7 +251,7 @@ export default function SongDetailPage() {
         </div>
       </section>
 
-      <section className="px-4 pt-9">
+      <section className="px-4 pt-6">
         <h3 className="body-15-r text-grayscale-300">
           태그 <span className="etc-13-r text-grayscale-700">(최대 4개)</span>
         </h3>

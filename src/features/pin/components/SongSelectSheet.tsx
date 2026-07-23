@@ -41,7 +41,7 @@ export function SongSelectSheet({
   }, [query, songs]);
 
   return (
-    <BottomSheet open={open} onClose={onClose} snapPoints={[0.5, 1]} className="bg-pli-black-85 ">
+    <BottomSheet open={open} onClose={onClose} snapPoints={[0.98, 1]} className="bg-pli-black-85 ">
       <BottomSheet.Header className="px-[15px]">
         <BottomSheet.Title className="my-5.5 text-center body-15-r text-grayscale-300">
           노래 선택하기
