@@ -5,17 +5,12 @@ export type MapCoordinate = {
 
 export const DEFAULT_CENTER: MapCoordinate = { lat: 37.5665, lng: 126.978 };
 
-export type KakaoLocalPlace = {
+export type MapPlace = {
   id: string;
   placeName: string;
-  categoryName: string;
-  categoryGroupName: string;
-  phone: string;
-  addressName: string;
-  roadAddressName: string;
-  placeUrl: string;
-  x: number;
-  y: number;
+  category: string;
+  address: string;
+  coordinates: MapCoordinate;
   distance?: number;
 };
 
