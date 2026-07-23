@@ -13,6 +13,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: plimap-web
+  API_DOMAIN: ${{ vars.API_DOMAIN }}
   DEPLOY_PATH: ${{ vars.DEPLOY_PATH || secrets.DEPLOY_PATH || '/opt/plimap-web' }}
   BUILDKIT_PROGRESS: quiet
   DOCKER_BUILD_CHECKS_ANNOTATIONS: 'false'
@@ -49,7 +50,6 @@ jobs:
       - name: Validate deployment config
         shell: bash
         env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || vars.VITE_API_BASE_URL }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_HOST_KNOWN_HOSTS: ${{ secrets.DEPLOY_HOST_KNOWN_HOSTS }}
           DEPLOY_HOST_SSH_KEY: ${{ secrets.DEPLOY_HOST_SSH_KEY }}
@@ -60,7 +60,7 @@ jobs:
           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
         run: |
           required_vars=(
-            VITE_API_BASE_URL
+            API_DOMAIN
             DEPLOY_HOST
             DEPLOY_HOST_KNOWN_HOSTS
             DEPLOY_HOST_SSH_KEY
@@ -78,6 +78,11 @@ jobs:
 
           if [[ ! "$GHCR_PULL_USERNAME" =~ ^[A-Za-z0-9._-]+$ ]]; then
             echo "GHCR_PULL_USERNAME may contain only letters, numbers, dots, underscores, and dashes." >&2
+            exit 1
+          fi
+
+          if [[ ! "$API_DOMAIN" =~ ^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+            echo "API_DOMAIN must be a valid lowercase domain name." >&2
             exit 1
           fi
 
@@ -113,7 +118,7 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ steps.meta.outputs.image_owner }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
           build-args: |
-            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL || vars.VITE_API_BASE_URL }}
+            VITE_API_BASE_URL=https://dev.${{ env.API_DOMAIN }}/api
             VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
             VITE_KAKAO_REST_API_KEY=${{ secrets.VITE_KAKAO_REST_API_KEY }}
 

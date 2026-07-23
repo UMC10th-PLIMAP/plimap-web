@@ -21,8 +21,9 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: plimap-web
+  API_DOMAIN: ${{ vars.API_DOMAIN }}
   PREVIEW_DEPLOY_ROOT: /home/deploy/product/plimap-web-previews
-  PREVIEW_DOMAIN: onebone.me
+  PREVIEW_DOMAIN: plimap.kr
   PREVIEW_ROUTE_HELPER: /usr/local/sbin/plimap-preview-route
   PREVIEW_MAX_ACTIVE: 12
   PREVIEW_MAX_IMAGE_BYTES: 268435456
@@ -72,23 +73,28 @@ jobs:
             exit 1
           fi
 
+          if [[ ! "$API_DOMAIN" =~ ^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+            echo "API_DOMAIN must be a valid lowercase domain name." >&2
+            exit 1
+          fi
+
           IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           IMAGE_TAG="pr-${PR_NUMBER}-${HEAD_SHA::12}"
+          API_BASE_URL="https://pr-${PR_NUMBER}.${API_DOMAIN}/api"
 
           echo "image_owner=${IMAGE_OWNER}" >> "$GITHUB_OUTPUT"
           echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "api_base_url=${API_BASE_URL}" >> "$GITHUB_OUTPUT"
 
       - name: Validate build configuration
         shell: bash
         env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || vars.VITE_API_BASE_URL }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           VITE_KAKAO_REST_API_KEY: ${{ secrets.VITE_KAKAO_REST_API_KEY }}
         run: |
           set -euo pipefail
 
           required_vars=(
-            VITE_API_BASE_URL
             VITE_GOOGLE_MAPS_API_KEY
             VITE_KAKAO_REST_API_KEY
           )
@@ -118,7 +124,7 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ steps.meta.outputs.image_owner }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
           build-args: |
-            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL || vars.VITE_API_BASE_URL }}
+            VITE_API_BASE_URL=${{ steps.meta.outputs.api_base_url }}
             VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
             VITE_KAKAO_REST_API_KEY=${{ secrets.VITE_KAKAO_REST_API_KEY }}
 
@@ -143,7 +149,7 @@ jobs:
       pull-requests: write
     environment:
       name: preview
-      url: ${{ format('https://pli-{0}.onebone.me', github.event.pull_request.number) }}
+      url: ${{ format('https://pr-{0}.plimap.kr', github.event.pull_request.number) }}
 
     steps:
       - name: Checkout trusted deployment files
@@ -292,7 +298,7 @@ jobs:
           umask 077
 
           readonly expected_root=/home/deploy/product/plimap-web-previews
-          readonly expected_domain=onebone.me
+          readonly expected_domain=plimap.kr
           readonly expected_helper=/usr/local/sbin/plimap-preview-route
 
           : "${PREVIEW_DEPLOY_ROOT:?PREVIEW_DEPLOY_ROOT is required}"
@@ -339,7 +345,7 @@ jobs:
           }
 
           readonly preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
-          readonly preview_host="pli-${PR_NUMBER}.${PREVIEW_DOMAIN}"
+          readonly preview_host="pr-${PR_NUMBER}.${PREVIEW_DOMAIN}"
           readonly project_name="plimap-pr-${PR_NUMBER}"
           readonly network_name="${project_name}_preview-internal"
           readonly compose_file="${preview_path}/docker-compose.preview.yml"
@@ -735,7 +741,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          PREVIEW_URL: ${{ format('https://pli-{0}.onebone.me', github.event.pull_request.number) }}
+          PREVIEW_URL: ${{ format('https://pr-{0}.plimap.kr', github.event.pull_request.number) }}
         run: |
           set -euo pipefail
 
@@ -824,7 +830,7 @@ jobs:
           export PATH
 
           readonly expected_root=/home/deploy/product/plimap-web-previews
-          readonly expected_domain=onebone.me
+          readonly expected_domain=plimap.kr
           readonly expected_helper=/usr/local/sbin/plimap-preview-route
 
           : "${PREVIEW_DEPLOY_ROOT:?PREVIEW_DEPLOY_ROOT is required}"
@@ -841,7 +847,7 @@ jobs:
           fi
 
           readonly preview_path="${PREVIEW_DEPLOY_ROOT}/pr-${PR_NUMBER}"
-          readonly preview_host="pli-${PR_NUMBER}.${PREVIEW_DOMAIN}"
+          readonly preview_host="pr-${PR_NUMBER}.${PREVIEW_DOMAIN}"
           readonly project_name="plimap-pr-${PR_NUMBER}"
           readonly compose_file="${preview_path}/docker-compose.preview.yml"
           readonly candidate_compose_file="${preview_path}/docker-compose.preview.candidate.yml"

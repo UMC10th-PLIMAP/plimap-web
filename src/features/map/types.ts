@@ -19,5 +19,14 @@ export type KakaoLocalPlace = {
   distance?: number;
 };
 
+export type MapPin = {
+  id: string;
+  lat: number;
+  lng: number;
+  title: string;
+  artist: string;
+  coverUrl?: string;
+};
+
 // 현재 위치 마커 기본 색상
 export const DEFAULT_MARKER_COLOR = '#C8F940';

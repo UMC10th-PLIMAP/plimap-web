@@ -4,6 +4,7 @@ import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
 import LoginPage from '@/pages/LoginPage';
 import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import MapPage from '@/pages/MapPage';
+import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 
 export const router = createBrowserRouter([
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
       {
         path: 'pin/search',
         element: <PinPlaceSearchPage />,
+      },
+      {
+        path: 'my',
+        element: <MyProfilePage />,
       },
     ],
   },

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 
-import { BottomSheet } from '@/components/ui/BottomSheet';
+import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
+import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
-import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import type { Pin, PinSort, PlaceInfo } from '@/features/pin/types';
+import { cn } from '@/lib/utils';
 
 type PinListSheetProps = {
   open: boolean;
@@ -14,10 +15,92 @@ type PinListSheetProps = {
   onPinClick?: (pin: Pin) => void;
 };
 
+function formatDistance(distance: number) {
+  const normalizedDistance = Math.max(0, distance);
+
+  if (normalizedDistance >= 1000) {
+    const kilometers = normalizedDistance / 1000;
+    return {
+      value: Number.isInteger(kilometers) ? String(kilometers) : kilometers.toFixed(1),
+      unit: 'km',
+    };
+  }
+
+  return { value: String(Math.round(normalizedDistance)), unit: 'm' };
+}
+
+type PinListContentProps = {
+  place: PlaceInfo;
+  pins: Pin[];
+  sort: PinSort;
+  onSortChange: (sort: PinSort) => void;
+  onPinClick?: (pin: Pin) => void;
+};
+
+function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinListContentProps) {
+  const { isFullPage } = useBottomSheet();
+  const distance = formatDistance(place.distance);
+
+  return (
+    <>
+      <BottomSheet.Header className={cn('px-4', isFullPage ? 'mt-0' : 'mt-[26.75px]')}>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex flex-col items-start gap-2">
+              {place.isMine ? (
+                <div className="flex items-center justify-center gap-1.5 rounded-[25px] bg-pli-black-75 px-2 py-1">
+                  <span className="size-1.5 rounded-full bg-neon-2" aria-hidden />
+                  <span className="etc-13-r text-neon-2">MY</span>
+                </div>
+              ) : null}
+
+              <div className="min-w-0">
+                <BottomSheet.Title className="block truncate head-24-sb text-grayscale-100">
+                  {place.name}
+                </BottomSheet.Title>
+                {place.address ? (
+                  <p className="truncate body-15-r text-grayscale-500">{place.address}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <p className="truncate body-15-m text-grayscale-400">
+              <span className="body-15-r text-grayscale-200">{place.creatorName}</span> 님이 생성한 핀 ·{' '}
+              <span className="text-grayscale-300">{distance.value}</span>
+              {distance.unit}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            aria-label="북마크"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pli-black-75"
+          >
+            <BookmarkIcon className="size-7" />
+          </button>
+        </div>
+
+        <div className="mt-6">
+          <SortTabs value={sort} onChange={onSortChange} />
+        </div>
+      </BottomSheet.Header>
+
+      <BottomSheet.Content className="mt-5 px-4">
+        <ul className="flex flex-col gap-4">
+          {pins.map((pin) => (
+            <li key={pin.id}>
+              <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
+            </li>
+          ))}
+        </ul>
+      </BottomSheet.Content>
+    </>
+  );
+}
+
 export function PinListSheet({ open, onClose, place, pins, onPinClick }: PinListSheetProps) {
   const [sort, setSort] = useState<PinSort>('popular');
 
-  // Pin에는 생성 시각이 없어 latest는 원본 배열(등록 순)을 역순으로 처리한다.
   const sortedPins = useMemo(() => {
     if (sort === 'latest') {
       return [...pins].reverse();
@@ -28,41 +111,13 @@ export function PinListSheet({ open, onClose, place, pins, onPinClick }: PinList
   return (
     <BottomSheet open={open} onClose={onClose}>
       <BottomSheet.FullPageNav />
-
-      <BottomSheet.Header className="mt-[26.75px] px-4 ">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <BottomSheet.Title className="head-24-sb text-grayscale-100">
-              {place.name}
-            </BottomSheet.Title>
-            <p className="body-15-m text-grayscale-500">
-              <span className="body-15-r text-grayscale-200">{place.creatorName}</span> 님이 생성한
-              PIN · <span className="text-red">{place.distance}</span>m
-            </p>
-          </div>
-
-          <button
-            type="button"
-            aria-label="북마크"
-            className="flex size-11 items-center justify-center rounded-full bg-pli-black-75"
-          >
-            <BookmarkIcon className="size-7" />
-          </button>
-        </div>
-        <div className="mt-6">
-          <SortTabs value={sort} onChange={setSort} />
-        </div>
-      </BottomSheet.Header>
-
-      <BottomSheet.Content className="mt-5">
-        <ul className="flex flex-col gap-4.5">
-          {sortedPins.map((pin) => (
-            <li key={pin.id}>
-              <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
-            </li>
-          ))}
-        </ul>
-      </BottomSheet.Content>
+      <PinListContent
+        place={place}
+        pins={sortedPins}
+        sort={sort}
+        onSortChange={setSort}
+        onPinClick={onPinClick}
+      />
     </BottomSheet>
   );
 }

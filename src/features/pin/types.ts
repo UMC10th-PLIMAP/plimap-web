@@ -5,6 +5,8 @@ export type PlaceInfo = {
   name: string;
   creatorName: string;
   distance: number;
+  address?: string;
+  isMine?: boolean;
 };
 
 export type Pin = {
