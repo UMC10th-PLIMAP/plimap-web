@@ -50,10 +50,6 @@ export const router = createBrowserRouter([
         element: <ProfileImageSetupPage />,
       },
       {
-        path: 'pin/search',
-        element: <PinPlaceSearchPage />,
-      },
-      {
         path: 'song/list',
         element: <SongListPage />,
       },
