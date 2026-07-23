@@ -6,6 +6,8 @@ import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import MapPage from '@/pages/MapPage';
 import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
+import SongListPage from '@/pages/SongListPage';
+import SongDetailPage from '@/pages/SongDetailPage';
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +37,14 @@ export const router = createBrowserRouter([
       {
         path: 'pin/search',
         element: <PinPlaceSearchPage />,
+      },
+      {
+        path: 'song/list',
+        element: <SongListPage />,
+      },
+      {
+        path: 'song/detail/:songId',
+        element: <SongDetailPage />,
       },
       {
         path: 'my',

@@ -10,7 +10,7 @@ export function SongCard({ song, onClick }: SongCardProps) {
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 py-2 text-left"
+      className="flex w-full items-center gap-3 py-2 text-left cursor-pointer"
     >
       <div className="size-13 rounded-md bg-grayscale-0" />
       <div>

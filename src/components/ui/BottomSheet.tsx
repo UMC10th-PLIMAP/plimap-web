@@ -112,7 +112,7 @@ function BottomSheet({
     }
   }
 
-  const isFullPage = activeSnap === lastSnap;
+  const isFullPage = snapPoints.length > 1 && activeSnap === lastSnap;
 
   const collapse = React.useCallback(() => {
     setActiveSnap(firstSnap);

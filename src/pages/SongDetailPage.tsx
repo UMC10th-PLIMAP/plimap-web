@@ -1,28 +1,25 @@
 import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import PlayIcon from '@/assets/icons/play.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import rectangleBg from '@/assets/Rectangle.png';
 import { Tag } from '@/components/ui/tag';
+import { SongSelectSheet } from '@/features/pin/components/SongSelectSheet';
 import {
   DEFAULT_TRIM_END_INDEX,
   DEFAULT_TRIM_START_INDEX,
   MOCK_PREVIEW_DURATION,
+  MOCK_SONG_CARD_LIST,
   MOCK_WAVEFORM_PEAKS,
   peaksToTrimRange,
   TAG_OPTIONS,
   timeToPercent,
-} from '@/features/pin/constants/songPreview';
+} from '@/features/pin/data/songPreview';
 import { cn } from '@/lib/utils';
 import type { Song } from '@/features/pin/types';
 
 const INTRO_MAX_LENGTH = 100;
 const MAX_TAG_COUNT = 4;
-
-type SongDetailContentProps = {
-  song: Song;
-  onCancel: () => void;
-  onRegister: () => void;
-};
 
 type TrimBarProps = {
   trimStartPercent: number;
@@ -106,7 +103,7 @@ function SongPreviewSection({ waveformPeaks }: SongPreviewSectionProps) {
           aria-label="재생"
           className="flex size-7 items-center justify-center rounded-full bg-grayscale-100"
         >
-          <PlayIcon className="size-4.5  text-grayscale-1200" aria-hidden />
+          <PlayIcon className="size-4.5 text-grayscale-1200" aria-hidden />
         </button>
       </div>
 
@@ -148,12 +145,19 @@ function FeedVisibilityToggle({
   );
 }
 
-export function SongDetailContent({ song, onCancel, onRegister }: SongDetailContentProps) {
+export default function SongDetailPage() {
+  const navigate = useNavigate();
+  const { songId } = useParams<{ songId: string }>();
+
+  const song = MOCK_SONG_CARD_LIST.find((item) => item.id === songId) ?? MOCK_SONG_CARD_LIST[0];
+
   const [introduction, setIntroduction] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isFeedPublic, setIsFeedPublic] = useState(true);
+  const [isSongSelectOpen, setIsSongSelectOpen] = useState(false);
 
-  const waveformPeaks = song.waveformPeaks ?? MOCK_WAVEFORM_PEAKS;
+  const coverUrl = song.artistImage || rectangleBg;
+  const waveformPeaks = MOCK_WAVEFORM_PEAKS;
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => {
@@ -173,10 +177,10 @@ export function SongDetailContent({ song, onCancel, onRegister }: SongDetailCont
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
       <section className="relative w-full overflow-hidden pb-4">
         <img
-          src={rectangleBg}
+          src={coverUrl}
           alt=""
           aria-hidden
-          className="absolute inset-0 object-cover blur-sm opacity-12"
+          className="pointer-events-none absolute inset-0 object-cover opacity-12 blur-sm"
         />
 
         <div
@@ -186,21 +190,30 @@ export function SongDetailContent({ song, onCancel, onRegister }: SongDetailCont
 
         <div className="relative z-10 flex h-full flex-col">
           <div className="flex h-[64px] items-center justify-between px-4">
-            <button type="button" onClick={onCancel} className="body-17-r text-grayscale-400">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="body-17-r text-grayscale-400"
+            >
               취소
             </button>
-            <button type="button" onClick={onRegister} className="body-17-m text-grayscale-0">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="body-17-m text-grayscale-0"
+            >
               등록
             </button>
           </div>
 
           <div className="flex flex-col items-center">
             <div className="relative">
-              <img src={rectangleBg} alt="" className="size-16 rounded-md object-cover" />
+              <img src={coverUrl} alt="" className="size-16 rounded-md object-cover" />
 
               <button
                 type="button"
-                aria-label="앨범 이미지 수정"
+                aria-label="노래 변경"
+                onClick={() => setIsSongSelectOpen(true)}
                 className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-pli-black-75 text-grayscale-300"
               >
                 <div className="size-6 rounded-full bg-grayscale-0">
@@ -263,6 +276,14 @@ export function SongDetailContent({ song, onCancel, onRegister }: SongDetailCont
         <span className="body-15-r text-grayscale-300">피드 공개</span>
         <FeedVisibilityToggle checked={isFeedPublic} onChange={setIsFeedPublic} />
       </section>
+
+      <SongSelectSheet
+        open={isSongSelectOpen}
+        onClose={() => setIsSongSelectOpen(false)}
+        onSelect={(selected: Song) => {
+          navigate(`/app/song/detail/${selected.id}`, { replace: true });
+        }}
+      />
     </div>
   );
 }
