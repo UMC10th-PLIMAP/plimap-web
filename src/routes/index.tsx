@@ -3,6 +3,7 @@ import RootLayout from '@/layouts/RootLayout';
 import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
 import LoginPage from '@/pages/LoginPage';
 import NicknameSetupPage from '@/pages/NicknameSetupPage';
+import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import MapPage from '@/pages/MapPage';
 import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
@@ -23,6 +24,10 @@ export const router = createBrowserRouter([
       {
         path: 'login',
         element: <LoginPage />,
+      },
+      {
+        path: 'onboarding/terms',
+        element: <TermsAgreementPage />,
       },
       {
         path: 'onboarding/nickname',
