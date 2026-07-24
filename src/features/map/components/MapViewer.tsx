@@ -299,6 +299,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
       const map = new mapsApi.Map(mapRef.current, {
         center: DEFAULT_CENTER,
         zoom,
+        isFractionalZoomEnabled: true,
         minZoom: MIN_ZOOM,
         // maxZoom은 지정하지 않음 → API 지원 한도까지 확대 허용
         restriction: {
