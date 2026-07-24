@@ -41,6 +41,11 @@ type SearchInputProps = Omit<React.ComponentProps<'input'>, 'type' | 'size'> &
     leadingIcon?: 'search' | 'back';
   };
 
+type SearchLauncherProps = Omit<React.ComponentProps<'button'>, 'children'> & {
+  value?: string;
+  placeholder?: string;
+};
+
 const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
   (
     {
@@ -109,8 +114,13 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
           {...props}
         />
         {showClearButton ? (
-          <button type="button" onClick={handleClear} aria-label="검색어 지우기">
-            <CloseIcon className="size-6 text-grayscale-400" />
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label="검색어 지우기"
+            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-pli-black-50"
+          >
+            <CloseIcon className="size-4 text-grayscale-400" />
           </button>
         ) : null}
       </div>
@@ -120,4 +130,44 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
 
 SearchInput.displayName = 'SearchInput';
 
-export { SearchInput };
+const SearchLauncher = React.forwardRef<HTMLButtonElement, SearchLauncherProps>(
+  (
+    {
+      className,
+      value,
+      placeholder = '장소를 검색하세요',
+      type = 'button',
+      'aria-label': ariaLabel,
+      ...props
+    },
+    ref,
+  ) => {
+    const hasValue = Boolean(value?.trim());
+
+    return (
+      <button
+        ref={ref}
+        type={type}
+        data-slot="search-launcher"
+        data-variant="map"
+        aria-label={ariaLabel}
+        className={cn(searchInputVariants({ variant: 'map' }), 'text-left', className)}
+        {...props}
+      >
+        <SearchIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
+        <span
+          className={cn(
+            'min-w-0 flex-1 truncate',
+            hasValue ? 'body-17-m text-grayscale-300' : 'body-17-r text-grayscale-700',
+          )}
+        >
+          {hasValue ? value : placeholder}
+        </span>
+      </button>
+    );
+  },
+);
+
+SearchLauncher.displayName = 'SearchLauncher';
+
+export { SearchInput, SearchLauncher };
