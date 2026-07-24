@@ -306,6 +306,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
           strictBounds: true,
         },
         disableDefaultUI: true,
+        gestureHandling: 'greedy',
         styles: FIXED_MAP_STYLES, // Map ID가 없어야 이 스타일이 정상 작동함
       });
       mapInstanceRef.current = map;
