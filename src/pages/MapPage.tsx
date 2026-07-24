@@ -1,16 +1,23 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { SearchInput } from '@/components/ui/SearchInput';
-import { KakaoLocalPlace, MapCoordinate, DEFAULT_CENTER } from '@/features/map/types';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { SearchLauncher } from '@/components/ui/SearchInput';
+import type { MapPlace } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
-import { searchKakaoLocal } from '@/features/map/kakaoLocal';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
 import { MOCK_MAP_PINS } from '@/features/map/constants/mockMapPins';
+import type { PinSearchPlace } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 
-const MapPage: React.FC = () => {
+type MapPageProps = {
+  selectedMapPlace: PinSearchPlace | null;
+};
+
+const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace }) => {
+  const navigate = useNavigate();
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
@@ -21,14 +28,13 @@ const MapPage: React.FC = () => {
   const [mapLoadError, setMapLoadError] = useState<string | null>(
     hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
-  const [mapCenter, setMapCenter] = useState<MapCoordinate>(DEFAULT_CENTER);
-  const [placeQuery, setPlaceQuery] = useState('');
-  const [placeResults, setPlaceResults] = useState<KakaoLocalPlace[]>([]);
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
-  const [isPlaceSearching, setIsPlaceSearching] = useState(false);
-  const [placeSearchError, setPlaceSearchError] = useState<string | null>(null);
-  const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
-  const searchRequestIdRef = useRef(0);
+const placeResults = useMemo<MapPlace[]>(
+  () => (selectedMapPlace ? [selectedMapPlace] : []),
+  [selectedMapPlace],
+);
+const selectedPlaceId = selectedMapPlace?.id ?? null;
+const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
+const searchRequestIdRef = useRef(0);
   const mapViewerRef = useRef<MapViewerHandle>(null);
 
   // --- 구글맵 스크립트 로드 (setState는 전부 프로미스 콜백 안에서만 일어나 effect에서 안전하게 호출 가능) ---
@@ -72,59 +78,6 @@ const MapPage: React.FC = () => {
     setZoom(newZoom);
   };
 
-  // --- 장소 검색 핸들러 ---
-  const handlePlaceSearch = useCallback(async () => {
-    const query = placeQuery.trim();
-
-    if (!query) {
-      searchRequestIdRef.current += 1;
-      setPlaceResults([]);
-      setSelectedPlaceId(null);
-      setIsPlaceSearching(false);
-      setPlaceSearchError(null);
-      return;
-    }
-
-    const requestId = ++searchRequestIdRef.current;
-    setIsPlaceSearching(true);
-    setPlaceSearchError(null);
-
-    try {
-      const results = await searchKakaoLocal({
-        query,
-        x: mapCenter.lng,
-        y: mapCenter.lat,
-      });
-      if (searchRequestIdRef.current !== requestId) return;
-      setPlaceResults(results);
-      setSelectedPlaceId(results[0]?.id ?? null);
-      if (results.length === 0) {
-        setPlaceSearchError('검색 결과가 없습니다.');
-      }
-    } catch (error) {
-      if (searchRequestIdRef.current !== requestId) return;
-      console.error(error);
-      setPlaceResults([]);
-      setSelectedPlaceId(null);
-      setPlaceSearchError(
-        error instanceof Error ? error.message : 'Kakao Local API 검색에 실패했습니다.',
-      );
-    } finally {
-      if (searchRequestIdRef.current === requestId) {
-        setIsPlaceSearching(false);
-      }
-    }
-  }, [mapCenter.lat, mapCenter.lng, placeQuery]);
-
-  const handleClearPlaceSearch = () => {
-    searchRequestIdRef.current += 1;
-    setPlaceQuery('');
-    setPlaceResults([]);
-    setSelectedPlaceId(null);
-    setIsPlaceSearching(false);
-    setPlaceSearchError(null);
-  };
-
   if (mapLoadStatus === 'error') {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-pli-black-100 p-6 text-center">
@@ -143,29 +96,21 @@ const MapPage: React.FC = () => {
   return (
     <div className="relative h-full w-full">
       {/* 상단 장소 검색 바 + 북마크/현재 위치 버튼 */}
-      <div className="absolute inset-x-0 top-0 z-20 flex flex-col gap-3 p-3">
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            handlePlaceSearch();
-          }}
-        >
-          <SearchInput
-            variant="map"
-            value={placeQuery}
-            onChange={(event) => setPlaceQuery(event.target.value)}
-            onClear={handleClearPlaceSearch}
-            placeholder={isPlaceSearching ? '검색 중...' : '장소를 검색하세요'}
-            disabled={isPlaceSearching}
+      <div className="absolute inset-x-0 top-0 z-20 flex flex-col">
+        <div className="shrink-0 px-[15px] pt-[calc(env(safe-area-inset-top)+16px)]">
+          <SearchLauncher
+            className="map-search-hero"
+            value={selectedMapPlace?.placeName}
+            placeholder="장소를 검색하세요"
+            onClick={() =>
+              navigate('/app/pin/search', {
+                state: { fromMap: true },
+              })
+            }
           />
-        </form>
-        {placeSearchError && (
-          <p className="rounded-lg bg-pli-black-85 px-3 py-2 text-xs text-red">
-            {placeSearchError}
-          </p>
-        )}
+        </div>
 
-        <div className="flex flex-col items-end gap-3">
+        <div className="flex flex-col items-end gap-3 p-4">
           <button
             type="button"
             aria-label="북마크"

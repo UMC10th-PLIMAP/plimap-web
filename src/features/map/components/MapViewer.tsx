@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 
 import {
   KakaoLocalPlace,
   MapCoordinate,
+  MapPlace,
   MapPin,
   DEFAULT_CENTER,
   DEFAULT_MARKER_COLOR,
@@ -132,7 +133,7 @@ const createPlaceMarkerIcon = (
   scale: isSelected ? 13 : 11,
 });
 
-const createPlaceInfoContent = (place: KakaoLocalPlace) => {
+const createPlaceInfoContent = (place: MapPlace) => {
   const wrapper = document.createElement('div');
   wrapper.style.display = 'flex';
   wrapper.style.flexDirection = 'column';
@@ -147,15 +148,14 @@ const createPlaceInfoContent = (place: KakaoLocalPlace) => {
   wrapper.appendChild(title);
 
   const meta = document.createElement('span');
-  meta.textContent = place.categoryGroupName || place.categoryName || '장소';
+  meta.textContent = place.category || '장소';
   meta.style.fontSize = '12px';
   meta.style.color = '#4b5563';
   wrapper.appendChild(meta);
 
-  const address = place.roadAddressName || place.addressName;
-  if (address) {
+  if (place.address) {
     const addressText = document.createElement('span');
-    addressText.textContent = address;
+    addressText.textContent = place.address;
     addressText.style.fontSize = '12px';
     addressText.style.color = '#6b7280';
     wrapper.appendChild(addressText);
@@ -167,7 +167,7 @@ const createPlaceInfoContent = (place: KakaoLocalPlace) => {
 type MapViewerProps = {
   isLoaded: boolean;
   zoom: number;
-  placeResults: KakaoLocalPlace[];
+  placeResults: MapPlace[];
   selectedPlaceId: string | null;
   mapPins: MapPin[];
   selectedMapPinId: string | null;
@@ -415,7 +415,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
 
   useImperativeHandle(ref, () => ({ recenterToCurrentLocation }), [recenterToCurrentLocation]);
 
-  // --- Kakao Local 검색 결과 마커 렌더링 ---
+  // --- 장소 검색 결과 마커 렌더링 ---
   useEffect(() => {
     const mapsApi = window.google?.maps;
     const map = mapInstanceRef.current;
@@ -437,7 +437,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     const selectedId = selectedPlaceIdRef.current;
 
     placeMarkersRef.current = placeResults.map((place, index) => {
-      const position = { lat: place.y, lng: place.x };
+      const position = place.coordinates;
       const marker = new google.maps.Marker({
         map,
         position,
@@ -461,14 +461,14 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     });
 
     if (placeResults.length === 1) {
-      map.setCenter({ lat: placeResults[0].y, lng: placeResults[0].x });
+      map.setCenter(placeResults[0].coordinates);
       map.setZoom(Math.max(map.getZoom() ?? 16, 16));
     } else {
       map.fitBounds(bounds, 48);
     }
   }, [isLoaded, placeResults]);
 
-  // --- 선택된 Kakao 장소 강조 및 정보창 표시 ---
+  // --- 선택된 장소 강조 및 정보창 표시 ---
   useEffect(() => {
     const mapsApi = window.google?.maps;
     const map = mapInstanceRef.current;
