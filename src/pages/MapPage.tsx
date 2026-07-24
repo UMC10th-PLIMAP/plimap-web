@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
 import type { MapPlace } from '@/features/map/types';
-import { MapCoordinate, DEFAULT_CENTER, DEFAULT_MARKER_COLOR } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
 import { BottomNav, type NavItemId } from '@/components/BottomNav';
