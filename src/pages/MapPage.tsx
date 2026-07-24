@@ -28,13 +28,12 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace }) => {
   const [mapLoadError, setMapLoadError] = useState<string | null>(
     hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
-const placeResults = useMemo<MapPlace[]>(
-  () => (selectedMapPlace ? [selectedMapPlace] : []),
-  [selectedMapPlace],
-);
-const selectedPlaceId = selectedMapPlace?.id ?? null;
-const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
-const searchRequestIdRef = useRef(0);
+  const placeResults = useMemo<MapPlace[]>(
+    () => (selectedMapPlace ? [selectedMapPlace] : []),
+    [selectedMapPlace],
+  );
+  const selectedPlaceId = selectedMapPlace?.id ?? null;
+  const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
   const mapViewerRef = useRef<MapViewerHandle>(null);
 
   // --- 구글맵 스크립트 로드 (setState는 전부 프로미스 콜백 안에서만 일어나 effect에서 안전하게 호출 가능) ---
@@ -138,8 +137,6 @@ const searchRequestIdRef = useRef(0);
         mapPins={MOCK_MAP_PINS}
         selectedMapPinId={selectedMapPinId}
         onZoomChanged={handleZoomChange}
-        onCenterChanged={setMapCenter}
-        onSelectPlace={setSelectedPlaceId}
         onSelectMapPin={setSelectedMapPinId}
       />
     </div>

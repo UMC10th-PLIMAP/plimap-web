@@ -1,12 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
-import {
-  KakaoLocalPlace,
-  MapCoordinate,
-  MapPlace,
-  MapPin,
-  DEFAULT_CENTER,
-  DEFAULT_MARKER_COLOR,
-} from '../types';
+import { MapCoordinate, MapPlace, MapPin, DEFAULT_CENTER, DEFAULT_MARKER_COLOR } from '../types';
 import {
   createMapPinOverlay,
   disposeMapPinOverlay,
@@ -202,9 +195,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
   const markerRef = useRef<google.maps.Marker | null>(null);
   const headingMarkerRef = useRef<google.maps.Marker | null>(null);
 
-  const placeMarkersRef = useRef<
-    { id: string; place: KakaoLocalPlace; marker: google.maps.Marker }[]
-  >([]);
+  const placeMarkersRef = useRef<{ id: string; place: MapPlace; marker: google.maps.Marker }[]>([]);
   const mapPinOverlaysRef = useRef<{ id: string; entry: MapPinOverlayEntry }[]>([]);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
