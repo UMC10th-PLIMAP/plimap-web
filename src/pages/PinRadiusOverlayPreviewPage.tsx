@@ -50,6 +50,8 @@ export default function PinRadiusOverlayPreviewPage() {
             zoom={zoom}
             placeResults={[]}
             selectedPlaceId={null}
+            mapPins={[]}
+            selectedMapPinId={null}
             onZoomChanged={setZoom}
             onCenterChanged={(center) => setCenterLatitude(center.lat)}
           />
