@@ -7,6 +7,7 @@ import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
+import PinRegisterPage from '@/pages/PinRegisterPage';
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
       {
         path: 'my',
         element: <MyProfilePage />,
+      },
+      {
+        path: 'pin/register',
+        element: <PinRegisterPage />,
       },
     ],
   },
