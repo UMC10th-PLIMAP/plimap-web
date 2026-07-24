@@ -5,6 +5,7 @@ import { SearchLauncher } from '@/components/ui/SearchInput';
 import type { MapPlace } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
+import { MOCK_MAP_PINS } from '@/features/map/constants/mockMapPins';
 import { BottomNav, type NavItemId } from '@/components/BottomNav';
 import type { PinSearchPlace } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
@@ -37,6 +38,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace }) => {
     [selectedMapPlace],
   );
   const selectedPlaceId = selectedMapPlace?.id ?? null;
+  const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
 
   const mapViewerRef = useRef<MapViewerHandle>(null);
 
@@ -150,7 +152,10 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace }) => {
         zoom={zoom}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
+        mapPins={MOCK_MAP_PINS}
+        selectedMapPinId={selectedMapPinId}
         onZoomChanged={handleZoomChange}
+        onSelectMapPin={setSelectedMapPinId}
       />
     </div>
   );
