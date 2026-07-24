@@ -75,11 +75,6 @@ export function PinRadiusOverlay({
           <div aria-hidden="true" className="absolute inset-0 bg-black/60" />
         )}
 
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-[55px] bg-gradient-to-b from-black to-transparent"
-        />
-
         <div className="absolute inset-x-[15px] top-[calc(env(safe-area-inset-top)+16px)] flex items-center justify-between">
           <Button
             type="button"
