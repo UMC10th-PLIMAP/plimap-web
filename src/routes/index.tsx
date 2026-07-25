@@ -14,7 +14,7 @@ import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
-import FollowingPage from '@/pages/FollowingPage';
+import FollowListPage from '@/pages/FollowListPage';
 
 export const router = createBrowserRouter([
   {
@@ -85,7 +85,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'my/following',
-        element: <FollowingPage />,
+        element: <FollowListPage />,
       },
       {
         path: 'pin/register',
