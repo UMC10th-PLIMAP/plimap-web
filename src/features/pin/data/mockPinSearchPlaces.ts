@@ -112,7 +112,7 @@ export const MOCK_SONG_DETAIL_LOVE_ATTACK: PinDetail = {
   coverUrl: loveAttackCoverUrl,
   likeCount: 33,
   liked: false,
-  registerCount: 2,
+  registerCount: 5,
   feeds: [
     {
       id: 'feed-1',
