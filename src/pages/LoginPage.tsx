@@ -1,4 +1,5 @@
-import AppleIcon from '@/assets/icons/apple.svg?react';
+import { useState } from 'react';
+
 import GoogleIcon from '@/assets/icons/google.svg?react';
 import KakaoIcon from '@/assets/icons/kakao.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
@@ -13,7 +14,30 @@ if (!API_BASE_URL) {
 const KAKAO_LOGIN_URL = `${API_BASE_URL}/oauth/authorization/kakao`;
 const GOOGLE_LOGIN_URL = `${API_BASE_URL}/oauth/authorization/google`;
 
+type OAuthProvider = 'kakao' | 'google';
+
+const OAUTH_LOGIN_URL: Record<OAuthProvider, string> = {
+  kakao: KAKAO_LOGIN_URL,
+  google: GOOGLE_LOGIN_URL,
+};
+
+function OAuthSpinner() {
+  return (
+    <span
+      className="size-6 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+      aria-hidden
+    />
+  );
+}
+
 export default function LoginPage() {
+  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
+
+  const handleOAuthClick = (provider: OAuthProvider) => () => {
+    setLoadingProvider(provider);
+    window.location.href = OAUTH_LOGIN_URL[provider];
+  };
+
   return (
     <div className="flex h-full min-h-screen flex-col items-center bg-pli-black-100 px-[39px]">
       <div className="flex-[1.7]" />
@@ -24,21 +48,35 @@ export default function LoginPage() {
       <div className="flex-1" />
 
       <div className="flex w-full flex-col items-center gap-3">
-        <Button variant="kakao" size="social" className="w-full gap-3" asChild>
-          <a href={KAKAO_LOGIN_URL}>
+        <Button
+          variant="kakao"
+          size="social"
+          disabled={loadingProvider !== null}
+          aria-busy={loadingProvider === 'kakao'}
+          onClick={handleOAuthClick('kakao')}
+          className="w-full gap-3"
+        >
+          {loadingProvider === 'kakao' ? (
+            <OAuthSpinner />
+          ) : (
             <KakaoIcon className="size-6 shrink-0" />
-            카카오로 시작하기
-          </a>
+          )}
+          카카오로 시작하기
         </Button>
-        <Button variant="google" size="social" className="w-full gap-3" asChild>
-          <a href={GOOGLE_LOGIN_URL}>
+        <Button
+          variant="google"
+          size="social"
+          disabled={loadingProvider !== null}
+          aria-busy={loadingProvider === 'google'}
+          onClick={handleOAuthClick('google')}
+          className="w-full gap-3"
+        >
+          {loadingProvider === 'google' ? (
+            <OAuthSpinner />
+          ) : (
             <GoogleIcon className="size-6 shrink-0" />
-            Google로 시작하기
-          </a>
-        </Button>
-        <Button variant="apple" size="social" className="w-full gap-3">
-          <AppleIcon className="size-6 shrink-0" />
-          Apple로 시작하기
+          )}
+          Google로 시작하기
         </Button>
       </div>
 
