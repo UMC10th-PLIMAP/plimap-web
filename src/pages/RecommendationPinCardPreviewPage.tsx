@@ -43,9 +43,9 @@ export default function RecommendationPinCardPreviewPage() {
   const [selectedPin, setSelectedPin] = useState<RecommendationPin | null>(null);
 
   return (
-    <main className="min-h-dvh bg-pli-black-100 px-4 py-8 text-grayscale-100">
+    <main className="min-h-dvh bg-pli-black-100 py-8 text-grayscale-100">
       <section className="mx-auto flex w-full max-w-[402px] flex-col gap-6">
-        <header className="flex flex-col gap-2">
+        <header className="flex flex-col gap-2 px-4">
           <p className="etc-13-r text-neon">COMPONENT PREVIEW</p>
           <h1 className="head-24-sb">추천 PIN 카드</h1>
           <p className="body-15-r text-grayscale-500">
@@ -53,27 +53,29 @@ export default function RecommendationPinCardPreviewPage() {
           </p>
         </header>
 
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-3 overflow-x-auto pb-2 pl-4 scrollbar-hide">
           {manyRecommendationPins.map((pin) => (
             <RecommendationPinCard key={pin.id} pin={pin} onClick={() => setSelectedPin(pin)} />
           ))}
         </div>
 
-        <section className="rounded-xl bg-pli-black-85 p-4" aria-live="polite">
-          <h2 className="body-17-m">선택한 PIN</h2>
-          {selectedPin ? (
-            <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 body-15-r">
-              <dt className="text-grayscale-500">장소</dt>
-              <dd>{selectedPin.place.name}</dd>
-              <dt className="text-grayscale-500">음악</dt>
-              <dd>{`${selectedPin.song.title} · ${selectedPin.song.artist}`}</dd>
-              <dt className="text-grayscale-500">작성자</dt>
-              <dd>{selectedPin.creator.name}</dd>
-            </dl>
-          ) : (
-            <p className="mt-3 body-15-r text-grayscale-500">카드를 선택해 주세요.</p>
-          )}
-        </section>
+        <div className="px-4">
+          <section className="rounded-xl bg-pli-black-85 p-4" aria-live="polite">
+            <h2 className="body-17-m">선택한 PIN</h2>
+            {selectedPin ? (
+              <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 body-15-r">
+                <dt className="text-grayscale-500">장소</dt>
+                <dd>{selectedPin.place.name}</dd>
+                <dt className="text-grayscale-500">음악</dt>
+                <dd>{`${selectedPin.song.title} · ${selectedPin.song.artist}`}</dd>
+                <dt className="text-grayscale-500">작성자</dt>
+                <dd>{selectedPin.creator.name}</dd>
+              </dl>
+            ) : (
+              <p className="mt-3 body-15-r text-grayscale-500">카드를 선택해 주세요.</p>
+            )}
+          </section>
+        </div>
       </section>
     </main>
   );
