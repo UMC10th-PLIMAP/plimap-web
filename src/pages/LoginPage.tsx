@@ -50,7 +50,7 @@ export default function LoginPage() {
 
     navigate('.', { replace: true, state: null });
     // 브라우저가 로그인 화면을 먼저 그릴 시간을 주기 위해 alert를 한 틱 미룸
-    setTimeout(() => alert(OAUTH_LOGIN_FAILED_MESSAGE), 0);
+    setTimeout(() => alert(OAUTH_LOGIN_FAILED_MESSAGE), 50);
   }, [location.state, navigate]);
 
   const handleOAuthClick = (provider: OAuthProvider) => () => {
