@@ -100,7 +100,7 @@ export default function LoginPage() {
         </Button>
       </div>
 
-      <div className="flex h-[176px] shrink-0 items-start justify-center pt-5">
+      <div className="flex flex-1 shrink-0 items-start justify-center pt-5">
         <p className="etc-13-r whitespace-pre-line text-center text-grayscale-500">
           {'회원가입 시 PLIMAP의 \n개인정보 처리방침 및 이용약관에 동의하게 됩니다'}
         </p>
