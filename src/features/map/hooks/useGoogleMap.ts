@@ -80,10 +80,15 @@ export function useGoogleMap({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
+  const onZoomChangedRef = useRef(onZoomChanged);
 
   useEffect(() => {
     onCenterChangedRef.current = onCenterChanged;
   }, [onCenterChanged]);
+
+  useEffect(() => {
+    onZoomChangedRef.current = onZoomChanged;
+  }, [onZoomChanged]);
 
   useEffect(() => {
     const mapsApi = window.google?.maps;
@@ -109,8 +114,8 @@ export function useGoogleMap({
 
       map.addListener('zoom_changed', () => {
         const newZoom = map.getZoom();
-        if (newZoom !== undefined && onZoomChanged) {
-          onZoomChanged(newZoom);
+        if (newZoom !== undefined) {
+          onZoomChangedRef.current?.(newZoom);
         }
       });
 
@@ -126,7 +131,7 @@ export function useGoogleMap({
     } else if (mapInstanceRef.current.getZoom() !== zoom) {
       mapInstanceRef.current.setZoom(zoom);
     }
-  }, [isLoaded, zoom, onZoomChanged]);
+  }, [isLoaded, zoom]);
 
   return { mapRef, mapInstanceRef };
 }
