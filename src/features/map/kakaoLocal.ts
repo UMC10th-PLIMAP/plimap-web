@@ -1,4 +1,4 @@
-import type { KakaoLocalPlace } from './types';
+import type { MapPlace } from './types';
 
 const KAKAO_LOCAL_BASE_URL = 'https://dapi.kakao.com/v2/local';
 const KAKAO_LOCAL_REQUEST_TIMEOUT_MS = 8000;
@@ -32,6 +32,20 @@ type KakaoAddressDocument = {
 
 type KakaoLocalResponse<TDocument> = {
   documents: TDocument[];
+};
+
+type KakaoLocalPlace = {
+  id: string;
+  placeName: string;
+  categoryName: string;
+  categoryGroupName: string;
+  phone: string;
+  addressName: string;
+  roadAddressName: string;
+  placeUrl: string;
+  x: number;
+  y: number;
+  distance?: number;
 };
 
 type SearchKakaoLocalParams = {
@@ -92,6 +106,18 @@ const rankPlaces = (places: KakaoLocalPlace[], query: string) => {
     );
   });
 };
+
+const toMapPlace = (place: KakaoLocalPlace): MapPlace => ({
+  id: place.id,
+  placeName: place.placeName,
+  category: place.categoryGroupName || place.categoryName || '장소',
+  address: place.roadAddressName || place.addressName,
+  coordinates: {
+    lat: place.y,
+    lng: place.x,
+  },
+  distance: place.distance,
+});
 
 // TODO: 운영 환경에서는 REST API 키가 클라이언트 번들에 노출되지 않도록 Kakao Local 요청을 백엔드에서 프록시한다.
 const getKakaoRestApiKey = () => import.meta.env.VITE_KAKAO_REST_API_KEY?.trim() ?? '';
@@ -192,7 +218,7 @@ export const searchKakaoLocal = async ({
   query,
   x,
   y,
-}: SearchKakaoLocalParams): Promise<KakaoLocalPlace[]> => {
+}: SearchKakaoLocalParams): Promise<MapPlace[]> => {
   const trimmedQuery = query.trim();
 
   if (!trimmedQuery) return [];
@@ -219,7 +245,7 @@ export const searchKakaoLocal = async ({
   );
 
   if (keywordPlaces.length > 0) {
-    return keywordPlaces;
+    return keywordPlaces.map(toMapPlace);
   }
 
   const addressResponse = await requestKakaoLocal<KakaoAddressDocument>('/search/address.json', {
@@ -230,5 +256,5 @@ export const searchKakaoLocal = async ({
   return rankPlaces(
     addressResponse.documents.map(mapAddressDocument).filter(isKakaoLocalPlace),
     trimmedQuery,
-  );
+  ).map(toMapPlace);
 };

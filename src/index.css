@@ -189,3 +189,128 @@
     @apply text-grayscale-30 font-sans antialiased;
   }
 }
+
+.map-search-hero {
+  view-transition-name: plimap-search-bar;
+  contain: layout;
+}
+
+@keyframes map-search-circle-reveal {
+  from {
+    clip-path: circle(0 at 50% var(--map-search-reveal-y));
+  }
+
+  to {
+    clip-path: circle(150vmax at 50% var(--map-search-reveal-y));
+  }
+}
+
+@keyframes map-search-circle-conceal {
+  from {
+    clip-path: circle(150vmax at 50% var(--map-search-reveal-y));
+  }
+
+  to {
+    clip-path: circle(0 at 50% var(--map-search-reveal-y));
+  }
+}
+
+.map-search-overlay {
+  --map-search-reveal-y: calc(env(safe-area-inset-top) + 46px);
+  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both map-search-circle-reveal;
+  contain: paint;
+  will-change: clip-path;
+}
+
+.map-search-overlay-closing {
+  --map-search-reveal-y: calc(env(safe-area-inset-top) + 46px);
+  animation: 320ms cubic-bezier(0.4, 0, 1, 1) both map-search-circle-conceal;
+  contain: paint;
+  will-change: clip-path;
+}
+
+@keyframes plimap-page-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes toast-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes toast-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-new(root) {
+  animation: none;
+}
+
+html:has([data-page='pin-place-search'])::view-transition-new(root) {
+  animation: 220ms 60ms ease-out both plimap-page-fade-in;
+}
+
+::view-transition-group(plimap-search-bar) {
+  z-index: 100;
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(plimap-search-bar),
+::view-transition-new(plimap-search-bar) {
+  overflow: clip;
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-search-hero {
+    view-transition-name: none;
+  }
+
+  .map-search-overlay {
+    animation-duration: 1ms !important;
+  }
+
+  .map-search-overlay-closing {
+    animation-duration: 1ms !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(plimap-search-bar) {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+.toast-root[data-state='open'] {
+  animation: toast-fade-in 200ms ease-out;
+}
+
+.toast-root[data-state='closed'] {
+  animation: toast-fade-out 200ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-root[data-state='open'],
+  .toast-root[data-state='closed'] {
+    animation: none;
+  }
+}

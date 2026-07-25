@@ -1,13 +1,20 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import RootLayout from '@/layouts/RootLayout';
+import MapLayout from '@/layouts/MapLayout';
 import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
 import LoginPage from '@/pages/LoginPage';
 import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import WelcomePage from '@/pages/WelcomePage';
 import MapPage from '@/pages/MapPage';
+
 import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
+import SongListPage from '@/pages/SongListPage';
+import SongDetailPage from '@/pages/SongDetailPage';
+import PinRegisterPage from '@/pages/PinRegisterPage';
+import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
+import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
 
 export const router = createBrowserRouter([
   {
@@ -15,12 +22,30 @@ export const router = createBrowserRouter([
     element: <Navigate to="/app" replace />,
   },
   {
+    path: '/preview/pin-radius',
+    element: <PinRadiusOverlayPreviewPage />,
+  },
+  {
+    path: '/preview/report-modal',
+    element: <ReportModalPreviewPage />,
+  },
+  {
     path: '/app',
     element: <RootLayout />,
     children: [
       {
-        index: true,
-        element: <MapPage />,
+        element: <MapLayout />,
+        children: [
+          {
+            index: true,
+            element: null,
+          },
+          {
+            path: 'pin/search',
+            element: <PinPlaceSearchPage />,
+            handle: { mapOverlay: true },
+          },
+        ],
       },
       {
         path: 'login',
@@ -45,10 +70,20 @@ export const router = createBrowserRouter([
       {
         path: 'pin/search',
         element: <PinPlaceSearchPage />,
+        path: 'song/list',
+        element: <SongListPage />,
+      },
+      {
+        path: 'song/detail/:songId',
+        element: <SongDetailPage />,
       },
       {
         path: 'my',
         element: <MyProfilePage />,
+      },
+      {
+        path: 'pin/register',
+        element: <PinRegisterPage />,
       },
     ],
   },
