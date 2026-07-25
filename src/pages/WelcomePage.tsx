@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import lottie from 'lottie-web/build/player/lottie_svg';
 
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
@@ -46,6 +47,8 @@ function ConfettiLottie({ data }: { data: string }) {
 }
 
 export default function WelcomePage() {
+  const navigate = useNavigate();
+
   return (
     <div className="relative flex h-full min-h-screen flex-col overflow-hidden bg-pli-black-100">
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
@@ -66,7 +69,12 @@ export default function WelcomePage() {
       </div>
 
       <div className="relative z-10 flex flex-col items-center px-[10px] pb-[52px]">
-        <Button variant="cta" size="cta" className="relative w-[368px] max-w-full bg-gradient-neon">
+        <Button
+          variant="cta"
+          size="cta"
+          className="relative w-[368px] max-w-full bg-gradient-neon"
+          onClick={() => navigate('/app', { replace: true })}
+        >
           <span className="head-20-sb text-grayscale-1200">시작하기</span>
           <ArrowRightIcon className="absolute right-7 size-7 text-[#000000]" aria-hidden />
         </Button>
