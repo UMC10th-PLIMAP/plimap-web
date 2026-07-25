@@ -180,12 +180,12 @@ export default function SongDetailPage() {
           src={coverUrl}
           alt=""
           aria-hidden
-          className="pointer-events-none absolute inset-0 object-cover opacity-12 blur-sm"
+          className="pointer-events-none absolute inset-0 object-cover opacity-12 blur-[4px]"
         />
 
         <div
           aria-hidden
-          className="absolute inset-0 bg-gradient-to-b from-pli-black-100/0 to-pli-black-100"
+          className="absolute bottom-0 inset-0 bg-gradient-to-b from-pli-black-100/0 to-pli-black-100"
         />
 
         <div className="relative z-10 flex h-full flex-col">
@@ -234,7 +234,7 @@ export default function SongDetailPage() {
 
       <section className="flex flex-col gap-3 px-[15px]">
         <h3 className="body-15-r text-grayscale-300">소개</h3>
-        <div className="relative rounded-xl bg-pli-black-85 p-5">
+        <div className="relative rounded-xl bg-pli-black-85 p-5 h-[156px]">
           <label htmlFor="song-intro" className="sr-only">
             소개
           </label>
