@@ -9,6 +9,7 @@ import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
+import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
 
 export const router = createBrowserRouter([
   {
@@ -18,6 +19,10 @@ export const router = createBrowserRouter([
   {
     path: '/preview/pin-radius',
     element: <PinRadiusOverlayPreviewPage />,
+  },
+  {
+    path: '/preview/report-modal',
+    element: <ReportModalPreviewPage />,
   },
   {
     path: '/app',
