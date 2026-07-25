@@ -30,6 +30,37 @@ type DragState = {
 const SWIPE_ANIMATION_DURATION = 360;
 const SCROLL_END_DELAY = 120;
 
+function cubicBezierValue(t: number, controlPoint1: number, controlPoint2: number) {
+  const inverseT = 1 - t;
+
+  return (
+    3 * inverseT * inverseT * t * controlPoint1 + 3 * inverseT * t * t * controlPoint2 + t * t * t
+  );
+}
+
+function cubicBezierSlope(t: number, controlPoint1: number, controlPoint2: number) {
+  const inverseT = 1 - t;
+
+  return (
+    3 * inverseT * inverseT * controlPoint1 +
+    6 * inverseT * t * (controlPoint2 - controlPoint1) +
+    3 * t * t * (1 - controlPoint2)
+  );
+}
+
+function fastOutSlowIn(progress: number) {
+  let t = progress;
+
+  for (let iteration = 0; iteration < 4; iteration += 1) {
+    const slope = cubicBezierSlope(t, 0.4, 0.2);
+    if (Math.abs(slope) < 0.0001) break;
+
+    t = Math.min(Math.max(t - (cubicBezierValue(t, 0.4, 0.2) - progress) / slope, 0), 1);
+  }
+
+  return cubicBezierValue(t, 0, 1);
+}
+
 /**
  * Renders a titled, horizontally scrollable recommendation card section.
  * Consumers own the surrounding section inset and each card's intrinsic width.
@@ -191,7 +222,7 @@ export function RecommendationContentCarousel<T>({
 
       const animate = (currentTime: number) => {
         const progress = Math.min((currentTime - startTime) / SWIPE_ANIMATION_DURATION, 1);
-        const easedProgress = 1 - (1 - progress) ** 3;
+        const easedProgress = fastOutSlowIn(progress);
 
         list.scrollLeft = startScrollLeft + scrollDistance * easedProgress;
 
