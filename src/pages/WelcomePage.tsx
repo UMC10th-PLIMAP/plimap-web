@@ -72,7 +72,7 @@ export default function WelcomePage() {
         <Button
           variant="cta"
           size="cta"
-          className="relative w-[368px] max-w-full bg-gradient-neon"
+          className="relative w-full bg-gradient-neon"
           onClick={() => navigate('/app', { replace: true })}
         >
           <span className="head-20-sb text-grayscale-1200">시작하기</span>
