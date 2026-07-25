@@ -53,6 +53,16 @@ export default function LoginPage() {
     setTimeout(() => alert(OAUTH_LOGIN_FAILED_MESSAGE), 50);
   }, [location.state, navigate]);
 
+  // 뒤로가기로 돌아왔을 때 로딩 스피너 도는 현상 방지
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setLoadingProvider(null);
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   const handleOAuthClick = (provider: OAuthProvider) => () => {
     setLoadingProvider(provider);
     window.location.href = OAUTH_LOGIN_URL[provider];
