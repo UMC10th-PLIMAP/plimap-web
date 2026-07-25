@@ -2,7 +2,7 @@ import type { PinFeedEntry } from '@/features/pin/types';
 import MoreIcon from '@/assets/icons/more.svg?react';
 import LikeIcon from '@/assets/icons/like.svg?react';
 import SoundWaveIcon from '@/assets/icons/soundwaves.svg?react';
-
+import PlayIcon from '@/assets/icons/play.svg?react';
 type SongFeedCardProps = {
   entry: PinFeedEntry;
   onToggleLike?: (entryId: string) => void;
@@ -23,7 +23,7 @@ export function SongFeedCard({ entry, onToggleLike, onPlay, onMore }: SongFeedCa
         <div className="flex flex-1 items-center gap-[6px]">
           <p className=" body-15-m text-grayscale-300">{entry.nickname} </p>
           <span className="etc-13-r text-grayscale-600">• </span>
-          <span className="etc-13-r text-grayscale-500"> {entry.createdAtLabel} </span>
+          <span className="body-15-m text-grayscale-500"> {entry.createdAtLabel} </span>
         </div>
 
         <button
@@ -35,7 +35,7 @@ export function SongFeedCard({ entry, onToggleLike, onPlay, onMore }: SongFeedCa
           }}
           className="flex size-6 shrink-0 items-center justify-center text-grayscale-500 cursor-pointer"
         >
-          <MoreIcon className="size-5" aria-hidden />
+          <MoreIcon className="size-6" aria-hidden />
         </button>
       </header>
 
@@ -72,8 +72,10 @@ export function SongFeedCard({ entry, onToggleLike, onPlay, onMore }: SongFeedCa
             type="button"
             aria-label="미리듣기 재생"
             onClick={() => onPlay?.(entry.id)}
-            className="flex size-10 items-center justify-center rounded-full bg-neon text-grayscale-1250"
-          ></button>
+            className="flex size-[30px] items-center justify-center rounded-full bg-neon text-grayscale-1250"
+          >
+            <PlayIcon className="size-5" aria-hidden />
+          </button>
         </div>
       </footer>
     </article>

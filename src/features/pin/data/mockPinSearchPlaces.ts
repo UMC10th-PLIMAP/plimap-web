@@ -128,7 +128,7 @@ export const MOCK_SONG_DETAIL_LOVE_ATTACK: PinDetail = {
       createdAtLabel: '13시간 전',
       content: '광장 야호~',
       tags: FEED_TAGS,
-      likeCount: 2,
+      likeCount: 8,
     },
     {
       id: 'feed-3',
@@ -136,7 +136,23 @@ export const MOCK_SONG_DETAIL_LOVE_ATTACK: PinDetail = {
       createdAtLabel: '16일 전',
       content: '광장 야호~',
       tags: FEED_TAGS,
-      likeCount: 2,
+      likeCount: 5,
+    },
+    {
+      id: 'feed-4',
+      nickname: '일이삼사오육칠팔구십',
+      createdAtLabel: '16일 전',
+      content: '광장 야호~',
+      tags: FEED_TAGS,
+      likeCount: 5,
+    },
+    {
+      id: 'feed-5',
+      nickname: '일이삼사오육칠팔구십',
+      createdAtLabel: '16일 전',
+      content: '광장 야호~',
+      tags: FEED_TAGS,
+      likeCount: 5,
     },
   ],
 };
