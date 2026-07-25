@@ -61,16 +61,29 @@ export function useGoogleMap({
       });
       mapInstanceRef.current = map;
 
-      // TEMP DEBUG: 제스처 인식 문제인지 회전 자체가 막힌 건지 구분하기 위한 임시 강제 회전 버튼. 확인 끝나면 제거할 것.
+      // TEMP DEBUG: vector/raster 여부 + 강제 회전 버튼. 확인 끝나면 제거할 것.
+      const debugWrapper = document.createElement('div');
+      debugWrapper.style.cssText =
+        'position:fixed;top:8px;left:8px;z-index:9999;display:flex;flex-direction:column;gap:4px;font-family:monospace;';
+      const debugBadge = document.createElement('div');
+      debugBadge.style.cssText =
+        'padding:4px 8px;background:rgba(0,0,0,0.75);color:#0f0;font-size:12px;border-radius:4px;';
+      const updateDebugBadge = () => {
+        debugBadge.textContent = `renderingType: ${map.getRenderingType()}`;
+      };
+      updateDebugBadge();
+      map.addListener('renderingtype_changed', updateDebugBadge);
       const debugButton = document.createElement('button');
       debugButton.textContent = 'Rotate +45°';
       debugButton.style.cssText =
-        'position:fixed;top:8px;left:8px;z-index:9999;padding:6px 10px;background:rgba(0,0,0,0.75);color:#0f0;font-size:12px;font-family:monospace;border-radius:4px;border:1px solid #0f0;';
+        'padding:6px 10px;background:rgba(0,0,0,0.75);color:#0f0;font-size:12px;font-family:monospace;border-radius:4px;border:1px solid #0f0;';
       debugButton.addEventListener('click', () => {
         const currentHeading = map.getHeading() ?? 0;
         map.setHeading((currentHeading + 45) % 360);
       });
-      document.body.appendChild(debugButton);
+      debugWrapper.appendChild(debugBadge);
+      debugWrapper.appendChild(debugButton);
+      document.body.appendChild(debugWrapper);
 
       map.addListener('zoom_changed', () => {
         const newZoom = map.getZoom();
