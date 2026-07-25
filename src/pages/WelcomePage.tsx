@@ -58,7 +58,7 @@ export default function WelcomePage() {
           나만의 플레이리스트를 만들어보세요 👋
         </p>
 
-        <div className="relative mt-[74px] flex size-[236px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-pli-black-75">
+        <div className="relative mt-[52px] flex size-[236px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-pli-black-75">
           <UserPlaceholderIcon className="size-[140px] text-pli-black-50" />
         </div>
 

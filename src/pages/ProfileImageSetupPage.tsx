@@ -77,10 +77,12 @@ export default function ProfileImageSetupPage() {
 
   const handleNext = () => {
     // TODO: 프로필 사진 등록 API 연동 후 다음 화면으로 이동
+    navigate('/app/onboarding/welcome');
   };
 
   const handleSkip = () => {
     // TODO: 프로필 사진 등록 건너뛰고 다음 화면으로 이동
+    navigate('/app/onboarding/welcome');
   };
 
   // 컴포넌트 언마운트 시 메모리 누수 방지
