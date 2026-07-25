@@ -12,57 +12,6 @@ const KOREA_BOUNDS: google.maps.LatLngBoundsLiteral = {
   west: 124.5,
 };
 
-// 확정된 지도 스타일 (디자이너 검수 완료, 데모 페이지에서 산출된 최종 값을 그대로 고정)
-const FIXED_MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { elementType: 'geometry', stylers: [{ color: '#252f3c' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#2d485f' }] },
-  { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#2a3433' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2e3238' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#394069' }] },
-  {
-    featureType: 'road.highway.controlled_access',
-    elementType: 'geometry',
-    stylers: [{ color: '#696e7f' }],
-  },
-  { featureType: 'transit.line', elementType: 'geometry', stylers: [{ color: '#5a6255' }] },
-  { featureType: 'landscape.man_made', elementType: 'geometry', stylers: [{ color: '#22272f' }] },
-  {
-    featureType: 'landscape.man_made',
-    elementType: 'geometry.stroke',
-    stylers: [{ color: '#666a7a' }],
-  },
-  { elementType: 'labels', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative', stylers: [{ visibility: 'off' }] },
-  { featureType: 'landscape.man_made', stylers: [{ visibility: 'on' }] },
-  { featureType: 'landscape.natural', stylers: [{ visibility: 'on' }] },
-  { featureType: 'water', stylers: [{ visibility: 'on' }] },
-  { featureType: 'road.highway', stylers: [{ visibility: 'on' }] },
-  { featureType: 'road.arterial', stylers: [{ visibility: 'on' }] },
-  { featureType: 'road.local', stylers: [{ visibility: 'on' }] },
-  { featureType: 'transit.line', stylers: [{ visibility: 'on' }] },
-  { featureType: 'transit.station', stylers: [{ visibility: 'on' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#475162' }] },
-  { featureType: 'road', elementType: 'labels.text.stroke', stylers: [{ color: '#252f3c' }] },
-  { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi', elementType: 'labels.text', stylers: [{ visibility: 'on' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#5f6163' }] },
-  { featureType: 'poi', elementType: 'labels.text.stroke', stylers: [{ color: '#252f3c' }] },
-  { featureType: 'landscape', elementType: 'labels.text.fill', stylers: [{ color: '#5f6163' }] },
-  { featureType: 'landscape', elementType: 'labels.text.stroke', stylers: [{ color: '#252f3c' }] },
-  {
-    featureType: 'administrative',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#5f6163' }],
-  },
-  {
-    featureType: 'administrative',
-    elementType: 'labels.text.stroke',
-    stylers: [{ color: '#252f3c' }],
-  },
-  { featureType: 'transit', elementType: 'labels.text.fill', stylers: [{ color: '#5f6163' }] },
-  { featureType: 'transit', elementType: 'labels.text.stroke', stylers: [{ color: '#252f3c' }] },
-];
-
 type UseGoogleMapParams = {
   isLoaded: boolean;
   zoom: number;
@@ -95,11 +44,19 @@ export function useGoogleMap({
     if (!isLoaded || !mapRef.current || !mapsApi) return;
 
     if (!mapInstanceRef.current) {
-      // --- 구글맵 인스턴스 초기 생성 (Map ID 제거하여 JSON 스타일 우선 적용) ---
+      const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
+      if (!mapId) {
+        // Map ID 없이는 벡터 렌더링(회전/틸트)과 Cloud Console 스타일이 전부 비활성화된다.
+        console.error(
+          'VITE_GOOGLE_MAPS_MAP_ID is missing — falling back to an unstyled, non-rotatable raster map.',
+        );
+      }
+
+      // --- 구글맵 인스턴스 초기 생성 (벡터 맵: 스타일은 Cloud Console에서 Map ID에 연결된 것을 사용) ---
       const map = new mapsApi.Map(mapRef.current, {
         center: DEFAULT_CENTER,
         zoom,
-        isFractionalZoomEnabled: true,
+        isFractionalZoomEnabled: false,
         minZoom: MIN_ZOOM,
         // maxZoom은 지정하지 않음 → API 지원 한도까지 확대 허용
         restriction: {
@@ -108,7 +65,7 @@ export function useGoogleMap({
         },
         disableDefaultUI: true,
         gestureHandling: 'greedy',
-        styles: FIXED_MAP_STYLES, // Map ID가 없어야 이 스타일이 정상 작동함
+        ...(mapId ? { mapId } : {}),
       });
       mapInstanceRef.current = map;
 
