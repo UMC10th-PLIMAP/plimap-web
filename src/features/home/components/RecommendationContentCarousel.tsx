@@ -1,6 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import type { Key, PointerEvent, ReactNode, UIEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { Key, ReactNode } from 'react';
 
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
 
 type RecommendationContentCarouselProps<T> = {
@@ -19,46 +25,20 @@ type RecommendationContentCarouselProps<T> = {
   onPageChange?: (page: number) => void;
 };
 
-type DragState = {
-  pointerId: number;
-  startX: number;
-  startY: number;
-  scrollLeft: number;
-  isHorizontal: boolean | null;
-};
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
-const SWIPE_ANIMATION_DURATION = 360;
-const SCROLL_END_DELAY = 120;
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
 
-function cubicBezierValue(t: number, controlPoint1: number, controlPoint2: number) {
-  const inverseT = 1 - t;
+    updatePreference();
+    mediaQuery.addEventListener('change', updatePreference);
 
-  return (
-    3 * inverseT * inverseT * t * controlPoint1 + 3 * inverseT * t * t * controlPoint2 + t * t * t
-  );
-}
+    return () => mediaQuery.removeEventListener('change', updatePreference);
+  }, []);
 
-function cubicBezierSlope(t: number, controlPoint1: number, controlPoint2: number) {
-  const inverseT = 1 - t;
-
-  return (
-    3 * inverseT * inverseT * controlPoint1 +
-    6 * inverseT * t * (controlPoint2 - controlPoint1) +
-    3 * t * t * (1 - controlPoint2)
-  );
-}
-
-function fastOutSlowIn(progress: number) {
-  let t = progress;
-
-  for (let iteration = 0; iteration < 4; iteration += 1) {
-    const slope = cubicBezierSlope(t, 0.4, 0.2);
-    if (Math.abs(slope) < 0.0001) break;
-
-    t = Math.min(Math.max(t - (cubicBezierValue(t, 0.4, 0.2) - progress) / slope, 0), 1);
-  }
-
-  return cubicBezierValue(t, 0, 1);
+  return prefersReducedMotion;
 }
 
 export function RecommendationContentCarousel<T>({
@@ -81,178 +61,61 @@ export function RecommendationContentCarousel<T>({
   const pages = Array.from({ length: pageCount }, (_, index) =>
     items.slice(index * pageSize, (index + 1) * pageSize),
   );
+  const [api, setApi] = useState<CarouselApi>();
   const [uncontrolledPage, setUncontrolledPage] = useState(0);
-  const dragStateRef = useRef<DragState | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const scrollEndTimeoutRef = useRef<number | null>(null);
   const lastPageRef = useRef(0);
-  const listRef = useRef<HTMLUListElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
   const activePage = Math.min(
     Math.max(currentPage ?? uncontrolledPage, 0),
     Math.max(pageCount - 1, 0),
   );
-
-  const stopSwipeAnimation = () => {
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (scrollEndTimeoutRef.current !== null) {
-        window.clearTimeout(scrollEndTimeoutRef.current);
-      }
-    };
-  }, []);
+  const carouselOptions = useMemo(
+    () => ({ align: 'start', containScroll: 'trimSnaps' as const }),
+    [],
+  );
 
   useEffect(() => {
     lastPageRef.current = activePage;
   }, [activePage]);
 
+  const updateActivePage = useCallback(
+    (page: number) => {
+      const nextPage = Math.min(Math.max(page, 0), pageCount - 1);
+      if (lastPageRef.current === nextPage) return;
+
+      lastPageRef.current = nextPage;
+      if (currentPage === undefined) {
+        setUncontrolledPage(nextPage);
+      }
+      onPageChange?.(nextPage);
+    },
+    [currentPage, onPageChange, pageCount],
+  );
+
   useEffect(() => {
-    if (currentPage === undefined) return;
+    if (!api || currentPage === undefined || api.selectedScrollSnap() === activePage) return;
 
-    const list = listRef.current;
-    const page = list?.children[activePage];
-    if (!list || !page) return;
+    api.scrollTo(activePage, prefersReducedMotion);
+  }, [activePage, api, currentPage, prefersReducedMotion]);
 
-    const targetScrollLeft = Math.min(
-      page.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft,
-      list.scrollWidth - list.clientWidth,
-    );
+  useEffect(() => {
+    if (!api) return;
 
-    if (Math.abs(list.scrollLeft - targetScrollLeft) > 1) {
-      list.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
-    }
-  }, [activePage, currentPage, pageCount]);
+    const handleSelect = () => updateActivePage(api.selectedScrollSnap());
+
+    handleSelect();
+    api.on('reInit', handleSelect);
+    api.on('select', handleSelect);
+
+    return () => {
+      api.off('reInit', handleSelect);
+      api.off('select', handleSelect);
+    };
+  }, [api, updateActivePage]);
 
   if (items.length === 0) {
     return null;
   }
-
-  const updateActivePage = (page: number) => {
-    const nextPage = Math.min(Math.max(page, 0), pageCount - 1);
-    if (lastPageRef.current === nextPage) return;
-
-    lastPageRef.current = nextPage;
-    if (currentPage === undefined) {
-      setUncontrolledPage(nextPage);
-    }
-    onPageChange?.(nextPage);
-  };
-
-  const getClosestPage = (list: HTMLUListElement) => {
-    const maxScrollLeft = list.scrollWidth - list.clientWidth;
-    const pagePositions = Array.from(list.children).map((page, index) => ({
-      page: index,
-      position: Math.min(
-        page.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft,
-        maxScrollLeft,
-      ),
-    }));
-
-    return pagePositions.reduce((nearestPage, page) =>
-      Math.abs(page.position - list.scrollLeft) < Math.abs(nearestPage.position - list.scrollLeft)
-        ? page
-        : nearestPage,
-    );
-  };
-
-  const handlePointerDown = (event: PointerEvent<HTMLUListElement>) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-
-    stopSwipeAnimation();
-    if (scrollEndTimeoutRef.current !== null) {
-      window.clearTimeout(scrollEndTimeoutRef.current);
-      scrollEndTimeoutRef.current = null;
-    }
-    event.currentTarget.style.scrollSnapType = 'none';
-    event.currentTarget.setPointerCapture(event.pointerId);
-    dragStateRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      scrollLeft: event.currentTarget.scrollLeft,
-      isHorizontal: null,
-    };
-  };
-
-  const handlePointerMove = (event: PointerEvent<HTMLUListElement>) => {
-    const dragState = dragStateRef.current;
-    if (dragState?.pointerId !== event.pointerId) return;
-
-    const deltaX = event.clientX - dragState.startX;
-    const deltaY = event.clientY - dragState.startY;
-
-    if (dragState.isHorizontal === null && Math.hypot(deltaX, deltaY) >= 4) {
-      dragState.isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
-    }
-
-    if (!dragState.isHorizontal) return;
-
-    event.preventDefault();
-    event.currentTarget.scrollLeft = dragState.scrollLeft - deltaX;
-  };
-
-  const handlePointerEnd = (event: PointerEvent<HTMLUListElement>) => {
-    const dragState = dragStateRef.current;
-    if (dragState?.pointerId !== event.pointerId) return;
-
-    const list = event.currentTarget;
-
-    if (list.hasPointerCapture(event.pointerId)) {
-      list.releasePointerCapture(event.pointerId);
-    }
-
-    if (dragState.isHorizontal) {
-      const targetPage = getClosestPage(list);
-
-      const startScrollLeft = list.scrollLeft;
-      const scrollDistance = targetPage.position - startScrollLeft;
-      const startTime = performance.now();
-
-      const animate = (currentTime: number) => {
-        const progress = Math.min((currentTime - startTime) / SWIPE_ANIMATION_DURATION, 1);
-        const easedProgress = fastOutSlowIn(progress);
-
-        list.scrollLeft = startScrollLeft + scrollDistance * easedProgress;
-
-        if (progress < 1) {
-          animationFrameRef.current = requestAnimationFrame(animate);
-          return;
-        }
-
-        list.style.scrollSnapType = '';
-        animationFrameRef.current = null;
-        updateActivePage(targetPage.page);
-      };
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-    } else {
-      list.style.scrollSnapType = '';
-    }
-
-    dragStateRef.current = null;
-  };
-
-  const handleScroll = (event: UIEvent<HTMLUListElement>) => {
-    if (dragStateRef.current || animationFrameRef.current !== null) return;
-
-    if (scrollEndTimeoutRef.current !== null) {
-      window.clearTimeout(scrollEndTimeoutRef.current);
-    }
-
-    const list = event.currentTarget;
-    scrollEndTimeoutRef.current = window.setTimeout(() => {
-      updateActivePage(getClosestPage(list).page);
-      scrollEndTimeoutRef.current = null;
-    }, SCROLL_END_DELAY);
-  };
 
   return (
     <section className={cn('flex w-full min-w-0 flex-col gap-5', className)}>
@@ -265,50 +128,43 @@ export function RecommendationContentCarousel<T>({
       ) : null}
 
       <div className={cn('flex min-w-0 flex-col', showPagination && 'gap-4')}>
-        <ul
-          ref={listRef}
+        <Carousel
+          setApi={setApi}
+          opts={carouselOptions}
           aria-label={ariaLabel}
-          className={cn(
-            'flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scrollbar-hide',
-            'cursor-grab touch-pan-y active:cursor-grabbing',
-            listClassName,
-          )}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerEnd}
-          onPointerCancel={handlePointerEnd}
-          onScroll={handleScroll}
+          className="w-full min-w-0"
         >
-          {pages.map((page, pageIndex) => (
-            <li key={pageIndex} className="w-full shrink-0 snap-start">
-              <div className="flex w-full min-w-0 gap-3">
-                {page.map((item) => (
-                  <div key={getItemKey(item)} className={cn('min-w-0', itemClassName)}>
-                    {renderItem(item)}
-                  </div>
-                ))}
-              </div>
-            </li>
-          ))}
-        </ul>
+          <CarouselContent className={cn('ml-0 gap-3 touch-pan-y', listClassName)}>
+            {pages.map((page, pageIndex) => (
+              <CarouselItem key={pageIndex} className="basis-full pl-0">
+                <div className="flex w-full min-w-0 gap-3">
+                  {page.map((item) => (
+                    <div key={getItemKey(item)} className={cn('min-w-0', itemClassName)}>
+                      {renderItem(item)}
+                    </div>
+                  ))}
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
 
         {showPagination && pageCount > 1 ? (
-          <div
-            aria-label={`총 ${pageCount}페이지 중 ${Math.min(activePage, pageCount - 1) + 1}페이지`}
-            className="mx-auto flex h-1.5 items-center gap-2"
-          >
-            {Array.from({ length: pageCount }, (_, index) => (
-              <span
-                key={index}
-                aria-hidden
-                className={cn(
-                  'size-1.5 rounded-full',
-                  index === Math.min(activePage, pageCount - 1)
-                    ? 'bg-[#d9d9d9]'
-                    : 'bg-grayscale-800',
-                )}
-              />
-            ))}
+          <div className="flex flex-col items-center gap-0">
+            <div aria-hidden className="flex h-1.5 items-center gap-2">
+              {Array.from({ length: pageCount }, (_, index) => (
+                <span
+                  key={index}
+                  className={cn(
+                    'size-1.5 rounded-full',
+                    index === activePage ? 'bg-[#d9d9d9]' : 'bg-grayscale-800',
+                  )}
+                />
+              ))}
+            </div>
+            <span className="sr-only" role="status">
+              총 {pageCount}페이지 중 {activePage + 1}페이지
+            </span>
           </div>
         ) : null}
       </div>
