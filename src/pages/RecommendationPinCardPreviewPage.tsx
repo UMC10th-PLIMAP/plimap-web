@@ -34,7 +34,7 @@ export default function RecommendationPinCardPreviewPage() {
 
   return (
     <main className="min-h-dvh bg-pli-black-100 px-4 py-8 text-grayscale-100">
-      <section className="mx-auto flex w-full max-w-[402px] flex-col gap-6">
+      <section className="mx-auto flex w-full flex-col gap-6">
         <header className="flex flex-col gap-2">
           <p className="etc-13-r text-neon">COMPONENT PREVIEW</p>
           <h1 className="head-24-sb">추천 PIN 카드</h1>
@@ -43,9 +43,14 @@ export default function RecommendationPinCardPreviewPage() {
           </p>
         </header>
 
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="grid grid-cols-3 gap-3">
           {recommendationPins.map((pin) => (
-            <RecommendationPinCard key={pin.id} pin={pin} onClick={() => setSelectedPin(pin)} />
+            <RecommendationPinCard
+              key={pin.id}
+              pin={pin}
+              className="w-full"
+              onClick={() => setSelectedPin(pin)}
+            />
           ))}
         </div>
 
