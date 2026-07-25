@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import GoogleIcon from '@/assets/icons/google.svg?react';
 import KakaoIcon from '@/assets/icons/kakao.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { Button } from '@/components/ui/button';
+
+export type LoginPageLocationState = {
+  oauthError?: boolean;
+};
+
+const OAUTH_LOGIN_FAILED_MESSAGE = '로그인에 실패했어요. 다시 시도해주세요.';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 
@@ -32,6 +39,19 @@ function OAuthSpinner() {
 
 export default function LoginPage() {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const hasShownOAuthErrorRef = useRef(false);
+
+  useEffect(() => {
+    const state = location.state as LoginPageLocationState | null;
+    if (!state?.oauthError || hasShownOAuthErrorRef.current) return;
+    hasShownOAuthErrorRef.current = true;
+
+    navigate('.', { replace: true, state: null });
+    // 브라우저가 로그인 화면을 먼저 그릴 시간을 주기 위해 alert를 한 틱 미룸
+    setTimeout(() => alert(OAUTH_LOGIN_FAILED_MESSAGE), 0);
+  }, [location.state, navigate]);
 
   const handleOAuthClick = (provider: OAuthProvider) => () => {
     setLoadingProvider(provider);
