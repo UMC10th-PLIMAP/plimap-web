@@ -35,12 +35,10 @@ export function RecommendationPinCard({
     <button
       type="button"
       className={cn(
-        'relative aspect-square w-[124px] shrink-0 overflow-hidden rounded-xl border border-pli-black-50 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon',
+        'relative size-[124px] shrink-0 overflow-hidden rounded-xl border border-pli-black-50 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon',
         className,
       )}
-      aria-label={
-        ariaLabel ?? `${place.name}, ${song.title} - ${song.artist}, ${creator.name}님의 PIN`
-      }
+      aria-label={ariaLabel ?? `${place.name}, ${song.title} - ${song.artist}, ${creator.name}님의 PIN`}
       {...props}
     >
       <img src={imageUrl} alt="" className="absolute inset-0 size-full object-cover" />
@@ -49,14 +47,14 @@ export function RecommendationPinCard({
       <img
         src={creator.avatarUrl}
         alt={`${creator.name} 프로필`}
-        className="absolute left-[11.5%] top-[12.1%] size-[30.7%] rounded-full object-cover"
+        className="absolute left-3.5 top-[15px] size-[38px] rounded-full object-cover"
       />
-      <span className="absolute left-[11.5%] right-[11.5%] top-[55.3%] truncate etc-13-r text-grayscale-300">
+      <span className="absolute left-3.5 right-3.5 top-[68px] truncate etc-13-r text-grayscale-300">
         {creator.name}
       </span>
-      <span className="absolute bottom-[11.3%] left-[11.5%] right-[11.5%] flex min-w-0 items-center">
+      <span className="absolute bottom-3.5 left-3.5 right-3.5 flex min-w-0 items-center">
         <span className="min-w-0 truncate body-15-m text-grayscale-100">{place.name}</span>
-        <NextIcon className="size-[16.1%] shrink-0" aria-hidden />
+        <NextIcon className="size-5 shrink-0" aria-hidden />
       </span>
     </button>
   );
