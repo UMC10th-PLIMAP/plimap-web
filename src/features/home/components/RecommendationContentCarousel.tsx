@@ -61,10 +61,6 @@ function fastOutSlowIn(progress: number) {
   return cubicBezierValue(t, 0, 1);
 }
 
-/**
- * Renders a titled, horizontally scrollable recommendation card section.
- * Consumers own the surrounding section inset and each card's intrinsic width.
- */
 export function RecommendationContentCarousel<T>({
   items,
   getItemKey,
