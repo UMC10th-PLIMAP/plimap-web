@@ -70,7 +70,7 @@ export function RecommendationContentCarousel<T>({
     Math.max(pageCount - 1, 0),
   );
   const carouselOptions = useMemo(
-    () => ({ align: 'start', containScroll: 'trimSnaps' as const }),
+    () => ({ align: 'start', containScroll: 'trimSnaps' }) as const,
     [],
   );
 
