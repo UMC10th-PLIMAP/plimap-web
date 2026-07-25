@@ -61,16 +61,16 @@ export function useGoogleMap({
       });
       mapInstanceRef.current = map;
 
-      // TEMP DEBUG: 실기기에서 vector/raster 렌더링 여부를 화면에서 바로 확인하기 위한 임시 배지. 확인 끝나면 제거할 것.
-      const debugBadge = document.createElement('div');
-      debugBadge.style.cssText =
-        'position:fixed;top:8px;left:8px;z-index:9999;padding:4px 8px;background:rgba(0,0,0,0.75);color:#0f0;font-size:12px;font-family:monospace;border-radius:4px;pointer-events:none;';
-      document.body.appendChild(debugBadge);
-      const updateDebugBadge = () => {
-        debugBadge.textContent = `renderingType: ${map.getRenderingType()}`;
-      };
-      updateDebugBadge();
-      map.addListener('renderingtype_changed', updateDebugBadge);
+      // TEMP DEBUG: 제스처 인식 문제인지 회전 자체가 막힌 건지 구분하기 위한 임시 강제 회전 버튼. 확인 끝나면 제거할 것.
+      const debugButton = document.createElement('button');
+      debugButton.textContent = 'Rotate +45°';
+      debugButton.style.cssText =
+        'position:fixed;top:8px;left:8px;z-index:9999;padding:6px 10px;background:rgba(0,0,0,0.75);color:#0f0;font-size:12px;font-family:monospace;border-radius:4px;border:1px solid #0f0;';
+      debugButton.addEventListener('click', () => {
+        const currentHeading = map.getHeading() ?? 0;
+        map.setHeading((currentHeading + 45) % 360);
+      });
+      document.body.appendChild(debugButton);
 
       map.addListener('zoom_changed', () => {
         const newZoom = map.getZoom();
