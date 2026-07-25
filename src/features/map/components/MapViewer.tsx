@@ -1,12 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import { MapCoordinate, MapPlace, MapPin, DEFAULT_CENTER, DEFAULT_MARKER_COLOR } from '../types';
-import {
-  createMapPinOverlay,
-  disposeMapPinOverlay,
-  toMapPinMarkerProps,
-  updateMapPinMarker,
-  type MapPinOverlayEntry,
-} from '../utils/mapPinMarker';
+import { useMapPinOverlays } from '../hooks/useMapPinOverlays';
 
 // 지도 줌 하한선 (레벨 단위 유지, 상한선은 API 지원 한도까지 허용)
 const MIN_ZOOM = 6;
@@ -196,13 +190,10 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
   const headingMarkerRef = useRef<google.maps.Marker | null>(null);
 
   const placeMarkersRef = useRef<{ id: string; place: MapPlace; marker: google.maps.Marker }[]>([]);
-  const mapPinOverlaysRef = useRef<{ id: string; entry: MapPinOverlayEntry }[]>([]);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
   const onSelectPlaceRef = useRef(onSelectPlace);
-  const onSelectMapPinRef = useRef(onSelectMapPin);
   const selectedPlaceIdRef = useRef(selectedPlaceId);
-  const selectedMapPinIdRef = useRef(selectedMapPinId);
 
   useEffect(() => {
     onCenterChangedRef.current = onCenterChanged;
@@ -211,14 +202,6 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
   useEffect(() => {
     onSelectPlaceRef.current = onSelectPlace;
   }, [onSelectPlace]);
-
-  useEffect(() => {
-    onSelectMapPinRef.current = onSelectMapPin;
-  }, [onSelectMapPin]);
-
-  useEffect(() => {
-    selectedMapPinIdRef.current = selectedMapPinId;
-  }, [selectedMapPinId]);
 
   useEffect(() => {
     selectedPlaceIdRef.current = selectedPlaceId;
@@ -495,42 +478,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     }
   }, [selectedPlaceId, placeResults]);
 
-  // --- 지도 핀(OverlayView) 렌더링 ---
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!isLoaded || !map) return;
-
-    const selectedId = selectedMapPinIdRef.current;
-
-    mapPinOverlaysRef.current = mapPins.map((pin) => {
-      const entry = createMapPinOverlay({
-        position: { lat: pin.lat, lng: pin.lng },
-        zIndex: pin.id === selectedId ? 200 : 100,
-        onClick: () => onSelectMapPinRef.current?.(pin.id),
-        ...toMapPinMarkerProps(pin, pin.id === selectedId),
-      });
-      entry.overlay.setMap(map);
-
-      return { id: pin.id, entry };
-    });
-
-    return () => {
-      mapPinOverlaysRef.current.forEach(({ entry }) => disposeMapPinOverlay(entry));
-      mapPinOverlaysRef.current = [];
-    };
-  }, [isLoaded, mapPins]);
-
-  // --- 선택된 지도 핀 강조 ---
-  useEffect(() => {
-    mapPinOverlaysRef.current.forEach(({ id, entry }) => {
-      const pin = mapPins.find((candidate) => candidate.id === id);
-      if (!pin) return;
-
-      const isSelected = id === selectedMapPinId;
-      updateMapPinMarker(entry.mount, toMapPinMarkerProps(pin, isSelected));
-      entry.overlay.setZIndex(isSelected ? 200 : 100);
-    });
-  }, [selectedMapPinId, mapPins]);
+  useMapPinOverlays({ mapInstanceRef, isLoaded, mapPins, selectedMapPinId, onSelectMapPin });
 
   return (
     <main className="relative h-full w-full">
