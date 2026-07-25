@@ -18,6 +18,7 @@ import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
+import RecommendationPinCardPreviewPage from '@/pages/RecommendationPinCardPreviewPage';
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,10 @@ export const router = createBrowserRouter([
   {
     path: '/preview/report-modal',
     element: <ReportModalPreviewPage />,
+  },
+  {
+    path: '/preview/recommendation-pin-card',
+    element: <RecommendationPinCardPreviewPage />,
   },
   {
     path: '/app',
