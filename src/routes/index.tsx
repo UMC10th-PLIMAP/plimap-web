@@ -7,6 +7,8 @@ import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
+import SongListPage from '@/pages/SongListPage';
+import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
@@ -57,6 +59,14 @@ export const router = createBrowserRouter([
       {
         path: 'onboarding/profile-image',
         element: <ProfileImageSetupPage />,
+      },
+      {
+        path: 'song/list',
+        element: <SongListPage />,
+      },
+      {
+        path: 'song/detail/:songId',
+        element: <SongDetailPage />,
       },
       {
         path: 'my',

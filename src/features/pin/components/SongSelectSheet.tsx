@@ -4,15 +4,21 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { SongCard } from '@/features/pin/components/SongCard';
 import type { Song } from '@/features/pin/types';
+import { MOCK_SONG_CARD_LIST } from '@/features/pin/data/songPreview';
 
 type SongSelectSheetProps = {
   open: boolean;
   onClose: () => void;
-  songs: Song[];
+  songs?: Song[];
   onSelect?: (song: Song) => void;
 };
 
-export function SongSelectSheet({ open, onClose, songs, onSelect }: SongSelectSheetProps) {
+export function SongSelectSheet({
+  open,
+  onClose,
+  songs = MOCK_SONG_CARD_LIST,
+  onSelect,
+}: SongSelectSheetProps) {
   const [query, setQuery] = useState('');
   const [prevOpen, setPrevOpen] = useState(open);
 
@@ -35,12 +41,11 @@ export function SongSelectSheet({ open, onClose, songs, onSelect }: SongSelectSh
   }, [query, songs]);
 
   return (
-    <BottomSheet open={open} onClose={onClose}>
-      <BottomSheet.Header className="space-y-4 px-[15px]">
-        <BottomSheet.Title className="mt-5.5 text-center body-15-r text-grayscale-300">
+    <BottomSheet open={open} onClose={onClose} snapPoints={[0.98, 1]} className="bg-pli-black-85 ">
+      <BottomSheet.Header className="px-[15px]">
+        <BottomSheet.Title className="my-5.5 text-center body-15-r text-grayscale-300">
           노래 선택하기
         </BottomSheet.Title>
-
         <SearchInput
           variant="song"
           value={query}
@@ -49,7 +54,7 @@ export function SongSelectSheet({ open, onClose, songs, onSelect }: SongSelectSh
         />
       </BottomSheet.Header>
 
-      <BottomSheet.Content className="mt-5.5 px-4">
+      <BottomSheet.Content className="px-4 pt-5.5">
         <ul>
           {filteredSongs.map((song) => (
             <li key={song.id}>
@@ -58,7 +63,6 @@ export function SongSelectSheet({ open, onClose, songs, onSelect }: SongSelectSh
                 onClick={() => {
                   onSelect?.(song);
                   onClose();
-                  setQuery('');
                 }}
               />
             </li>
