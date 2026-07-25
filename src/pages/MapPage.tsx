@@ -8,7 +8,8 @@ import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapVi
 import type { PinSearchPlace } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
-
+import { PinListSheet } from '@/features/pin/components/PinListSheet';
+import { MOCK_PIN_CARD_DATA } from '@/features/pin/data/mockPinSearchPlaces';
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 
 type MapPageProps = {
@@ -133,6 +134,23 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace }) => {
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
         onZoomChanged={handleZoomChange}
+      />
+      <PinListSheet
+        open={true}
+        onClose={() => {}}
+        place={{
+          id: 'ttukseom-hangang',
+          name: '뚝섬 한강공원',
+          address: '영등포구 여의동로 123-4',
+          distance: 50,
+          isMine: false,
+          creatorName: '냥코',
+        }}
+        pins={MOCK_PIN_CARD_DATA}
+        onPinClick={(pin) => {
+          if (!pin.pinId) return;
+          navigate(`/app/pins/${pin.pinId}`);
+        }}
       />
     </div>
   );

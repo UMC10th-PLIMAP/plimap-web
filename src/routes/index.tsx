@@ -7,6 +7,7 @@ import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
+import PinDetailPage from '@/pages/PinDetailPage';
 
 export const router = createBrowserRouter([
   {
@@ -46,6 +47,10 @@ export const router = createBrowserRouter([
       {
         path: 'onboarding/profile-image',
         element: <ProfileImageSetupPage />,
+      },
+      {
+        path: 'pins/:pinId',
+        element: <PinDetailPage />,
       },
       {
         path: 'my',
