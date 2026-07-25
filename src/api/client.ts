@@ -27,6 +27,34 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
+const CSRF_TOKEN_URL = '/api/v1/auth/csrf';
+const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
+const CSRF_PROTECTED_METHODS = new Set(['post', 'put', 'patch', 'delete']);
+
+let csrfTokenRequest: Promise<string> | null = null;
+
+function fetchCsrfToken() {
+  if (!csrfTokenRequest) {
+    csrfTokenRequest = apiClient
+      .get<ApiResponse<{ token: string }>>(CSRF_TOKEN_URL)
+      .then(({ data }) => data.result.token)
+      .catch((error: unknown) => {
+        csrfTokenRequest = null;
+        throw error;
+      });
+  }
+  return csrfTokenRequest;
+}
+
+apiClient.interceptors.request.use(async (config) => {
+  const method = config.method?.toLowerCase();
+  if (method && CSRF_PROTECTED_METHODS.has(method)) {
+    config.headers.set(CSRF_HEADER_NAME, await fetchCsrfToken());
+    csrfTokenRequest = null;
+  }
+  return config;
+});
+
 apiClient.interceptors.response.use(undefined, (error: AxiosError<ApiResponse<unknown>>) => {
   if (error.response?.data?.code) {
     const { data, status } = error.response;

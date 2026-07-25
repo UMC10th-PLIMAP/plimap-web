@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { TopBar } from '@/components/ui/TopBar';
+import { agreeToTerms } from '@/features/auth/api/terms';
 import { TermCheckbox } from '@/features/auth/components/TermCheckbox';
 import { TermRow } from '@/features/auth/components/TermRow';
 import { TermsDetailContent } from '@/features/auth/components/TermsDetailContent';
 import { TERMS, TERMS_BY_ID } from '@/features/auth/terms/content';
 import type { TermId } from '@/features/auth/terms/types';
+
+const TERMS_AGREEMENT_FAILED_MESSAGE = '약관 동의 처리에 실패했어요. 다시 시도해주세요.';
 
 const INITIAL_CHECKED: Record<TermId, boolean> = {
   service: false,
@@ -20,6 +24,7 @@ export default function TermsAgreementPage() {
   const navigate = useNavigate();
   const [checked, setChecked] = useState<Record<TermId, boolean>>(INITIAL_CHECKED);
   const [detailTermId, setDetailTermId] = useState<TermId | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const allChecked = TERMS.every((term) => checked[term.id]);
   const isValid = TERMS.filter((term) => term.required).every((term) => checked[term.id]);
@@ -35,8 +40,15 @@ export default function TermsAgreementPage() {
     );
   };
 
-  const handleSubmit = () => {
-    navigate('/app/onboarding/nickname');
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      await agreeToTerms(TERMS.map((term) => ({ id: term.id, agreed: checked[term.id] })));
+      navigate('/app/onboarding/nickname');
+    } catch (error) {
+      alert(error instanceof ApiError ? error.message : TERMS_AGREEMENT_FAILED_MESSAGE);
+      setIsSubmitting(false);
+    }
   };
 
   if (detailTermId) {
@@ -106,7 +118,7 @@ export default function TermsAgreementPage() {
           variant="cta"
           size="cta"
           className="w-full"
-          disabled={!isValid}
+          disabled={!isValid || isSubmitting}
           onClick={handleSubmit}
         >
           다음
