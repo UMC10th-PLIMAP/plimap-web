@@ -103,6 +103,8 @@ export default function PinDetailPage() {
             entry={feed}
             onToggleLike={() => {}}
             onReport={setReportFeedId}
+            onEdit={() => {}}
+            onDelete={() => {}}
           />
         ))}
       </div>

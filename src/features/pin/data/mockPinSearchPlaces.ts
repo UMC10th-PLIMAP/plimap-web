@@ -121,6 +121,7 @@ export const MOCK_SONG_DETAIL_LOVE_ATTACK: PinDetail = {
       content: '광장 야호~',
       tags: FEED_TAGS,
       likeCount: 2,
+      isMine: true,
     },
     {
       id: 'feed-2',

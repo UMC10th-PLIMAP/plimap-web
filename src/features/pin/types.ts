@@ -36,6 +36,7 @@ export type PinFeedEntry = {
   tags: string[];
   likeCount: number;
   liked?: boolean;
+  isMine?: boolean;
 };
 
 export type PinDetail = Pin & {

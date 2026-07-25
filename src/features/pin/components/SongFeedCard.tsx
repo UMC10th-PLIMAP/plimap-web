@@ -5,14 +5,24 @@ import MoreIcon from '@/assets/icons/more.svg?react';
 import LikeIcon from '@/assets/icons/like.svg?react';
 import SoundWaveIcon from '@/assets/icons/soundwaves.svg?react';
 import PlayIcon from '@/assets/icons/play.svg?react';
+
 type SongFeedCardProps = {
   entry: PinFeedEntry;
   onToggleLike?: (entryId: string) => void;
   onPlay?: (entryId: string) => void;
   onReport?: (entryId: string) => void;
+  onEdit?: (entryId: string) => void;
+  onDelete?: (entryId: string) => void;
 };
 
-export function SongFeedCard({ entry, onToggleLike, onPlay, onReport }: SongFeedCardProps) {
+export function SongFeedCard({
+  entry,
+  onToggleLike,
+  onPlay,
+  onReport,
+  onEdit,
+  onDelete,
+}: SongFeedCardProps) {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
@@ -39,9 +49,9 @@ export function SongFeedCard({ entry, onToggleLike, onPlay, onReport }: SongFeed
         )}
 
         <div className="flex flex-1 items-center gap-[6px]">
-          <p className=" body-15-m text-grayscale-300">{entry.nickname} </p>
-          <span className="etc-13-r text-grayscale-600">• </span>
-          <span className="body-15-m text-grayscale-500"> {entry.createdAtLabel} </span>
+          <p className="body-15-m text-grayscale-300">{entry.nickname}</p>
+          <span className="etc-13-r text-grayscale-600">•</span>
+          <span className="body-15-m text-grayscale-500">{entry.createdAtLabel}</span>
         </div>
 
         <div ref={moreRef} className="relative">
@@ -50,17 +60,26 @@ export function SongFeedCard({ entry, onToggleLike, onPlay, onReport }: SongFeed
             aria-label="더보기"
             aria-expanded={isMoreOpen}
             onClick={() => setIsMoreOpen((prev) => !prev)}
-            className="flex size-6  items-center justify-center text-grayscale-500 cursor-pointer"
+            className="flex size-6 cursor-pointer items-center justify-center text-grayscale-500"
           >
             <MoreIcon className="size-6" aria-hidden />
           </button>
 
           {isMoreOpen && (
-            <div className="w-[92px] h-[53px] absolute right-0 top-full z-10 mt-1">
+            <div className="absolute right-0 top-full z-10 mt-1">
               <SongFeedCardMore
+                isMine={Boolean(entry.isMine)}
                 onReport={() => {
                   setIsMoreOpen(false);
                   onReport?.(entry.id);
+                }}
+                onEdit={() => {
+                  setIsMoreOpen(false);
+                  onEdit?.(entry.id);
+                }}
+                onDelete={() => {
+                  setIsMoreOpen(false);
+                  onDelete?.(entry.id);
                 }}
               />
             </div>
@@ -80,7 +99,7 @@ export function SongFeedCard({ entry, onToggleLike, onPlay, onReport }: SongFeed
 
       <div className="h-[1px] bg-pli-black-75" />
 
-      <footer className="pt-2.5 flex items-center justify-between">
+      <footer className="flex items-center justify-between pt-2.5">
         <button
           type="button"
           onClick={() => onToggleLike?.(entry.id)}
@@ -112,18 +131,41 @@ export function SongFeedCard({ entry, onToggleLike, onPlay, onReport }: SongFeed
 }
 
 type SongFeedCardMoreProps = {
+  isMine?: boolean;
   onReport?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 };
 
-export function SongFeedCardMore({ onReport }: SongFeedCardMoreProps) {
+export function SongFeedCardMore({
+  isMine = false,
+  onReport,
+  onEdit,
+  onDelete,
+}: SongFeedCardMoreProps) {
   return (
     <article
-      className="rounded-lg bg-pli-black-75 px-5 py-4"
+      className="min-w-[92px] rounded-lg bg-pli-black-75 px-5 py-4"
       onClick={(event) => event.stopPropagation()}
     >
-      <button type="button" onClick={onReport} className="body-15-m text-red cursor-pointer">
-        신고하기
-      </button>
+      {isMine ? (
+        <div className="flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="body-15-m text-grayscale-300 cursor-pointer"
+          >
+            수정하기
+          </button>
+          <button type="button" onClick={onDelete} className="body-15-m text-red cursor-pointer">
+            삭제하기
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={onReport} className="body-15-m text-red cursor-pointer">
+          신고하기
+        </button>
+      )}
     </article>
   );
 }
