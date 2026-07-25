@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+
 import type { PinFeedEntry } from '@/features/pin/types';
 import MoreIcon from '@/assets/icons/more.svg?react';
 import LikeIcon from '@/assets/icons/like.svg?react';
@@ -7,10 +9,26 @@ type SongFeedCardProps = {
   entry: PinFeedEntry;
   onToggleLike?: (entryId: string) => void;
   onPlay?: (entryId: string) => void;
-  onMore?: (entryId: string) => void;
+  onReport?: (entryId: string) => void;
 };
 
-export function SongFeedCard({ entry, onToggleLike, onPlay, onMore }: SongFeedCardProps) {
+export function SongFeedCard({ entry, onToggleLike, onPlay, onReport }: SongFeedCardProps) {
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMoreOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!moreRef.current?.contains(event.target as Node)) {
+        setIsMoreOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMoreOpen]);
+
   return (
     <article className="rounded-[20px] bg-pli-black-85 p-4">
       <header className="flex items-center gap-2.5">
@@ -26,17 +44,28 @@ export function SongFeedCard({ entry, onToggleLike, onPlay, onMore }: SongFeedCa
           <span className="body-15-m text-grayscale-500"> {entry.createdAtLabel} </span>
         </div>
 
-        <button
-          type="button"
-          aria-label="더보기"
-          onClick={(event) => {
-            event.stopPropagation();
-            onMore?.(entry.id);
-          }}
-          className="flex size-6 shrink-0 items-center justify-center text-grayscale-500 cursor-pointer"
-        >
-          <MoreIcon className="size-6" aria-hidden />
-        </button>
+        <div ref={moreRef} className="relative">
+          <button
+            type="button"
+            aria-label="더보기"
+            aria-expanded={isMoreOpen}
+            onClick={() => setIsMoreOpen((prev) => !prev)}
+            className="flex size-6  items-center justify-center text-grayscale-500 cursor-pointer"
+          >
+            <MoreIcon className="size-6" aria-hidden />
+          </button>
+
+          {isMoreOpen && (
+            <div className="w-[92px] h-[53px] absolute right-0 top-full z-10 mt-1">
+              <SongFeedCardMore
+                onReport={() => {
+                  setIsMoreOpen(false);
+                  onReport?.(entry.id);
+                }}
+              />
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="pt-4 pb-2.5">

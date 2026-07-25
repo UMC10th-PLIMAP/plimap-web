@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { TopBar } from '@/components/ui/TopBar';
 
 import { SongFeedCard } from '@/features/pin/components/SongFeedCard';
+import { ReportModal } from '@/features/pin/components/ReportModal';
 
 import {
   MOCK_SONG_DETAIL_LOVE_ATTACK,
@@ -28,6 +29,7 @@ export default function PinDetailPage() {
   const [sort, setSort] = useState<PinSort>('latest');
   const [liked, setLiked] = useState(Boolean(pinDetail.liked));
   const [likeCount, setLikeCount] = useState(pinDetail.likeCount);
+  const [reportFeedId, setReportFeedId] = useState<string | null>(null);
 
   const sortedFeeds = useMemo(
     () =>
@@ -96,9 +98,16 @@ export default function PinDetailPage() {
 
       <div className="flex flex-col gap-4 px-[11px] pt-[17.5px] pb-[env(safe-area-inset-bottom)]">
         {sortedFeeds.map((feed) => (
-          <SongFeedCard key={feed.id} entry={feed} onToggleLike={() => {}} />
+          <SongFeedCard
+            key={feed.id}
+            entry={feed}
+            onToggleLike={() => {}}
+            onReport={setReportFeedId}
+          />
         ))}
       </div>
+
+      <ReportModal open={reportFeedId !== null} onClose={() => setReportFeedId(null)} />
     </div>
   );
 }
