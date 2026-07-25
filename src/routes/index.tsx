@@ -8,11 +8,24 @@ import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 import PinDetailPage from '@/pages/PinDetailPage';
+import SongListPage from '@/pages/SongListPage';
+import SongDetailPage from '@/pages/SongDetailPage';
+import PinRegisterPage from '@/pages/PinRegisterPage';
+import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
+import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <Navigate to="/app" replace />,
+  },
+  {
+    path: '/preview/pin-radius',
+    element: <PinRadiusOverlayPreviewPage />,
+  },
+  {
+    path: '/preview/report-modal',
+    element: <ReportModalPreviewPage />,
   },
   {
     path: '/app',
@@ -53,8 +66,20 @@ export const router = createBrowserRouter([
         element: <PinDetailPage />,
       },
       {
+        path: 'song/list',
+        element: <SongListPage />,
+      },
+      {
+        path: 'song/detail/:songId',
+        element: <SongDetailPage />,
+      },
+      {
         path: 'my',
         element: <MyProfilePage />,
+      },
+      {
+        path: 'pin/register',
+        element: <PinRegisterPage />,
       },
     ],
   },

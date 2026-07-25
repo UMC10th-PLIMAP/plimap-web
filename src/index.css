@@ -235,6 +235,26 @@
   }
 }
 
+@keyframes toast-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes toast-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
 ::view-transition-old(root) {
   animation: none;
 }
@@ -277,5 +297,20 @@ html:has([data-page='pin-place-search'])::view-transition-new(root) {
   ::view-transition-group(plimap-search-bar) {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
+  }
+}
+
+.toast-root[data-state='open'] {
+  animation: toast-fade-in 200ms ease-out;
+}
+
+.toast-root[data-state='closed'] {
+  animation: toast-fade-out 200ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-root[data-state='open'],
+  .toast-root[data-state='closed'] {
+    animation: none;
   }
 }

@@ -44,6 +44,11 @@ export type PinDetail = Pin & {
   registerCount: number;
   coverUrl?: string;
   feeds: PinFeedEntry[];
+  artistImage: string;
+};
+
+export type SongDetail = Song & {
+  waveformPeaks: readonly number[];
 };
 
 export type PlaceResult = {

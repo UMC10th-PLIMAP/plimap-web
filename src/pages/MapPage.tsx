@@ -5,11 +5,15 @@ import { SearchLauncher } from '@/components/ui/SearchInput';
 import type { MapPlace } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
+import { MOCK_MAP_PINS } from '@/features/map/constants/mockMapPins';
+import { BottomNav, type NavItemId } from '@/components/BottomNav';
 import type { PinSearchPlace } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 import { PinListSheet } from '@/features/pin/components/PinListSheet';
 import { MOCK_PIN_CARD_DATA } from '@/features/pin/data/mockPinSearchPlaces';
+import PlusIcon from '@/assets/icons/plus.svg?react';
+
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 
 type MapPageProps = {
@@ -28,11 +32,16 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace }) => {
   const [mapLoadError, setMapLoadError] = useState<string | null>(
     hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
+  const [activeNavId, setActiveNavId] = useState<NavItemId>('plimap');
+
+  // develop 방식: selectedMapPlace prop으로 장소 결과 관리
   const placeResults = useMemo<MapPlace[]>(
     () => (selectedMapPlace ? [selectedMapPlace] : []),
     [selectedMapPlace],
   );
   const selectedPlaceId = selectedMapPlace?.id ?? null;
+  const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
+
   const mapViewerRef = useRef<MapViewerHandle>(null);
 
   // --- 구글맵 스크립트 로드 (setState는 전부 프로미스 콜백 안에서만 일어나 effect에서 안전하게 호출 가능) ---
@@ -112,7 +121,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace }) => {
           <button
             type="button"
             aria-label="북마크"
-            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4px_rgba(0,0,0,0.15)]"
+            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
           >
             <BookmarkIcon className="size-7" />
           </button>
@@ -120,12 +129,24 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace }) => {
             type="button"
             aria-label="현재 위치로 이동"
             onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
-            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4px_rgba(0,0,0,0.15)]"
+            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
           >
-            <FocusIcon className="size-[27px]" />
+            <FocusIcon className="size-7" />
           </button>
         </div>
       </div>
+
+      <BottomNav activeId={activeNavId} onTabChange={setActiveNavId}>
+        {/* 핀 등록 버튼: BottomNav와의 간격은 BottomNav가 관리하므로 여기선 위치를 계산하지 않는다 */}
+        <button
+          type="button"
+          aria-label="핀 등록"
+          onClick={() => navigate('/app/pin/register')}
+          className="flex size-16 items-center justify-center rounded-full bg-gradient-neon text-grayscale-1200 shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
+        >
+          <PlusIcon className="size-7" />
+        </button>
+      </BottomNav>
 
       <MapViewer
         ref={mapViewerRef}
@@ -133,7 +154,10 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace }) => {
         zoom={zoom}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
+        mapPins={MOCK_MAP_PINS}
+        selectedMapPinId={selectedMapPinId}
         onZoomChanged={handleZoomChange}
+        onSelectMapPin={setSelectedMapPinId}
       />
       <PinListSheet
         open={true}
