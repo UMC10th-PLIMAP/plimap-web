@@ -42,7 +42,7 @@ export function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
 
   if (step === 'complete') {
     return (
-      <Dialog open={open} onClose={onClose} className="w-[288px]">
+      <Dialog open={open} onClose={onClose} className="w-[calc(100%-32px)] max-w-[288px]">
         <div className="px-7 pb-5 pt-7 text-center">
           <Dialog.Title className="body-17-m text-grayscale-200">신고 완료</Dialog.Title>
         </div>
@@ -67,7 +67,7 @@ export function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
   }
 
   return (
-    <Dialog open={open} onClose={onClose} className="w-[332px]">
+    <Dialog open={open} onClose={onClose} className="w-[calc(100%-32px)] max-w-[332px]">
       <div className="flex items-center justify-between px-7 pb-5 pt-7">
         <Dialog.Title className="body-17-m text-grayscale-300">신고 사유</Dialog.Title>
         <button type="button" onClick={onClose} aria-label="닫기">

@@ -20,7 +20,7 @@ function Dialog({ open, onClose, children, className }: DialogProps) {
       }}
     >
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/[.85]" />
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(
