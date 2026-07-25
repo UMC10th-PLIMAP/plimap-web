@@ -19,6 +19,7 @@ import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
 import RecommendationPinCardPreviewPage from '@/pages/RecommendationPinCardPreviewPage';
+import RecommendationContentCarouselPreviewPage from '@/pages/RecommendationContentCarouselPreviewPage';
 
 export const router = createBrowserRouter([
   {
@@ -36,6 +37,10 @@ export const router = createBrowserRouter([
   {
     path: '/preview/recommendation-pin-card',
     element: <RecommendationPinCardPreviewPage />,
+  },
+  {
+    path: '/preview/recommendation-carousel',
+    element: <RecommendationContentCarouselPreviewPage />,
   },
   {
     path: '/app',
