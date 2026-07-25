@@ -59,7 +59,7 @@ type SongWaveformProps = {
 
 function SongWaveform({ peaks, trimStartIndex, trimEndIndex }: SongWaveformProps) {
   return (
-    <div className="flex h-[72px] items-center gap-[2px]" aria-hidden>
+    <div className="flex h-[72px] items-center gap-1.5 px-1.5" aria-hidden>
       {peaks.map((height, index) => {
         const isSelected = index >= trimStartIndex && index <= trimEndIndex;
 
