@@ -197,7 +197,11 @@ export function PinPlaceSearch({
           <ul>
             {visiblePlaces.map((place) => (
               <li key={place.id} className="mx-2">
-                <PlaceResultRow place={place} onClick={() => handlePlaceSelect(place)} />
+                <PlaceResultRow
+                  place={place}
+                  variant={isShowingRecentPlaces ? 'recent-search' : 'search-result'}
+                  onClick={() => handlePlaceSelect(place)}
+                />
               </li>
             ))}
           </ul>
