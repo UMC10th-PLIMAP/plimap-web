@@ -53,7 +53,7 @@ export default function RecommendationPinCardPreviewPage() {
           </p>
         </header>
 
-        <div className="flex gap-3 overflow-x-auto pb-2 pl-4 scrollbar-hide">
+        <div className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
           {manyRecommendationPins.map((pin) => (
             <RecommendationPinCard key={pin.id} pin={pin} onClick={() => setSelectedPin(pin)} />
           ))}

@@ -38,7 +38,9 @@ export function RecommendationPinCard({
         'relative size-[124px] shrink-0 overflow-hidden rounded-xl border border-pli-black-50 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon',
         className,
       )}
-      aria-label={ariaLabel ?? `${place.name}, ${song.title} - ${song.artist}, ${creator.name}님의 PIN`}
+      aria-label={
+        ariaLabel ?? `${place.name}, ${song.title} - ${song.artist}, ${creator.name}님의 PIN`
+      }
       {...props}
     >
       <img src={imageUrl} alt="" className="absolute inset-0 size-full object-cover" />
