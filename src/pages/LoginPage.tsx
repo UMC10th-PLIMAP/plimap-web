@@ -17,9 +17,9 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '
 if (!API_BASE_URL) {
   console.error('VITE_API_BASE_URL is missing in environment variables');
 }
-// frontendOrigin은 프론트 로컬에서만 사용, 배포 시에는 제거
-const KAKAO_LOGIN_URL = `${API_BASE_URL}/oauth/authorization/kakao?frontendOrigin=http://localhost:5173`;
-const GOOGLE_LOGIN_URL = `${API_BASE_URL}/oauth/authorization/google?frontendOrigin=http://localhost:5173`;
+const FRONTEND_ORIGIN = window.location.origin;
+const KAKAO_LOGIN_URL = `${API_BASE_URL}/oauth/authorization/kakao?frontendOrigin=${FRONTEND_ORIGIN}`;
+const GOOGLE_LOGIN_URL = `${API_BASE_URL}/oauth/authorization/google?frontendOrigin=${FRONTEND_ORIGIN}`;
 
 type OAuthProvider = 'kakao' | 'google';
 
