@@ -19,6 +19,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      lottie-web:
+        specifier: ^5.13.0
+        version: 5.13.0
       lucide-react:
         specifier: ^1.23.0
         version: 1.23.0(react@19.2.8)
@@ -3664,6 +3667,12 @@ packages:
         integrity: sha512-9ie8ItPR6tjY5uYJh8K/Zrv/RMZ5VOlOWvtZdEHYSTFKZfIBPQa9tOAEeAWhd+AnIneLJ22w5fjOYtoutpWq5w==,
       }
     engines: { node: '>=18' }
+
+  lottie-web@5.13.0:
+    resolution:
+      {
+        integrity: sha512-+gfBXl6sxXMPe8tKQm7qzLnUy5DUPJPKIyRHwtpCpyUEYjHYRJC/5gjUvdkuO2c3JllrPtHXH5UJJK8LRYl5yQ==,
+      }
 
   lower-case@2.0.2:
     resolution:
@@ -7325,6 +7334,8 @@ snapshots:
       slice-ansi: 7.1.2
       strip-ansi: 7.2.0
       wrap-ansi: 9.0.2
+
+  lottie-web@5.13.0: {}
 
   lower-case@2.0.2:
     dependencies:

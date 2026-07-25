@@ -5,6 +5,8 @@ import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
 import LoginPage from '@/pages/LoginPage';
 import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import TermsAgreementPage from '@/pages/TermsAgreementPage';
+import WelcomePage from '@/pages/WelcomePage';
+
 import MyProfilePage from '@/pages/MyProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 import SongListPage from '@/pages/SongListPage';
@@ -59,6 +61,14 @@ export const router = createBrowserRouter([
       {
         path: 'onboarding/profile-image',
         element: <ProfileImageSetupPage />,
+      },
+      {
+        path: 'onboarding/welcome',
+        element: <WelcomePage />,
+      },
+      {
+        path: 'pin/search',
+        element: <PinPlaceSearchPage />,
       },
       {
         path: 'song/list',

@@ -98,7 +98,7 @@ export default function NicknameSetupPage() {
       </div>
 
       <div className="mt-auto flex flex-col items-center px-[10px] pb-[52px]">
-        <Button type="submit" variant={'cta'} size={'cta'} disabled={!isValid}>
+        <Button type="submit" variant={'cta'} size={'cta'} className="w-full" disabled={!isValid}>
           다음
         </Button>
       </div>

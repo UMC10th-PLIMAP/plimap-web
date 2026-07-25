@@ -52,6 +52,7 @@ export default function TermsAgreementPage() {
             type="button"
             variant="cta"
             size="cta"
+            className="w-full"
             onClick={() => {
               if (term.required) {
                 setChecked((prev) => ({ ...prev, [term.id]: true }));
@@ -104,6 +105,7 @@ export default function TermsAgreementPage() {
           type="button"
           variant="cta"
           size="cta"
+          className="w-full"
           disabled={!isValid}
           onClick={handleSubmit}
         >
