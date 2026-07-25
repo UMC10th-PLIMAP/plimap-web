@@ -13,3 +13,13 @@ export type MyProfile = {
   postCount: number;
   pins: ProfilePin[];
 };
+
+export type FollowTab = 'following' | 'follower' | 'friend';
+
+export type FollowUser = {
+  id: string;
+  nickname: string;
+  name: string;
+  avatarUrl: string;
+  relation: FollowTab;
+};

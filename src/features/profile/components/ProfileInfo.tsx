@@ -1,12 +1,22 @@
+import { useNavigate } from 'react-router-dom';
 import type { MyProfile } from '../types';
 
 type ProfileInfoProps = {
   profile: MyProfile;
+  onClick?: () => void;
 };
 
-function StatItem({ label, value }: { label: string; value: number }) {
+function StatItem({
+  label,
+  value,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  onClick?: () => void;
+}) {
   return (
-    <div className="flex flex-col min-w-[34px] items-center ">
+    <div className="flex flex-col min-w-[34px] items-center cursor-pointer" onClick={onClick}>
       <span className="head-18-sb text-grayscale-100">{value}</span>
       <span className="body-15-r text-grayscale-400">{label}</span>
     </div>
@@ -14,6 +24,7 @@ function StatItem({ label, value }: { label: string; value: number }) {
 }
 
 export function ProfileInfo({ profile }: ProfileInfoProps) {
+  const navigate = useNavigate();
   return (
     <section className="flex flex-col items-center px-4">
       <div className="flex size-22 rounded-full">
@@ -25,7 +36,11 @@ export function ProfileInfo({ profile }: ProfileInfoProps) {
       </div>
       {profile.name && <p className="mt-2.5 body-16-r text-grayscale-500">{profile.name}</p>}
       <div className="mt-4 flex w-full max-w-[236px] h-[46px] items-center justify-between">
-        <StatItem label="팔로잉" value={profile.followingCount} />
+        <StatItem
+          label="팔로잉"
+          value={profile.followingCount}
+          onClick={() => navigate('/app/my/following')}
+        />
         <StatItem label="팔로워" value={profile.followerCount} />
         <StatItem label="게시물" value={profile.postCount} />
       </div>
