@@ -65,8 +65,8 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
             </div>
 
             <p className="truncate body-15-m text-grayscale-400">
-              <span className="body-15-r text-grayscale-200">{place.creatorName}</span> 님이 생성한 핀 ·{' '}
-              <span className="text-grayscale-300">{distance.value}</span>
+              <span className="body-15-r text-grayscale-200">{place.creatorName}</span> 님이 생성한
+              핀 · <span className="text-grayscale-300">{distance.value}</span>
               {distance.unit}
             </p>
           </div>
