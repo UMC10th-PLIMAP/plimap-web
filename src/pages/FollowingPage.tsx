@@ -27,7 +27,7 @@ export default function FollowingPage() {
         onBack={() => navigate('/app/my')}
       />
       <FollowTabs value={tab} onChange={setTab} />
-      <ul className="flex flex-col px-4 pt-5 gap-5 cursor-pointer">
+      <ul className="flex flex-col gap-5 px-4 pt-5">
         {USERS_BY_TAB[tab].map((user) => (
           <FollowUserRow key={user.id} user={user} />
         ))}
