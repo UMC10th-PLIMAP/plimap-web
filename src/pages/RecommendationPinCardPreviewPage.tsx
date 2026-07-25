@@ -29,6 +29,16 @@ const recommendationPins: RecommendationPin[] = [
   },
 ];
 
+const manyRecommendationPins = Array.from({ length: 12 }, (_, index) => {
+  const pin = recommendationPins[index % recommendationPins.length];
+
+  return {
+    ...pin,
+    id: `${pin.id}-${index + 1}`,
+    imageUrl: `https://picsum.photos/seed/${pin.id}-${index + 1}/248`,
+  };
+});
+
 export default function RecommendationPinCardPreviewPage() {
   const [selectedPin, setSelectedPin] = useState<RecommendationPin | null>(null);
 
@@ -44,7 +54,7 @@ export default function RecommendationPinCardPreviewPage() {
         </header>
 
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {recommendationPins.map((pin) => (
+          {manyRecommendationPins.map((pin) => (
             <RecommendationPinCard key={pin.id} pin={pin} onClick={() => setSelectedPin(pin)} />
           ))}
         </div>
