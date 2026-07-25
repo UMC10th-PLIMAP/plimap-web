@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Key, PointerEvent, ReactNode } from 'react';
+import type { Key, PointerEvent, ReactNode, UIEvent } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,8 @@ type RecommendationContentCarouselProps<T> = {
   itemClassName?: string;
   showPagination?: boolean;
   itemsPerPage?: number;
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
 };
 
 type DragState = {
@@ -43,15 +45,23 @@ export function RecommendationContentCarousel<T>({
   itemClassName,
   showPagination = false,
   itemsPerPage = 1,
+  currentPage,
+  onPageChange,
 }: RecommendationContentCarouselProps<T>) {
   const pageSize = Math.max(1, Math.floor(itemsPerPage));
   const pageCount = Math.ceil(items.length / pageSize);
   const pages = Array.from({ length: pageCount }, (_, index) =>
     items.slice(index * pageSize, (index + 1) * pageSize),
   );
+  const [uncontrolledPage, setUncontrolledPage] = useState(0);
   const dragStateRef = useRef<DragState | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const [activePage, setActivePage] = useState(0);
+  const lastPageRef = useRef(0);
+  const listRef = useRef<HTMLUListElement>(null);
+  const activePage = Math.min(
+    Math.max(currentPage ?? uncontrolledPage, 0),
+    Math.max(pageCount - 1, 0),
+  );
 
   const stopSwipeAnimation = () => {
     if (animationFrameRef.current !== null) {
@@ -68,9 +78,58 @@ export function RecommendationContentCarousel<T>({
     };
   }, []);
 
+  useEffect(() => {
+    lastPageRef.current = activePage;
+  }, [activePage]);
+
+  useEffect(() => {
+    if (currentPage === undefined) return;
+
+    const list = listRef.current;
+    const page = list?.children[activePage];
+    if (!list || !page) return;
+
+    const targetScrollLeft = Math.min(
+      page.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft,
+      list.scrollWidth - list.clientWidth,
+    );
+
+    if (Math.abs(list.scrollLeft - targetScrollLeft) > 1) {
+      list.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+    }
+  }, [activePage, currentPage, pageCount]);
+
   if (items.length === 0) {
     return null;
   }
+
+  const updateActivePage = (page: number) => {
+    const nextPage = Math.min(Math.max(page, 0), pageCount - 1);
+    if (lastPageRef.current === nextPage) return;
+
+    lastPageRef.current = nextPage;
+    if (currentPage === undefined) {
+      setUncontrolledPage(nextPage);
+    }
+    onPageChange?.(nextPage);
+  };
+
+  const getClosestPage = (list: HTMLUListElement) => {
+    const maxScrollLeft = list.scrollWidth - list.clientWidth;
+    const pagePositions = Array.from(list.children).map((page, index) => ({
+      page: index,
+      position: Math.min(
+        page.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft,
+        maxScrollLeft,
+      ),
+    }));
+
+    return pagePositions.reduce((nearestPage, page) =>
+      Math.abs(page.position - list.scrollLeft) < Math.abs(nearestPage.position - list.scrollLeft)
+        ? page
+        : nearestPage,
+    );
+  };
 
   const handlePointerDown = (event: PointerEvent<HTMLUListElement>) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -115,19 +174,7 @@ export function RecommendationContentCarousel<T>({
     }
 
     if (dragState.isHorizontal) {
-      const maxScrollLeft = list.scrollWidth - list.clientWidth;
-      const pagePositions = Array.from(list.children).map((page, index) => ({
-        page: index,
-        position: Math.min(
-          page.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft,
-          maxScrollLeft,
-        ),
-      }));
-      const targetPage = pagePositions.reduce((nearestPage, page) =>
-        Math.abs(page.position - list.scrollLeft) < Math.abs(nearestPage.position - list.scrollLeft)
-          ? page
-          : nearestPage,
-      );
+      const targetPage = getClosestPage(list);
 
       const startScrollLeft = list.scrollLeft;
       const scrollDistance = targetPage.position - startScrollLeft;
@@ -146,7 +193,7 @@ export function RecommendationContentCarousel<T>({
 
         list.style.scrollSnapType = '';
         animationFrameRef.current = null;
-        setActivePage(targetPage.page);
+        updateActivePage(targetPage.page);
       };
 
       animationFrameRef.current = requestAnimationFrame(animate);
@@ -155,6 +202,12 @@ export function RecommendationContentCarousel<T>({
     }
 
     dragStateRef.current = null;
+  };
+
+  const handleScroll = (event: UIEvent<HTMLUListElement>) => {
+    if (dragStateRef.current || animationFrameRef.current !== null) return;
+
+    updateActivePage(getClosestPage(event.currentTarget).page);
   };
 
   return (
@@ -169,6 +222,7 @@ export function RecommendationContentCarousel<T>({
 
       <div className={cn('flex min-w-0 flex-col', showPagination && 'gap-4')}>
         <ul
+          ref={listRef}
           aria-label={ariaLabel}
           className={cn(
             'flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scrollbar-hide',
@@ -179,6 +233,7 @@ export function RecommendationContentCarousel<T>({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerEnd}
           onPointerCancel={handlePointerEnd}
+          onScroll={handleScroll}
         >
           {pages.map((page, pageIndex) => (
             <li key={pageIndex} className="w-full shrink-0 snap-start">

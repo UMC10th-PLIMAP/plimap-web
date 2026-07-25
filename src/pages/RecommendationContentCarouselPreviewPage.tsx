@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import RecommendationCardImage from '@/assets/recommendation-content-card.png';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 
@@ -9,6 +11,8 @@ const RECOMMENDED_PLACES = [
 ] as const;
 
 export default function RecommendationContentCarouselPreviewPage() {
+  const [currentPage, setCurrentPage] = useState(0);
+
   return (
     <main className="min-h-dvh bg-pli-black-100 py-10 text-grayscale-100">
       <div className="w-full px-4">
@@ -20,6 +24,8 @@ export default function RecommendationContentCarouselPreviewPage() {
           itemClassName="aspect-square flex-1 self-start"
           showPagination
           itemsPerPage={2}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
           renderItem={(place) => (
             <button
               type="button"
