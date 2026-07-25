@@ -44,6 +44,14 @@ export function useGoogleMap({
     if (!isLoaded || !mapRef.current || !mapsApi) return;
 
     if (!mapInstanceRef.current) {
+      const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
+      if (!mapId) {
+        // Map ID 없이는 벡터 렌더링(회전/틸트)과 Cloud Console 스타일이 전부 비활성화된다.
+        console.error(
+          'VITE_GOOGLE_MAPS_MAP_ID is missing — falling back to an unstyled, non-rotatable raster map.',
+        );
+      }
+
       // --- 구글맵 인스턴스 초기 생성 (벡터 맵: 스타일은 Cloud Console에서 Map ID에 연결된 것을 사용) ---
       const map = new mapsApi.Map(mapRef.current, {
         center: DEFAULT_CENTER,
@@ -57,7 +65,7 @@ export function useGoogleMap({
         },
         disableDefaultUI: true,
         gestureHandling: 'greedy',
-        mapId: import.meta.env.VITE_GOOGLE_MAPS_MAP_ID,
+        ...(mapId ? { mapId } : {}),
       });
       mapInstanceRef.current = map;
 
