@@ -28,6 +28,7 @@ type DragState = {
 };
 
 const SWIPE_ANIMATION_DURATION = 360;
+const SCROLL_END_DELAY = 120;
 
 /**
  * Renders a titled, horizontally scrollable recommendation card section.
@@ -56,6 +57,7 @@ export function RecommendationContentCarousel<T>({
   const [uncontrolledPage, setUncontrolledPage] = useState(0);
   const dragStateRef = useRef<DragState | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const scrollEndTimeoutRef = useRef<number | null>(null);
   const lastPageRef = useRef(0);
   const listRef = useRef<HTMLUListElement>(null);
   const activePage = Math.min(
@@ -74,6 +76,9 @@ export function RecommendationContentCarousel<T>({
     return () => {
       if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (scrollEndTimeoutRef.current !== null) {
+        window.clearTimeout(scrollEndTimeoutRef.current);
       }
     };
   }, []);
@@ -135,6 +140,10 @@ export function RecommendationContentCarousel<T>({
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
     stopSwipeAnimation();
+    if (scrollEndTimeoutRef.current !== null) {
+      window.clearTimeout(scrollEndTimeoutRef.current);
+      scrollEndTimeoutRef.current = null;
+    }
     event.currentTarget.style.scrollSnapType = 'none';
     event.currentTarget.setPointerCapture(event.pointerId);
     dragStateRef.current = {
@@ -207,7 +216,15 @@ export function RecommendationContentCarousel<T>({
   const handleScroll = (event: UIEvent<HTMLUListElement>) => {
     if (dragStateRef.current || animationFrameRef.current !== null) return;
 
-    updateActivePage(getClosestPage(event.currentTarget).page);
+    if (scrollEndTimeoutRef.current !== null) {
+      window.clearTimeout(scrollEndTimeoutRef.current);
+    }
+
+    const list = event.currentTarget;
+    scrollEndTimeoutRef.current = window.setTimeout(() => {
+      updateActivePage(getClosestPage(list).page);
+      scrollEndTimeoutRef.current = null;
+    }, SCROLL_END_DELAY);
   };
 
   return (
