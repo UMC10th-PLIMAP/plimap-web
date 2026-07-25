@@ -243,7 +243,7 @@ export default function SongDetailPage() {
             value={introduction}
             onChange={(event) => setIntroduction(event.target.value.slice(0, INTRO_MAX_LENGTH))}
             placeholder="이 음악을 들었을 때 나의 기분은?"
-            className="body-17-r min-h-[120px] w-full resize-none text-grayscale-300 outline-none placeholder:text-grayscale-1100"
+            className="body-17-r min-h-[156px] w-full resize-none text-grayscale-300 outline-none placeholder:text-grayscale-1100"
           />
           <span className="absolute bottom-3 right-4 etc-13-r text-grayscale-600">
             {introduction.length}/{INTRO_MAX_LENGTH}
@@ -255,7 +255,7 @@ export default function SongDetailPage() {
         <h3 className="body-15-r text-grayscale-300">
           태그 <span className="etc-13-r text-grayscale-700">(최대 4개)</span>
         </h3>
-        <div className="flex flex-wrap justify-between gap-y-3 pt-3">
+        <div className="grid grid-cols-5 justify-items-center gap-x-2 gap-y-3 pt-3">
           {TAG_OPTIONS.map((tag) => {
             const isSelected = selectedTags.includes(tag);
 
