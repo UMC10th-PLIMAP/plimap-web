@@ -103,6 +103,7 @@ export function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
             value={detail}
             onChange={(event) => setDetail(event.target.value)}
             placeholder="내용을 입력하세요"
+            aria-label="신고 상세 내용"
             rows={3}
             className="h-[100px] w-full resize-none rounded-lg border border-grayscale-1000 px-4 py-3 body-15-r text-grayscale-200 outline-none placeholder:text-grayscale-700"
           />
