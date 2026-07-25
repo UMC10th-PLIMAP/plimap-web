@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import lottie from 'lottie-web';
+import lottie from 'lottie-web/build/player/lottie_svg';
 
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
