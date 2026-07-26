@@ -6,7 +6,7 @@ import {
   useEffect,
   useSyncExternalStore,
 } from 'react';
-import type { ComponentProps, KeyboardEvent } from 'react';
+import type { ComponentProps, KeyboardEvent, MouseEvent } from 'react';
 import useEmblaCarousel, { type UseEmblaCarouselType } from 'embla-carousel-react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
@@ -54,6 +54,7 @@ function Carousel({
   setApi,
   className,
   children,
+  onKeyDownCapture,
   ...props
 }: CarouselProps) {
   const [carouselRef, api] = useEmblaCarousel(
@@ -95,17 +96,27 @@ function Carousel({
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === 'ArrowLeft') {
+      const previousKey = orientation === 'horizontal' ? 'ArrowLeft' : 'ArrowUp';
+      const nextKey = orientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown';
+
+      if (event.key === previousKey) {
         event.preventDefault();
         scrollPrev();
       }
 
-      if (event.key === 'ArrowRight') {
+      if (event.key === nextKey) {
         event.preventDefault();
         scrollNext();
       }
     },
-    [scrollNext, scrollPrev],
+    [orientation, scrollNext, scrollPrev],
+  );
+  const handleKeyDownCapture = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      onKeyDownCapture?.(event);
+      if (!event.defaultPrevented) handleKeyDown(event);
+    },
+    [handleKeyDown, onKeyDownCapture],
   );
 
   useEffect(() => {
@@ -129,8 +140,8 @@ function Carousel({
         role="region"
         aria-roledescription="carousel"
         className={cn('relative', className)}
-        onKeyDownCapture={handleKeyDown}
         {...props}
+        onKeyDownCapture={handleKeyDownCapture}
       >
         {children}
       </div>
@@ -180,8 +191,15 @@ const CarouselItem = forwardRef<HTMLDivElement, ComponentProps<'div'>>(
 CarouselItem.displayName = 'CarouselItem';
 
 const CarouselPrevious = forwardRef<HTMLButtonElement, ComponentProps<'button'>>(
-  ({ className, type = 'button', ...props }, ref) => {
+  ({ className, type = 'button', onClick, ...props }, ref) => {
     const { orientation, scrollPrev, canScrollPrev } = useCarousel();
+    const handleClick = useCallback(
+      (event: MouseEvent<HTMLButtonElement>) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) scrollPrev();
+      },
+      [onClick, scrollPrev],
+    );
 
     return (
       <button
@@ -196,8 +214,8 @@ const CarouselPrevious = forwardRef<HTMLButtonElement, ComponentProps<'button'>>
             : '-top-12 left-1/2 -translate-x-1/2 rotate-90',
           className,
         )}
-        onClick={scrollPrev}
         {...props}
+        onClick={handleClick}
       >
         <ArrowLeft className="size-4" aria-hidden />
       </button>
@@ -208,8 +226,15 @@ const CarouselPrevious = forwardRef<HTMLButtonElement, ComponentProps<'button'>>
 CarouselPrevious.displayName = 'CarouselPrevious';
 
 const CarouselNext = forwardRef<HTMLButtonElement, ComponentProps<'button'>>(
-  ({ className, type = 'button', ...props }, ref) => {
+  ({ className, type = 'button', onClick, ...props }, ref) => {
     const { orientation, scrollNext, canScrollNext } = useCarousel();
+    const handleClick = useCallback(
+      (event: MouseEvent<HTMLButtonElement>) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) scrollNext();
+      },
+      [onClick, scrollNext],
+    );
 
     return (
       <button
@@ -224,8 +249,8 @@ const CarouselNext = forwardRef<HTMLButtonElement, ComponentProps<'button'>>(
             : '-bottom-12 left-1/2 -translate-x-1/2 rotate-90',
           className,
         )}
-        onClick={scrollNext}
         {...props}
+        onClick={handleClick}
       >
         <ArrowRight className="size-4" aria-hidden />
       </button>

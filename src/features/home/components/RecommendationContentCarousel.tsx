@@ -81,15 +81,18 @@ export function RecommendationContentCarousel<T>({
   const updateActivePage = useCallback(
     (page: number) => {
       const nextPage = Math.min(Math.max(page, 0), pageCount - 1);
-      if (lastPageRef.current === nextPage) return;
+      const pageChanged = lastPageRef.current !== nextPage;
+      const needsUncontrolledSync = currentPage === undefined && uncontrolledPage !== nextPage;
+
+      if (!pageChanged && !needsUncontrolledSync) return;
 
       lastPageRef.current = nextPage;
-      if (currentPage === undefined) {
+      if (needsUncontrolledSync) {
         setUncontrolledPage(nextPage);
       }
-      onPageChange?.(nextPage);
+      if (pageChanged) onPageChange?.(nextPage);
     },
-    [currentPage, onPageChange, pageCount],
+    [currentPage, onPageChange, pageCount, uncontrolledPage],
   );
 
   useEffect(() => {
