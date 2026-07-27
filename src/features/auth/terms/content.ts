@@ -2,7 +2,7 @@ import type { Term } from './types';
 
 export const TERMS: Term[] = [
   {
-    id: 'service',
+    id: 'SERVICE',
     required: true,
     listLabel: '[필수] PLIMAP 이용약관 동의',
     title: 'PLIMAP 이용약관 동의',
@@ -150,7 +150,7 @@ export const TERMS: Term[] = [
     ],
   },
   {
-    id: 'privacy',
+    id: 'PRIVACY',
     required: true,
     listLabel: '[필수] 개인정보 수집 및 이용 동의',
     title: '개인정보 수집 및 이용 동의',
@@ -265,7 +265,7 @@ export const TERMS: Term[] = [
     ],
   },
   {
-    id: 'location',
+    id: 'LOCATION',
     required: true,
     listLabel: '[필수] 위치기반 서비스 이용약관 동의',
     title: '위치기반서비스 이용약관 동의',
@@ -361,7 +361,7 @@ export const TERMS: Term[] = [
     ],
   },
   {
-    id: 'marketing',
+    id: 'MARKETING',
     required: false,
     listLabel: '[선택] 마케팅 목적 광고성 정보 수신 동의',
     title: '마케팅 목적 광고성 정보 수신 동의 \n(선택)',

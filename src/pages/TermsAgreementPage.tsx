@@ -14,10 +14,10 @@ import type { TermId } from '@/features/auth/terms/types';
 const TERMS_AGREEMENT_FAILED_MESSAGE = '약관 동의 처리에 실패했어요. 다시 시도해주세요.';
 
 const INITIAL_CHECKED: Record<TermId, boolean> = {
-  service: false,
-  privacy: false,
-  location: false,
-  marketing: false,
+  SERVICE: false,
+  PRIVACY: false,
+  LOCATION: false,
+  MARKETING: false,
 };
 
 export default function TermsAgreementPage() {

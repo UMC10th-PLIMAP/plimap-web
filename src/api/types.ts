@@ -1,6 +1,6 @@
-export type ApiResponse<TResult> = {
+export type ApiResponse<T> = {
   isSuccess: boolean;
   code: string;
   message: string;
-  result: TResult;
+  result: T;
 };
