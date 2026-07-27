@@ -45,7 +45,11 @@ export function ProfileInfo({ profile }: ProfileInfoProps) {
           value={profile.followingCount}
           onClick={() => navigate('/app/my/following')}
         />
-        <StatItem label="팔로워" value={profile.followerCount} />
+        <StatItem
+          label="팔로워"
+          value={profile.followerCount}
+          onClick={() => navigate('/app/my/followers')}
+        />
         <StatItem label="게시물" value={profile.postCount} />
       </div>
 

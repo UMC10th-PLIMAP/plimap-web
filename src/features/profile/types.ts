@@ -14,7 +14,7 @@ export type MyProfile = {
   pins: ProfilePin[];
 };
 
-export type FollowTab = 'following' | 'follower' | 'friend';
+export type FollowTab = 'following' | 'follower';
 
 export type FollowUser = {
   id: string;

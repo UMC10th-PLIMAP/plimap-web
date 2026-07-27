@@ -88,6 +88,10 @@ export const router = createBrowserRouter([
         element: <FollowListPage />,
       },
       {
+        path: 'my/followers',
+        element: <FollowListPage />,
+      },
+      {
         path: 'pin/register',
         element: <PinRegisterPage />,
       },

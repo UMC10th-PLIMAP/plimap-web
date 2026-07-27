@@ -8,7 +8,6 @@ type FollowUserRowProps = {
 const RELATION_LABEL: Record<FollowTab, string> = {
   following: '팔로잉',
   follower: '팔로워',
-  friend: '친구',
 };
 
 export function FollowUserRow({ user, onActionClick }: FollowUserRowProps) {
