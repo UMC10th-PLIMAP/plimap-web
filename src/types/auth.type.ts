@@ -4,7 +4,7 @@ export type TermsAgreementRequest = {
   agreements: { type: TermId; agreed: boolean }[];
 };
 
-export type TermsAgreementResult = {
+export type TermsAgreementResponse = {
   type: TermId;
   agreed: boolean;
   agreedAt: string;
