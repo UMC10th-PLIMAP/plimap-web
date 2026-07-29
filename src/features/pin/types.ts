@@ -1,3 +1,20 @@
+export type MemberMeRequest = {
+  pageSize: number;
+  cursor?: string;
+};
+
+export type MemberMeResponse = {
+  data: {
+    pinId: number;
+    albumImageUrl: string;
+    latitude: number;
+    longitude: number;
+    createdAt: string;
+  }[];
+  nextCursor: string;
+  hasNext: boolean;
+};
+
 export type PinSort = 'popular' | 'latest';
 
 export type PlaceInfo = {
