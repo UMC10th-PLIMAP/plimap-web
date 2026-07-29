@@ -7,7 +7,7 @@ import type { MemberMeRequest, MemberMeResponse } from '../types';
 }
 export async function getMemberMe({ pageSize, cursor }: MemberMeRequest) {
   const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(`/api/v1/feed/members/me`, {
-    params: cursor ? { pageSize, cursor } : { pageSize },
+    params: { pageSize, cursor },
   });
   return data.result;
 }
