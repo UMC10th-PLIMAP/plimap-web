@@ -1,13 +1,18 @@
 import { type ChangeEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 
+import { Button } from '@/components/ui/button';
 import { TopBar } from '@/components/ui/TopBar';
+import { checkNicknameAvailability } from '@/features/profile/api/profile';
 import {
   NICKNAME_MAX_LENGTH,
   NICKNAME_MIN_LENGTH,
+  NICKNAME_UNAVAILABLE_MESSAGE,
   validateNickname,
-} from '@/features/auth/utils/validateNickname';
-import { Button } from '@/components/ui/button';
+} from '@/features/profile/utils/validateNickname';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useOnboardingStore } from '@/store/onboardingStore';
 
 type NicknameMessageTone = 'neutral' | 'success' | 'error';
 
@@ -17,22 +22,48 @@ const NICKNAME_MESSAGE_TONE_CLASS: Record<NicknameMessageTone, string> = {
   error: 'text-red',
 };
 
+const NICKNAME_CHECK_DEBOUNCE_MS = 400;
+
 export default function NicknameSetupPage() {
   const navigate = useNavigate();
+  const setOnboardingNickname = useOnboardingStore((state) => state.setNickname);
   const [nickname, setNickname] = useState('');
   const [touched, setTouched] = useState(false);
 
-  const errorMessage = validateNickname(nickname);
-  const isValid = errorMessage === null;
+  const formatError = validateNickname(nickname);
+  const debouncedNickname = useDebouncedValue(nickname, NICKNAME_CHECK_DEBOUNCE_MS);
+  const isNicknameSynced = debouncedNickname === nickname;
 
-  const message = !touched
-    ? {
+  const { data: checkResult, isFetching } = useQuery({
+    queryKey: ['nickname-check', debouncedNickname],
+    queryFn: () => checkNicknameAvailability(debouncedNickname),
+    enabled: touched && validateNickname(debouncedNickname) === null,
+  });
+
+  const isAvailable = isNicknameSynced && checkResult?.available === true;
+  const isValid = formatError === null && isAvailable;
+
+  const message = (() => {
+    if (!touched) {
+      return {
         text: `한글, 영어, 숫자 포함 ${NICKNAME_MIN_LENGTH}~${NICKNAME_MAX_LENGTH}자까지 가능해요.`,
         tone: 'neutral' as const,
-      }
-    : isValid
-      ? { text: '사용 가능한 닉네임이에요.', tone: 'success' as const }
-      : { text: errorMessage, tone: 'error' as const };
+      };
+    }
+    if (formatError) {
+      return { text: formatError, tone: 'error' as const };
+    }
+    if (!isNicknameSynced || isFetching || !checkResult) {
+      return { text: '', tone: 'neutral' as const };
+    }
+    if (checkResult.available) {
+      return { text: '사용 가능한 닉네임이에요.', tone: 'success' as const };
+    }
+    return {
+      text: NICKNAME_UNAVAILABLE_MESSAGE[checkResult.reason],
+      tone: 'error' as const,
+    };
+  })();
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     setNickname(event.target.value);
@@ -40,7 +71,8 @@ export default function NicknameSetupPage() {
   };
 
   const handleSubmit = () => {
-    // TODO: 백엔드 닉네임 중복 확인/필터링 API 연동 후 프로필 사진 등록 페이지로 이동
+    setOnboardingNickname(nickname);
+    navigate('/app/onboarding/profile-image');
   };
 
   return (
