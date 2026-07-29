@@ -12,7 +12,7 @@ export type MyProfile = {
   followerCount: number;
   postCount: number;
 };
-export type FollowTab = 'following' | 'follower' | 'friend';
+export type FollowTab = 'following' | 'follower';
 
 export type FollowUser = {
   id: string;
