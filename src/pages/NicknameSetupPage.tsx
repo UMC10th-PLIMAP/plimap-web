@@ -81,7 +81,11 @@ export default function NicknameSetupPage() {
             />
             <span
               className={`body-15-r shrink-0 ${
-                nickname.length > 0 ? 'text-grayscale-300' : 'text-grayscale-500'
+                nickname.length > NICKNAME_MAX_LENGTH
+                  ? 'text-red'
+                  : nickname.length > 0
+                    ? 'text-grayscale-300'
+                    : 'text-grayscale-500'
               }`}
             >
               {nickname.length}/{NICKNAME_MAX_LENGTH}
