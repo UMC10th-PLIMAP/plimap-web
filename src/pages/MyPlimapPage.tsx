@@ -4,7 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { TopBar } from '@/components/ui/TopBar';
 import { MyAllPinsCard } from '@/features/profile/components/MyAllPinsCard';
 import { MyPlimapTabs } from '@/features/profile/components/MyPlimapTabs';
+import { PinCard } from '@/features/pin/components/PinCard';
 import type { MyAllPin, MyPlimapTab } from '@/features/profile/types';
+import type { Pin } from '@/features/pin/types';
+
+const MOCK_PIN: Pin = {
+  id: '1',
+  title: '밤편지',
+  artist: '아이유',
+  likeCount: 1,
+  liked: false,
+};
 
 const MOCK_MY_ALL_PINS: MyAllPin[] = [
   {
@@ -34,10 +44,10 @@ export default function MyPlimapPage() {
   const [tab, setTab] = useState<MyPlimapTab>('all');
 
   return (
-    <div className="flex min-h-full flex-col bg-pli-black-100">
+    <div className="flex min-h-full flex-col ">
       <TopBar onBack={() => navigate(-1)} title="내 PLIMAP" titleWeight="medium" />
 
-      <div className="px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+24px)]">
+      <div className="px-4 pt-3 ">
         <MyPlimapTabs value={tab} onChange={setTab} />
 
         <div className="flex flex-col gap-3 pt-5">
@@ -55,7 +65,7 @@ export default function MyPlimapPage() {
               />
             ))
           ) : (
-            <p className="py-16 text-center body-15-r text-grayscale-600">찜한 노래가 없어요</p>
+            <PinCard pin={MOCK_PIN} />
           )}
         </div>
       </div>
