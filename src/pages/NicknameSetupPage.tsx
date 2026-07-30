@@ -34,13 +34,17 @@ export default function NicknameSetupPage() {
   const debouncedNickname = useDebouncedValue(nickname, NICKNAME_CHECK_DEBOUNCE_MS);
   const isNicknameSynced = debouncedNickname === nickname;
 
-  const { data: checkResult, isFetching } = useQuery({
+  const {
+    data: checkResult,
+    isFetching,
+    isError,
+  } = useQuery({
     queryKey: ['nickname-check', debouncedNickname],
     queryFn: () => checkNicknameAvailability(debouncedNickname),
     enabled: touched && validateNickname(debouncedNickname) === null,
   });
 
-  const isAvailable = isNicknameSynced && checkResult?.available === true;
+  const isAvailable = isNicknameSynced && !isFetching && checkResult?.available === true;
   const isValid = formatError === null && isAvailable;
 
   const message = (() => {
@@ -53,7 +57,13 @@ export default function NicknameSetupPage() {
     if (formatError) {
       return { text: formatError, tone: 'error' as const };
     }
-    if (!isNicknameSynced || isFetching || !checkResult) {
+    if (!isNicknameSynced || isFetching) {
+      return { text: '', tone: 'neutral' as const };
+    }
+    if (isError) {
+      return { text: '닉네임 확인에 실패했어요. 다시 시도해주세요.', tone: 'error' as const };
+    }
+    if (!checkResult) {
       return { text: '', tone: 'neutral' as const };
     }
     if (checkResult.available) {
