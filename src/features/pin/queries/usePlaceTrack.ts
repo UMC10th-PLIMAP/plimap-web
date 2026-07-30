@@ -14,8 +14,8 @@ type UsePlaceTrackParams = {
 export function usePlaceTrack({
   page = '0',
   size = 20,
-  latitude = 37.5665,
-  longitude = 126.978,
+  latitude = 37.5350918,
+  longitude = 127.0531533,
   sort = 'POPULAR',
   enabled = true,
 }: UsePlaceTrackParams = {}) {
