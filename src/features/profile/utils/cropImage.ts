@@ -1,4 +1,8 @@
+import imageCompression from 'browser-image-compression';
 import type { Area } from 'react-easy-crop';
+
+const PROFILE_IMAGE_MAX_SIZE_MB = 5;
+const PROFILE_IMAGE_MAX_DIMENSION = 1080;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -9,7 +13,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-export async function getCroppedImageBlob(imageSrc: string, cropArea: Area): Promise<Blob> {
+export async function getCroppedImageBlob(imageSrc: string, cropArea: Area): Promise<File> {
   const image = await loadImage(imageSrc);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -32,13 +36,22 @@ export async function getCroppedImageBlob(imageSrc: string, cropArea: Area): Pro
     cropArea.height,
   );
 
-  return new Promise((resolve, reject) => {
+  const croppedBlob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) {
         reject(new Error('이미지 크롭에 실패했습니다'));
         return;
       }
       resolve(blob);
-    }, 'image/jpeg');
+    }, 'image/png');
+  });
+
+  const croppedFile = new File([croppedBlob], 'profile-image.png', { type: croppedBlob.type });
+
+  return imageCompression(croppedFile, {
+    fileType: 'image/webp',
+    maxSizeMB: PROFILE_IMAGE_MAX_SIZE_MB,
+    maxWidthOrHeight: PROFILE_IMAGE_MAX_DIMENSION,
+    useWebWorker: true,
   });
 }

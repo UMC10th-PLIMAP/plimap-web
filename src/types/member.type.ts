@@ -4,3 +4,8 @@ export type NicknameCheckReason =
 export type NicknameCheckResponse =
   | { nickname: string; available: true; reason: null }
   | { nickname: string; available: false; reason: NicknameCheckReason };
+
+export type ProfileImageUploadResponse = {
+  objectKey: string;
+  imageUrl: string;
+};
