@@ -1,6 +1,6 @@
 import { apiClient } from '@/api/client';
 import type { ApiResponse } from '@/api/types';
-import type { MemberMeRequest, MemberMeResponse } from '../types';
+import type { MemberMeRequest, MemberMeResponse } from '@/features/pin/types';
 
 {
   /* GET /api/v1/feed/members/me 내 피드 목록 조회 */
