@@ -156,7 +156,7 @@ export default function SongDetailPage() {
   const [isFeedPublic, setIsFeedPublic] = useState(true);
   const [isSongSelectOpen, setIsSongSelectOpen] = useState(false);
 
-  const coverUrl = song.artistImage || rectangleBg;
+  const coverUrl = song.coverUrl || rectangleBg;
   const waveformPeaks = MOCK_WAVEFORM_PEAKS;
 
   const toggleTag = (tag: string) => {
