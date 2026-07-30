@@ -80,7 +80,7 @@ jobs:
 
           IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           IMAGE_TAG="pr-${PR_NUMBER}-${HEAD_SHA::12}"
-          API_BASE_URL="https://pr-${PR_NUMBER}.${API_DOMAIN}"
+          API_BASE_URL="https://dev.plimap.kr"
 
           echo "image_owner=${IMAGE_OWNER}" >> "$GITHUB_OUTPUT"
           echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
