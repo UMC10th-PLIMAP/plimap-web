@@ -45,8 +45,25 @@ export type MemberMeResponse = {
   hasNext: boolean;
 };
 
+export type GetPlaceTracksResponse = {
+  placeId: string;
+  distance: number;
+  isWithinRadius: boolean;
+  tracks: (TrackBase & {
+    placeTrackId: number;
+    pinCount: number;
+    likeCount: number;
+    isLiked: boolean;
+  })[];
+  page: number;
+  size: number;
+  hasNext: boolean;
+};
+
+export type PlaceTrack = GetPlaceTracksResponse['tracks'][number];
+
 // --------------------------------------------------
-export type PinSort = 'popular' | 'latest';
+export type PinSort = 'POPULAR' | 'LATEST';
 
 export type PlaceInfo = {
   id: string;
