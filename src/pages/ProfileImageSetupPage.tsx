@@ -9,6 +9,7 @@ import { TopBar } from '@/components/ui/TopBar';
 import { Button } from '@/components/ui/button';
 import { uploadProfileImage } from '@/api/member';
 import { getCroppedImageBlob } from '@/features/profile/utils/cropImage';
+import { useOnboardingStore } from '@/store/onboardingStore';
 
 type Step = 'select' | 'crop' | 'done';
 
@@ -19,6 +20,7 @@ const UPLOAD_FAILED_MESSAGE = '파일 업로드에 실패했어요. 잠시 후 �
 export default function ProfileImageSetupPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const setOnboardingProfileImageFile = useOnboardingStore((state) => state.setProfileImageFile);
 
   const [step, setStep] = useState<Step>('select');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -95,6 +97,7 @@ export default function ProfileImageSetupPage() {
 
     try {
       await uploadProfileImage(croppedImageFile);
+      setOnboardingProfileImageFile(croppedImageFile);
       navigate('/app/onboarding/welcome');
     } catch (error) {
       alert(error instanceof ApiError ? error.message : UPLOAD_FAILED_MESSAGE);

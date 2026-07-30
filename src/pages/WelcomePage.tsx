@@ -1,14 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import lottie from 'lottie-web/build/player/lottie_svg';
 
+import { ApiError } from '@/api/client';
+import { completeOnboarding } from '@/api/auth';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import confettiRaw from '@/assets/lottie/welcome-confetti.json?raw';
 import { Button } from '@/components/ui/button';
+import { useOnboardingStore } from '@/store/onboardingStore';
 
 const CONFETTI_PRESERVE_ASPECT_RATIO = 'xMidYMid slice';
 const CONFETTI_FADE_OUT_MS = 1000;
+const ONBOARDING_FAILED_MESSAGE = '온보딩 완료 처리에 실패했어요. 다시 시도해주세요.';
 
 function ConfettiLottie({ data }: { data: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +52,32 @@ function ConfettiLottie({ data }: { data: string }) {
 
 export default function WelcomePage() {
   const navigate = useNavigate();
+  const nickname = useOnboardingStore((state) => state.nickname);
+  const profileImageFile = useOnboardingStore((state) => state.profileImageFile);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const profileImageUrl = useMemo(
+    () => (profileImageFile ? URL.createObjectURL(profileImageFile) : null),
+    [profileImageFile],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (profileImageUrl) URL.revokeObjectURL(profileImageUrl);
+    };
+  }, [profileImageUrl]);
+
+  const handleStart = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      await completeOnboarding(nickname);
+      navigate('/app', { replace: true });
+    } catch (error) {
+      alert(error instanceof ApiError ? error.message : ONBOARDING_FAILED_MESSAGE);
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="relative flex h-full min-h-screen flex-col overflow-hidden bg-pli-black-100">
@@ -62,10 +92,14 @@ export default function WelcomePage() {
         </p>
 
         <div className="relative mt-[52px] flex size-[236px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-pli-black-75">
-          <UserPlaceholderIcon className="size-[140px] text-pli-black-50" />
+          {profileImageUrl ? (
+            <img src={profileImageUrl} alt="프로필 이미지" className="size-full object-cover" />
+          ) : (
+            <UserPlaceholderIcon className="size-[140px] text-pli-black-50" />
+          )}
         </div>
 
-        <p className="head-20-m mt-[16px] text-grayscale-100">1mhyori</p>
+        <p className="head-20-m mt-[16px] text-grayscale-100">{nickname}</p>
       </div>
 
       <div className="relative z-10 flex flex-col items-center px-[10px] pb-[52px]">
@@ -73,7 +107,8 @@ export default function WelcomePage() {
           variant="cta"
           size="cta"
           className="relative w-full bg-gradient-neon"
-          onClick={() => navigate('/app', { replace: true })}
+          onClick={handleStart}
+          disabled={isSubmitting}
         >
           <span className="head-20-sb text-grayscale-1200">시작하기</span>
           <ArrowRightIcon className="absolute right-7 size-7 text-[#000000]" aria-hidden />
