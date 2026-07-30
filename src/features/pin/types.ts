@@ -1,17 +1,32 @@
 // --------------------------------------------------
+
+type TrackBase = {
+  trackName: string;
+  artistName: string;
+  artworkUrl: string;
+};
+
 export type searchTracksResponse = {
-  tracks: {
+  tracks: (TrackBase & {
     itunesTrackId: number;
-    trackName: string;
-    artistName: string;
     albumName: string;
-    artworkUrl: string;
     previewUrl: string;
     durationMs: number;
-  }[];
+  })[];
+};
+
+export type GetLikedTracksResponse = {
+  tracks: (TrackBase & {
+    placeTrackId: number;
+    likeCount: number;
+  })[];
+  page: number;
+  size: number;
+  hasNext: boolean;
 };
 
 export type SearchTrack = searchTracksResponse['tracks'][number];
+export type LikedTrack = GetLikedTracksResponse['tracks'][number];
 
 export type MemberMeRequest = {
   pageSize: number;
@@ -42,14 +57,11 @@ export type PlaceInfo = {
   isMine?: boolean;
 };
 
-export type Pin = {
-  id: string;
-  pinId?: string;
-  title: string;
-  artist: string;
+/** PinCard — 찜한 곡 API와 동일 shape (+ UI 전용 옵션) */
+export type Pin = LikedTrack & {
   pinCount?: number;
-  likeCount?: number;
   liked?: boolean;
+  pinId?: string;
 };
 
 export type Song = {
@@ -72,11 +84,14 @@ export type PinFeedEntry = {
   isMine?: boolean;
 };
 
-export type PinDetail = Pin & {
+export type PinDetail = {
+  id: string;
+  title: string;
+  artist: string;
+  coverUrl?: string;
   likeCount: number;
   liked?: boolean;
   registerCount: number;
-  coverUrl?: string;
   feeds: PinFeedEntry[];
 };
 

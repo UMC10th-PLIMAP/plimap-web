@@ -101,7 +101,7 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
         {hasPins ? (
           <ul className="flex flex-col gap-4">
             {pins.map((pin) => (
-              <li key={pin.id}>
+              <li key={pin.placeTrackId}>
                 <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
               </li>
             ))}

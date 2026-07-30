@@ -5,16 +5,8 @@ import { TopBar } from '@/components/ui/TopBar';
 import { MyAllPinsCard } from '@/features/profile/components/MyAllPinsCard';
 import { MyPlimapTabs } from '@/features/profile/components/MyPlimapTabs';
 import { PinCard } from '@/features/pin/components/PinCard';
+import { useLikeTrack } from '@/features/pin/queries/useLikeTrack';
 import type { MyAllPin, MyPlimapTab } from '@/features/profile/types';
-import type { Pin } from '@/features/pin/types';
-
-const MOCK_PIN: Pin = {
-  id: '1',
-  title: '밤편지',
-  artist: '아이유',
-  likeCount: 1,
-  liked: false,
-};
 
 const MOCK_MY_ALL_PINS: MyAllPin[] = [
   {
@@ -42,15 +34,20 @@ const MOCK_MY_ALL_PINS: MyAllPin[] = [
 export default function MyPlimapPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<MyPlimapTab>('all');
+  const { data: likedTracks } = useLikeTrack({
+    enabled: tab === 'liked',
+  });
+
+  const tracks = likedTracks?.tracks ?? [];
 
   return (
-    <div className="flex min-h-full flex-col ">
+    <div className="flex min-h-full flex-col">
       <TopBar onBack={() => navigate(-1)} title="내 PLIMAP" titleWeight="medium" />
 
-      <div className="px-4 pt-3 ">
+      <div className="flex flex-1 flex-col px-4 pt-3">
         <MyPlimapTabs value={tab} onChange={setTab} />
 
-        <div className="flex flex-col gap-3 pt-5">
+        <div className="flex flex-1 flex-col gap-3 pt-5">
           {tab === 'all' ? (
             MOCK_MY_ALL_PINS.map((pin) => (
               <MyAllPinsCard
@@ -64,8 +61,23 @@ export default function MyPlimapPage() {
                 }}
               />
             ))
+          ) : tracks.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-[2px] text-center">
+              <p className="body-17-m text-grayscale-300">아직 찜한 노래가 없어요</p>
+              <p className="body-15-m text-grayscale-700">
+                마음에 드는 노래에 하트를 누르면 여기에 표시돼요
+              </p>
+            </div>
           ) : (
-            <PinCard pin={MOCK_PIN} />
+            tracks.map((track) => (
+              <PinCard
+                key={track.placeTrackId}
+                pin={{ ...track, liked: true }}
+                onClick={() => {
+                  // TODO: 맵으로 이동 연결
+                }}
+              />
+            ))
           )}
         </div>
       </div>
