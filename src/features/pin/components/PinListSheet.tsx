@@ -107,9 +107,9 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
             ))}
           </ul>
         ) : (
-          <div className="flex min-h-[240px] flex-1 flex-col items-center justify-center rounded-[20px] bg-pli-black-75 px-6 py-10 text-center">
-            <p className="body-17-m text-grayscale-100">생성된 핀이 없어요</p>
-            <p className="mt-1 body-15-m text-grayscale-500">첫번째 등록자가 되어보세요!</p>
+          <div className="flex flex-col h-[131px] items-center justify-center rounded-[12px] bg-pli-black-85  text-center">
+            <p className="body-18-r text-grayscale-300">생성된 핀이 없어요</p>
+            <p className="body-15-r text-grayscale-600">첫번째 등록자가 되어보세요!</p>
           </div>
         )}
       </BottomSheet.Content>
