@@ -39,7 +39,7 @@ export default function MyProfilePage() {
             },
             {
               label: '내 PLIMAP',
-              onClick: () => navigate('/app'),
+              onClick: () => navigate('/app/my/plimap'),
             },
             {
               label: <ShareIcon />,
