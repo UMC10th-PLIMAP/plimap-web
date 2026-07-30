@@ -5,8 +5,8 @@ import newJeansArtistImage from '@/assets/Rectangle.png';
   /* 노래 카드 목록 데이터 */
 }
 export const MOCK_SONG_CARD_LIST: Song[] = [
-  { id: '1', title: 'Hype Boy', artist: 'NewJeans', artistImage: newJeansArtistImage },
-  { id: '2', title: 'Hype Boy (250 Remix)', artist: 'NewJeans', artistImage: newJeansArtistImage },
+  { id: '1', title: 'Hype Boy', artist: 'NewJeans', coverUrl: newJeansArtistImage },
+  { id: '2', title: 'Hype Boy (250 Remix)', artist: 'NewJeans', coverUrl: newJeansArtistImage },
 ];
 
 {
