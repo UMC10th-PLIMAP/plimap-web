@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { TopBar } from '@/components/ui/TopBar';
-import { checkNicknameAvailability } from '@/features/profile/api/profile';
+import { checkNicknameAvailability } from '@/api/member';
 import {
   NICKNAME_MAX_LENGTH,
   NICKNAME_MIN_LENGTH,

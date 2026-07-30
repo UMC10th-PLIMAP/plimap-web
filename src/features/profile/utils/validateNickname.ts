@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { NicknameCheckReason } from '@/types/profile.type';
+import type { NicknameCheckReason } from '@/types/member.type';
 
 export const NICKNAME_MIN_LENGTH = 2;
 export const NICKNAME_MAX_LENGTH = 10;
