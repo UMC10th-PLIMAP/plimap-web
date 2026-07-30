@@ -17,7 +17,8 @@ export async function searchTracks(
   return data.result;
 }
 
-// 5) GET /api/v1/places/{placeId}/tracks - 장소별 곡 목록 조회
+// 5) GET /api/v1/places/{placeId}/tracks - 장소별 곡 목록 조회 (placeId: 2, latitude: 37.5665, longitude: 126.978로 하드코드 상태 추후에 수정 필요)
+
 export async function getPlaceTracks(
   page: string,
   size: number,
