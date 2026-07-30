@@ -40,6 +40,7 @@ type PinListContentProps = {
 function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinListContentProps) {
   const { isFullPage } = useBottomSheet();
   const distance = formatDistance(place.distance);
+  const hasPins = pins.length > 0;
 
   return (
     <>
@@ -65,9 +66,18 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
             </div>
 
             <p className="truncate body-15-m text-grayscale-400">
-              <span className="body-15-r text-grayscale-200">{place.creatorName}</span> 님이 생성한
-              핀 · <span className="text-grayscale-300">{distance.value}</span>
-              {distance.unit}
+              {place.creatorName ? (
+                <>
+                  <span className="body-15-r text-grayscale-200">{place.creatorName}</span> 님이
+                  생성한 핀 · <span className="text-grayscale-300">{distance.value}</span>
+                  {distance.unit}
+                </>
+              ) : (
+                <>
+                  생성되지 않음 · <span className="text-grayscale-300">{distance.value}</span>
+                  {distance.unit}
+                </>
+              )}
             </p>
           </div>
 
@@ -80,19 +90,28 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
           </button>
         </div>
 
-        <div className="mt-6">
-          <SortTabs value={sort} onChange={onSortChange} />
-        </div>
+        {hasPins ? (
+          <div className="mt-6">
+            <SortTabs value={sort} onChange={onSortChange} />
+          </div>
+        ) : null}
       </BottomSheet.Header>
 
-      <BottomSheet.Content className="mt-5 px-4">
-        <ul className="flex flex-col gap-4">
-          {pins.map((pin) => (
-            <li key={pin.id}>
-              <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
-            </li>
-          ))}
-        </ul>
+      <BottomSheet.Content className={cn('mt-5 px-4', !hasPins && 'flex flex-col')}>
+        {hasPins ? (
+          <ul className="flex flex-col gap-4">
+            {pins.map((pin) => (
+              <li key={pin.id}>
+                <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="flex min-h-[240px] flex-1 flex-col items-center justify-center rounded-[20px] bg-pli-black-75 px-6 py-10 text-center">
+            <p className="body-17-m text-grayscale-100">생성된 핀이 없어요</p>
+            <p className="mt-1 body-15-m text-grayscale-500">첫번째 등록자가 되어보세요!</p>
+          </div>
+        )}
       </BottomSheet.Content>
     </>
   );

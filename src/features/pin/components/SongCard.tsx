@@ -1,7 +1,7 @@
-import type { Song } from '@/features/pin/types';
+import type { SearchTrack } from '@/features/pin/types';
 
 type SongCardProps = {
-  song: Song;
+  song: SearchTrack;
   onClick?: () => void;
 };
 
@@ -12,12 +12,12 @@ export function SongCard({ song, onClick }: SongCardProps) {
       onClick={onClick}
       className="flex w-full items-center gap-3 py-2 text-left cursor-pointer"
     >
-      <div className="size-13 overflow-hidden rounded-[4px]">
-        <img src={song.artistImage} alt={song.title} className="size-full object-cover" />
+      <div className="max-w-[52px] max-h-[52px] overflow-hidden rounded-[4px]">
+        <img src={song.artworkUrl} alt={song.trackName} className="size-full object-cover" />
       </div>
       <div>
-        <p className="body-17-m text-grayscale-100">{song.title}</p>
-        <p className="body-15-r text-grayscale-500">{song.artist}</p>
+        <p className="body-17-m text-grayscale-100">{song.trackName}</p>
+        <p className="body-15-r text-grayscale-500">{song.artistName}</p>
       </div>
     </button>
   );

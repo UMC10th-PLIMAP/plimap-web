@@ -17,7 +17,10 @@ const MapLayout = () => {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <MapPage selectedMapPlace={appContext.selectedMapPlace} />
+      <MapPage
+        selectedMapPlace={appContext.selectedMapPlace}
+        onClearMapPlace={() => appContext.selectMapPlace(null)}
+      />
 
       {hasMapOverlay && outlet ? (
         <div className="map-search-overlay absolute inset-0 z-30">{outlet}</div>
