@@ -24,5 +24,13 @@ export type MyProfile = {
   followingCount: number;
   followerCount: number;
   postCount: number;
-  pins: ProfilePin[];
+};
+export type FollowTab = 'following' | 'follower';
+
+export type FollowUser = {
+  id: string;
+  nickname: string;
+  name: string;
+  avatarUrl: string;
+  relation: FollowTab;
 };
