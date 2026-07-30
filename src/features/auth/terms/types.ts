@@ -1,4 +1,4 @@
-export type TermId = 'service' | 'privacy' | 'location' | 'marketing';
+export type TermId = 'SERVICE' | 'PRIVACY' | 'LOCATION' | 'MARKETING';
 
 export type TermBlock =
   | { type: 'paragraph'; text: string }

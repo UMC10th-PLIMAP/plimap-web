@@ -77,10 +77,12 @@ export default function ProfileImageSetupPage() {
 
   const handleNext = () => {
     // TODO: 프로필 사진 등록 API 연동 후 다음 화면으로 이동
+    navigate('/app/onboarding/welcome');
   };
 
   const handleSkip = () => {
     // TODO: 프로필 사진 등록 건너뛰고 다음 화면으로 이동
+    navigate('/app/onboarding/welcome');
   };
 
   // 컴포넌트 언마운트 시 메모리 누수 방지
@@ -112,7 +114,13 @@ export default function ProfileImageSetupPage() {
         />
         <TopBar onBack={handleCropBack} className="absolute top-[55px] left-0 z-10 w-full" />
         <div className="absolute bottom-0 left-1/2 z-10 flex w-full max-w-[402px] -translate-x-1/2 flex-col items-center px-[10px] pb-[52px]">
-          <Button variant="cta" size="cta" onClick={handleConfirmCrop} disabled={isProcessing}>
+          <Button
+            variant="cta"
+            size="cta"
+            className="w-full"
+            onClick={handleConfirmCrop}
+            disabled={isProcessing}
+          >
             완료
           </Button>
         </div>
@@ -164,7 +172,13 @@ export default function ProfileImageSetupPage() {
         >
           지금은 건너뛸래요
         </button>
-        <Button variant="cta" size="cta" disabled={step !== 'done'} onClick={handleNext}>
+        <Button
+          variant="cta"
+          size="cta"
+          className="w-full"
+          disabled={step !== 'done'}
+          onClick={handleNext}
+        >
           다음
         </Button>
       </div>

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import HomeIcon from '@/assets/icons/home.svg?react';
 import PlimapIcon from '@/assets/icons/plimap.svg?react';
 import MyIcon from '@/assets/icons/user-placeholder.svg?react';
@@ -19,6 +19,17 @@ export interface BottomNavProps {
 }
 
 export function BottomNav({ activeId, onTabChange, children }: BottomNavProps) {
+  const activeIndex = NAV_ITEMS.findIndex(({ id }) => id === activeId);
+  const [isPressing, setIsPressing] = useState(false);
+
+  const handlePointerDown = () => {
+    setIsPressing(true);
+  };
+
+  const handlePointerEnd = () => {
+    setIsPressing(false);
+  };
+
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-[402px] flex-col items-center gap-5 px-4 pb-[calc(env(safe-area-inset-bottom)+24px)]">
       {children ? (
@@ -26,8 +37,20 @@ export function BottomNav({ activeId, onTabChange, children }: BottomNavProps) {
       ) : null}
       <nav
         aria-label="하단 내비게이션"
-        className="pointer-events-auto flex w-full max-w-[360px] h-[84px] items-center justify-between rounded-[32px] px-2.5 bg-pli-black-100/80  backdrop-blur-[4px]"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onPointerLeave={handlePointerEnd}
+        className={`pointer-events-auto relative grid h-[84px] w-full max-w-[360px] grid-cols-3 rounded-[32px] bg-pli-black-100/80 px-2.5 backdrop-blur-[4px] transition-transform duration-150 ease-out motion-reduce:transition-none ${
+          isPressing ? 'scale-[0.98]' : 'scale-100'
+        }`}
       >
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-2.5 left-2.5 w-[calc((100%-20px)/3)] rounded-[24px] bg-pli-black-75 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+          style={{ transform: `translateX(${Math.max(activeIndex, 0) * 100}%)` }}
+        />
+
         {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
           const isActive = activeId === id;
 
@@ -38,13 +61,13 @@ export function BottomNav({ activeId, onTabChange, children }: BottomNavProps) {
               onClick={() => onTabChange(id)}
               aria-label={label}
               aria-current={isActive ? 'page' : undefined}
-              className={`flex  flex-col w-[120px] items-center justify-center gap-1 rounded-[24px] py-2.5 ${
-                isActive ? 'bg-pli-black-75 text-grayscale-100' : 'text-grayscale-800'
+              className={`relative z-10 flex w-full flex-col items-center justify-center gap-1 rounded-[24px] py-2.5 transition-colors duration-200 motion-reduce:transition-none ${
+                isActive ? 'text-grayscale-100' : 'text-grayscale-800'
               }`}
             >
               <Icon className="size-6 " aria-hidden />
               <span
-                className={`etc-13-r ${isActive ? 'text-grayscale-100' : 'text-grayscale-700'}`}
+                className={`etc-13-r transition-colors duration-200 motion-reduce:transition-none ${isActive ? 'text-grayscale-100' : 'text-grayscale-700'}`}
               >
                 {label}
               </span>

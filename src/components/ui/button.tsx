@@ -12,12 +12,14 @@ const buttonVariants = cva(
         pin: 'bg-gradient-neon text-grayscale-1200 disabled:bg-none disabled:bg-pli-black-75 disabled:text-grayscale-600',
         confirm: 'bg-grayscale-100 text-grayscale-1250',
         cancel: 'bg-pli-black-50 text-grayscale-400',
-        kakao: 'bg-kakao text-kakao-text',
-        google: 'bg-grayscale-0 text-grayscale-1300',
-        apple: 'border border-grayscale-700 text-grayscale-200',
+        kakao: 'bg-kakao text-kakao-text disabled:opacity-50 disabled:cursor-not-allowed',
+        google:
+          'bg-grayscale-0 text-grayscale-1300 disabled:opacity-50 disabled:cursor-not-allowed',
+        apple:
+          'border border-grayscale-700 text-grayscale-200 disabled:opacity-50 disabled:cursor-not-allowed',
       },
       size: {
-        cta: 'min-w-92 h-16 rounded-2xl head-20-sb',
+        cta: 'max-w-92 h-16 rounded-2xl head-20-sb',
         pin: 'min-w-23 h-13 rounded-[50px] px-4 py-3.5 body-15-sb',
         bt: 'min-w-[77px] h-11 rounded-[50px] px-4 py-2.5 body-17-m', // confirm, cancel
         social: 'max-w-81 h-16 rounded-xl body-17-m', // kakao, google, apple
