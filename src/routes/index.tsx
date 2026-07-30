@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+
 import RootLayout from '@/layouts/RootLayout';
 import MapLayout from '@/layouts/MapLayout';
 import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
@@ -9,7 +10,9 @@ import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import WelcomePage from '@/pages/WelcomePage';
 
 import MyProfilePage from '@/pages/MyProfilePage';
+import MyPlimapPage from '@/pages/MyPlimapPage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
+import PinDetailPage from '@/pages/PinDetailPage';
 import SongListPage from '@/pages/SongListPage';
 import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
@@ -67,6 +70,7 @@ export const router = createBrowserRouter([
         path: 'onboarding/profile-image',
         element: <ProfileImageSetupPage />,
       },
+
       {
         path: 'onboarding/welcome',
         element: <WelcomePage />,
@@ -74,6 +78,10 @@ export const router = createBrowserRouter([
       {
         path: 'pin/search',
         element: <PinPlaceSearchPage />,
+      },
+      {
+        path: 'pins/:pinId',
+        element: <PinDetailPage />,
       },
       {
         path: 'song/list',
@@ -86,6 +94,10 @@ export const router = createBrowserRouter([
       {
         path: 'my',
         element: <MyProfilePage />,
+      },
+      {
+        path: 'my/plimap',
+        element: <MyPlimapPage />,
       },
       {
         path: 'pin/register',

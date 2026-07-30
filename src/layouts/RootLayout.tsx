@@ -16,7 +16,7 @@ const RootLayout = () => {
   const outletContext = { selectedMapPlace, selectMapPlace } satisfies AppOutletContext;
 
   return (
-    <div className="mx-auto h-screen max-w-[402px] overflow-y-auto bg-pli-black-100 scrollbar-hide">
+    <div className="mx-auto flex h-dvh max-w-[402px] flex-col overflow-y-auto bg-pli-black-100 scrollbar-hide">
       <Outlet context={outletContext} />
     </div>
   );

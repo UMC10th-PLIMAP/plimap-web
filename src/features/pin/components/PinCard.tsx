@@ -40,7 +40,7 @@ export function PinCard({ pin, onClick }: PinCardProps) {
         onClick={onClick}
         className="ml-3 flex shrink-0 cursor-pointer items-center gap-1 etc-13-r text-grayscale-300"
       >
-        {pin.pinCount}명이 등록
+        {pin.pinCount != null ? `${pin.pinCount}명이 등록` : '맵으로 이동'}
         <NextIcon className="size-5" aria-hidden />
       </button>
     </article>
