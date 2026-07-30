@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+
 import RootLayout from '@/layouts/RootLayout';
 import MapLayout from '@/layouts/MapLayout';
 import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
@@ -9,6 +10,7 @@ import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import WelcomePage from '@/pages/WelcomePage';
 
 import MyProfilePage from '@/pages/MyProfilePage';
+import MyPlimapPage from '@/pages/MyPlimapPage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 import SongListPage from '@/pages/SongListPage';
 import SongDetailPage from '@/pages/SongDetailPage';
@@ -86,6 +88,10 @@ export const router = createBrowserRouter([
       {
         path: 'my',
         element: <MyProfilePage />,
+      },
+      {
+        path: 'my/plimap',
+        element: <MyPlimapPage />,
       },
       {
         path: 'pin/register',

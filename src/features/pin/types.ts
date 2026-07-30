@@ -13,7 +13,7 @@ export type Pin = {
   id: string;
   title: string;
   artist: string;
-  pinCount: number;
+  pinCount?: number;
   likeCount?: number;
   liked?: boolean;
 };
