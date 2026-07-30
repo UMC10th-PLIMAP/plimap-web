@@ -5,12 +5,12 @@ import type { PinSearchPlace } from '@/features/pin/types';
 
 export type AppOutletContext = {
   selectedMapPlace: PinSearchPlace | null;
-  selectMapPlace: (place: PinSearchPlace) => void;
+  selectMapPlace: (place: PinSearchPlace | null) => void;
 };
 
 const RootLayout = () => {
   const [selectedMapPlace, setSelectedMapPlace] = useState<PinSearchPlace | null>(null);
-  const selectMapPlace = useCallback((place: PinSearchPlace) => {
+  const selectMapPlace = useCallback((place: PinSearchPlace | null) => {
     setSelectedMapPlace(place);
   }, []);
   const outletContext = { selectedMapPlace, selectMapPlace } satisfies AppOutletContext;

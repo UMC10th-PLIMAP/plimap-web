@@ -1,3 +1,18 @@
+// --------------------------------------------------
+export type searchTracksResponse = {
+  tracks: {
+    itunesTrackId: number;
+    trackName: string;
+    artistName: string;
+    albumName: string;
+    artworkUrl: string;
+    previewUrl: string;
+    durationMs: number;
+  }[];
+};
+
+export type SearchTrack = searchTracksResponse['tracks'][number];
+
 export type MemberMeRequest = {
   pageSize: number;
   cursor?: string;
@@ -15,12 +30,13 @@ export type MemberMeResponse = {
   hasNext: boolean;
 };
 
+// --------------------------------------------------
 export type PinSort = 'popular' | 'latest';
 
 export type PlaceInfo = {
   id: string;
   name: string;
-  creatorName: string;
+  creatorName?: string;
   distance: number;
   address?: string;
   isMine?: boolean;

@@ -1,25 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { SongCard } from '@/features/pin/components/SongCard';
-
-import { MOCK_SONG_CARD_LIST } from '@/features/pin/data/songPreview';
+import { useSearchTracks } from '@/features/pin/queries/useSearchTracks';
 
 export default function SongListPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
 
-  const filteredSongs = useMemo(() => {
-    const keyword = query.trim().toLowerCase();
-    if (!keyword) return MOCK_SONG_CARD_LIST;
-
-    return MOCK_SONG_CARD_LIST.filter(
-      (song) =>
-        song.title.toLowerCase().includes(keyword) || song.artist.toLowerCase().includes(keyword),
-    );
-  }, [query]);
+  const { data: tracks } = useSearchTracks({ keyword: query, limit: 200 });
 
   return (
     <div>
@@ -29,17 +20,18 @@ export default function SongListPage() {
           variant="song"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onClear={() => setQuery('')}
           placeholder="노래를 검색하세요"
         />
       </div>
       <div className="px-4 pt-5.5">
         <ul>
-          {filteredSongs.map((song) => (
-            <li key={song.id}>
+          {tracks?.tracks.map((track) => (
+            <li key={track.itunesTrackId}>
               <SongCard
-                song={song}
+                song={track}
                 onClick={() => {
-                  navigate(`/app/song/detail/${song.id}`);
+                  navigate(`/app/song/detail/${track.itunesTrackId}`);
                 }}
               />
             </li>
