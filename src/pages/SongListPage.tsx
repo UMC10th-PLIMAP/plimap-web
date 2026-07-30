@@ -20,6 +20,7 @@ export default function SongListPage() {
           variant="song"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onClear={() => setQuery('')}
           placeholder="노래를 검색하세요"
         />
       </div>
