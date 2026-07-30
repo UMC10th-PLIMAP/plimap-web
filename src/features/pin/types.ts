@@ -62,6 +62,11 @@ export type GetPlaceTracksResponse = {
 
 export type PlaceTrack = GetPlaceTracksResponse['tracks'][number];
 
+export type PutLikedTracksResponse = {
+  placeTrackId: number;
+  isLiked: boolean;
+  likeCount: number;
+};
 // --------------------------------------------------
 export type PinSort = 'POPULAR' | 'LATEST';
 

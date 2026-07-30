@@ -1,5 +1,6 @@
 import HeartIcon from '@/assets/icons/heart.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
+import { usePutLikedTrack } from '@/features/pin/queries/usePutLikedTrack';
 import type { Pin } from '@/features/pin/types';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +10,13 @@ type PinCardProps = {
 };
 
 export function PinCard({ pin, onClick }: PinCardProps) {
+  const { mutate: putLikedTrack, isPending } = usePutLikedTrack();
+
+  const handleLikeClick = () => {
+    if (pin.liked || isPending) return;
+    putLikedTrack(String(pin.placeTrackId));
+  };
+
   return (
     <article className="flex w-full items-center justify-between rounded-xl bg-pli-black-85 p-4.5 text-left">
       <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -25,16 +33,20 @@ export function PinCard({ pin, onClick }: PinCardProps) {
         </div>
 
         {pin.likeCount !== undefined ? (
-          <div className="flex items-center gap-1 body-15-r text-grayscale-300">
+          <button
+            type="button"
+            aria-label="좋아요"
+            aria-pressed={pin.liked}
+            disabled={isPending || pin.liked}
+            onClick={handleLikeClick}
+            className="flex w-fit items-center gap-1 body-15-r text-grayscale-300 cursor-pointer"
+          >
             <HeartIcon
-              className={cn(
-                'size-[18px] shrink-0',
-                pin.liked ? 'fill-red text-red' : 'text-grayscale-300',
-              )}
+              className={cn('size-[18px]', pin.liked ? 'fill-red text-red' : 'text-grayscale-300')}
               aria-hidden
             />
             <span>{pin.likeCount}</span>
-          </div>
+          </button>
         ) : null}
       </div>
 
