@@ -1,19 +1,21 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { putLikedTracks } from '@/api/track';
+import { deleteLikedTracks } from '@/api/track';
 import {
   prepareLikedTrackMutation,
+  removeLikedTrackFromList,
   rollbackLikedTrackMutation,
   setPlaceTrackLiked,
 } from '@/features/pin/queries/likedTrackCache';
 
-export function usePutLikedTrack() {
+export function useDeleteLikedTrack() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (placeTrackId: string) => putLikedTracks(placeTrackId),
+    mutationFn: (placeTrackId: string) => deleteLikedTracks(placeTrackId),
     onMutate: async (placeTrackId) => {
       const context = await prepareLikedTrackMutation(queryClient);
-      setPlaceTrackLiked(queryClient, placeTrackId, true);
+      setPlaceTrackLiked(queryClient, placeTrackId, false);
+      removeLikedTrackFromList(queryClient, placeTrackId);
       return context;
     },
     onError: (_error, _placeTrackId, context) => {

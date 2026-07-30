@@ -15,6 +15,13 @@ export async function putLikedTracks(placeTrackId: string): Promise<PutLikedTrac
   return data.result;
 }
 
+// 2) DELETE /api/v1/place-tracks/{placeTrackId}/likes - 장소별 곡 좋아요 삭제
+export async function deleteLikedTracks(placeTrackId: string): Promise<PutLikedTracksResponse> {
+  const { data } = await apiClient.delete<ApiResponse<PutLikedTracksResponse>>(
+    `/api/v1/place-tracks/${placeTrackId}/likes`,
+  );
+  return data.result;
+}
 // 4) GET /api/v1/tracks/search -  음악 검색
 export async function searchTracks(
   keyword: string,

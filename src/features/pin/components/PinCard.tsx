@@ -1,5 +1,6 @@
 import HeartIcon from '@/assets/icons/heart.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
+import { useDeleteLikedTrack } from '@/features/pin/queries/useDeleteLikedTrack';
 import { usePutLikedTrack } from '@/features/pin/queries/usePutLikedTrack';
 import type { Pin } from '@/features/pin/types';
 import { cn } from '@/lib/utils';
@@ -10,11 +11,19 @@ type PinCardProps = {
 };
 
 export function PinCard({ pin, onClick }: PinCardProps) {
-  const { mutate: putLikedTrack, isPending } = usePutLikedTrack();
+  const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
+  const { mutate: deleteLikedTrack, isPending: isDeletePending } = useDeleteLikedTrack();
+  const isPending = isPutPending || isDeletePending;
 
   const handleLikeClick = () => {
-    if (pin.liked || isPending) return;
-    putLikedTrack(String(pin.placeTrackId));
+    if (isPending) return;
+
+    const placeTrackId = String(pin.placeTrackId);
+    if (pin.liked) {
+      deleteLikedTrack(placeTrackId);
+      return;
+    }
+    putLikedTrack(placeTrackId);
   };
 
   return (
@@ -35,11 +44,11 @@ export function PinCard({ pin, onClick }: PinCardProps) {
         {pin.likeCount !== undefined ? (
           <button
             type="button"
-            aria-label="좋아요"
-            aria-pressed={pin.liked}
-            disabled={isPending || pin.liked}
+            aria-label={pin.liked ? '좋아요 취소' : '좋아요'}
+            aria-pressed={Boolean(pin.liked)}
+            disabled={isPending}
             onClick={handleLikeClick}
-            className="flex w-fit items-center gap-1 body-15-r text-grayscale-300 cursor-pointer"
+            className="flex w-fit cursor-pointer items-center gap-1 body-15-r text-grayscale-300 disabled:opacity-100"
           >
             <HeartIcon
               className={cn('size-[18px]', pin.liked ? 'fill-red text-red' : 'text-grayscale-300')}
