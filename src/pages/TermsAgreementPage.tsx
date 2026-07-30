@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { TopBar } from '@/components/ui/TopBar';
-import { agreeToTerms } from '@/features/auth/api/auth';
+import { agreeToTerms } from '@/api/auth';
 import { TermCheckbox } from '@/features/auth/components/TermCheckbox';
 import { TermRow } from '@/features/auth/components/TermRow';
 import { TermsDetailContent } from '@/features/auth/components/TermsDetailContent';
