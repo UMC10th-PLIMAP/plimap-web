@@ -16,7 +16,7 @@ const MapLayout = () => {
   );
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div className="relative min-h-0 w-full flex-1 overflow-hidden">
       <MapPage selectedMapPlace={appContext.selectedMapPlace} />
 
       {hasMapOverlay && outlet ? (

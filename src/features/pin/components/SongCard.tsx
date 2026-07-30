@@ -13,7 +13,7 @@ export function SongCard({ song, onClick }: SongCardProps) {
       className="flex w-full items-center gap-3 py-2 text-left cursor-pointer"
     >
       <div className="size-13 overflow-hidden rounded-[4px]">
-        <img src={song.artistImage} alt={song.title} className="size-full object-cover" />
+        <img src={song.coverUrl} alt={song.title} className="size-full object-cover" />
       </div>
       <div>
         <p className="body-17-m text-grayscale-100">{song.title}</p>
