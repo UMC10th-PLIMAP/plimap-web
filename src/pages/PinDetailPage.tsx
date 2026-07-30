@@ -16,8 +16,8 @@ import ChangeIcon from '@/assets/icons/change.svg?react';
 import { cn } from '@/lib/utils';
 
 const SORT_LABEL: Record<PinSort, string> = {
-  latest: '최신순',
-  popular: '인기순',
+  LATEST: '최신순',
+  POPULAR: '인기순',
 };
 
 export default function PinDetailPage() {
@@ -26,14 +26,14 @@ export default function PinDetailPage() {
 
   const pinDetail = MOCK_SONG_DETAILS[pinId ?? ''] ?? MOCK_SONG_DETAIL_LOVE_ATTACK;
 
-  const [sort, setSort] = useState<PinSort>('latest');
+  const [sort, setSort] = useState<PinSort>('LATEST');
   const [liked, setLiked] = useState(Boolean(pinDetail.liked));
   const [likeCount, setLikeCount] = useState(pinDetail.likeCount);
   const [reportFeedId, setReportFeedId] = useState<string | null>(null);
 
   const sortedFeeds = useMemo(
     () =>
-      sort === 'popular'
+      sort === 'POPULAR'
         ? [...pinDetail.feeds].sort((a, b) => b.likeCount - a.likeCount)
         : pinDetail.feeds,
     [pinDetail.feeds, sort],
@@ -89,7 +89,7 @@ export default function PinDetailPage() {
           type="button"
           aria-label="피드 순서 변경"
           className="flex cursor-pointer items-center"
-          onClick={() => setSort((current) => (current === 'latest' ? 'popular' : 'latest'))}
+          onClick={() => setSort((current) => (current === 'LATEST' ? 'POPULAR' : 'LATEST'))}
         >
           <p className="body-15-m text-grayscale-300">{SORT_LABEL[sort]}</p>
           <ChangeIcon className="size-6" aria-hidden />
