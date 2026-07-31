@@ -98,4 +98,12 @@ export type PinSearchPlace = PlaceResult & {
     lat: number;
     lng: number;
   };
+  searchSource?: {
+    resultType: 'PLACE' | 'ADDRESS';
+    provider: string;
+    providerPlaceId: string | null;
+    category: string | null;
+    address: string;
+    roadAddress: string | null;
+  };
 };
