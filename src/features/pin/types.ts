@@ -100,5 +100,6 @@ export type PinSearchPlace = PlaceResult & {
     lat: number;
     lng: number;
   };
+  searchHistoryId?: number;
   searchSource?: PlaceSearchSource;
 };
