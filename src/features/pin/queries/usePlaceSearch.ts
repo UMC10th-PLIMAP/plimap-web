@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { getRecentSearchPlaces, searchPlaces, selectSearchPlace } from '@/api/place';
+import {
+  deleteRecentSearchPlace,
+  getRecentSearchPlaces,
+  searchPlaces,
+  selectSearchPlace,
+} from '@/api/place';
+import type { PinSearchPlace } from '@/features/pin/types';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { PlaceSearchHistoryRequest } from '@/types/place.type';
 
@@ -60,6 +66,20 @@ export function useRecentSearchPlaces(location: PlaceSearchHistoryRequest | null
     },
     enabled: Boolean(location),
     staleTime: 60_000,
+  });
+}
+
+export function useDeleteRecentSearchPlace() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteRecentSearchPlace,
+    onSuccess: (_, historyId) => {
+      queryClient.setQueriesData<PinSearchPlace[]>(
+        { queryKey: placeQueryKeys.histories() },
+        (places) => places?.filter((place) => place.searchHistoryId !== historyId),
+      );
+    },
   });
 }
 

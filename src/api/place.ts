@@ -41,6 +41,7 @@ const toPinSearchPlace = (item: PlaceSearchItem): PinSearchPlace => ({
 
 const toRecentPinSearchPlace = (item: PlaceSearchHistoryItem): PinSearchPlace => ({
   id: `place:${item.placeId}`,
+  searchHistoryId: item.historyId,
   creatorName: item.hasPin ? (item.firstPinCreatorNickname ?? undefined) : undefined,
   category: item.category || '장소',
   placeName: item.placeName,
@@ -82,6 +83,11 @@ export async function getRecentSearchPlaces({
   );
 
   return data.result.items.map(toRecentPinSearchPlace);
+}
+
+/** DELETE /api/v1/places/search-histories/{historyId} 최근 검색 장소 삭제 */
+export async function deleteRecentSearchPlace(historyId: number): Promise<void> {
+  await apiClient.delete<ApiResponse<null>>(`${ENDPOINT}/search-histories/${historyId}`);
 }
 
 type SelectSearchPlaceParams = {

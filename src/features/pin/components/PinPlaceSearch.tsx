@@ -4,6 +4,7 @@ import { isApiRequestCanceled } from '@/api/client';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { PlaceResultRow } from '@/features/pin/components/PlaceResultRow';
 import {
+  useDeleteRecentSearchPlace,
   usePlaceSearch,
   useRecentSearchPlaces,
   useSelectSearchPlace,
@@ -41,6 +42,7 @@ export function PinPlaceSearch({
       : null;
   const normalizedQuery = query.trim();
   const recentSearchQuery = useRecentSearchPlaces(currentLocation);
+  const deleteRecentPlaceMutation = useDeleteRecentSearchPlace();
   const selectPlaceMutation = useSelectSearchPlace();
   const isSelectionLocked = isReturningToMap || selectPlaceMutation.isPending;
   const placeSearchQuery = usePlaceSearch({
@@ -65,7 +67,11 @@ export function PinPlaceSearch({
         ? placeSearchQuery.error.message
         : null;
   const recentPlacesError =
-    recentSearchQuery.error instanceof Error ? recentSearchQuery.error.message : null;
+    deleteRecentPlaceMutation.error instanceof Error
+      ? deleteRecentPlaceMutation.error.message
+      : recentSearchQuery.error instanceof Error
+        ? recentSearchQuery.error.message
+        : null;
 
   useEffect(() => {
     let isCancelled = false;
@@ -142,6 +148,12 @@ export function PinPlaceSearch({
     );
   };
 
+  const handleRecentPlaceDelete = (place: PinSearchPlace) => {
+    if (place.searchHistoryId === undefined || deleteRecentPlaceMutation.isPending) return;
+
+    deleteRecentPlaceMutation.mutate(place.searchHistoryId);
+  };
+
   const isWaitingForLocation = normalizedQuery.length > 0 && !currentLocation && !locationError;
   const hasNoResults =
     normalizedQuery.length > 0 &&
@@ -197,7 +209,21 @@ export function PinPlaceSearch({
           <ul>
             {visiblePlaces.map((place) => (
               <li key={place.id} className="mx-2">
-                <PlaceResultRow place={place} onClick={() => handlePlaceSelect(place)} />
+                <PlaceResultRow
+                  place={place}
+                  variant={isShowingRecentPlaces ? 'recent-search' : 'search-result'}
+                  onClick={() => handlePlaceSelect(place)}
+                  onDelete={
+                    isShowingRecentPlaces && place.searchHistoryId !== undefined
+                      ? () => handleRecentPlaceDelete(place)
+                      : undefined
+                  }
+                  isDeleteDisabled={deleteRecentPlaceMutation.isPending}
+                  isDeletePending={
+                    deleteRecentPlaceMutation.isPending &&
+                    deleteRecentPlaceMutation.variables === place.searchHistoryId
+                  }
+                />
               </li>
             ))}
           </ul>
