@@ -78,6 +78,17 @@ export type GetPlaceTrackDetailResponse = {
   likeCount: number;
   userLike: boolean;
 };
+
+export type GetPlaybackPreparationsResponse = {
+  itunesTrackId: number;
+  youtubeVideoId: string;
+  title: string;
+  artistName: string;
+  albumTitle: string;
+  albumImageUrl: string;
+  previewUrl: string;
+  durationMs: number;
+};
 // --------------------------------------------------
 export type PinSort = 'POPULAR' | 'LATEST';
 

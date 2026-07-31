@@ -8,13 +8,12 @@ import { SongSelectSheet } from '@/features/pin/components/SongSelectSheet';
 import {
   DEFAULT_TRIM_END_INDEX,
   DEFAULT_TRIM_START_INDEX,
-  MOCK_PREVIEW_DURATION,
-  MOCK_SONG_CARD_LIST,
   MOCK_WAVEFORM_PEAKS,
   peaksToTrimRange,
   TAG_OPTIONS,
   timeToPercent,
 } from '@/features/pin/data/songPreview';
+import { useGetPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
 import { cn } from '@/lib/utils';
 
 const INTRO_MAX_LENGTH = 100;
@@ -79,18 +78,19 @@ function SongWaveform({ peaks, trimStartIndex, trimEndIndex }: SongWaveformProps
 
 type SongPreviewSectionProps = {
   waveformPeaks: readonly number[];
+  durationSec: number;
 };
 
-function SongPreviewSection({ waveformPeaks }: SongPreviewSectionProps) {
+function SongPreviewSection({ waveformPeaks, durationSec }: SongPreviewSectionProps) {
   const trim = peaksToTrimRange(
     DEFAULT_TRIM_START_INDEX,
     DEFAULT_TRIM_END_INDEX,
     waveformPeaks,
-    MOCK_PREVIEW_DURATION,
+    durationSec,
   );
 
-  const trimStartPercent = timeToPercent(trim.start, MOCK_PREVIEW_DURATION);
-  const trimEndPercent = timeToPercent(trim.end, MOCK_PREVIEW_DURATION);
+  const trimStartPercent = timeToPercent(trim.start, durationSec);
+  const trimEndPercent = timeToPercent(trim.end, durationSec);
 
   return (
     <div className="flex w-full flex-col">
@@ -147,16 +147,18 @@ function FeedVisibilityToggle({
 export default function SongDetailPage() {
   const navigate = useNavigate();
   const { songId } = useParams<{ songId: string }>();
-
-  const song = MOCK_SONG_CARD_LIST.find((item) => item.id === songId) ?? MOCK_SONG_CARD_LIST[0];
+  const { data: song } = useGetPlaybackPreparations({
+    itunesTrackId: songId,
+  });
 
   const [introduction, setIntroduction] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isFeedPublic, setIsFeedPublic] = useState(true);
   const [isSongSelectOpen, setIsSongSelectOpen] = useState(false);
 
-  const coverUrl = song.coverUrl || rectangleBg;
+  const coverUrl = song?.albumImageUrl || rectangleBg;
   const waveformPeaks = MOCK_WAVEFORM_PEAKS;
+  const durationSec = song ? Math.max(song.durationMs / 1000, 1) : 30;
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => {
@@ -222,11 +224,11 @@ export default function SongDetailPage() {
             </div>
 
             <div className="mt-3.5 text-center">
-              <h2 className="body-17-m text-grayscale-0">{song.title}</h2>
-              <p className="body-15-r text-grayscale-500">{song.artist}</p>
+              <h2 className="body-17-m text-grayscale-0">{song?.title}</h2>
+              <p className="body-15-r text-grayscale-500">{song?.artistName}</p>
             </div>
 
-            <SongPreviewSection waveformPeaks={waveformPeaks} />
+            <SongPreviewSection waveformPeaks={waveformPeaks} durationSec={durationSec} />
           </div>
         </div>
       </section>

@@ -6,6 +6,7 @@ import type {
   GetPlaceTracksResponse,
   PutLikedTracksResponse,
   GetPlaceTrackDetailResponse,
+  GetPlaybackPreparationsResponse,
 } from '@/features/pin/types';
 
 // 1) PUT /api/v1/place-tracks/{placeTrackId}/likes - 장소별 곡 좋아요 등록
@@ -20,6 +21,17 @@ export async function putLikedTracks(placeTrackId: string): Promise<PutLikedTrac
 export async function deleteLikedTracks(placeTrackId: string): Promise<PutLikedTracksResponse> {
   const { data } = await apiClient.delete<ApiResponse<PutLikedTracksResponse>>(
     `/api/v1/place-tracks/${placeTrackId}/likes`,
+  );
+  return data.result;
+}
+
+// 3) POST /api/v1/tracks/playback-preparations - 구간 재생 준비
+export async function getPlaybackPreparations(
+  itunesTrackId: string,
+): Promise<GetPlaybackPreparationsResponse> {
+  const { data } = await apiClient.post<ApiResponse<GetPlaybackPreparationsResponse>>(
+    `/api/v1/tracks/playback-preparations`,
+    { itunesTrackId: Number(itunesTrackId) },
   );
   return data.result;
 }
