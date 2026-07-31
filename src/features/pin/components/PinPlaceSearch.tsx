@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 
-import { SearchInput } from '@/components/ui/SearchInput';
 import { isApiRequestCanceled } from '@/api/client';
-import { getRecentSearchPlaces, searchPlaces, selectSearchPlace } from '@/api/place';
+import { SearchInput } from '@/components/ui/SearchInput';
 import { PlaceResultRow } from '@/features/pin/components/PlaceResultRow';
+import {
+  usePlaceSearch,
+  useRecentSearchPlaces,
+  useSelectSearchPlace,
+} from '@/features/pin/queries/usePlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
+import { getCurrentPosition } from '@/utils/geolocation';
 
 export type PinPlaceSearchProps = {
   isReturningToMap?: boolean;
@@ -30,15 +35,32 @@ export function PinPlaceSearch({
   const [selectedPlace, setSelectedPlace] = useState<PinSearchPlace | null>(null);
   const [currentLocation, setCurrentLocation] = useState<CurrentLocation | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [searchResults, setSearchResults] = useState<PinSearchPlace[]>([]);
-  const [recentPlaces, setRecentPlaces] = useState<PinSearchPlace[]>([]);
-  const [isLoadingRecentPlaces, setIsLoadingRecentPlaces] = useState(true);
-  const [recentPlacesError, setRecentPlacesError] = useState<string | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [completedSearchQuery, setCompletedSearchQuery] = useState<string | null>(null);
-  const [isSelectingPlace, setIsSelectingPlace] = useState(false);
   const normalizedQuery = query.trim();
+  const recentSearchQuery = useRecentSearchPlaces(currentLocation);
+  const placeSearchQuery = usePlaceSearch({
+    keyword: query,
+    location: currentLocation,
+    enabled: !selectedPlace,
+  });
+  const selectPlaceMutation = useSelectSearchPlace();
+  const isSearchQueryCurrent =
+    placeSearchQuery.isDebounced && placeSearchQuery.debouncedKeyword === normalizedQuery;
+  const searchResults = isSearchQueryCurrent ? (placeSearchQuery.data ?? []) : [];
+  const recentPlaces = recentSearchQuery.data ?? [];
+  const isSearching =
+    normalizedQuery.length > 0 &&
+    Boolean(currentLocation) &&
+    !selectedPlace &&
+    (!placeSearchQuery.isDebounced || placeSearchQuery.isPending);
+  const isSelectingPlace = selectPlaceMutation.isPending;
+  const searchError =
+    selectPlaceMutation.error instanceof Error && !isApiRequestCanceled(selectPlaceMutation.error)
+      ? selectPlaceMutation.error.message
+      : isSearchQueryCurrent && placeSearchQuery.error instanceof Error
+        ? placeSearchQuery.error.message
+        : null;
+  const recentPlacesError =
+    recentSearchQuery.error instanceof Error ? recentSearchQuery.error.message : null;
 
   useEffect(() => {
     let isCancelled = false;
@@ -66,90 +88,31 @@ export function PinPlaceSearch({
   }, []);
 
   useEffect(() => {
-    if (!currentLocation) return;
+    let isCancelled = false;
 
-    const controller = new AbortController();
-    void getRecentSearchPlaces({
-      latitude: currentLocation.latitude,
-      longitude: currentLocation.longitude,
-      signal: controller.signal,
-    })
-      .then(setRecentPlaces)
-      .catch((error: unknown) => {
-        if (isApiRequestCanceled(error)) return;
-        setRecentPlaces([]);
-        setRecentPlacesError(
-          error instanceof Error
-            ? error.message
-            : '최근 검색 장소를 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
-        );
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setIsLoadingRecentPlaces(false);
-      });
+    void getCurrentPosition({
+      enableHighAccuracy: true,
+      maximumAge: 300_000,
+      timeout: 10_000,
+    }).then((result) => {
+      if (isCancelled) return;
 
-    return () => controller.abort();
-  }, [currentLocation]);
-
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      const timeoutId = window.setTimeout(() => {
-        setLocationError('현재 위치를 확인할 수 없어요. 위치 권한을 확인해주세요.');
-      }, 0);
-
-      return () => window.clearTimeout(timeoutId);
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setIsLoadingRecentPlaces(true);
-        setRecentPlacesError(null);
-        setCurrentLocation({ latitude: coords.latitude, longitude: coords.longitude });
-        setLocationError(null);
-      },
-      () => {
-        setLocationError('현재 위치를 확인할 수 없어요. 위치 권한을 확인해주세요.');
-      },
-      { enableHighAccuracy: true, maximumAge: 300_000, timeout: 10_000 },
-    );
-  }, []);
-
-  useEffect(() => {
-    if (!normalizedQuery || selectedPlace || !currentLocation) return;
-
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      setIsSearching(true);
-
-      void searchPlaces({
-        keyword: normalizedQuery,
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        signal: controller.signal,
-      })
-        .then((places) => {
-          setSearchResults(places);
-          setCompletedSearchQuery(normalizedQuery);
-        })
-        .catch((error: unknown) => {
-          if (isApiRequestCanceled(error)) return;
-          setSearchResults([]);
-          setSearchError(
-            error instanceof Error
-              ? error.message
-              : '장소를 검색하지 못했어요. 잠시 후 다시 시도해주세요.',
-          );
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setIsSearching(false);
+      if (result.ok) {
+        setCurrentLocation({
+          latitude: result.coordinate.lat,
+          longitude: result.coordinate.lng,
         });
-    }, 300);
+        setLocationError(null);
+        return;
+      }
+
+      setLocationError('현재 위치를 확인할 수 없어요. 위치 권한을 확인해주세요.');
+    });
 
     return () => {
-      controller.abort();
-      window.clearTimeout(timeoutId);
+      isCancelled = true;
     };
-  }, [currentLocation, normalizedQuery, selectedPlace]);
+  }, []);
 
   const visiblePlaces =
     selectedPlace || isSelectingPlace ? [] : normalizedQuery ? searchResults : recentPlaces;
@@ -160,11 +123,7 @@ export function PinPlaceSearch({
     selectionControllerRef.current = null;
     setQuery('');
     setSelectedPlace(null);
-    setSearchResults([]);
-    setSearchError(null);
-    setIsSearching(false);
-    setCompletedSearchQuery(null);
-    setIsSelectingPlace(false);
+    selectPlaceMutation.reset();
   };
 
   const handleQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -172,11 +131,7 @@ export function PinPlaceSearch({
     selectionControllerRef.current = null;
     setQuery(event.target.value);
     setSelectedPlace(null);
-    setSearchResults([]);
-    setSearchError(null);
-    setIsSearching(false);
-    setCompletedSearchQuery(null);
-    setIsSelectingPlace(false);
+    selectPlaceMutation.reset();
   };
 
   const handlePlaceSelect = (place: PinSearchPlace) => {
@@ -192,33 +147,26 @@ export function PinPlaceSearch({
     const controller = new AbortController();
     selectionControllerRef.current?.abort();
     selectionControllerRef.current = controller;
-    setIsSelectingPlace(true);
-    setSearchError(null);
-
-    void selectSearchPlace({
-      place,
-      userLatitude: currentLocation.latitude,
-      userLongitude: currentLocation.longitude,
-      signal: controller.signal,
-    })
-      .then((selectedPlaceResult) => {
-        setQuery(selectedPlaceResult.placeName);
-        setSelectedPlace(selectedPlaceResult);
-        onPlaceSelect?.(selectedPlaceResult);
-      })
-      .catch((error: unknown) => {
-        if (isApiRequestCanceled(error)) return;
-        setSearchError(
-          error instanceof Error
-            ? error.message
-            : '장소를 선택하지 못했어요. 잠시 후 다시 시도해주세요.',
-        );
-      })
-      .finally(() => {
-        if (selectionControllerRef.current !== controller) return;
-        selectionControllerRef.current = null;
-        setIsSelectingPlace(false);
-      });
+    selectPlaceMutation.mutate(
+      {
+        place,
+        userLatitude: currentLocation.latitude,
+        userLongitude: currentLocation.longitude,
+        signal: controller.signal,
+      },
+      {
+        onSuccess: (selectedPlaceResult) => {
+          setQuery(selectedPlaceResult.placeName);
+          setSelectedPlace(selectedPlaceResult);
+          onPlaceSelect?.(selectedPlaceResult);
+        },
+        onSettled: () => {
+          if (selectionControllerRef.current === controller) {
+            selectionControllerRef.current = null;
+          }
+        },
+      },
+    );
   };
 
   const isWaitingForLocation = normalizedQuery.length > 0 && !currentLocation && !locationError;
@@ -228,7 +176,8 @@ export function PinPlaceSearch({
     !searchError &&
     !locationError &&
     !isSelectingPlace &&
-    completedSearchQuery === normalizedQuery &&
+    isSearchQueryCurrent &&
+    placeSearchQuery.isSuccess &&
     searchResults.length === 0 &&
     !selectedPlace;
 
@@ -306,7 +255,7 @@ export function PinPlaceSearch({
           </p>
         ) : null}
 
-        {isShowingRecentPlaces && isLoadingRecentPlaces && !locationError ? (
+        {isShowingRecentPlaces && recentSearchQuery.isPending && !locationError ? (
           <p className="m-auto px-6 text-center body-15-r text-grayscale-600">
             최근 검색 장소를 불러오고 있어요.
           </p>
