@@ -49,6 +49,7 @@ export type GetPlaceTracksResponse = {
   placeId: string;
   distance: number;
   isWithinRadius: boolean;
+  isTrackDetailAccessible?: boolean;
   tracks: (TrackBase & {
     placeTrackId: number;
     pinCount: number;
