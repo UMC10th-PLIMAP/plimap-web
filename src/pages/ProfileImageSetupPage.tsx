@@ -14,8 +14,10 @@ import { useOnboardingStore } from '@/store/onboardingStore';
 type Step = 'select' | 'crop' | 'done';
 
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const INVALID_FORMAT_MESSAGE = '올릴 수 없는 파일 형식이에요. JPG 또는 PNG 파일로 선택해 주세요.';
+const INVALID_FORMAT_MESSAGE =
+  '올릴 수 없는 파일 형식이에요. JPG, PNG 또는 WebP 파일로 선택해 주세요.';
 const UPLOAD_FAILED_MESSAGE = '파일 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.';
+const IMAGE_PROCESSING_FAILED_MESSAGE = '이미지 처리에 실패했어요. 다시 시도해 주세요.';
 
 export default function ProfileImageSetupPage() {
   const navigate = useNavigate();
@@ -78,6 +80,7 @@ export default function ProfileImageSetupPage() {
       setStep('done');
     } catch (error) {
       console.error('크롭 실패:', error);
+      alert(IMAGE_PROCESSING_FAILED_MESSAGE);
     } finally {
       setIsProcessing(false);
     }
