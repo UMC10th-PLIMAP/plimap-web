@@ -16,6 +16,13 @@ export async function putPinLike(pinId: string): Promise<LikeCountResponse> {
   return data.result;
 }
 
+// 2) DELETE /api/v1/pins/{pinId}/likes - PIN 좋아요 취소
+export async function deletePinLike(pinId: string): Promise<LikeCountResponse> {
+  const { data } = await apiClient.delete<ApiResponse<LikeCountResponse>>(
+    `/api/v1/pins/${pinId}/likes`,
+  );
+  return data.result;
+}
 // 8) GET /api/v1/place-tracks/{placeTrackId}/pins - 특정 장소 노래의 PIN 목록 조회
 export async function getPlaceTrackPins(
   placeTrackId: string,
