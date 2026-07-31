@@ -7,12 +7,13 @@ import type { MapPlace } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
 import { MOCK_MAP_PINS } from '@/features/map/constants/mockMapPins';
-import { BottomNav, type NavItemId } from '@/components/BottomNav';
+import { BottomNav } from '@/components/BottomNav';
 import { PinListSheet } from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 import PlusIcon from '@/assets/icons/plus.svg?react';
+import { useBottomNavigation } from '@/hooks/useBottomNavigation';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 
@@ -35,6 +36,7 @@ function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
 
 const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) => {
   const navigate = useNavigate();
+  const handleTabChange = useBottomNavigation();
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
@@ -45,8 +47,6 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   const [mapLoadError, setMapLoadError] = useState<string | null>(
     hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
-  const [activeNavId, setActiveNavId] = useState<NavItemId>('plimap');
-
   // develop 방식: selectedMapPlace prop으로 장소 결과 관리
   const placeResults = useMemo<MapPlace[]>(
     () => (selectedMapPlace ? [selectedMapPlace] : []),
@@ -151,7 +151,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
       </div>
 
       {!isPlaceSheetOpen ? (
-        <BottomNav activeId={activeNavId} onTabChange={setActiveNavId}>
+        <BottomNav activeId="plimap" onTabChange={handleTabChange}>
           {/* 핀 등록 버튼: BottomNav와의 간격은 BottomNav가 관리하므로 여기선 위치를 계산하지 않는다 */}
           <button
             type="button"

@@ -22,11 +22,12 @@ import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
 import FollowListPage from '@/pages/FollowListPage';
 import RecommendationPinCardPreviewPage from '@/pages/RecommendationPinCardPreviewPage';
 import RecommendationContentCarouselPreviewPage from '@/pages/RecommendationContentCarouselPreviewPage';
+import HomePage from '@/pages/HomePage';
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/app" replace />,
+    element: <Navigate to="/app/home" replace />,
   },
   {
     path: '/preview/pin-radius',
@@ -61,6 +62,10 @@ export const router = createBrowserRouter([
       {
         element: <AuthGuard />,
         children: [
+          {
+            path: 'home',
+            element: <HomePage />,
+          },
           {
             element: <MapLayout />,
             children: [
