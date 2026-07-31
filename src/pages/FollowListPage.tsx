@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
 import { FollowUserRow } from '@/features/profile/components/FollowUserRow';
@@ -14,13 +13,19 @@ const USERS_BY_TAB: Record<FollowTab, FollowUser[]> = {
   follower: MOCK_FOLLOWING_USERS,
 };
 
-const OPTIONS: { value: FollowTab; label: string }[] = [
-  { value: 'following', label: '팔로잉' },
-  { value: 'follower', label: '팔로워' },
+const OPTIONS: { value: FollowTab; label: string; path: string }[] = [
+  { value: 'following', label: '팔로잉', path: '/app/my/following' },
+  { value: 'follower', label: '팔로워', path: '/app/my/followers' },
 ];
-export default function FollowingPage() {
+
+function getTabFromPath(pathname: string): FollowTab {
+  return pathname.endsWith('/followers') ? 'follower' : 'following';
+}
+
+export default function FollowListPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<FollowTab>('following');
+  const { pathname } = useLocation();
+  const tab = getTabFromPath(pathname);
 
   return (
     <div className="flex flex-col">
@@ -44,7 +49,7 @@ export default function FollowingPage() {
               type="button"
               role="tab"
               aria-selected={selected}
-              onClick={() => setTab(option.value)}
+              onClick={() => navigate(option.path)}
               className={`relative flex h-[45px] flex-1 items-center justify-center body-15-r cursor-pointer ${selected ? 'text-grayscale-300' : 'text-grayscale-800'}`}
             >
               {option.label}
