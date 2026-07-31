@@ -24,6 +24,7 @@ export function useDeleteLikedTrack() {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['pin', 'likeTrack'] });
       void queryClient.invalidateQueries({ queryKey: ['pin', 'placeTrack'] });
+      void queryClient.invalidateQueries({ queryKey: ['pin', 'placeTrackDetail'] });
     },
   });
 }

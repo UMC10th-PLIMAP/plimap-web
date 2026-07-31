@@ -1,13 +1,18 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { GetLikedTracksResponse, GetPlaceTracksResponse } from '@/features/pin/types';
+import type {
+  GetLikedTracksResponse,
+  GetPlaceTrackDetailResponse,
+  GetPlaceTracksResponse,
+} from '@/features/pin/types';
 
 type PlaceTrackQueriesSnapshot = [readonly unknown[], GetPlaceTracksResponse | undefined][];
-
 type LikedTrackQueriesSnapshot = [readonly unknown[], GetLikedTracksResponse | undefined][];
+type PlaceTrackDetailSnapshot = [readonly unknown[], GetPlaceTrackDetailResponse | undefined][];
 
 export type LikedTrackMutationContext = {
   placeTrackQueries: PlaceTrackQueriesSnapshot;
   likedTrackQueries: LikedTrackQueriesSnapshot;
+  placeTrackDetailQueries: PlaceTrackDetailSnapshot;
 };
 
 export async function prepareLikedTrackMutation(
@@ -16,6 +21,7 @@ export async function prepareLikedTrackMutation(
   await Promise.all([
     queryClient.cancelQueries({ queryKey: ['pin', 'placeTrack'] }),
     queryClient.cancelQueries({ queryKey: ['pin', 'likeTrack'] }),
+    queryClient.cancelQueries({ queryKey: ['pin', 'placeTrackDetail'] }),
   ]);
 
   return {
@@ -24,6 +30,9 @@ export async function prepareLikedTrackMutation(
     }),
     likedTrackQueries: queryClient.getQueriesData<GetLikedTracksResponse>({
       queryKey: ['pin', 'likeTrack'],
+    }),
+    placeTrackDetailQueries: queryClient.getQueriesData<GetPlaceTrackDetailResponse>({
+      queryKey: ['pin', 'placeTrackDetail'],
     }),
   };
 }
@@ -36,6 +45,9 @@ export function rollbackLikedTrackMutation(
     queryClient.setQueryData(queryKey, data);
   });
   context?.likedTrackQueries.forEach(([queryKey, data]) => {
+    queryClient.setQueryData(queryKey, data);
+  });
+  context?.placeTrackDetailQueries.forEach(([queryKey, data]) => {
     queryClient.setQueryData(queryKey, data);
   });
 }
@@ -58,6 +70,20 @@ export function setPlaceTrackLiked(queryClient: QueryClient, placeTrackId: strin
       }),
     };
   });
+
+  queryClient.setQueryData<GetPlaceTrackDetailResponse>(
+    ['pin', 'placeTrackDetail', placeTrackId],
+    (old) => {
+      if (!old) return old;
+      if (old.userLike === liked) return old;
+
+      return {
+        ...old,
+        userLike: liked,
+        likeCount: liked ? old.likeCount + 1 : Math.max(0, old.likeCount - 1),
+      };
+    },
+  );
 }
 
 export function removeLikedTrackFromList(queryClient: QueryClient, placeTrackId: string) {

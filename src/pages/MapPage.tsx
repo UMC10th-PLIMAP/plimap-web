@@ -181,6 +181,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
           open={isPlaceSheetOpen}
           onClose={() => onClearMapPlace?.()}
           place={toPlaceInfo(selectedMapPlace)}
+          onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
         />
       ) : null}
 

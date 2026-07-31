@@ -5,6 +5,7 @@ import type {
   GetLikedTracksResponse,
   GetPlaceTracksResponse,
   PutLikedTracksResponse,
+  GetPlaceTrackDetailResponse,
 } from '@/features/pin/types';
 
 // 1) PUT /api/v1/place-tracks/{placeTrackId}/likes - 장소별 곡 좋아요 등록
@@ -47,6 +48,16 @@ export async function getPlaceTracks(
     {
       params: { page, size, latitude, longitude, sort },
     },
+  );
+  return data.result;
+}
+
+// 6) GET /api/v1/place-tracks/{placeTrackId} - 장소 노래 상세 조회
+export async function getPlaceTrackDetail(
+  placeTrackId: string,
+): Promise<GetPlaceTrackDetailResponse> {
+  const { data } = await apiClient.get<ApiResponse<GetPlaceTrackDetailResponse>>(
+    `/api/v1/place-tracks/${placeTrackId}`,
   );
   return data.result;
 }

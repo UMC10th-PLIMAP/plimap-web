@@ -15,7 +15,8 @@ export function PinCard({ pin, onClick }: PinCardProps) {
   const { mutate: deleteLikedTrack, isPending: isDeletePending } = useDeleteLikedTrack();
   const isPending = isPutPending || isDeletePending;
 
-  const handleLikeClick = () => {
+  const handleLikeClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     if (isPending) return;
 
     const placeTrackId = String(pin.placeTrackId);
@@ -27,7 +28,25 @@ export function PinCard({ pin, onClick }: PinCardProps) {
   };
 
   return (
-    <article className="flex w-full items-center justify-between rounded-xl bg-pli-black-85 p-4.5 text-left">
+    <article
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      className={cn(
+        'flex w-full items-center justify-between rounded-xl bg-pli-black-85 p-4.5 text-left',
+        onClick && 'cursor-pointer',
+      )}
+    >
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex min-w-0 items-center gap-4">
           <div className="size-13 overflow-hidden rounded-lg bg-grayscale-0">
@@ -59,14 +78,10 @@ export function PinCard({ pin, onClick }: PinCardProps) {
         ) : null}
       </div>
 
-      <button
-        type="button"
-        onClick={onClick}
-        className="ml-3 flex shrink-0 cursor-pointer items-center gap-1 etc-13-r text-grayscale-300"
-      >
+      <span className="ml-3 flex items-center gap-1 etc-13-r text-grayscale-300">
         {pin.pinCount != null ? `${pin.pinCount}명이 등록` : '맵으로 이동'}
         <NextIcon className="size-5" aria-hidden />
-      </button>
+      </span>
     </article>
   );
 }
