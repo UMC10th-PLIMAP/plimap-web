@@ -115,8 +115,8 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   return (
     <div className="relative h-full w-full">
       {/* 상단 장소 검색 바 + 북마크/현재 위치 버튼 */}
-      <div className="absolute inset-x-0 top-0 z-20 flex flex-col">
-        <div className="shrink-0 px-[15px] pt-[calc(env(safe-area-inset-top)+16px)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col">
+        <div className="pointer-events-auto shrink-0 px-[15px] pt-[calc(env(safe-area-inset-top)+16px)]">
           <SearchLauncher
             className="map-search-hero"
             value={selectedMapPlace?.placeName}
@@ -133,7 +133,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
           <button
             type="button"
             aria-label="북마크"
-            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
+            className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
           >
             <BookmarkIcon className="size-7" />
           </button>
@@ -141,7 +141,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
             type="button"
             aria-label="현재 위치로 이동"
             onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
-            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
+            className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
           >
             <FocusIcon className="size-7" />
           </button>
