@@ -27,6 +27,10 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
+export function isApiRequestCanceled(error: unknown) {
+  return axios.isCancel(error);
+}
+
 const CSRF_TOKEN_URL = '/api/v1/auth/csrf';
 const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
 const CSRF_PROTECTED_METHODS = new Set(['post', 'put', 'patch', 'delete']);

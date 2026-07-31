@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 
 import { SearchInput } from '@/components/ui/SearchInput';
-import { getRecentSearchPlaces, searchPlaces, selectSearchPlace } from '@/features/pin/api/place';
+import { isApiRequestCanceled } from '@/api/client';
+import { getRecentSearchPlaces, searchPlaces, selectSearchPlace } from '@/api/place';
 import { PlaceResultRow } from '@/features/pin/components/PlaceResultRow';
 import type { PinSearchPlace } from '@/features/pin/types';
 
@@ -75,7 +76,7 @@ export function PinPlaceSearch({
     })
       .then(setRecentPlaces)
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (isApiRequestCanceled(error)) return;
         setRecentPlaces([]);
         setRecentPlacesError(
           error instanceof Error
@@ -131,7 +132,7 @@ export function PinPlaceSearch({
           setCompletedSearchQuery(normalizedQuery);
         })
         .catch((error: unknown) => {
-          if (error instanceof DOMException && error.name === 'AbortError') return;
+          if (isApiRequestCanceled(error)) return;
           setSearchResults([]);
           setSearchError(
             error instanceof Error
@@ -206,7 +207,7 @@ export function PinPlaceSearch({
         onPlaceSelect?.(selectedPlaceResult);
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (isApiRequestCanceled(error)) return;
         setSearchError(
           error instanceof Error
             ? error.message

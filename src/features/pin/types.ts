@@ -1,3 +1,5 @@
+import type { PlaceSearchSource } from '@/types/place.type';
+
 // --------------------------------------------------
 export type searchTracksResponse = {
   tracks: {
@@ -98,12 +100,5 @@ export type PinSearchPlace = PlaceResult & {
     lat: number;
     lng: number;
   };
-  searchSource?: {
-    resultType: 'PLACE' | 'ADDRESS';
-    provider: string;
-    providerPlaceId: string | null;
-    category: string | null;
-    address: string;
-    roadAddress: string | null;
-  };
+  searchSource?: PlaceSearchSource;
 };
