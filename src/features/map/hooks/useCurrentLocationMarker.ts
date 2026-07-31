@@ -8,6 +8,10 @@ import {
 // "현재 위치로 이동" 버튼을 눌렀을 때 항상 이 줌으로 고정한다.
 const RECENTER_ZOOM = 16;
 
+// 이 시간 동안 더 정확한 fix가 안 오면, 정확도가 나빠졌더라도 최신 위치를 받아들인다.
+// (GPS 신호가 실내 진입 등으로 영구적으로 나빠졌을 때 마커가 영원히 멈춰있는 것 방지)
+const ACCURACY_STALE_MS = 10000;
+
 // 기기 방향 이벤트에서 나침반 방향 추출 (절대 방위 기준일 때만 alpha를 신뢰)
 const getCompassHeading = (event: DeviceOrientationEvent): number | null => {
   const iosEvent = event as DeviceOrientationEvent & { webkitCompassHeading?: number };
@@ -35,6 +39,7 @@ export function useCurrentLocationMarker({
   const overlayRef = useRef<CurrentLocationOverlayHandle | null>(null);
   const positionRef = useRef<MapCoordinate | null>(null);
   const bestAccuracyRef = useRef(Infinity);
+  const lastAcceptedAtRef = useRef(0);
   const onCenterChangedRef = useRef(onCenterChanged);
 
   useEffect(() => {
@@ -102,9 +107,16 @@ export function useCurrentLocationMarker({
 
         // 와이파이/기지국 기반의 부정확한 초기 fix 이후 더 정확한 fix가 갱신되면
         // 반영하되, 이미 더 정확한 값을 알고 있는데 정확도가 나빠진 갱신이 오면
-        // (터널/실내 등) 무시해서 위치가 뒤로 튀지 않게 한다.
-        if (overlayRef.current && position.coords.accuracy > bestAccuracyRef.current) return;
+        // (터널/실내 등) 무시해서 위치가 뒤로 튀지 않게 한다. 다만 그 상태로
+        // ACCURACY_STALE_MS 이상 더 나은 fix가 안 오면, 마커가 영영 멈춰있지
+        // 않도록 정확도와 상관없이 최신 위치를 받아들인다.
+        const now = Date.now();
+        const isStale = now - lastAcceptedAtRef.current > ACCURACY_STALE_MS;
+        if (overlayRef.current && position.coords.accuracy > bestAccuracyRef.current && !isStale) {
+          return;
+        }
         bestAccuracyRef.current = position.coords.accuracy;
+        lastAcceptedAtRef.current = now;
 
         const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
         positionRef.current = pos;
@@ -133,6 +145,14 @@ export function useCurrentLocationMarker({
     return () => {
       ignore = true;
       navigator.geolocation.clearWatch(watchId);
+
+      // 이펙트가 unmount 없이 재실행될 때(예: isLoaded가 껐다 켜지는 경우) 다음
+      // 실행이 이전 오버레이/위치/정확도를 이어받지 않도록 완전히 초기화한다.
+      overlayRef.current?.setMap(null);
+      overlayRef.current = null;
+      positionRef.current = null;
+      bestAccuracyRef.current = Infinity;
+      lastAcceptedAtRef.current = 0;
     };
   }, [isLoaded, enableCompassIfNeeded, mapInstanceRef]);
 
