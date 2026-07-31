@@ -1,6 +1,10 @@
 import { apiClient } from '@/api/client';
 import type { ApiResponse } from '@/api/types';
-import type { NicknameCheckResponse, ProfileImageUploadResponse } from '@/types/member.type';
+import type {
+  MyProfileResponse,
+  NicknameCheckResponse,
+  ProfileImageUploadResponse,
+} from '@/types/member.type';
 
 const ENDPOINT = '/api/v1/members';
 
@@ -22,5 +26,11 @@ export async function uploadProfileImage(image: File) {
     `${ENDPOINT}/me/profile-image`,
     formData,
   );
+  return data.result;
+}
+
+// 3) GET /api/v1/members/me - 내 프로필 조회 (로그인 여부 확인 용도로도 사용)
+export async function getMyProfile() {
+  const { data } = await apiClient.get<ApiResponse<MyProfileResponse>>(`${ENDPOINT}/me`);
   return data.result;
 }

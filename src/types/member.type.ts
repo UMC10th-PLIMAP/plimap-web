@@ -9,3 +9,14 @@ export type ProfileImageUploadResponse = {
   objectKey: string;
   imageUrl: string;
 };
+
+export type MyProfileResponse = {
+  id: number;
+  nickname: string;
+  name: string | null;
+  introduction: string | null;
+  profileImageObjectKey: string | null;
+  followerCount: number;
+  followingCount: number;
+  onboardingCompletedAt: string | null;
+};
