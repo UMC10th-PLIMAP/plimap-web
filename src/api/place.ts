@@ -52,6 +52,7 @@ const toRecentPinSearchPlace = (item: PlaceSearchHistoryItem): PinSearchPlace =>
   },
 });
 
+/** GET /api/v1/places/search 장소 검색 */
 export async function searchPlaces({
   keyword,
   latitude,
@@ -66,6 +67,7 @@ export async function searchPlaces({
   return data.result.items.map(toPinSearchPlace);
 }
 
+/** GET /api/v1/places/search-histories 최근 검색 장소 조회 */
 export async function getRecentSearchPlaces({
   latitude,
   longitude,
@@ -89,6 +91,7 @@ type SelectSearchPlaceParams = {
   signal?: AbortSignal;
 };
 
+/** POST /api/v1/places/selections 장소 선택 및 최근 검색 저장 */
 export async function selectSearchPlace({
   place,
   userLatitude,
