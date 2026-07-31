@@ -19,6 +19,9 @@ import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
 import RecommendationPinCardPreviewPage from '@/pages/RecommendationPinCardPreviewPage';
+import SettingsPage from '@/pages/SettingsPage';
+import AccountManagementPage from '@/pages/AccountManagementPage';
+import TermsDetailViewPage from '@/pages/TermsDetailViewPage';
 
 export const router = createBrowserRouter([
   {
@@ -99,6 +102,18 @@ export const router = createBrowserRouter([
       {
         path: 'my/plimap',
         element: <MyPlimapPage />,
+      },
+      {
+        path: 'settings',
+        element: <SettingsPage />,
+      },
+      {
+        path: 'settings/account',
+        element: <AccountManagementPage />,
+      },
+      {
+        path: 'settings/terms/:termId',
+        element: <TermsDetailViewPage />,
       },
       {
         path: 'pin/register',

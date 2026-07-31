@@ -24,6 +24,7 @@ export default function MyProfilePage() {
         <button
           type="button"
           aria-label="메뉴"
+          onClick={() => navigate('/app/settings')}
           className="flex size-6 items-center text-grayscale-100 cursor-pointer"
         >
           <MenuIcon className="size-6" />
