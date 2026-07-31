@@ -9,7 +9,7 @@ import {
   useSelectSearchPlace,
 } from '@/features/pin/queries/usePlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
-import { getCurrentPosition } from '@/utils/geolocation';
+import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 
 export type PinPlaceSearchProps = {
   isReturningToMap?: boolean;
@@ -32,8 +32,23 @@ export function PinPlaceSearch({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const selectionControllerRef = useRef<AbortController | null>(null);
   const [query, setQuery] = useState('');
-  const [currentLocation, setCurrentLocation] = useState<CurrentLocation | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const currentPositionQuery = useCurrentPosition({
+    options: {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10_000,
+    },
+  });
+  const currentLocation: CurrentLocation | null = currentPositionQuery.data
+    ? {
+        latitude: currentPositionQuery.data.lat,
+        longitude: currentPositionQuery.data.lng,
+      }
+    : null;
+  const locationError =
+    currentPositionQuery.isError && !currentPositionQuery.data
+      ? '현재 위치를 확인할 수 없어요. 위치 권한을 확인해주세요.'
+      : null;
   const normalizedQuery = query.trim();
   const recentSearchQuery = useRecentSearchPlaces(currentLocation);
   const selectPlaceMutation = useSelectSearchPlace();
@@ -85,33 +100,6 @@ export function PinPlaceSearch({
 
   useEffect(() => {
     return () => selectionControllerRef.current?.abort();
-  }, []);
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    void getCurrentPosition({
-      enableHighAccuracy: true,
-      maximumAge: 300_000,
-      timeout: 10_000,
-    }).then((result) => {
-      if (isCancelled) return;
-
-      if (result.ok) {
-        setCurrentLocation({
-          latitude: result.coordinate.lat,
-          longitude: result.coordinate.lng,
-        });
-        setLocationError(null);
-        return;
-      }
-
-      setLocationError('현재 위치를 확인할 수 없어요. 위치 권한을 확인해주세요.');
-    });
-
-    return () => {
-      isCancelled = true;
-    };
   }, []);
 
   const visiblePlaces = isSelectionLocked ? [] : normalizedQuery ? searchResults : recentPlaces;
