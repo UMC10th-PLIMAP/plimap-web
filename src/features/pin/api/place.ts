@@ -1,16 +1,7 @@
+import type { ApiResponse } from '@/api/types';
 import type { PinSearchPlace } from '@/features/pin/types';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
-const API_V1_BASE_URL = API_BASE_URL.endsWith('/api')
-  ? `${API_BASE_URL}/v1`
-  : `${API_BASE_URL}/api/v1`;
-
-type ApiResponse<T> = {
-  isSuccess: boolean;
-  code: string;
-  message: string;
-  result: T;
-};
 
 type PlaceSearchItem = {
   resultType: 'PLACE' | 'ADDRESS';
@@ -120,7 +111,7 @@ export async function searchPlaces({
     latitude: String(latitude),
     longitude: String(longitude),
   });
-  const response = await fetch(`${API_V1_BASE_URL}/places/search?${searchParams}`, {
+  const response = await fetch(`${API_BASE_URL}/places/search?${searchParams}`, {
     credentials: 'include',
     headers: { Accept: 'application/json' },
     signal,
@@ -151,7 +142,7 @@ export async function getRecentSearchPlaces({
     latitude: String(latitude),
     longitude: String(longitude),
   });
-  const response = await fetch(`${API_V1_BASE_URL}/places/search-histories?${searchParams}`, {
+  const response = await fetch(`${API_BASE_URL}/places/search-histories?${searchParams}`, {
     credentials: 'include',
     headers: { Accept: 'application/json' },
     signal,
@@ -170,7 +161,7 @@ export async function getRecentSearchPlaces({
 }
 
 const getCsrfToken = async (signal?: AbortSignal) => {
-  const response = await fetch(`${API_V1_BASE_URL}/auth/csrf`, {
+  const response = await fetch(`${API_BASE_URL}/auth/csrf`, {
     credentials: 'include',
     headers: { Accept: 'application/json' },
     signal,
@@ -200,7 +191,7 @@ export async function selectSearchPlace({
   if (!place.searchSource) return place;
 
   const csrfToken = await getCsrfToken(signal);
-  const response = await fetch(`${API_V1_BASE_URL}/places/selections`, {
+  const response = await fetch(`${API_BASE_URL}/places/selections`, {
     method: 'POST',
     credentials: 'include',
     headers: {
