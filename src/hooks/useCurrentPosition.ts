@@ -25,7 +25,10 @@ export function useCurrentPosition({
       const result = await getCurrentPosition(resolvedOptions);
       if (!result.ok) throw new Error(result.reason);
 
-      return result.coordinate;
+      return {
+        latitude: result.coordinate.lat,
+        longitude: result.coordinate.lng,
+      };
     },
     staleTime,
     retry: false,

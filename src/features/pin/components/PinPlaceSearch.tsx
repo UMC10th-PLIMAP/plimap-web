@@ -18,11 +18,6 @@ export type PinPlaceSearchProps = {
   onBack?: () => void;
 };
 
-type CurrentLocation = {
-  latitude: number;
-  longitude: number;
-};
-
 export function PinPlaceSearch({
   isReturningToMap = false,
   onCloseAnimationEnd,
@@ -39,12 +34,7 @@ export function PinPlaceSearch({
       timeout: 10_000,
     },
   });
-  const currentLocation: CurrentLocation | null = currentPositionQuery.data
-    ? {
-        latitude: currentPositionQuery.data.lat,
-        longitude: currentPositionQuery.data.lng,
-      }
-    : null;
+  const currentLocation = currentPositionQuery.data ?? null;
   const locationError =
     currentPositionQuery.isError && !currentPositionQuery.data
       ? '현재 위치를 확인할 수 없어요. 위치 권한을 확인해주세요.'
