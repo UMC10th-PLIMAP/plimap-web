@@ -108,6 +108,9 @@ export type GetPlaceTrackPinsResponse = {
   pageSize: number;
 };
 
+export type LikeCountResponse = {
+  pinCount: number;
+};
 // --------------------------------------------------
 export type PinSort = 'POPULAR' | 'LATEST';
 
