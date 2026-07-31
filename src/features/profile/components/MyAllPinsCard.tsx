@@ -1,0 +1,67 @@
+import LocationPinIcon from '@/assets/icons/location.svg?react';
+import MoreIcon from '@/assets/icons/more.svg?react';
+import NextIcon from '@/assets/icons/next.svg?react';
+import type { MyAllPin } from '@/features/profile/types';
+
+type MyAllPinsCardProps = {
+  pin: MyAllPin;
+  onPlaceClick?: () => void;
+  onMoreClick?: () => void;
+};
+
+export function MyAllPinsCard({ pin, onPlaceClick, onMoreClick }: MyAllPinsCardProps) {
+  return (
+    <article className="flex flex-col w-full rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3">
+      <div className="flex items-center gap-[6px]">
+        <button
+          type="button"
+          onClick={onPlaceClick}
+          className="flex flex-1 items-center gap-1 text-left cursor-pointer"
+        >
+          <LocationPinIcon className="size-5 text-neon" aria-hidden />
+          <span className="flex body-17-m text-grayscale-100">
+            {pin.placeName}
+            <NextIcon className="size-6 text-grayscale-400" aria-hidden />
+          </span>
+        </button>
+
+        <button
+          type="button"
+          aria-label="더보기"
+          onClick={onMoreClick}
+          className="flex size-6 items-center justify-center cursor-pointer"
+        >
+          <MoreIcon className="size-6 text-grayscale-100" aria-hidden />
+        </button>
+      </div>
+
+      <div className="pt-[13px] flex items-center gap-[17px]">
+        <div className="max-w-[59px] max-h-[59px] overflow-hidden rounded-lg">
+          <img
+            src={pin.albumImageUrl}
+            alt={`${pin.trackName} 앨범 커버`}
+            className="size-full object-cover"
+          />
+        </div>
+        <div className="flex flex-col ">
+          <p className="truncate body-17-r text-grayscale-300">{pin.trackName}</p>
+          <p className="truncate body-15-r text-grayscale-500">{pin.artistName}</p>
+        </div>
+      </div>
+
+      {pin.content ? <p className="pt-[13px] body-15-r text-grayscale-300">{pin.content}</p> : null}
+
+      {pin.tags.length > 0 ? (
+        <div className="pt-1 flex flex-wrap">
+          {pin.tags.map((tag) => (
+            <span key={tag} className="body-15-m text-grayscale-700">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      <div className="pt-1 border-b border-pli-black-75" />
+      <p className=" pt-2 self-end body-15-m text-grayscale-500">{pin.createdAtLabel}</p>
+    </article>
+  );
+}

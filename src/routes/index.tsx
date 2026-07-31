@@ -1,20 +1,25 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+
 import RootLayout from '@/layouts/RootLayout';
 import MapLayout from '@/layouts/MapLayout';
 import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
 import LoginPage from '@/pages/LoginPage';
+import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
 import NicknameSetupPage from '@/pages/NicknameSetupPage';
 import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import WelcomePage from '@/pages/WelcomePage';
 
 import MyProfilePage from '@/pages/MyProfilePage';
+import MyPlimapPage from '@/pages/MyPlimapPage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
+import PinDetailPage from '@/pages/PinDetailPage';
 import SongListPage from '@/pages/SongListPage';
 import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
 import FollowListPage from '@/pages/FollowListPage';
+import RecommendationPinCardPreviewPage from '@/pages/RecommendationPinCardPreviewPage';
 
 export const router = createBrowserRouter([
   {
@@ -28,6 +33,10 @@ export const router = createBrowserRouter([
   {
     path: '/preview/report-modal',
     element: <ReportModalPreviewPage />,
+  },
+  {
+    path: '/preview/recommendation-pin-card',
+    element: <RecommendationPinCardPreviewPage />,
   },
   {
     path: '/app',
@@ -52,6 +61,10 @@ export const router = createBrowserRouter([
         element: <LoginPage />,
       },
       {
+        path: 'oauth/callback',
+        element: <OAuthCallbackPage />,
+      },
+      {
         path: 'onboarding/terms',
         element: <TermsAgreementPage />,
       },
@@ -63,13 +76,14 @@ export const router = createBrowserRouter([
         path: 'onboarding/profile-image',
         element: <ProfileImageSetupPage />,
       },
+
       {
         path: 'onboarding/welcome',
         element: <WelcomePage />,
       },
       {
-        path: 'pin/search',
-        element: <PinPlaceSearchPage />,
+        path: 'pins/:pinId',
+        element: <PinDetailPage />,
       },
       {
         path: 'song/list',
@@ -90,6 +104,10 @@ export const router = createBrowserRouter([
       {
         path: 'my/followers',
         element: <FollowListPage />,
+      },
+      {
+        path: 'my/plimap',
+        element: <MyPlimapPage />,
       },
       {
         path: 'pin/register',

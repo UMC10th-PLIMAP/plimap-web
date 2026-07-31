@@ -8,10 +8,13 @@ import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
 
 import { MOCK_MY_PROFILE } from '@/features/profile/constants/mockMyProfile';
+import { useInfiniteMemberMe } from '@/features/pin/queries/useMemberMe';
 
 export default function MyProfilePage() {
   const navigate = useNavigate();
   const profile = MOCK_MY_PROFILE;
+
+  const { data: memberMePages } = useInfiniteMemberMe();
 
   return (
     <div className="flex flex-col pb-[calc(env(safe-area-inset-bottom)+108px)]">
@@ -39,7 +42,7 @@ export default function MyProfilePage() {
             },
             {
               label: '내 PLIMAP',
-              onClick: () => navigate('/app'),
+              onClick: () => navigate('/app/my/plimap'),
             },
             {
               label: <ShareIcon />,
@@ -53,7 +56,10 @@ export default function MyProfilePage() {
         />
       </div>
       <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
-      <ProfilePinGrid pins={profile.pins} onRegisterPin={() => navigate('/app')} />
+      <ProfilePinGrid
+        pins={memberMePages?.pages.flatMap((page) => page.data) ?? []}
+        onRegisterPin={() => navigate('/app')}
+      />
       <BottomNav activeId="my" onTabChange={() => {}} />
     </div>
   );

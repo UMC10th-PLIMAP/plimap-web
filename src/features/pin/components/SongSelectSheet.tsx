@@ -1,24 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { SongCard } from '@/features/pin/components/SongCard';
-import type { Song } from '@/features/pin/types';
-import { MOCK_SONG_CARD_LIST } from '@/features/pin/data/songPreview';
+import { useSearchTracks } from '@/features/pin/queries/useSearchTracks';
+import type { SearchTrack } from '@/features/pin/types';
 
 type SongSelectSheetProps = {
   open: boolean;
   onClose: () => void;
-  songs?: Song[];
-  onSelect?: (song: Song) => void;
+  onSelect?: (song: SearchTrack) => void;
 };
 
-export function SongSelectSheet({
-  open,
-  onClose,
-  songs = MOCK_SONG_CARD_LIST,
-  onSelect,
-}: SongSelectSheetProps) {
+export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProps) {
   const [query, setQuery] = useState('');
   const [prevOpen, setPrevOpen] = useState(open);
 
@@ -30,15 +24,8 @@ export function SongSelectSheet({
     }
   }
 
-  const filteredSongs = useMemo(() => {
-    const keyword = query.trim().toLowerCase();
-    if (!keyword) return songs;
-
-    return songs.filter(
-      (song) =>
-        song.title.toLowerCase().includes(keyword) || song.artist.toLowerCase().includes(keyword),
-    );
-  }, [query, songs]);
+  const { data } = useSearchTracks({ keyword: query });
+  const tracks = data?.tracks ?? [];
 
   return (
     <BottomSheet open={open} onClose={onClose} snapPoints={[0.98, 1]} className="bg-pli-black-85 ">
@@ -56,12 +43,12 @@ export function SongSelectSheet({
 
       <BottomSheet.Content className="px-4 pt-5.5">
         <ul>
-          {filteredSongs.map((song) => (
-            <li key={song.id}>
+          {tracks.map((track) => (
+            <li key={track.itunesTrackId}>
               <SongCard
-                song={song}
+                song={track}
                 onClick={() => {
-                  onSelect?.(song);
+                  onSelect?.(track);
                   onClose();
                 }}
               />

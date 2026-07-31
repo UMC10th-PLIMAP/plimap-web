@@ -6,7 +6,7 @@ import CameraIcon from '@/assets/icons/camera.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { TopBar } from '@/components/ui/TopBar';
 import { Button } from '@/components/ui/button';
-import { getCroppedImageBlob } from '@/features/auth/utils/cropImage';
+import { getCroppedImageBlob } from '@/features/profile/utils/cropImage';
 
 type Step = 'select' | 'crop' | 'done';
 
