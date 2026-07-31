@@ -1,0 +1,77 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { getRecentSearchPlaces, searchPlaces, selectSearchPlace } from '@/api/place';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import type { PlaceSearchHistoryRequest } from '@/types/place.type';
+
+const placeQueryKeys = {
+  all: ['pin', 'places'] as const,
+  searches: () => [...placeQueryKeys.all, 'search'] as const,
+  search: (keyword: string, location: PlaceSearchHistoryRequest | null) =>
+    [...placeQueryKeys.searches(), { keyword, ...location }] as const,
+  histories: () => [...placeQueryKeys.all, 'histories'] as const,
+  history: (location: PlaceSearchHistoryRequest | null) =>
+    [...placeQueryKeys.histories(), location] as const,
+};
+
+type UsePlaceSearchParams = {
+  keyword: string;
+  location: PlaceSearchHistoryRequest | null;
+  enabled?: boolean;
+  debounceMs?: number;
+};
+
+export function usePlaceSearch({
+  keyword,
+  location,
+  enabled = true,
+  debounceMs = 300,
+}: UsePlaceSearchParams) {
+  const normalizedKeyword = keyword.trim();
+  const debouncedKeyword = useDebouncedValue(normalizedKeyword, debounceMs);
+  const isDebounced = normalizedKeyword === debouncedKeyword;
+
+  const query = useQuery({
+    queryKey: placeQueryKeys.search(debouncedKeyword, location),
+    queryFn: ({ signal }) => {
+      if (!location) throw new Error('장소 검색에 현재 위치가 필요해요.');
+
+      return searchPlaces({
+        keyword: debouncedKeyword,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        signal,
+      });
+    },
+    enabled: enabled && Boolean(location) && debouncedKeyword.length > 0 && isDebounced,
+    staleTime: 60_000,
+  });
+
+  return { ...query, debouncedKeyword, isDebounced };
+}
+
+export function useRecentSearchPlaces(location: PlaceSearchHistoryRequest | null) {
+  return useQuery({
+    queryKey: placeQueryKeys.history(location),
+    queryFn: ({ signal }) => {
+      if (!location) throw new Error('최근 검색 조회에 현재 위치가 필요해요.');
+
+      return getRecentSearchPlaces({ ...location, signal });
+    },
+    enabled: Boolean(location),
+    staleTime: 60_000,
+  });
+}
+
+export function useSelectSearchPlace() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: selectSearchPlace,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: placeQueryKeys.histories(),
+      });
+    },
+  });
+}

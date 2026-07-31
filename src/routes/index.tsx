@@ -81,10 +81,6 @@ export const router = createBrowserRouter([
         element: <WelcomePage />,
       },
       {
-        path: 'pin/search',
-        element: <PinPlaceSearchPage />,
-      },
-      {
         path: 'pins/:pinId',
         element: <PinDetailPage />,
       },
