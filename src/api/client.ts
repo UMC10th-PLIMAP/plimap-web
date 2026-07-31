@@ -22,6 +22,11 @@ export class ApiError extends Error {
   }
 }
 
+// HTTP 코드가 401/403인지 판별하는 헬퍼 함수 (로그인 상태 확인 시 사용)
+export function isUnauthorizedError(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 401 || error.status === 403);
+}
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
