@@ -14,7 +14,7 @@ import { getCurrentPosition } from '@/utils/geolocation';
 export type PinPlaceSearchProps = {
   isReturningToMap?: boolean;
   onCloseAnimationEnd?: () => void;
-  onPlaceSelect?: (place: PinSearchPlace) => void;
+  onPlaceSelect: (place: PinSearchPlace) => void;
   onBack?: () => void;
 };
 
@@ -32,17 +32,17 @@ export function PinPlaceSearch({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const selectionControllerRef = useRef<AbortController | null>(null);
   const [query, setQuery] = useState('');
-  const [selectedPlace, setSelectedPlace] = useState<PinSearchPlace | null>(null);
   const [currentLocation, setCurrentLocation] = useState<CurrentLocation | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const normalizedQuery = query.trim();
   const recentSearchQuery = useRecentSearchPlaces(currentLocation);
+  const selectPlaceMutation = useSelectSearchPlace();
+  const isSelectionLocked = isReturningToMap || selectPlaceMutation.isPending;
   const placeSearchQuery = usePlaceSearch({
     keyword: query,
     location: currentLocation,
-    enabled: !selectedPlace,
+    enabled: !isSelectionLocked,
   });
-  const selectPlaceMutation = useSelectSearchPlace();
   const isSearchQueryCurrent =
     placeSearchQuery.isDebounced && placeSearchQuery.debouncedKeyword === normalizedQuery;
   const searchResults = isSearchQueryCurrent ? (placeSearchQuery.data ?? []) : [];
@@ -50,7 +50,7 @@ export function PinPlaceSearch({
   const isSearching =
     normalizedQuery.length > 0 &&
     Boolean(currentLocation) &&
-    !selectedPlace &&
+    !isSelectionLocked &&
     (!placeSearchQuery.isDebounced || placeSearchQuery.isPending);
   const isSelectingPlace = selectPlaceMutation.isPending;
   const searchError =
@@ -114,15 +114,13 @@ export function PinPlaceSearch({
     };
   }, []);
 
-  const visiblePlaces =
-    selectedPlace || isSelectingPlace ? [] : normalizedQuery ? searchResults : recentPlaces;
-  const isShowingRecentPlaces = !normalizedQuery && !selectedPlace;
+  const visiblePlaces = isSelectionLocked ? [] : normalizedQuery ? searchResults : recentPlaces;
+  const isShowingRecentPlaces = !normalizedQuery && !isSelectionLocked;
 
   const resetSearch = () => {
     selectionControllerRef.current?.abort();
     selectionControllerRef.current = null;
     setQuery('');
-    setSelectedPlace(null);
     selectPlaceMutation.reset();
   };
 
@@ -130,17 +128,15 @@ export function PinPlaceSearch({
     selectionControllerRef.current?.abort();
     selectionControllerRef.current = null;
     setQuery(event.target.value);
-    setSelectedPlace(null);
     selectPlaceMutation.reset();
   };
 
   const handlePlaceSelect = (place: PinSearchPlace) => {
-    if (isSelectingPlace) return;
+    if (isSelectionLocked) return;
 
     if (!place.searchSource || !currentLocation) {
       setQuery(place.placeName);
-      setSelectedPlace(place);
-      onPlaceSelect?.(place);
+      onPlaceSelect(place);
       return;
     }
 
@@ -157,8 +153,7 @@ export function PinPlaceSearch({
       {
         onSuccess: (selectedPlaceResult) => {
           setQuery(selectedPlaceResult.placeName);
-          setSelectedPlace(selectedPlaceResult);
-          onPlaceSelect?.(selectedPlaceResult);
+          onPlaceSelect(selectedPlaceResult);
         },
         onSettled: () => {
           if (selectionControllerRef.current === controller) {
@@ -175,11 +170,10 @@ export function PinPlaceSearch({
     !isSearching &&
     !searchError &&
     !locationError &&
-    !isSelectingPlace &&
+    !isSelectionLocked &&
     isSearchQueryCurrent &&
     placeSearchQuery.isSuccess &&
-    searchResults.length === 0 &&
-    !selectedPlace;
+    searchResults.length === 0;
 
   return (
     <main
