@@ -29,7 +29,7 @@ const MapLayout = () => {
       <MapPage selectedMapPlace={selectedMapPlace} onClearMapPlace={() => selectMapPlace(null)} />
 
       {hasMapOverlay && outlet ? (
-        <div className="map-search-overlay absolute inset-0 z-30">{outlet}</div>
+        <div className="map-search-overlay absolute inset-0 z-[60]">{outlet}</div>
       ) : null}
     </div>
   );
