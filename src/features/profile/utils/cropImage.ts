@@ -21,8 +21,12 @@ export async function getCroppedImageBlob(imageSrc: string, cropArea: Area): Pro
     throw new Error('Canvas context를 생성하지 못했습니다');
   }
 
-  canvas.width = cropArea.width;
-  canvas.height = cropArea.height;
+  const scale = Math.min(
+    1,
+    PROFILE_IMAGE_MAX_DIMENSION / Math.max(cropArea.width, cropArea.height),
+  );
+  canvas.width = Math.max(1, Math.round(cropArea.width * scale));
+  canvas.height = Math.max(1, Math.round(cropArea.height * scale));
 
   ctx.drawImage(
     image,
@@ -32,8 +36,8 @@ export async function getCroppedImageBlob(imageSrc: string, cropArea: Area): Pro
     cropArea.height,
     0,
     0,
-    cropArea.width,
-    cropArea.height,
+    canvas.width,
+    canvas.height,
   );
 
   const croppedBlob = await new Promise<Blob>((resolve, reject) => {
