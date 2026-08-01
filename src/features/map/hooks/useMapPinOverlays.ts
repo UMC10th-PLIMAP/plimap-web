@@ -7,6 +7,10 @@ import {
   updateMapPinMarker,
   type MapPinOverlayEntry,
 } from '../utils/mapPinMarker';
+import { flyToLocation } from '../utils/mapCamera';
+
+// 핀 클릭 시 포커스할 줌 레벨
+const PIN_FOCUS_ZOOM = 21;
 
 type UseMapPinOverlaysParams = {
   mapInstanceRef: RefObject<google.maps.Map | null>;
@@ -27,6 +31,7 @@ export function useMapPinOverlays({
   const mapPinOverlaysRef = useRef<{ id: string; entry: MapPinOverlayEntry }[]>([]);
   const onSelectMapPinRef = useRef(onSelectMapPin);
   const selectedMapPinIdRef = useRef(selectedMapPinId);
+  const cancelFlyToRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     onSelectMapPinRef.current = onSelectMapPin;
@@ -47,7 +52,15 @@ export function useMapPinOverlays({
       const entry = createMapPinOverlay({
         position: { lat: pin.lat, lng: pin.lng },
         zIndex: pin.id === selectedId ? 200 : 100,
-        onClick: () => onSelectMapPinRef.current?.(pin.id),
+        onClick: () => {
+          cancelFlyToRef.current?.();
+          cancelFlyToRef.current = flyToLocation(
+            map,
+            { lat: pin.lat, lng: pin.lng },
+            PIN_FOCUS_ZOOM,
+          );
+          onSelectMapPinRef.current?.(pin.id);
+        },
         ...toMapPinMarkerProps(pin, pin.id === selectedId),
       });
       entry.overlay.setMap(map);
@@ -56,6 +69,7 @@ export function useMapPinOverlays({
     });
 
     return () => {
+      cancelFlyToRef.current?.();
       mapPinOverlaysRef.current.forEach(({ entry }) => disposeMapPinOverlay(entry));
       mapPinOverlaysRef.current = [];
     };
