@@ -75,6 +75,7 @@ export default function WelcomePage() {
 
     try {
       await completeOnboarding(nickname);
+      useOnboardingStore.getState().reset();
       navigate('/app', { replace: true });
     } catch (error) {
       alert(error instanceof ApiError ? error.message : ONBOARDING_FAILED_MESSAGE);

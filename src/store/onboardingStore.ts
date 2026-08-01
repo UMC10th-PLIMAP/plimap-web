@@ -7,6 +7,7 @@ type OnboardingState = {
   profileImageFile: File | null;
   profileImageUrl: string | null;
   setProfileImage: (profileImageFile: File, profileImageUrl: string) => void;
+  reset: () => void;
 };
 
 export const useOnboardingStore = create<OnboardingState>()(
@@ -18,6 +19,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       profileImageUrl: null,
       setProfileImage: (profileImageFile, profileImageUrl) =>
         set({ profileImageFile, profileImageUrl }),
+      reset: () => set({ nickname: '', profileImageFile: null, profileImageUrl: null }),
     }),
     {
       name: 'onboarding-storage',
