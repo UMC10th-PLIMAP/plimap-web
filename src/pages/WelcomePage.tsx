@@ -54,17 +54,20 @@ export default function WelcomePage() {
   const navigate = useNavigate();
   const nickname = useOnboardingStore((state) => state.nickname);
   const profileImageFile = useOnboardingStore((state) => state.profileImageFile);
+  const profileImageUrl = useOnboardingStore((state) => state.profileImageUrl);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const profileImageUrl = useMemo(
+  const localImageUrl = useMemo(
     () => (profileImageFile ? URL.createObjectURL(profileImageFile) : null),
     [profileImageFile],
   );
+  // 방금 업로드한 File이 메모리에 있으면 즉시 표시하고, 새로고침 이후엔 서버 URL로 대체
+  const profileImageSrc = localImageUrl ?? profileImageUrl;
 
   useEffect(() => {
     return () => {
-      if (profileImageUrl) URL.revokeObjectURL(profileImageUrl);
+      if (localImageUrl) URL.revokeObjectURL(localImageUrl);
     };
-  }, [profileImageUrl]);
+  }, [localImageUrl]);
 
   const handleStart = async () => {
     if (isSubmitting) return;
@@ -92,8 +95,8 @@ export default function WelcomePage() {
         </p>
 
         <div className="relative mt-[52px] flex size-[236px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-pli-black-75">
-          {profileImageUrl ? (
-            <img src={profileImageUrl} alt="프로필 이미지" className="size-full object-cover" />
+          {profileImageSrc ? (
+            <img src={profileImageSrc} alt="프로필 이미지" className="size-full object-cover" />
           ) : (
             <UserPlaceholderIcon className="size-[140px] text-pli-black-50" />
           )}

@@ -22,7 +22,7 @@ const IMAGE_PROCESSING_FAILED_MESSAGE = '이미지 처리에 실패했어요. �
 export default function ProfileImageSetupPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const setOnboardingProfileImageFile = useOnboardingStore((state) => state.setProfileImageFile);
+  const setOnboardingProfileImage = useOnboardingStore((state) => state.setProfileImage);
 
   const [step, setStep] = useState<Step>('select');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -99,8 +99,10 @@ export default function ProfileImageSetupPage() {
     setIsUploading(true);
 
     try {
-      await uploadProfileImage(croppedImageFile);
-      setOnboardingProfileImageFile(croppedImageFile);
+      const { imageUrl } = await uploadProfileImage(croppedImageFile);
+      setOnboardingProfileImage(croppedImageFile, imageUrl);
+      // 다음 페이지에서 이미지 로딩 시간을 줄이기 위해 브라우저 캐시에 미리 올려둠
+      new Image().src = imageUrl;
       navigate('/app/onboarding/welcome');
     } catch (error) {
       alert(error instanceof ApiError ? error.message : UPLOAD_FAILED_MESSAGE);
