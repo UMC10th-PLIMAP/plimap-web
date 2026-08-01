@@ -15,7 +15,11 @@ export function PinCard({ pin, onClick }: PinCardProps) {
         <div className="flex min-w-0 items-center gap-4">
           <div className="size-13 overflow-hidden rounded-lg bg-grayscale-0">
             {pin.artworkUrl ? (
-              <img src={pin.artworkUrl} alt={pin.trackName} className="size-full object-cover" />
+              <img
+                src={pin.artworkUrl}
+                alt={pin.trackName ?? undefined}
+                className="size-full object-cover"
+              />
             ) : null}
           </div>
           <div className="flex min-w-0 flex-col items-start gap-[3px]">
