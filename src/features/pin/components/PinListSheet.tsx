@@ -169,6 +169,15 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
     longitude: queryLongitude,
     enabled: open,
   });
+  const resolvedPlace: PlaceInfo = {
+    ...place,
+    name: placeDetailQuery.data?.placeName ?? place.name,
+    distance: placeDetailQuery.data?.distanceMeters ?? place.distance,
+    address: placeDetailQuery.data
+      ? placeDetailQuery.data.roadAddress || placeDetailQuery.data.address
+      : place.address,
+    isMine: placeDetailQuery.data?.pinnedByMe ?? place.isMine,
+  };
   const bookmarkMutation = useTogglePlaceBookmark();
   const resolvedBookmarkState =
     placeDetailQuery.data?.bookmarkedByMe ?? place.bookmarkedByMe ?? false;
