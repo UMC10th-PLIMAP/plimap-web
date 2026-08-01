@@ -178,6 +178,9 @@ export type PlaceResult = {
 };
 
 export type PinSearchPlace = PlaceResult & {
+  placeId?: number;
+  source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
+  withinAccessRange?: boolean;
   coordinates: {
     lat: number;
     lng: number;

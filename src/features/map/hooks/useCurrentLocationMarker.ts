@@ -28,6 +28,9 @@ type UseCurrentLocationMarkerParams = {
   mapInstanceRef: RefObject<google.maps.Map | null>;
   isLoaded: boolean;
   onCenterChanged?: (center: MapCoordinate) => void;
+  onCurrentLocationChanged?: (coordinate: MapCoordinate) => void;
+  onCurrentLocationError?: (message: string) => void;
+  centerOnFirstLocation?: boolean;
 };
 
 /** 현재 위치 마커(방향 쐐기 포함)를 실시간으로 추적/렌더링하고, 재중심 이동 함수를 제공한다. */
@@ -35,16 +38,30 @@ export function useCurrentLocationMarker({
   mapInstanceRef,
   isLoaded,
   onCenterChanged,
+  onCurrentLocationChanged,
+  onCurrentLocationError,
+  centerOnFirstLocation = true,
 }: UseCurrentLocationMarkerParams) {
   const overlayRef = useRef<CurrentLocationOverlayHandle | null>(null);
   const positionRef = useRef<MapCoordinate | null>(null);
   const bestAccuracyRef = useRef(Infinity);
   const lastAcceptedAtRef = useRef(0);
   const onCenterChangedRef = useRef(onCenterChanged);
+  const onCurrentLocationChangedRef = useRef(onCurrentLocationChanged);
+  const onCurrentLocationErrorRef = useRef(onCurrentLocationError);
+  const centerOnFirstLocationRef = useRef(centerOnFirstLocation);
 
   useEffect(() => {
     onCenterChangedRef.current = onCenterChanged;
   }, [onCenterChanged]);
+
+  useEffect(() => {
+    onCurrentLocationChangedRef.current = onCurrentLocationChanged;
+  }, [onCurrentLocationChanged]);
+
+  useEffect(() => {
+    onCurrentLocationErrorRef.current = onCurrentLocationError;
+  }, [onCurrentLocationError]);
 
   // --- 기기 방향 이벤트 처리 (방향 쐐기 회전) ---
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
@@ -120,9 +137,12 @@ export function useCurrentLocationMarker({
 
         const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
         positionRef.current = pos;
+        onCurrentLocationChangedRef.current?.(pos);
 
         if (!overlayRef.current) {
-          map.setCenter(pos);
+          if (centerOnFirstLocationRef.current) {
+            map.setCenter(pos);
+          }
 
           // 핀(overlayMouseTarget, zIndex 최대 200)보다 항상 위에 보이도록 floatPane에 렌더링한다.
           overlayRef.current = createCurrentLocationOverlay(DEFAULT_MARKER_COLOR, pos);
@@ -130,7 +150,9 @@ export function useCurrentLocationMarker({
 
           enableCompassIfNeeded();
 
-          onCenterChangedRef.current?.(pos);
+          if (centerOnFirstLocationRef.current) {
+            onCenterChangedRef.current?.(pos);
+          }
         } else {
           overlayRef.current.setPosition(pos);
         }
@@ -138,6 +160,9 @@ export function useCurrentLocationMarker({
       (error) => {
         if (ignore) return;
         console.warn('현재 위치를 갱신할 수 없습니다:', error.message);
+        onCurrentLocationErrorRef.current?.(
+          '현재 위치를 확인할 수 없어요. 위치 권한을 확인한 뒤 다시 시도해 주세요',
+        );
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 },
     );

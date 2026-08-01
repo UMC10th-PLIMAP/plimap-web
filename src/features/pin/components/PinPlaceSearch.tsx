@@ -13,21 +13,28 @@ import type { PinSearchPlace } from '@/features/pin/types';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 
 export type PinPlaceSearchProps = {
+  initialQuery?: string;
+  showRecentPlaces?: boolean;
   isReturningToMap?: boolean;
   onCloseAnimationEnd?: () => void;
   onPlaceSelect: (place: PinSearchPlace) => void;
+  validatePlace?: (place: PinSearchPlace) => string | null;
   onBack?: () => void;
 };
 
 export function PinPlaceSearch({
+  initialQuery = '',
+  showRecentPlaces = true,
   isReturningToMap = false,
   onCloseAnimationEnd,
   onPlaceSelect,
+  validatePlace,
   onBack,
 }: PinPlaceSearchProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const selectionControllerRef = useRef<AbortController | null>(null);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
+  const [selectionConstraintError, setSelectionConstraintError] = useState<string | null>(null);
   const currentPositionQuery = useCurrentPosition({
     options: {
       enableHighAccuracy: true,
@@ -41,7 +48,7 @@ export function PinPlaceSearch({
       ? '현재 위치를 확인할 수 없어요. 위치 권한을 확인해주세요.'
       : null;
   const normalizedQuery = query.trim();
-  const recentSearchQuery = useRecentSearchPlaces(currentLocation);
+  const recentSearchQuery = useRecentSearchPlaces(currentLocation, showRecentPlaces);
   const deleteRecentPlaceMutation = useDeleteRecentSearchPlace();
   const selectPlaceMutation = useSelectSearchPlace();
   const isSelectionLocked = isReturningToMap || selectPlaceMutation.isPending;
@@ -65,7 +72,7 @@ export function PinPlaceSearch({
       ? selectPlaceMutation.error.message
       : isSearchQueryCurrent && placeSearchQuery.error instanceof Error
         ? placeSearchQuery.error.message
-        : null;
+        : selectionConstraintError;
   const recentPlacesError =
     deleteRecentPlaceMutation.error instanceof Error
       ? deleteRecentPlaceMutation.error.message
@@ -99,12 +106,13 @@ export function PinPlaceSearch({
   }, []);
 
   const visiblePlaces = isSelectionLocked ? [] : normalizedQuery ? searchResults : recentPlaces;
-  const isShowingRecentPlaces = !normalizedQuery && !isSelectionLocked;
+  const isShowingRecentPlaces = showRecentPlaces && !normalizedQuery && !isSelectionLocked;
 
   const resetSearch = () => {
     selectionControllerRef.current?.abort();
     selectionControllerRef.current = null;
     setQuery('');
+    setSelectionConstraintError(null);
     selectPlaceMutation.reset();
   };
 
@@ -112,6 +120,7 @@ export function PinPlaceSearch({
     selectionControllerRef.current?.abort();
     selectionControllerRef.current = null;
     setQuery(event.target.value);
+    setSelectionConstraintError(null);
     selectPlaceMutation.reset();
   };
 
@@ -137,6 +146,11 @@ export function PinPlaceSearch({
       {
         onSuccess: (selectedPlaceResult) => {
           setQuery(selectedPlaceResult.placeName);
+          const constraintError = validatePlace?.(selectedPlaceResult) ?? null;
+          if (constraintError) {
+            setSelectionConstraintError(constraintError);
+            return;
+          }
           onPlaceSelect(selectedPlaceResult);
         },
         onSettled: () => {

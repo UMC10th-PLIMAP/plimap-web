@@ -11,13 +11,17 @@ const CONFLICT_TOAST_DURATION_MS = 2_000;
 export type PinRadiusCenter = {
   x: number;
   y: number;
+  radiusPixels?: number;
 };
 
 export type PinRadiusOverlayProps = {
   zoom: number;
   centerLatitude: number;
   radiusCenter?: PinRadiusCenter;
-  hasNearbyPinConflict?: boolean;
+  feedbackMessage?: string | null;
+  isCompleting?: boolean;
+  isCompleteDisabled?: boolean;
+  showRadius?: boolean;
   onCancel: () => void;
   onComplete: () => void;
   className?: string;
@@ -27,17 +31,20 @@ export function PinRadiusOverlay({
   zoom,
   centerLatitude,
   radiusCenter,
-  hasNearbyPinConflict = false,
+  feedbackMessage,
+  isCompleting = false,
+  isCompleteDisabled = false,
+  showRadius = true,
   onCancel,
   onComplete,
   className,
 }: PinRadiusOverlayProps) {
-  const [conflictToastAttempt, setConflictToastAttempt] = useState(0);
-  const radiusPixels = calculateMapRadiusPixels(
-    PIN_REGISTRATION_RADIUS_METERS,
-    zoom,
-    centerLatitude,
-  );
+  const [toastAttempt, setToastAttempt] = useState(0);
+  const projectedRadiusPixels = radiusCenter?.radiusPixels;
+  const radiusPixels =
+    projectedRadiusPixels && Number.isFinite(projectedRadiusPixels)
+      ? projectedRadiusPixels
+      : calculateMapRadiusPixels(PIN_REGISTRATION_RADIUS_METERS, zoom, centerLatitude);
   const diameterPixels = radiusPixels * 2;
   const radiusCenterX = radiusCenter && Number.isFinite(radiusCenter.x) ? radiusCenter.x : '50%';
   const radiusCenterY = radiusCenter && Number.isFinite(radiusCenter.y) ? radiusCenter.y : '50%';
@@ -50,12 +57,8 @@ export function PinRadiusOverlay({
   };
 
   const handleComplete = () => {
-    if (hasNearbyPinConflict) {
-      setConflictToastAttempt((currentAttempt) => currentAttempt + 1);
-      return;
-    }
-
-    setConflictToastAttempt(0);
+    if (isCompleting || isCompleteDisabled) return;
+    setToastAttempt((currentAttempt) => currentAttempt + 1);
     onComplete();
   };
 
@@ -65,7 +68,7 @@ export function PinRadiusOverlay({
         aria-label="PIN 등록 가능 반경"
         className={cn('pointer-events-none absolute inset-0 z-30 overflow-hidden', className)}
       >
-        {radiusPixels > 0 ? (
+        {showRadius && radiusPixels > 0 ? (
           <div
             aria-hidden="true"
             className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-[4px] border-[rgba(247,247,247,0.35)]"
@@ -82,6 +85,7 @@ export function PinRadiusOverlay({
             size="bt"
             className="pointer-events-auto text-grayscale-500"
             onClick={onCancel}
+            disabled={isCompleting}
           >
             취소
           </Button>
@@ -91,15 +95,16 @@ export function PinRadiusOverlay({
             size="bt"
             className="pointer-events-auto text-grayscale-1300"
             onClick={handleComplete}
+            disabled={isCompleting || isCompleteDisabled}
           >
-            완료
+            {isCompleting ? '확인 중' : '완료'}
           </Button>
         </div>
 
         <div className="absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] flex flex-col items-center gap-[50px]">
-          {conflictToastAttempt > 0 && (
-            <Toast key={conflictToastAttempt} defaultOpen>
-              이미 근처 20m 이내에 PIN이 있어요
+          {feedbackMessage && toastAttempt > 0 && (
+            <Toast key={`${feedbackMessage}:${toastAttempt}`} defaultOpen>
+              {feedbackMessage}
             </Toast>
           )}
           <ToastViewport />

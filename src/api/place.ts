@@ -8,6 +8,8 @@ import type {
   PlaceSearchItem,
   PlaceSearchRequest,
   PlaceSearchResponse,
+  PlaceMapSelectionRequest,
+  PlaceMapSelectionResult,
   PlaceSelectionRequest,
   PlaceSelectionResponse,
 } from '@/types/place.type';
@@ -41,6 +43,7 @@ const toPinSearchPlace = (item: PlaceSearchItem): PinSearchPlace => ({
 
 const toRecentPinSearchPlace = (item: PlaceSearchHistoryItem): PinSearchPlace => ({
   id: `place:${item.placeId}`,
+  placeId: item.placeId,
   searchHistoryId: item.historyId,
   creatorName: item.hasPin ? (item.firstPinCreatorNickname ?? undefined) : undefined,
   category: item.category || '장소',
@@ -123,10 +126,25 @@ export async function selectSearchPlace({
   const selection = data.result;
   return {
     ...place,
+    placeId: selection.placeId,
+    source: selection.source,
+    withinAccessRange: selection.withinAccessRange,
     id: `place:${selection.placeId}`,
     creatorName: selection.hasPin ? (selection.firstPinCreatorNickname ?? undefined) : undefined,
     placeName: selection.placeName,
     address: selection.roadAddress || selection.address,
     distance: selection.distanceMeters,
   };
+}
+
+/** POST /api/v1/places/map-selections 지도 선택 장소 판정 */
+export async function confirmMapSelection(
+  request: PlaceMapSelectionRequest,
+): Promise<PlaceMapSelectionResult> {
+  const { data } = await apiClient.post<ApiResponse<PlaceMapSelectionResult>>(
+    `${ENDPOINT}/map-selections`,
+    request,
+  );
+
+  return data.result;
 }

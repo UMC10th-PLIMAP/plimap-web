@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { DEFAULT_CENTER, type MapCoordinate } from '../types';
+import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '../types';
 
 // 지도 줌 하한선 (레벨 단위 유지, 상한선은 API 지원 한도까지 허용)
 const MIN_ZOOM = 6;
@@ -15,21 +15,27 @@ const KOREA_BOUNDS: google.maps.LatLngBoundsLiteral = {
 type UseGoogleMapParams = {
   isLoaded: boolean;
   zoom: number;
+  initialCenter?: MapCoordinate;
   onZoomChanged?: (newZoom: number) => void;
   onCenterChanged?: (center: MapCoordinate) => void;
+  onViewportChanged?: (viewport: MapViewport) => void;
 };
 
 /** 구글맵 인스턴스를 생성하고, zoom/center 변경을 리스닝한다. */
 export function useGoogleMap({
   isLoaded,
   zoom,
+  initialCenter = DEFAULT_CENTER,
   onZoomChanged,
   onCenterChanged,
+  onViewportChanged,
 }: UseGoogleMapParams) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
   const onZoomChangedRef = useRef(onZoomChanged);
+  const onViewportChangedRef = useRef(onViewportChanged);
+  const initialCenterRef = useRef(initialCenter);
 
   useEffect(() => {
     onCenterChangedRef.current = onCenterChanged;
@@ -38,6 +44,10 @@ export function useGoogleMap({
   useEffect(() => {
     onZoomChangedRef.current = onZoomChanged;
   }, [onZoomChanged]);
+
+  useEffect(() => {
+    onViewportChangedRef.current = onViewportChanged;
+  }, [onViewportChanged]);
 
   useEffect(() => {
     const mapsApi = window.google?.maps;
@@ -54,7 +64,7 @@ export function useGoogleMap({
 
       // --- 구글맵 인스턴스 초기 생성 (벡터 맵: 스타일은 Cloud Console에서 Map ID에 연결된 것을 사용) ---
       const map = new mapsApi.Map(mapRef.current, {
-        center: DEFAULT_CENTER,
+        center: initialCenterRef.current,
         zoom,
         isFractionalZoomEnabled: true,
         minZoom: MIN_ZOOM,
@@ -80,11 +90,25 @@ export function useGoogleMap({
 
       map.addListener('idle', () => {
         const newCenter = map.getCenter();
-        if (!newCenter) return;
+        const bounds = map.getBounds();
+        const newZoom = map.getZoom();
+        if (!newCenter || !bounds || newZoom === undefined) return;
 
-        onCenterChangedRef.current?.({
+        const center = {
           lat: newCenter.lat(),
           lng: newCenter.lng(),
+        };
+        onCenterChangedRef.current?.(center);
+
+        const southWest = bounds.getSouthWest();
+        const northEast = bounds.getNorthEast();
+        onViewportChangedRef.current?.({
+          center,
+          zoom: newZoom,
+          bounds: {
+            southWest: { lat: southWest.lat(), lng: southWest.lng() },
+            northEast: { lat: northEast.lat(), lng: northEast.lng() },
+          },
         });
       });
     } else if (mapInstanceRef.current.getZoom() !== zoom) {

@@ -56,7 +56,7 @@ export function usePlaceSearch({
   return { ...query, debouncedKeyword, isDebounced };
 }
 
-export function useRecentSearchPlaces(location: PlaceSearchHistoryRequest | null) {
+export function useRecentSearchPlaces(location: PlaceSearchHistoryRequest | null, enabled = true) {
   return useQuery({
     queryKey: placeQueryKeys.history(location),
     queryFn: ({ signal }) => {
@@ -64,7 +64,7 @@ export function useRecentSearchPlaces(location: PlaceSearchHistoryRequest | null
 
       return getRecentSearchPlaces({ ...location, signal });
     },
-    enabled: Boolean(location),
+    enabled: enabled && Boolean(location),
     staleTime: 60_000,
   });
 }

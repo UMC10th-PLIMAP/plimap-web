@@ -61,6 +61,54 @@ export type PlaceSelectionResponse = {
   bookmarkedByMe: boolean;
 };
 
+export type PlaceMapSelectionRequest = {
+  latitude: number;
+  longitude: number;
+  placeName: string | null;
+  address: string;
+  roadAddress: string | null;
+};
+
+export type ConfirmedMapSelection = {
+  placeId: number;
+  placeName: string;
+  source: 'MAP_SELECTION';
+  latitude: number;
+  longitude: number;
+};
+
+export type RecommendedMapSelection = {
+  placeId: number;
+  placeName: string;
+  category: string | null;
+  address: string;
+  roadAddress: string | null;
+  source: 'PLACE_SEARCH';
+  latitude: number;
+  longitude: number;
+  distanceMeters: number;
+};
+
+export type PlaceMapSelectionResult =
+  | {
+      status: 'MAP_SELECTION_CONFIRMED';
+      mapSelection: ConfirmedMapSelection;
+      recommendedPlace: null;
+      buildingName: null;
+    }
+  | {
+      status: 'PLACE_SEARCH_RECOMMENDED';
+      mapSelection: null;
+      recommendedPlace: RecommendedMapSelection;
+      buildingName: null;
+    }
+  | {
+      status: 'PLACE_SEARCH_REQUIRED';
+      mapSelection: null;
+      recommendedPlace: null;
+      buildingName: string;
+    };
+
 export type PlaceSearchRequest = {
   keyword: string;
   latitude: number;
