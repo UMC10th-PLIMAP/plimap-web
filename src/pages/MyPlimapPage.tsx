@@ -6,6 +6,7 @@ import { MyAllPinsCard } from '@/features/profile/components/MyAllPinsCard';
 import { MyPlimapTabs } from '@/features/profile/components/MyPlimapTabs';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { useLikeTrack } from '@/features/pin/queries/useLikeTrack';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import type { MyAllPin, MyPlimapTab } from '@/features/profile/types';
 
 const MOCK_MY_ALL_PINS: MyAllPin[] = [
@@ -34,11 +35,26 @@ const MOCK_MY_ALL_PINS: MyAllPin[] = [
 export default function MyPlimapPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<MyPlimapTab>('all');
-  const { data: likedTracks } = useLikeTrack({
+  const {
+    data: likedTracks,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useLikeTrack({
     enabled: tab === 'liked',
   });
 
   const tracks = likedTracks?.pages.flatMap((page) => page.tracks) ?? [];
+
+  const loadMoreRef = useInfiniteScroll(
+    () => {
+      if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+    },
+    {
+      enabled: tab === 'liked' && Boolean(hasNextPage),
+      reconnectKey: isFetchingNextPage,
+    },
+  );
 
   return (
     <div className="flex min-h-full flex-col">
@@ -69,15 +85,18 @@ export default function MyPlimapPage() {
               </p>
             </div>
           ) : (
-            tracks.map((track) => (
-              <PinCard
-                key={track.placeTrackId}
-                pin={{ ...track, liked: true }}
-                onClick={() => {
-                  // TODO: 맵으로 이동 연결
-                }}
-              />
-            ))
+            <>
+              {tracks.map((track) => (
+                <PinCard
+                  key={track.placeTrackId}
+                  pin={{ ...track, liked: true }}
+                  onClick={() => {
+                    // TODO: 맵으로 이동 연결
+                  }}
+                />
+              ))}
+              <div ref={loadMoreRef} className="h-4" aria-hidden />
+            </>
           )}
         </div>
       </div>
