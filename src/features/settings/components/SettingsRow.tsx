@@ -1,4 +1,4 @@
-import ChevronRightIcon from '@/assets/icons/chevron-right.svg?react';
+import NextIcon from '@/assets/icons/next.svg?react';
 import { cn } from '@/lib/utils';
 
 type SettingsRowProps = {
@@ -26,8 +26,11 @@ export function SettingsRow({
       </span>
 
       {chevron && (
-        <span className="flex size-6 shrink-0 items-center justify-center" aria-hidden>
-          <ChevronRightIcon />
+        <span
+          className="flex size-6 shrink-0 items-center justify-center text-grayscale-100"
+          aria-hidden
+        >
+          <NextIcon className="size-6" />
         </span>
       )}
     </button>
