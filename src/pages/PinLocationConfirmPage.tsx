@@ -1,78 +1,31 @@
-import { useEffect, useRef, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useOutletContext } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
-import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
-import { useMapPins } from '@/features/map/queries/useMapPins';
-import type { MapViewport } from '@/features/map/types';
-import { loadGoogleMapsScript } from '@/features/map/utils';
 import { PinCandidateMarker } from '@/features/pin/components/PinCandidateMarker';
+import type { PinRegistrationOutletContext } from '@/layouts/PinRegistrationLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
-
-type MapLoadStatus = 'loading' | 'ready' | 'error';
 
 export default function PinLocationConfirmPage() {
   const navigate = useNavigate();
-  const mapViewerRef = useRef<MapViewerHandle>(null);
+  const { mapStatus } = useOutletContext<PinRegistrationOutletContext>();
   const place = usePinCreationStore((state) => state.place);
-  const [mapStatus, setMapStatus] = useState<MapLoadStatus>(
-    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? 'loading' : 'error',
-  );
-  const [zoom, setZoom] = useState(16);
-  const [viewport, setViewport] = useState<MapViewport | null>(null);
-  const mapPinsQuery = useMapPins(viewport);
-
-  useEffect(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) return;
-
-    let disposed = false;
-    loadGoogleMapsScript(apiKey)
-      .then(() => {
-        if (!disposed) setMapStatus('ready');
-      })
-      .catch(() => {
-        if (!disposed) setMapStatus('error');
-      });
-    return () => {
-      disposed = true;
-    };
-  }, []);
 
   if (!place) return <Navigate to="/app/pin/register" replace />;
 
-  return (
-    <main className="relative h-full overflow-hidden bg-pli-black-85">
-      <MapViewer
-        ref={mapViewerRef}
-        isLoaded={mapStatus === 'ready'}
-        zoom={zoom}
-        initialCenter={place.coordinates}
-        centerOnFirstLocation={false}
-        placeResults={[]}
-        selectedPlaceId={null}
-        mapPins={zoom >= 14 ? (mapPinsQuery.data?.pins ?? []) : []}
-        mapClusters={zoom < 14 ? (mapPinsQuery.data?.clusters ?? []) : []}
-        selectedMapPinId={null}
-        onZoomChanged={setZoom}
-        onViewportChanged={setViewport}
-        onSelectCluster={(cluster) => mapViewerRef.current?.fitBounds(cluster.bounds)}
-      />
+  const handlePrevious = () => {
+    navigate('/app/pin/register', { viewTransition: true });
+  };
 
-      {mapStatus !== 'ready' ? (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-pli-black-85 px-6 text-center body-15-r text-grayscale-400">
-          {mapStatus === 'loading'
-            ? '지도를 불러오고 있어요.'
-            : '지도를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'}
+  return (
+    <main data-page="pin-register-confirm" className="pin-register-confirm-stage relative h-full">
+      {mapStatus === 'ready' ? (
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2">
+          <PinCandidateMarker variant="confirmed" />
         </div>
       ) : null}
 
-      <div className="pointer-events-none absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2">
-        <PinCandidateMarker variant="confirmed" />
-      </div>
-
-      <div className="absolute inset-x-[15px] top-[calc(env(safe-area-inset-top)+16px)] z-40 flex items-center justify-between">
-        <Button variant="cancel" size="bt" onClick={() => navigate('/app/pin/register')}>
+      <div className="pointer-events-auto absolute inset-x-[15px] top-[calc(env(safe-area-inset-top)+16px)] z-40 flex items-center justify-between">
+        <Button variant="cancel" size="bt" onClick={handlePrevious}>
           이전
         </Button>
         <Button variant="confirm" size="bt" onClick={() => navigate('/app/song/list')}>

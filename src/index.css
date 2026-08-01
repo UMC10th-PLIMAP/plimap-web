@@ -235,6 +235,31 @@
   }
 }
 
+@keyframes pin-registration-stage-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pin-registration-stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pin-register-selection-stage,
+.pin-register-search-stage,
+.pin-register-confirm-stage {
+  view-transition-name: pin-registration-stage;
+  contain: layout;
+}
+
 @keyframes toast-fade-in {
   from {
     opacity: 0;
@@ -257,6 +282,30 @@
 
 ::view-transition-old(root) {
   animation: none;
+}
+
+::view-transition-group(pin-registration-stage) {
+  z-index: 90;
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(pin-registration-stage) {
+  animation: 160ms ease-in both pin-registration-stage-out;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(pin-registration-stage) {
+  animation: 240ms 40ms cubic-bezier(0.22, 1, 0.36, 1) both pin-registration-stage-in;
+  mix-blend-mode: normal;
+}
+
+@supports not (view-transition-name: pin-registration-stage) {
+  .pin-register-selection-stage,
+  .pin-register-search-stage,
+  .pin-register-confirm-stage {
+    animation: 220ms ease-out both plimap-page-fade-in;
+  }
 }
 
 ::view-transition-new(root) {
@@ -294,7 +343,10 @@ html:has([data-page='pin-place-search'])::view-transition-new(root) {
 
   ::view-transition-old(root),
   ::view-transition-new(root),
-  ::view-transition-group(plimap-search-bar) {
+  ::view-transition-group(plimap-search-bar),
+  ::view-transition-group(pin-registration-stage),
+  ::view-transition-old(pin-registration-stage),
+  ::view-transition-new(pin-registration-stage) {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
   }

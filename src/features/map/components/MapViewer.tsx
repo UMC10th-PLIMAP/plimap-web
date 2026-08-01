@@ -34,6 +34,7 @@ type MapViewerProps = {
 export type MapViewerHandle = {
   /** 지도를 현재 위치 마커로 이동시킨다. 위치를 아직 못 받았으면 아무 동작도 하지 않는다. */
   recenterToCurrentLocation: () => void;
+  panTo: (coordinate: MapCoordinate) => void;
   fitBounds: (bounds: MapCluster['bounds']) => void;
 };
 
@@ -84,6 +85,9 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     ref,
     () => ({
       recenterToCurrentLocation,
+      panTo: (coordinate) => {
+        mapInstanceRef.current?.panTo(coordinate);
+      },
       fitBounds: (bounds) => {
         mapInstanceRef.current?.fitBounds({
           south: bounds.southWest.lat,

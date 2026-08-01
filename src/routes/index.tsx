@@ -20,6 +20,7 @@ import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinLocationConfirmPage from '@/pages/PinLocationConfirmPage';
 import PinRegisterSearchPage from '@/pages/PinRegisterSearchPage';
+import PinRegistrationLayout from '@/layouts/PinRegistrationLayout';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
 import FollowListPage from '@/pages/FollowListPage';
@@ -141,17 +142,23 @@ export const router = createBrowserRouter([
           },
           {
             path: 'pin/register',
-            element: <PinRegisterPage />,
+            element: <PinRegistrationLayout />,
+            children: [
+              {
+                index: true,
+                element: <PinRegisterPage />,
+              },
+              {
+                path: 'search',
+                element: <PinRegisterSearchPage />,
+              },
+              {
+                path: 'confirm',
+                element: <PinLocationConfirmPage />,
+              },
+            ],
           },
         ],
-      },
-      {
-        path: 'pin/register/search',
-        element: <PinRegisterSearchPage />,
-      },
-      {
-        path: 'pin/register/confirm',
-        element: <PinLocationConfirmPage />,
       },
     ],
   },

@@ -11,6 +11,10 @@ export default function PinRegisterSearchPage() {
   const searchKeyword = usePinCreationStore((state) => state.searchKeyword);
   const setPlace = usePinCreationStore((state) => state.setPlace);
 
+  const navigateToStage = (path: string) => {
+    navigate(path, { viewTransition: true });
+  };
+
   if (!candidateCoordinate || !currentLocation || !searchKeyword) {
     return <Navigate to="/app/pin/register" replace />;
   }
@@ -27,20 +31,22 @@ export default function PinRegisterSearchPage() {
       coordinates: place.coordinates,
       distanceMeters: place.distance,
     });
-    navigate('/app/pin/register/confirm');
+    navigateToStage('/app/pin/register/confirm');
   };
 
   return (
-    <PinPlaceSearch
-      initialQuery={searchKeyword}
-      showRecentPlaces={false}
-      onBack={() => navigate('/app/pin/register')}
-      validatePlace={(place) =>
-        place.withinAccessRange === false
-          ? '현재 위치에서 500m 이내의 장소만 선택할 수 있어요.'
-          : null
-      }
-      onPlaceSelect={handlePlaceSelect}
-    />
+    <div className="pin-register-search-stage pointer-events-auto h-full">
+      <PinPlaceSearch
+        initialQuery={searchKeyword}
+        showRecentPlaces={false}
+        onBack={() => navigateToStage('/app/pin/register')}
+        validatePlace={(place) =>
+          place.withinAccessRange === false
+            ? '현재 위치에서 500m 이내의 장소만 선택할 수 있어요.'
+            : null
+        }
+        onPlaceSelect={handlePlaceSelect}
+      />
+    </div>
   );
 }
