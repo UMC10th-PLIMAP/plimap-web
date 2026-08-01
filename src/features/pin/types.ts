@@ -75,6 +75,8 @@ export type PlaceInfo = {
   distance: number;
   address?: string;
   isMine?: boolean;
+  latitude: number;
+  longitude: number;
 };
 
 /** PinCard — 찜한 곡 API와 동일 shape (+ UI 전용 옵션) */

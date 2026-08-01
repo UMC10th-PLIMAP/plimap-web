@@ -3,6 +3,7 @@ import { getPlaceTracks } from '@/api/track';
 import type { PinSort } from '@/features/pin/types';
 
 type UsePlaceTrackParams = {
+  placeId?: string;
   page?: string;
   size?: number;
   latitude?: number;
@@ -12,17 +13,21 @@ type UsePlaceTrackParams = {
 };
 
 export function usePlaceTrack({
+  placeId,
   page = '0',
   size = 20,
-  latitude = 37.5665,
-  longitude = 126.978,
+  latitude,
+  longitude,
   sort = 'POPULAR',
   enabled = true,
 }: UsePlaceTrackParams = {}) {
+  const canFetch =
+    enabled && Boolean(placeId) && typeof latitude === 'number' && typeof longitude === 'number';
+
   return useQuery({
-    queryKey: ['pin', 'placeTrack', { page, size, latitude, longitude, sort }],
-    queryFn: () => getPlaceTracks(page, size, latitude, longitude, sort),
-    enabled,
+    queryKey: ['pin', 'placeTrack', placeId, { page, size, latitude, longitude, sort }],
+    queryFn: () => getPlaceTracks(placeId!, page, size, latitude!, longitude!, sort),
+    enabled: canFetch,
     placeholderData: keepPreviousData,
   });
 }
