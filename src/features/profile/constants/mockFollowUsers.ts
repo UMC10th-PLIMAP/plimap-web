@@ -1,9 +1,6 @@
 import profileAvatarUrl from '@/assets/profile.png';
 import type { FollowUser } from '../types';
 
-{
-  /* 팔로잉 유저 더미 데이터 */
-}
 export const MOCK_FOLLOWING_USERS: FollowUser[] = [
   {
     id: '1',
