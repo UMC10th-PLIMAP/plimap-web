@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 import type { ApiResponse } from '@/api/types';
 
@@ -30,6 +30,7 @@ export const apiClient = axios.create({
 const CSRF_TOKEN_URL = '/api/v1/auth/csrf';
 const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
 const CSRF_PROTECTED_METHODS = new Set(['post', 'put', 'patch', 'delete']);
+const REISSUE_URL = '/api/v1/auth/reissue';
 
 let csrfTokenRequest: Promise<string> | null = null;
 
@@ -46,6 +47,7 @@ function fetchCsrfToken() {
   return csrfTokenRequest;
 }
 
+// CSRF 토큰 처리를 위한 인터셉터
 apiClient.interceptors.request.use(async (config) => {
   const method = config.method?.toLowerCase();
   if (method && CSRF_PROTECTED_METHODS.has(method)) {
@@ -55,7 +57,42 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
-apiClient.interceptors.response.use(undefined, (error: AxiosError<ApiResponse<unknown>>) => {
+type RetriableRequestConfig = InternalAxiosRequestConfig & { _retriedAfterReissue?: boolean };
+
+let reissueRequest: Promise<void> | null = null;
+
+function reissueTokens() {
+  if (!reissueRequest) {
+    reissueRequest = apiClient
+      .post(REISSUE_URL)
+      .then(() => undefined)
+      .finally(() => {
+        reissueRequest = null;
+      });
+  }
+  return reissueRequest;
+}
+
+// 에러 처리를 위한 인터셉터(토큰 재발급&에러 응답)
+apiClient.interceptors.response.use(undefined, async (error: AxiosError<ApiResponse<unknown>>) => {
+  // 토큰 재발급을 위한 로직
+  const config = error.config as RetriableRequestConfig | undefined;
+
+  const isReissueRequest = config?.url === REISSUE_URL;
+  const isTokenError = error.response?.status === 401 || error.response?.status === 403;
+
+  if (isTokenError && config && !isReissueRequest && !config._retriedAfterReissue) {
+    config._retriedAfterReissue = true;
+
+    try {
+      await reissueTokens();
+      return apiClient(config);
+    } catch {
+      // 토큰 재발급 실패 시 원래 에러를 아래 로직에서 처리
+    }
+  }
+
+  // 에러 응답을 위한 로직
   if (error.response?.data?.code) {
     const { data, status } = error.response;
     return Promise.reject(new ApiError(data.code, data.message, status));
