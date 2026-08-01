@@ -1,9 +1,11 @@
 import { useState } from 'react';
 
+import { reportMember } from '@/api/report';
 import { ReportModal } from '@/features/pin/components/ReportModal';
 
 export default function ReportModalPreviewPage() {
   const [open, setOpen] = useState(false);
+  const [memberId, setMemberId] = useState('1');
 
   return (
     <main className="min-h-dvh bg-[#151518] px-4 py-4 text-grayscale-200 lg:flex lg:items-center lg:justify-center lg:gap-6">
@@ -14,23 +16,31 @@ export default function ReportModalPreviewPage() {
           height: 'min(874px, calc(100dvh - 32px))',
         }}
       >
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#151518] to-[#151518]/0">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-[#151518] to-[#151518]/0">
           <h1 className="text-2xl font-bold">신고 모달 프리뷰 페이지</h1>
+          <label className="flex items-center gap-2 text-sm">
+            신고 대상 memberId
+            <input
+              value={memberId}
+              onChange={(event) => setMemberId(event.target.value)}
+              className="w-16 rounded bg-white/10 px-2 py-1 text-center"
+            />
+          </label>
           <button
             type="button"
             onClick={() => setOpen(true)}
             className="m-4 rounded-full bg-neon px-6 py-3 text-grayscale-1250 cursor-pointer"
           >
-            신고 모달 실행
+            신고 모달 실행 (실제 API 호출)
           </button>
         </div>
 
         <ReportModal
           open={open}
           onClose={() => setOpen(false)}
-          onSubmit={(reason, detail) =>
-            console.log(`onSubmit: reason=${reason}${detail ? `, detail=${detail}` : ''}`)
-          }
+          onSubmit={async (reason, detail) => {
+            await reportMember(Number(memberId), reason, detail);
+          }}
         />
       </div>
     </main>
