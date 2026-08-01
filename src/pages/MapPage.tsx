@@ -28,6 +28,8 @@ function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
     creatorName: place.creatorName,
     distance: place.distance,
     address: place.address,
+    latitude: place.coordinates.lat,
+    longitude: place.coordinates.lng,
   };
 }
 
@@ -181,7 +183,6 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
           open={isPlaceSheetOpen}
           onClose={() => onClearMapPlace?.()}
           place={toPlaceInfo(selectedMapPlace)}
-          pins={[]}
         />
       ) : null}
 

@@ -1,19 +1,34 @@
 import type { PlaceSearchSource } from '@/types/place.type';
 
 // --------------------------------------------------
+
+type TrackBase = {
+  trackName: string;
+  artistName: string;
+  artworkUrl: string;
+};
+
 export type searchTracksResponse = {
-  tracks: {
+  tracks: (TrackBase & {
     itunesTrackId: number;
-    trackName: string;
-    artistName: string;
     albumName: string;
-    artworkUrl: string;
     previewUrl: string;
     durationMs: number;
-  }[];
+  })[];
+};
+
+export type GetLikedTracksResponse = {
+  tracks: (TrackBase & {
+    placeTrackId: number;
+    likeCount: number;
+  })[];
+  page: number;
+  size: number;
+  hasNext: boolean;
 };
 
 export type SearchTrack = searchTracksResponse['tracks'][number];
+export type LikedTrack = GetLikedTracksResponse['tracks'][number];
 
 export type MemberMeRequest = {
   pageSize: number;
@@ -32,8 +47,26 @@ export type MemberMeResponse = {
   hasNext: boolean;
 };
 
+export type GetPlaceTracksResponse = {
+  placeId: number;
+  distance: number;
+  isWithinRadius: boolean;
+  isTrackDetailAccessible: boolean;
+  tracks: (TrackBase & {
+    placeTrackId: number;
+    pinCount: number;
+    likeCount?: number;
+    isLiked: boolean;
+  })[];
+  page: number;
+  size: number;
+  hasNext: boolean;
+};
+
+export type PlaceTrack = GetPlaceTracksResponse['tracks'][number];
+
 // --------------------------------------------------
-export type PinSort = 'popular' | 'latest';
+export type PinSort = 'POPULAR' | 'LATEST';
 
 export type PlaceInfo = {
   id: string;
@@ -42,16 +75,16 @@ export type PlaceInfo = {
   distance: number;
   address?: string;
   isMine?: boolean;
+  latitude: number;
+  longitude: number;
 };
 
-export type Pin = {
-  id: string;
-  pinId?: string;
-  title: string;
-  artist: string;
-  pinCount?: number;
+/** PinCard — 찜한 곡 API와 동일 shape (+ UI 전용 옵션) */
+export type Pin = Omit<LikedTrack, 'likeCount'> & {
   likeCount?: number;
+  pinCount?: number;
   liked?: boolean;
+  pinId?: string;
 };
 
 export type Song = {
@@ -74,11 +107,14 @@ export type PinFeedEntry = {
   isMine?: boolean;
 };
 
-export type PinDetail = Pin & {
+export type PinDetail = {
+  id: string;
+  title: string;
+  artist: string;
+  coverUrl?: string;
   likeCount: number;
   liked?: boolean;
   registerCount: number;
-  coverUrl?: string;
   feeds: PinFeedEntry[];
 };
 

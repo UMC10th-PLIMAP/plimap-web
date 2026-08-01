@@ -13,11 +13,14 @@ export function PinCard({ pin, onClick }: PinCardProps) {
     <article className="flex w-full items-center justify-between rounded-xl bg-pli-black-85 p-4.5 text-left">
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex min-w-0 items-center gap-4">
-          <div className="size-13 shrink-0 rounded-lg bg-grayscale-0" aria-hidden />
-
+          <div className="size-13 overflow-hidden rounded-lg bg-grayscale-0">
+            {pin.artworkUrl ? (
+              <img src={pin.artworkUrl} alt={pin.trackName} className="size-full object-cover" />
+            ) : null}
+          </div>
           <div className="flex min-w-0 flex-col items-start gap-[3px]">
-            <p className="w-full truncate body-15-sb text-grayscale-100">{pin.title}</p>
-            <p className="w-full truncate body-15-r text-grayscale-500">{pin.artist}</p>
+            <p className="w-full truncate body-15-sb text-grayscale-100">{pin.trackName}</p>
+            <p className="w-full truncate body-15-r text-grayscale-500">{pin.artistName}</p>
           </div>
         </div>
 
