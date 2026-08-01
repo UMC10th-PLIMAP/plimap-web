@@ -7,13 +7,10 @@ import type { MapPlace } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
 import { MOCK_MAP_PINS } from '@/features/map/constants/mockMapPins';
-import { BottomNav } from '@/components/BottomNav';
 import { PinListSheet } from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
-import PlusIcon from '@/assets/icons/plus.svg?react';
-import { useBottomNavigation } from '@/hooks/useBottomNavigation';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 
@@ -36,7 +33,6 @@ function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
 
 const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) => {
   const navigate = useNavigate();
-  const handleTabChange = useBottomNavigation();
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
@@ -149,20 +145,6 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
           </button>
         </div>
       </div>
-
-      {!isPlaceSheetOpen ? (
-        <BottomNav activeId="plimap" onTabChange={handleTabChange}>
-          {/* 핀 등록 버튼: BottomNav와의 간격은 BottomNav가 관리하므로 여기선 위치를 계산하지 않는다 */}
-          <button
-            type="button"
-            aria-label="핀 등록"
-            onClick={() => navigate('/app/pin/register')}
-            className="flex size-16 items-center justify-center rounded-full bg-gradient-neon text-grayscale-1200 shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
-          >
-            <PlusIcon className="size-7" />
-          </button>
-        </BottomNav>
-      ) : null}
 
       {isPlaceSheetOpen ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-[calc(50%+16px)] z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4">

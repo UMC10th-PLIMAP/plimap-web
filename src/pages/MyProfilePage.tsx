@@ -2,18 +2,15 @@ import { useNavigate } from 'react-router-dom';
 import MenuIcon from '@/assets/icons/menu.svg?react';
 import ShareIcon from '@/assets/icons/share.svg?react';
 
-import { BottomNav } from '@/components/BottomNav';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
 
 import { MOCK_MY_PROFILE } from '@/features/profile/constants/mockMyProfile';
 import { useInfiniteMemberMe } from '@/features/pin/queries/useMemberMe';
-import { useBottomNavigation } from '@/hooks/useBottomNavigation';
 
 export default function MyProfilePage() {
   const navigate = useNavigate();
-  const handleTabChange = useBottomNavigation();
   const profile = MOCK_MY_PROFILE;
 
   const { data: memberMePages } = useInfiniteMemberMe();
@@ -62,7 +59,6 @@ export default function MyProfilePage() {
         pins={memberMePages?.pages.flatMap((page) => page.data) ?? []}
         onRegisterPin={() => navigate('/app')}
       />
-      <BottomNav activeId="my" onTabChange={handleTabChange} />
     </div>
   );
 }

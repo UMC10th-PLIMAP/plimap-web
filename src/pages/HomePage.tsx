@@ -5,7 +5,6 @@ import BellIcon from '@/assets/home/bell.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
-import { BottomNav } from '@/components/BottomNav';
 import { Chip } from '@/components/ui/chip';
 import {
   MOCK_FRIEND_PINS,
@@ -17,7 +16,6 @@ import {
 } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
-import { useBottomNavigation } from '@/hooks/useBottomNavigation';
 
 function HotPlaceCard({ place }: { place: HotPlace }) {
   return (
@@ -67,7 +65,6 @@ function SavedPlaceCard({ place }: { place: SavedPlace }) {
 
 export default function HomePage() {
   const [hotPlaceFilter, setHotPlaceFilter] = useState<'nearby' | 'popular'>('nearby');
-  const handleTabChange = useBottomNavigation();
 
   return (
     <main className="relative min-h-full shrink-0 bg-pli-black-100 pb-[calc(env(safe-area-inset-bottom)+148px)]">
@@ -178,8 +175,6 @@ export default function HomePage() {
           />
         </section>
       </div>
-
-      <BottomNav activeId="home" onTabChange={handleTabChange} />
     </main>
   );
 }

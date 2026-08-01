@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import RootLayout from '@/layouts/RootLayout';
+import BottomNavLayout from '@/layouts/BottomNavLayout';
 import MapLayout from '@/layouts/MapLayout';
 import AuthGuard from '@/layouts/AuthGuard';
 import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
@@ -63,20 +64,32 @@ export const router = createBrowserRouter([
         element: <AuthGuard />,
         children: [
           {
-            path: 'home',
-            element: <HomePage />,
-          },
-          {
-            element: <MapLayout />,
+            element: <BottomNavLayout />,
             children: [
               {
-                index: true,
-                element: null,
+                path: 'home',
+                element: <HomePage />,
+                handle: { bottomNavItem: 'home' },
               },
               {
-                path: 'pin/search',
-                element: <PinPlaceSearchPage />,
-                handle: { mapOverlay: true },
+                element: <MapLayout />,
+                handle: { bottomNavItem: 'plimap' },
+                children: [
+                  {
+                    index: true,
+                    element: null,
+                  },
+                  {
+                    path: 'pin/search',
+                    element: <PinPlaceSearchPage />,
+                    handle: { mapOverlay: true },
+                  },
+                ],
+              },
+              {
+                path: 'my',
+                element: <MyProfilePage />,
+                handle: { bottomNavItem: 'my' },
               },
             ],
           },
@@ -111,10 +124,6 @@ export const router = createBrowserRouter([
           {
             path: 'song/detail/:songId',
             element: <SongDetailPage />,
-          },
-          {
-            path: 'my',
-            element: <MyProfilePage />,
           },
           {
             path: 'my/following',
