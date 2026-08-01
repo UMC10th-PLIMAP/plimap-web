@@ -18,6 +18,7 @@ import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
+import FollowListPage from '@/pages/FollowListPage';
 import RecommendationPinCardPreviewPage from '@/pages/RecommendationPinCardPreviewPage';
 
 export const router = createBrowserRouter([
@@ -95,6 +96,14 @@ export const router = createBrowserRouter([
       {
         path: 'my',
         element: <MyProfilePage />,
+      },
+      {
+        path: 'my/following',
+        element: <FollowListPage />,
+      },
+      {
+        path: 'my/followers',
+        element: <FollowListPage />,
       },
       {
         path: 'my/plimap',
