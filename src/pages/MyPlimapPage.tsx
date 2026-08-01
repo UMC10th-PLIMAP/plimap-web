@@ -38,7 +38,7 @@ export default function MyPlimapPage() {
     enabled: tab === 'liked',
   });
 
-  const tracks = likedTracks?.tracks ?? [];
+  const tracks = likedTracks?.pages.flatMap((page) => page.tracks) ?? [];
 
   return (
     <div className="flex min-h-full flex-col">
