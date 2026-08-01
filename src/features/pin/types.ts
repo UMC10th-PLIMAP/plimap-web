@@ -48,14 +48,14 @@ export type MemberMeResponse = {
 };
 
 export type GetPlaceTracksResponse = {
-  placeId: string;
+  placeId: number;
   distance: number;
   isWithinRadius: boolean;
-  isTrackDetailAccessible?: boolean;
+  isTrackDetailAccessible: boolean;
   tracks: (TrackBase & {
     placeTrackId: number;
     pinCount: number;
-    likeCount: number;
+    likeCount?: number;
     isLiked: boolean;
   })[];
   page: number;
@@ -78,7 +78,8 @@ export type PlaceInfo = {
 };
 
 /** PinCard — 찜한 곡 API와 동일 shape (+ UI 전용 옵션) */
-export type Pin = LikedTrack & {
+export type Pin = Omit<LikedTrack, 'likeCount'> & {
+  likeCount?: number;
   pinCount?: number;
   liked?: boolean;
   pinId?: string;
