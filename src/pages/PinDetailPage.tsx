@@ -114,7 +114,7 @@ export default function PinDetailPage() {
         open={reportFeedId !== null}
         onClose={() => setReportFeedId(null)}
         onSubmit={async (reason, detail) => {
-          await reportPin(Number(pinId), reason, detail);
+          await reportPin(Number(reportFeedId), reason, detail);
         }}
       />
     </div>
