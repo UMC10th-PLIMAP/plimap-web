@@ -41,6 +41,10 @@ export function RecommendationContentCarousel<T>({
     Math.max(pageCount - 1, 0),
   );
 
+  if (currentPage === undefined && uncontrolledPage !== activePage) {
+    setUncontrolledPage(activePage);
+  }
+
   useEffect(() => {
     lastPageRef.current = activePage;
   }, [activePage]);

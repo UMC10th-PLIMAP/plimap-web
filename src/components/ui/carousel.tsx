@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
@@ -80,6 +81,7 @@ function Carousel({
     containScroll: containScroll ? 'trimSnaps' : false,
   });
   const prefersReducedMotion = usePrefersReducedMotion();
+  const lastSyncedApiRef = useRef<EmblaApi>(undefined);
   const subscribeToScrollState = useCallback(
     (onStoreChange: () => void) => {
       if (!api) return () => {};
@@ -142,9 +144,11 @@ function Carousel({
     if (lastIndex < 0) return;
 
     const nextIndex = Math.min(Math.max(selectedIndex, 0), lastIndex);
+    const isInitialSync = lastSyncedApiRef.current !== api;
     if (api.selectedScrollSnap() !== nextIndex) {
-      api.scrollTo(nextIndex, prefersReducedMotion);
+      api.scrollTo(nextIndex, isInitialSync || prefersReducedMotion);
     }
+    lastSyncedApiRef.current = api;
   }, [api, prefersReducedMotion, selectedIndex]);
 
   useEffect(() => {
