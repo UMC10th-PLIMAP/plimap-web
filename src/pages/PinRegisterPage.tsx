@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 
+import { isApiRequestCanceled } from '@/api/client';
 import { validatePinAvailability } from '@/api/pin';
 import { confirmMapSelection } from '@/api/place';
 import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceMeters';
@@ -17,8 +18,14 @@ const availabilityMessage = (status: 'OUT_OF_RANGE' | 'TOO_CLOSE_TO_PIN') =>
 
 export default function PinRegisterPage() {
   const navigate = useNavigate();
-  const { mapStatus, zoom, radiusCenter, locationError, isOutsideAllowedRadius } =
-    useOutletContext<PinRegistrationOutletContext>();
+  const {
+    mapStatus,
+    zoom,
+    radiusCenter,
+    locationError,
+    isOutsideAllowedRadius,
+    setMapInteractionDisabled,
+  } = useOutletContext<PinRegistrationOutletContext>();
   const candidateCoordinate = usePinCreationStore((state) => state.candidateCoordinate);
   const currentLocation = usePinCreationStore((state) => state.currentLocation);
   const setSearchKeyword = usePinCreationStore((state) => state.setSearchKeyword);
@@ -26,6 +33,15 @@ export default function PinRegisterPage() {
   const reset = usePinCreationStore((state) => state.reset);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+  const requestControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      requestControllerRef.current?.abort();
+      requestControllerRef.current = null;
+      setMapInteractionDisabled(false);
+    };
+  }, [setMapInteractionDisabled]);
 
   const navigateToStage = (path: string) => {
     navigate(path, { viewTransition: true });
@@ -47,14 +63,20 @@ export default function PinRegisterPage() {
       return;
     }
 
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
     setIsCompleting(true);
+    setMapInteractionDisabled(true);
     try {
-      const availability = await validatePinAvailability({
-        latitude: candidateCoordinate.lat,
-        longitude: candidateCoordinate.lng,
-        userLatitude: currentLocation.lat,
-        userLongitude: currentLocation.lng,
-      });
+      const availability = await validatePinAvailability(
+        {
+          latitude: candidateCoordinate.lat,
+          longitude: candidateCoordinate.lng,
+          userLatitude: currentLocation.lat,
+          userLongitude: currentLocation.lng,
+        },
+        { signal: controller.signal },
+      );
 
       if (availability.status !== 'CREATABLE_NEW_PLACE') {
         setFeedbackMessage(availabilityMessage(availability.status));
@@ -66,14 +88,17 @@ export default function PinRegisterPage() {
         return;
       }
 
-      const address = await reverseGeocode(candidateCoordinate);
-      const result = await confirmMapSelection({
-        latitude: candidateCoordinate.lat,
-        longitude: candidateCoordinate.lng,
-        placeName: null,
-        address,
-        roadAddress: null,
-      });
+      const address = await reverseGeocode(candidateCoordinate, { signal: controller.signal });
+      const result = await confirmMapSelection(
+        {
+          latitude: candidateCoordinate.lat,
+          longitude: candidateCoordinate.lng,
+          placeName: null,
+          address,
+          roadAddress: null,
+        },
+        { signal: controller.signal },
+      );
 
       if (result.status === 'PLACE_SEARCH_REQUIRED') {
         setSearchKeyword(result.buildingName);
@@ -110,11 +135,16 @@ export default function PinRegisterPage() {
       });
       navigateToStage('/app/pin/register/confirm');
     } catch (error) {
+      if (controller.signal.aborted || isApiRequestCanceled(error)) return;
       setFeedbackMessage(
         error instanceof Error ? error.message : '선택한 위치를 확인하지 못했어요.',
       );
     } finally {
-      setIsCompleting(false);
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
+        setIsCompleting(false);
+        setMapInteractionDisabled(false);
+      }
     }
   };
 

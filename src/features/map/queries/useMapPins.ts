@@ -9,12 +9,15 @@ const MAX_API_ZOOM = 20;
 
 const roundCoordinate = (value: number) => Number(value.toFixed(COORDINATE_PRECISION));
 
+export const normalizeMapZoom = (zoom: number) =>
+  Math.min(MAX_API_ZOOM, Math.max(MIN_API_ZOOM, Math.round(zoom)));
+
 const toMapPinsRequest = (viewport: MapViewport): MapPinsRequest => ({
   southWestLat: roundCoordinate(viewport.bounds.southWest.lat),
   southWestLng: roundCoordinate(viewport.bounds.southWest.lng),
   northEastLat: roundCoordinate(viewport.bounds.northEast.lat),
   northEastLng: roundCoordinate(viewport.bounds.northEast.lng),
-  zoomLevel: Math.min(MAX_API_ZOOM, Math.max(MIN_API_ZOOM, Math.round(viewport.zoom))),
+  zoomLevel: normalizeMapZoom(viewport.zoom),
 });
 
 export function useMapPins(viewport: MapViewport | null) {

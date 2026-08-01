@@ -10,6 +10,7 @@ import type { PinRadiusCenter } from '@/features/pin/components/PinRadiusOverlay
 
 type MapViewerProps = {
   isLoaded: boolean;
+  isInteractionDisabled?: boolean;
   zoom: number;
   initialCenter?: MapCoordinate;
   placeResults: MapPlace[];
@@ -34,13 +35,14 @@ type MapViewerProps = {
 export type MapViewerHandle = {
   /** 지도를 현재 위치 마커로 이동시킨다. 위치를 아직 못 받았으면 아무 동작도 하지 않는다. */
   recenterToCurrentLocation: () => void;
-  panTo: (coordinate: MapCoordinate) => void;
+  panTo: (coordinate: MapCoordinate, options?: { notifyCenterChanged?: boolean }) => void;
   fitBounds: (bounds: MapCluster['bounds']) => void;
 };
 
 export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function MapViewer(
   {
     isLoaded,
+    isInteractionDisabled = false,
     zoom,
     initialCenter,
     placeResults,
@@ -63,8 +65,9 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
   },
   ref,
 ) {
-  const { mapRef, mapInstanceRef } = useGoogleMap({
+  const { mapRef, mapInstanceRef, panTo, fitBounds } = useGoogleMap({
     isLoaded,
+    isInteractionDisabled,
     zoom,
     initialCenter,
     onZoomChanged,
@@ -85,11 +88,9 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     ref,
     () => ({
       recenterToCurrentLocation,
-      panTo: (coordinate) => {
-        mapInstanceRef.current?.panTo(coordinate);
-      },
+      panTo,
       fitBounds: (bounds) => {
-        mapInstanceRef.current?.fitBounds({
+        fitBounds({
           south: bounds.southWest.lat,
           west: bounds.southWest.lng,
           north: bounds.northEast.lat,
@@ -97,7 +98,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
         });
       },
     }),
-    [mapInstanceRef, recenterToCurrentLocation],
+    [fitBounds, panTo, recenterToCurrentLocation],
   );
 
   usePlaceMarkers({ mapInstanceRef, isLoaded, placeResults, selectedPlaceId, onSelectPlace });

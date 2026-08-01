@@ -39,6 +39,10 @@ export default function PinRegisterSearchPage() {
       <PinPlaceSearch
         initialQuery={searchKeyword}
         showRecentPlaces={false}
+        currentLocationOverride={{
+          latitude: currentLocation.lat,
+          longitude: currentLocation.lng,
+        }}
         onBack={() => navigateToStage('/app/pin/register')}
         validatePlace={(place) =>
           place.withinAccessRange === false

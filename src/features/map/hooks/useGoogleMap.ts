@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '../types';
 
 // 지도 줌 하한선 (레벨 단위 유지, 상한선은 API 지원 한도까지 허용)
 const MIN_ZOOM = 6;
+const CENTER_EQUALITY_EPSILON = 1e-9;
 
 // 대한민국 영역으로 패닝을 제한하는 경계 상자 (엄격 모드)
 const KOREA_BOUNDS: google.maps.LatLngBoundsLiteral = {
@@ -16,9 +17,14 @@ type UseGoogleMapParams = {
   isLoaded: boolean;
   zoom: number;
   initialCenter?: MapCoordinate;
+  isInteractionDisabled?: boolean;
   onZoomChanged?: (newZoom: number) => void;
   onCenterChanged?: (center: MapCoordinate) => void;
   onViewportChanged?: (viewport: MapViewport) => void;
+};
+
+type PanToOptions = {
+  notifyCenterChanged?: boolean;
 };
 
 /** 구글맵 인스턴스를 생성하고, zoom/center 변경을 리스닝한다. */
@@ -26,6 +32,7 @@ export function useGoogleMap({
   isLoaded,
   zoom,
   initialCenter = DEFAULT_CENTER,
+  isInteractionDisabled = false,
   onZoomChanged,
   onCenterChanged,
   onViewportChanged,
@@ -36,6 +43,7 @@ export function useGoogleMap({
   const onZoomChangedRef = useRef(onZoomChanged);
   const onViewportChangedRef = useRef(onViewportChanged);
   const initialCenterRef = useRef(initialCenter);
+  const suppressNextCenterChangedRef = useRef(false);
 
   useEffect(() => {
     onCenterChangedRef.current = onCenterChanged;
@@ -48,6 +56,13 @@ export function useGoogleMap({
   useEffect(() => {
     onViewportChangedRef.current = onViewportChanged;
   }, [onViewportChanged]);
+
+  useEffect(() => {
+    mapInstanceRef.current?.setOptions({
+      gestureHandling: isInteractionDisabled ? 'none' : 'greedy',
+      keyboardShortcuts: !isInteractionDisabled,
+    });
+  }, [isInteractionDisabled]);
 
   useEffect(() => {
     const mapsApi = window.google?.maps;
@@ -74,7 +89,8 @@ export function useGoogleMap({
           strictBounds: false,
         },
         disableDefaultUI: true,
-        gestureHandling: 'greedy',
+        gestureHandling: isInteractionDisabled ? 'none' : 'greedy',
+        keyboardShortcuts: !isInteractionDisabled,
         // 지하철역/POI 아이콘 클릭 시 뜨는 구글 기본 정보창 비활성화
         clickableIcons: false,
         ...(mapId ? { mapId } : {}),
@@ -88,6 +104,10 @@ export function useGoogleMap({
         }
       });
 
+      map.addListener('dragstart', () => {
+        suppressNextCenterChangedRef.current = false;
+      });
+
       map.addListener('idle', () => {
         const newCenter = map.getCenter();
         const bounds = map.getBounds();
@@ -98,7 +118,10 @@ export function useGoogleMap({
           lat: newCenter.lat(),
           lng: newCenter.lng(),
         };
-        onCenterChangedRef.current?.(center);
+        if (!suppressNextCenterChangedRef.current) {
+          onCenterChangedRef.current?.(center);
+        }
+        suppressNextCenterChangedRef.current = false;
 
         const southWest = bounds.getSouthWest();
         const northEast = bounds.getNorthEast();
@@ -114,7 +137,33 @@ export function useGoogleMap({
     } else if (mapInstanceRef.current.getZoom() !== zoom) {
       mapInstanceRef.current.setZoom(zoom);
     }
-  }, [isLoaded, zoom]);
+  }, [isInteractionDisabled, isLoaded, zoom]);
 
-  return { mapRef, mapInstanceRef };
+  const panTo = useCallback((coordinate: MapCoordinate, options?: PanToOptions) => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const currentCenter = map.getCenter();
+    if (
+      currentCenter &&
+      Math.abs(currentCenter.lat() - coordinate.lat) < CENTER_EQUALITY_EPSILON &&
+      Math.abs(currentCenter.lng() - coordinate.lng) < CENTER_EQUALITY_EPSILON
+    ) {
+      suppressNextCenterChangedRef.current = false;
+      return;
+    }
+
+    suppressNextCenterChangedRef.current = options?.notifyCenterChanged === false;
+    map.panTo(coordinate);
+  }, []);
+
+  const fitBounds = useCallback((bounds: google.maps.LatLngBoundsLiteral) => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    suppressNextCenterChangedRef.current = false;
+    map.fitBounds(bounds);
+  }, []);
+
+  return { mapRef, mapInstanceRef, panTo, fitBounds };
 }

@@ -11,6 +11,7 @@ import {
 } from '@/features/pin/queries/usePlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
+import type { PlaceSearchHistoryRequest } from '@/types/place.type';
 
 export type PinPlaceSearchProps = {
   initialQuery?: string;
@@ -20,6 +21,7 @@ export type PinPlaceSearchProps = {
   onPlaceSelect: (place: PinSearchPlace) => void;
   validatePlace?: (place: PinSearchPlace) => string | null;
   onBack?: () => void;
+  currentLocationOverride?: PlaceSearchHistoryRequest;
 };
 
 export function PinPlaceSearch({
@@ -30,21 +32,23 @@ export function PinPlaceSearch({
   onPlaceSelect,
   validatePlace,
   onBack,
+  currentLocationOverride,
 }: PinPlaceSearchProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const selectionControllerRef = useRef<AbortController | null>(null);
   const [query, setQuery] = useState(initialQuery);
   const [selectionConstraintError, setSelectionConstraintError] = useState<string | null>(null);
   const currentPositionQuery = useCurrentPosition({
+    enabled: !currentLocationOverride,
     options: {
       enableHighAccuracy: true,
       maximumAge: 0,
       timeout: 10_000,
     },
   });
-  const currentLocation = currentPositionQuery.data ?? null;
+  const currentLocation = currentLocationOverride ?? currentPositionQuery.data ?? null;
   const locationError =
-    currentPositionQuery.isError && !currentPositionQuery.data
+    !currentLocationOverride && currentPositionQuery.isError && !currentPositionQuery.data
       ? '현재 위치를 확인할 수 없어요. 위치 권한을 확인해주세요.'
       : null;
   const normalizedQuery = query.trim();

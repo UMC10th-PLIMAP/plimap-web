@@ -140,10 +140,12 @@ export async function selectSearchPlace({
 /** POST /api/v1/places/map-selections 지도 선택 장소 판정 */
 export async function confirmMapSelection(
   request: PlaceMapSelectionRequest,
+  options?: RequestOptions,
 ): Promise<PlaceMapSelectionResult> {
   const { data } = await apiClient.post<ApiResponse<PlaceMapSelectionResult>>(
     `${ENDPOINT}/map-selections`,
     request,
+    { signal: options?.signal },
   );
 
   return data.result;

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
-import { useMapPins } from '@/features/map/queries/useMapPins';
+import { normalizeMapZoom, useMapPins } from '@/features/map/queries/useMapPins';
 import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '@/features/map/types';
 import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceMeters';
 import { loadGoogleMapsScript } from '@/features/map/utils';
@@ -19,6 +19,7 @@ export type PinRegistrationOutletContext = {
   radiusCenter: PinRadiusCenter | null;
   locationError: string | null;
   isOutsideAllowedRadius: boolean;
+  setMapInteractionDisabled: (disabled: boolean) => void;
 };
 
 export default function PinRegistrationLayout() {
@@ -39,11 +40,14 @@ export default function PinRegistrationLayout() {
   const [viewport, setViewport] = useState<MapViewport | null>(null);
   const [radiusCenter, setRadiusCenter] = useState<PinRadiusCenter | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [isMapInteractionDisabled, setMapInteractionDisabled] = useState(false);
   const mapPinsQuery = useMapPins(viewport);
 
   const isSelectionStage = location.pathname === '/app/pin/register';
   const isConfirmStage = location.pathname === '/app/pin/register/confirm';
   const initialCenter = candidateCoordinate ?? place?.coordinates ?? DEFAULT_CENTER;
+  const normalizedZoom = normalizeMapZoom(zoom);
+  const displayedMapZoom = mapPinsQuery.data?.zoomLevel ?? normalizedZoom;
   const isOutsideAllowedRadius =
     currentLocation !== null &&
     candidateCoordinate !== null &&
@@ -79,7 +83,9 @@ export default function PinRegistrationLayout() {
       : isSelectionStage
         ? candidateCoordinate
         : null;
-    if (targetCoordinate) mapViewerRef.current?.panTo(targetCoordinate);
+    if (targetCoordinate) {
+      mapViewerRef.current?.panTo(targetCoordinate, { notifyCenterChanged: false });
+    }
   }, [candidateCoordinate, isConfirmStage, isSelectionStage, location.pathname, mapStatus, place]);
 
   const handleRetryMapLoad = () => {
@@ -95,7 +101,10 @@ export default function PinRegistrationLayout() {
 
   const handleViewportChanged = (nextViewport: MapViewport) => {
     setViewport(nextViewport);
-    if (isSelectionStage) setCandidateCoordinate(nextViewport.center);
+  };
+
+  const handleCenterChanged = (coordinate: MapCoordinate) => {
+    if (isSelectionStage) setCandidateCoordinate(coordinate);
   };
 
   const outletContext = {
@@ -104,6 +113,7 @@ export default function PinRegistrationLayout() {
     radiusCenter,
     locationError,
     isOutsideAllowedRadius,
+    setMapInteractionDisabled,
   } satisfies PinRegistrationOutletContext;
 
   return (
@@ -111,19 +121,21 @@ export default function PinRegistrationLayout() {
       <MapViewer
         ref={mapViewerRef}
         isLoaded={mapStatus === 'ready'}
+        isInteractionDisabled={isMapInteractionDisabled}
         zoom={zoom}
         initialCenter={initialCenter}
         centerOnFirstLocation={!candidateCoordinate}
         placeResults={[]}
         selectedPlaceId={null}
-        mapPins={zoom >= 14 ? (mapPinsQuery.data?.pins ?? []) : []}
-        mapClusters={zoom < 14 ? (mapPinsQuery.data?.clusters ?? []) : []}
+        mapPins={displayedMapZoom >= 14 ? (mapPinsQuery.data?.pins ?? []) : []}
+        mapClusters={displayedMapZoom < 14 ? (mapPinsQuery.data?.clusters ?? []) : []}
         selectedMapPinId={null}
         projectionCoordinate={isSelectionStage ? currentLocation : null}
         projectionRadiusMeters={PIN_REGISTRATION_RADIUS_METERS}
         onZoomChanged={setZoom}
         onCurrentLocationChanged={handleCurrentLocationChanged}
         onCurrentLocationError={setLocationError}
+        onCenterChanged={handleCenterChanged}
         onViewportChanged={handleViewportChanged}
         onProjectionChanged={setRadiusCenter}
         onSelectCluster={(cluster) => mapViewerRef.current?.fitBounds(cluster.bounds)}
@@ -146,6 +158,13 @@ export default function PinRegistrationLayout() {
             </button>
           ) : null}
         </div>
+      ) : null}
+
+      {isMapInteractionDisabled ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-auto absolute inset-0 z-[25] touch-none"
+        />
       ) : null}
 
       <div className="pointer-events-none absolute inset-0 z-30">

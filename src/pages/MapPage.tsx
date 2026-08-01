@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { MapPlace, MapViewport } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
-import { useMapPins } from '@/features/map/queries/useMapPins';
+import { normalizeMapZoom, useMapPins } from '@/features/map/queries/useMapPins';
 import { PinListSheet } from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
@@ -52,6 +52,8 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
   const mapPinsQuery = useMapPins(viewport);
+  const normalizedZoom = normalizeMapZoom(zoom);
+  const displayedMapZoom = mapPinsQuery.data?.zoomLevel ?? normalizedZoom;
   const isPlaceSheetOpen = selectedMapPlace !== null;
 
   const mapViewerRef = useRef<MapViewerHandle>(null);
@@ -177,8 +179,8 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
         zoom={zoom}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
-        mapPins={zoom >= 14 ? (mapPinsQuery.data?.pins ?? []) : []}
-        mapClusters={zoom < 14 ? (mapPinsQuery.data?.clusters ?? []) : []}
+        mapPins={displayedMapZoom >= 14 ? (mapPinsQuery.data?.pins ?? []) : []}
+        mapClusters={displayedMapZoom < 14 ? (mapPinsQuery.data?.clusters ?? []) : []}
         selectedMapPinId={selectedMapPinId}
         onZoomChanged={handleZoomChange}
         onViewportChanged={setViewport}
