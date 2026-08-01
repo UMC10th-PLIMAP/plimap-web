@@ -1,16 +1,19 @@
-export type FollowNotificationRelation = 'follow-back' | 'following';
+export type NotificationType = 'FOLLOW' | 'PIN_CREATED' | 'PIN_LIKED';
 
-export type FollowNotification = {
-  id: string;
+export type Notification = {
+  notificationId: number;
+  type: NotificationType;
+  actorId: number;
   actorNickname: string;
-  actorProfileImageUrl: string;
-  createdAtLabel: string;
-  relation: FollowNotificationRelation;
+  actorProfileImageObjectKey: string | null;
+  pinId: number | null;
+  read: boolean;
+  createdAt: string;
 };
 
-export type FollowNotificationsPage = {
-  data: FollowNotification[];
-  nextCursor?: string;
+export type NotificationPage = {
+  data: Notification[];
+  nextCursor: string | null;
   hasNext: boolean;
   pageSize: number;
 };

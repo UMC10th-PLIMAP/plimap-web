@@ -1,6 +1,7 @@
 import { apiClient } from '@/api/client';
 import type { ApiResponse } from '@/api/types';
 import type {
+  MemberProfileResponse,
   MyProfileResponse,
   NicknameCheckResponse,
   ProfileImageUploadResponse,
@@ -33,4 +34,16 @@ export async function uploadProfileImage(image: File) {
 export async function getMyProfile() {
   const { data } = await apiClient.get<ApiResponse<MyProfileResponse>>(`${ENDPOINT}/me`);
   return data.result;
+}
+
+export async function getOtherMemberProfile(memberId: number) {
+  const { data } = await apiClient.get<ApiResponse<MemberProfileResponse>>(
+    `${ENDPOINT}/${memberId}`,
+  );
+
+  return data.result;
+}
+
+export async function followMember(memberId: number) {
+  await apiClient.post<ApiResponse<null>>(`${ENDPOINT}/${memberId}/follow`);
 }
