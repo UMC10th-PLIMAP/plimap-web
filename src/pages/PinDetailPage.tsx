@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
 
+import { reportPin } from '@/api/report';
 import { SongFeedCard } from '@/features/pin/components/SongFeedCard';
 import { ReportModal } from '@/features/pin/components/ReportModal';
 
@@ -109,7 +110,13 @@ export default function PinDetailPage() {
         ))}
       </div>
 
-      <ReportModal open={reportFeedId !== null} onClose={() => setReportFeedId(null)} />
+      <ReportModal
+        open={reportFeedId !== null}
+        onClose={() => setReportFeedId(null)}
+        onSubmit={async (reason, detail) => {
+          await reportPin(Number(pinId), reason, detail);
+        }}
+      />
     </div>
   );
 }
