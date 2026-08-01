@@ -40,6 +40,7 @@ export default function MyPlimapPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isFetchNextPageError,
   } = useLikeTrack({
     enabled: tab === 'liked',
   });
@@ -48,10 +49,10 @@ export default function MyPlimapPage() {
 
   const loadMoreRef = useInfiniteScroll(
     () => {
-      if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+      if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) fetchNextPage();
     },
     {
-      enabled: tab === 'liked' && Boolean(hasNextPage),
+      enabled: tab === 'liked' && Boolean(hasNextPage) && !isFetchNextPageError,
       reconnectKey: isFetchingNextPage,
     },
   );
@@ -95,7 +96,21 @@ export default function MyPlimapPage() {
                   }}
                 />
               ))}
-              <div ref={loadMoreRef} className="h-4" aria-hidden />
+              {isFetchNextPageError ? (
+                <div className="flex flex-col items-center gap-2 py-4">
+                  <p className="body-15-m text-grayscale-500">더 불러오지 못했어요</p>
+                  <button
+                    type="button"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="body-15-m text-grayscale-300 underline disabled:opacity-50 cursor-pointer"
+                  >
+                    다시 시도
+                  </button>
+                </div>
+              ) : (
+                <div ref={loadMoreRef} className="h-4" aria-hidden />
+              )}
             </>
           )}
         </div>
