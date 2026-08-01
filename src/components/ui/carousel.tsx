@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useState,
   useSyncExternalStore,
 } from 'react';
 import type { ComponentProps, KeyboardEvent, MouseEvent } from 'react';
@@ -12,15 +13,13 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-export type CarouselApi = UseEmblaCarouselType[1];
-
-type CarouselOptions = Parameters<typeof useEmblaCarousel>[0];
-type CarouselPlugins = Parameters<typeof useEmblaCarousel>[1];
+type EmblaApi = UseEmblaCarouselType[1];
 type CarouselOrientation = 'horizontal' | 'vertical';
+type CarouselSnapAlignment = 'start' | 'center' | 'end';
 
 type CarouselContextValue = {
   carouselRef: ReturnType<typeof useEmblaCarousel>[0];
-  api: CarouselApi;
+  api: EmblaApi;
   orientation: CarouselOrientation;
   scrollPrev: () => void;
   scrollNext: () => void;
@@ -29,10 +28,11 @@ type CarouselContextValue = {
 };
 
 type CarouselProps = ComponentProps<'div'> & {
-  opts?: CarouselOptions;
-  plugins?: CarouselPlugins;
   orientation?: CarouselOrientation;
-  setApi?: (api: CarouselApi) => void;
+  selectedIndex?: number;
+  onSelectedIndexChange?: (index: number) => void;
+  snapAlignment?: CarouselSnapAlignment;
+  containScroll?: boolean;
 };
 
 const CarouselContext = createContext<CarouselContextValue | null>(null);
@@ -47,23 +47,39 @@ function useCarousel() {
   return context;
 }
 
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    updatePreference();
+    mediaQuery.addEventListener('change', updatePreference);
+
+    return () => mediaQuery.removeEventListener('change', updatePreference);
+  }, []);
+
+  return prefersReducedMotion;
+}
+
 function Carousel({
   orientation = 'horizontal',
-  opts,
-  plugins,
-  setApi,
+  selectedIndex,
+  onSelectedIndexChange,
+  snapAlignment = 'center',
+  containScroll = true,
   className,
   children,
   onKeyDownCapture,
   ...props
 }: CarouselProps) {
-  const [carouselRef, api] = useEmblaCarousel(
-    {
-      ...opts,
-      axis: orientation === 'horizontal' ? 'x' : 'y',
-    },
-    plugins,
-  );
+  const [carouselRef, api] = useEmblaCarousel({
+    axis: orientation === 'horizontal' ? 'x' : 'y',
+    align: snapAlignment,
+    containScroll: containScroll ? 'trimSnaps' : false,
+  });
+  const prefersReducedMotion = usePrefersReducedMotion();
   const subscribeToScrollState = useCallback(
     (onStoreChange: () => void) => {
       if (!api) return () => {};
@@ -120,8 +136,31 @@ function Carousel({
   );
 
   useEffect(() => {
-    if (api) setApi?.(api);
-  }, [api, setApi]);
+    if (!api || selectedIndex === undefined) return;
+
+    const lastIndex = api.scrollSnapList().length - 1;
+    if (lastIndex < 0) return;
+
+    const nextIndex = Math.min(Math.max(selectedIndex, 0), lastIndex);
+    if (api.selectedScrollSnap() !== nextIndex) {
+      api.scrollTo(nextIndex, prefersReducedMotion);
+    }
+  }, [api, prefersReducedMotion, selectedIndex]);
+
+  useEffect(() => {
+    if (!api || !onSelectedIndexChange) return;
+
+    const handleSelectionChange = () => onSelectedIndexChange(api.selectedScrollSnap());
+
+    handleSelectionChange();
+    api.on('reInit', handleSelectionChange);
+    api.on('select', handleSelectionChange);
+
+    return () => {
+      api.off('reInit', handleSelectionChange);
+      api.off('select', handleSelectionChange);
+    };
+  }, [api, onSelectedIndexChange]);
 
   return (
     <CarouselContext.Provider
@@ -260,12 +299,4 @@ const CarouselNext = forwardRef<HTMLButtonElement, ComponentProps<'button'>>(
 
 CarouselNext.displayName = 'CarouselNext';
 
-export {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselOptions,
-  type CarouselPlugins,
-};
+export { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious };
