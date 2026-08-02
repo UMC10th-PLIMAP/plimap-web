@@ -16,6 +16,34 @@ import {
 } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
+import { useHomeProfile } from '@/features/home/queries/useHomeProfile';
+
+function HomeLoadingState() {
+  return (
+    <main
+      className="flex min-h-full shrink-0 items-center justify-center bg-pli-black-100"
+      role="status"
+      aria-label="홈 화면 불러오는 중"
+    >
+      <span className="size-8 animate-spin rounded-full border-2 border-grayscale-700 border-t-neon-2" />
+    </main>
+  );
+}
+
+function HomeErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <main className="flex min-h-full shrink-0 flex-col items-center justify-center gap-4 bg-pli-black-100 px-6 text-center">
+      <p className="body-15-r text-grayscale-300">홈 화면을 불러오지 못했어요.</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-full bg-neon px-6 py-3 body-15-sb text-grayscale-1250"
+      >
+        다시 시도
+      </button>
+    </main>
+  );
+}
 
 function HotPlaceCard({ place }: { place: HotPlace }) {
   return (
@@ -65,6 +93,15 @@ function SavedPlaceCard({ place }: { place: SavedPlace }) {
 
 export default function HomePage() {
   const [hotPlaceFilter, setHotPlaceFilter] = useState<'nearby' | 'popular'>('nearby');
+  const homeProfileQuery = useHomeProfile();
+
+  if (homeProfileQuery.isPending) {
+    return <HomeLoadingState />;
+  }
+
+  if (homeProfileQuery.isError) {
+    return <HomeErrorState onRetry={() => void homeProfileQuery.refetch()} />;
+  }
 
   return (
     <main className="relative min-h-full shrink-0 bg-pli-black-100 pb-[calc(env(safe-area-inset-bottom)+148px)]">
@@ -88,7 +125,7 @@ export default function HomePage() {
 
           <div className="flex h-[94px] flex-col gap-1 px-4 py-4">
             <h1 className="head-24-sb text-grayscale-100">
-              반가워요, <span className="text-neon-2">{MOCK_HOME_USER.nickname}</span> 님
+              반가워요, <span className="text-neon-2">{homeProfileQuery.data.nickname}</span> 님
             </h1>
             <div className="flex items-center gap-2 body-17-r">
               <span className="shrink-0 text-grayscale-500">현재 위치</span>
