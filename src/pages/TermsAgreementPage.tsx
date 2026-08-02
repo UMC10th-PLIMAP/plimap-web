@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
@@ -10,6 +10,7 @@ import { TermRow } from '@/features/auth/components/TermRow';
 import { TermsDetailContent } from '@/features/auth/components/TermsDetailContent';
 import { TERMS, TERMS_BY_ID } from '@/features/auth/terms/content';
 import type { TermId } from '@/features/auth/terms/types';
+import { useOnboardingStore } from '@/store/onboardingStore';
 
 const TERMS_AGREEMENT_FAILED_MESSAGE = '약관 동의 처리에 실패했어요. 다시 시도해주세요.';
 
@@ -25,6 +26,11 @@ export default function TermsAgreementPage() {
   const [checked, setChecked] = useState<Record<TermId, boolean>>(INITIAL_CHECKED);
   const [detailTermId, setDetailTermId] = useState<TermId | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 이전 사용자가 온보딩을 완료하지 않고 이탈한 경우를 대비해 새 온보딩 시작 시점에도 스토어를 초기화
+  useEffect(() => {
+    useOnboardingStore.getState().reset();
+  }, []);
 
   const allChecked = TERMS.every((term) => checked[term.id]);
   const isValid = TERMS.filter((term) => term.required).every((term) => checked[term.id]);
