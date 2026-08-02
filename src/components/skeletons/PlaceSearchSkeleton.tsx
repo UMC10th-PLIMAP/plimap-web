@@ -1,7 +1,7 @@
 import { Skeleton } from '@/components/ui/Skeleton';
 import LocationIcon from '@/assets/icons/location.svg?react';
 
-export function PinListSkeleton() {
+export function PlaceSearchSkeleton() {
   return (
     <div className="w-[342px] h-25 pt-4 pb-3 flex gap-4 mx-6">
       <div className="flex w-8 h-7 items-center justify-center rounded-full bg-pli-black-50">
