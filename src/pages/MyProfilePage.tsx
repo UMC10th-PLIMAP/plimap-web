@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import MenuIcon from '@/assets/icons/menu.svg?react';
+import SettingsIcon from '@/assets/icons/settings.svg?react';
 import ShareIcon from '@/assets/icons/share.svg?react';
 
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
@@ -22,10 +22,11 @@ export default function MyProfilePage() {
         <h1 className="text-center head-24-sb text-grayscale-100">{profile.nickname}</h1>
         <button
           type="button"
-          aria-label="메뉴"
+          aria-label="설정"
+          onClick={() => navigate('/app/settings')}
           className="flex size-6 items-center text-grayscale-100 cursor-pointer"
         >
-          <MenuIcon className="size-6" />
+          <SettingsIcon className="size-6" />
         </button>
       </header>
 

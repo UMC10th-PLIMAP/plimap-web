@@ -61,7 +61,9 @@ export default function TermsAgreementPage() {
     const term = TERMS_BY_ID[detailTermId];
     return (
       <div className="flex min-h-screen flex-col">
-        <TermsDetailContent term={term} />
+        <div className="pt-[44px]">
+          <TermsDetailContent term={term} />
+        </div>
         {/* 고정 CTA에 가려지지 않도록 스크롤 영역 하단에 여백 확보 */}
         <div aria-hidden className="h-[116px]" />
         <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-[10px] pb-[52px]">

@@ -25,7 +25,7 @@ export function TopBar({
   className,
 }: TopBarProps) {
   return (
-    <div className={`grid h-[60px] grid-cols-[28px_1fr_28px] items-center px-4 ${className ?? ''}`}>
+    <div className={`grid min-h-15 grid-cols-[28px_1fr_28px] items-center px-4 ${className ?? ''}`}>
       <div className="flex items-center">
         {onBack && (
           <button
