@@ -45,6 +45,7 @@ export default function PinRegistrationLayout() {
 
   const isSelectionStage = location.pathname === '/app/pin/register';
   const isConfirmStage = location.pathname === '/app/pin/register/confirm';
+  const isMapInteractionLocked = isMapInteractionDisabled || isConfirmStage;
   const initialCenter = candidateCoordinate ?? place?.coordinates ?? DEFAULT_CENTER;
   const isOutsideAllowedRadius =
     currentLocation !== null &&
@@ -119,7 +120,7 @@ export default function PinRegistrationLayout() {
       <MapViewer
         ref={mapViewerRef}
         isLoaded={mapStatus === 'ready'}
-        isInteractionDisabled={isMapInteractionDisabled}
+        isInteractionDisabled={isMapInteractionLocked}
         zoom={zoom}
         initialCenter={initialCenter}
         centerOnFirstLocation={!candidateCoordinate}
@@ -156,7 +157,7 @@ export default function PinRegistrationLayout() {
         </div>
       ) : null}
 
-      {isMapInteractionDisabled ? (
+      {isMapInteractionLocked ? (
         <div
           aria-hidden="true"
           className="pointer-events-auto absolute inset-0 z-[25] touch-none"
