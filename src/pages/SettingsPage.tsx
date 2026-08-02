@@ -27,13 +27,14 @@ export default function SettingsPage() {
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
-    setIsLogoutDialogOpen(false);
 
     try {
       await logout();
+      setIsLogoutDialogOpen(false);
       queryClient.removeQueries({ queryKey: ['me'] });
       navigate('/app/login', { replace: true });
     } catch (error) {
+      setIsLogoutDialogOpen(true);
       alert(error instanceof ApiError ? error.message : LOGOUT_FAILED_MESSAGE);
     } finally {
       setIsLoggingOut(false);
