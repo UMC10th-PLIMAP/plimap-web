@@ -20,6 +20,7 @@ export default function PinRegisterEntryPage() {
   const navigate = useNavigate();
   const reset = usePinCreationStore((state) => state.reset);
   const setPlace = usePinCreationStore((state) => state.setPlace);
+  const setCurrentLocation = usePinCreationStore((state) => state.setCurrentLocation);
   const [validationToast, setValidationToast] = useState<ValidationToast | null>(null);
 
   const handleBack = () => {
@@ -67,6 +68,7 @@ export default function PinRegisterEntryPage() {
               : null
           }
           onValidationError={handleValidationError}
+          onCurrentLocationChanged={setCurrentLocation}
           onPlaceSelect={handlePlaceSelect}
           headerContent={
             <nav

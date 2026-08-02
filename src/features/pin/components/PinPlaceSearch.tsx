@@ -10,6 +10,7 @@ import {
   useSelectSearchPlace,
 } from '@/features/pin/queries/usePlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
+import type { MapCoordinate } from '@/features/map/types';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import type { PlaceSearchHistoryRequest } from '@/types/place.type';
 
@@ -21,6 +22,7 @@ export type PinPlaceSearchProps = {
   onPlaceSelect: (place: PinSearchPlace) => void;
   validatePlace?: (place: PinSearchPlace) => string | null;
   onValidationError?: (message: string) => void;
+  onCurrentLocationChanged?: (coordinate: MapCoordinate) => void;
   onBack?: () => void;
   currentLocationOverride?: PlaceSearchHistoryRequest;
   autoFocus?: boolean;
@@ -36,6 +38,7 @@ export function PinPlaceSearch({
   onPlaceSelect,
   validatePlace,
   onValidationError,
+  onCurrentLocationChanged,
   onBack,
   currentLocationOverride,
   autoFocus = true,
@@ -118,6 +121,15 @@ export function PinPlaceSearch({
   useEffect(() => {
     return () => selectionControllerRef.current?.abort();
   }, []);
+
+  useEffect(() => {
+    if (!currentLocation) return;
+
+    onCurrentLocationChanged?.({
+      lat: currentLocation.latitude,
+      lng: currentLocation.longitude,
+    });
+  }, [currentLocation, onCurrentLocationChanged]);
 
   const visiblePlaces = isSelectionLocked ? [] : normalizedQuery ? searchResults : recentPlaces;
   const isShowingRecentPlaces = showRecentPlaces && !normalizedQuery && !isSelectionLocked;

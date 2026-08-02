@@ -22,6 +22,27 @@ export type PinAvailabilityResponse = {
   nearestPinDistanceMeters: number | null;
 };
 
+export type CreatePinRequest = {
+  userLatitude: number;
+  userLongitude: number;
+  placeId: number;
+  itunesTrackId: number;
+  clipStartMs: number;
+  introduction: string;
+  tags: string[];
+  feedOpen: boolean;
+};
+
+export type CreatePinResponse = {
+  pinId: number;
+  placeId: number;
+  writerNickname: string;
+  writerProfileImage: string | null;
+  introduction: string;
+  youtubeVideoId: string;
+  clipStartMs: number;
+};
+
 export type MapPinsRequest = {
   southWestLat: number;
   southWestLng: number;
@@ -85,6 +106,12 @@ export async function validatePinAvailability(
     request,
     { signal: options?.signal },
   );
+  return data.result;
+}
+
+/** POST /api/v1/pins PIN 최종 생성 */
+export async function createPin(request: CreatePinRequest): Promise<CreatePinResponse> {
+  const { data } = await apiClient.post<ApiResponse<CreatePinResponse>>('/api/v1/pins', request);
   return data.result;
 }
 

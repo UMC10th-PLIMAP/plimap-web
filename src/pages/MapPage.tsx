@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
 import { Button } from '@/components/ui/button';
-import type { MapPlace } from '@/features/map/types';
+import type { MapCoordinate, MapPlace } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
 import { PinListSheet } from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
+import { usePinCreationStore } from '@/store/pinCreationStore';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 
@@ -42,6 +43,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   const [mapLoadError, setMapLoadError] = useState<string | null>(
     hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
+  const [currentLocation, setCurrentLocation] = useState<MapCoordinate | null>(null);
   // develop 방식: selectedMapPlace prop으로 장소 결과 관리
   const placeResults = useMemo<MapPlace[]>(
     () => (selectedMapPlace ? [selectedMapPlace] : []),
@@ -49,6 +51,9 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   );
   const selectedPlaceId = selectedMapPlace?.id ?? null;
   const isPlaceSheetOpen = selectedMapPlace !== null;
+  const resetPinCreation = usePinCreationStore((state) => state.reset);
+  const setPinCreationCurrentLocation = usePinCreationStore((state) => state.setCurrentLocation);
+  const setPinCreationPlace = usePinCreationStore((state) => state.setPlace);
 
   const mapViewerRef = useRef<MapViewerHandle>(null);
 
@@ -91,6 +96,23 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   // --- 줌(배율) 변경 핸들러 ---
   const handleZoomChange = (newZoom: number) => {
     setZoom(newZoom);
+  };
+
+  const handleRegisterSelectedPlace = () => {
+    if (!selectedMapPlace || selectedMapPlace.placeId === undefined || !currentLocation) return;
+
+    resetPinCreation();
+    setPinCreationCurrentLocation(currentLocation);
+    setPinCreationPlace({
+      placeId: selectedMapPlace.placeId,
+      placeName: selectedMapPlace.placeName,
+      address: selectedMapPlace.address,
+      roadAddress: selectedMapPlace.searchSource?.roadAddress ?? null,
+      source: selectedMapPlace.source ?? 'PLACE_SEARCH',
+      coordinates: selectedMapPlace.coordinates,
+      distanceMeters: selectedMapPlace.distance,
+    });
+    navigate('/app/song/list');
   };
 
   if (mapLoadStatus === 'error') {
@@ -151,7 +173,8 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
             variant="pin"
             size="pin"
             className="pointer-events-auto"
-            onClick={() => navigate('/app/song/list')}
+            onClick={handleRegisterSelectedPlace}
+            disabled={selectedMapPlace?.placeId === undefined || !currentLocation}
           >
             등록하기
           </Button>
@@ -176,6 +199,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
         mapPins={[]}
         selectedMapPinId={null}
         onZoomChanged={handleZoomChange}
+        onCurrentLocationChanged={setCurrentLocation}
       />
     </div>
   );
