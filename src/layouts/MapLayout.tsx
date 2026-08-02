@@ -1,32 +1,28 @@
-import { useCallback, useState } from 'react';
-import { useMatches, useOutlet } from 'react-router-dom';
+import { useMatches, useOutlet, useOutletContext } from 'react-router-dom';
 
-import type { PinSearchPlace } from '@/features/pin/types';
+import type { AppOutletContext } from '@/layouts/RootLayout';
 import MapPage from '@/pages/MapPage';
 
 type MapRouteHandle = {
   mapOverlay?: boolean;
 };
 
-export type MapOutletContext = {
-  selectMapPlace: (place: PinSearchPlace | null) => void;
-};
+export type MapOutletContext = Pick<AppOutletContext, 'selectMapPlace'>;
 
 const MapLayout = () => {
-  const [selectedMapPlace, setSelectedMapPlace] = useState<PinSearchPlace | null>(null);
-  const selectMapPlace = useCallback((place: PinSearchPlace | null) => {
-    setSelectedMapPlace(place);
-  }, []);
-  const outletContext = { selectMapPlace } satisfies MapOutletContext;
+  const appContext = useOutletContext<AppOutletContext>();
   const matches = useMatches();
-  const outlet = useOutlet(outletContext);
+  const outlet = useOutlet(appContext);
   const hasMapOverlay = matches.some(
     ({ handle }) => (handle as MapRouteHandle | undefined)?.mapOverlay === true,
   );
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <MapPage selectedMapPlace={selectedMapPlace} onClearMapPlace={() => selectMapPlace(null)} />
+      <MapPage
+        selectedMapPlace={appContext.selectedMapPlace}
+        onClearMapPlace={() => appContext.selectMapPlace(null)}
+      />
 
       {hasMapOverlay && outlet ? (
         <div className="map-search-overlay absolute inset-0 z-[60]">{outlet}</div>

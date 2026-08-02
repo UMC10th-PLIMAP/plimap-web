@@ -9,3 +9,11 @@ export type TermsAgreementResponse = {
   agreed: boolean;
   agreedAt: string;
 }[];
+
+export type OnboardingRequest = {
+  nickname: string;
+};
+
+export type OnboardingResponse = {
+  nickname: string;
+};

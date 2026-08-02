@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import SettingsIcon from '@/assets/icons/settings.svg?react';
 import ShareIcon from '@/assets/icons/share.svg?react';
 
-import { BottomNav } from '@/components/BottomNav';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
@@ -61,7 +60,6 @@ export default function MyProfilePage() {
         pins={memberMePages?.pages.flatMap((page) => page.data) ?? []}
         onRegisterPin={() => navigate('/app')}
       />
-      <BottomNav activeId="my" onTabChange={() => {}} />
     </div>
   );
 }

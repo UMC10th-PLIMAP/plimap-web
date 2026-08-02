@@ -41,7 +41,7 @@ export function BottomNav({ activeId, onTabChange, children }: BottomNavProps) {
         onPointerUp={handlePointerEnd}
         onPointerCancel={handlePointerEnd}
         onPointerLeave={handlePointerEnd}
-        className={`pointer-events-auto relative grid h-[84px] w-full max-w-[360px] grid-cols-3 rounded-[32px] bg-pli-black-100/80 px-2.5 backdrop-blur-[4px] transition-transform duration-150 ease-out motion-reduce:transition-none ${
+        className={`pointer-events-auto relative grid h-[84px] w-full max-w-[360px] grid-cols-3 rounded-[32px] border border-grayscale-1100 bg-pli-black-100/80 px-2.5 backdrop-blur-[4px] transition-transform duration-150 ease-out motion-reduce:transition-none ${
           isPressing ? 'scale-[0.98]' : 'scale-100'
         }`}
       >

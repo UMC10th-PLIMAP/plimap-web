@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
+import { usePlaceTrack } from '@/features/pin/queries/usePlaceTrack';
 import type { Pin, PinSort, PlaceInfo } from '@/features/pin/types';
 import { cn } from '@/lib/utils';
 
@@ -11,7 +12,6 @@ type PinListSheetProps = {
   open: boolean;
   onClose: () => void;
   place: PlaceInfo;
-  pins: Pin[];
   onPinClick?: (pin: Pin) => void;
 };
 
@@ -101,7 +101,7 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
         {hasPins ? (
           <ul className="flex flex-col gap-4">
             {pins.map((pin) => (
-              <li key={pin.id}>
+              <li key={pin.placeTrackId}>
                 <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
               </li>
             ))}
@@ -117,22 +117,29 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
   );
 }
 
-export function PinListSheet({ open, onClose, place, pins, onPinClick }: PinListSheetProps) {
-  const [sort, setSort] = useState<PinSort>('popular');
+export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetProps) {
+  const [sort, setSort] = useState<PinSort>('POPULAR');
+  const placeId = place.id.startsWith('place:') ? place.id.slice('place:'.length) : place.id;
+  const { data } = usePlaceTrack({
+    placeId,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    sort: sort === 'LATEST' ? 'LATEST' : 'POPULAR',
+    enabled: open,
+  });
 
-  const sortedPins = useMemo(() => {
-    if (sort === 'latest') {
-      return [...pins].reverse();
-    }
-    return [...pins].sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0));
-  }, [pins, sort]);
+  const pins: Pin[] =
+    data?.tracks.map((track) => ({
+      ...track,
+      liked: track.isLiked,
+    })) ?? [];
 
   return (
     <BottomSheet open={open} onClose={onClose}>
       <BottomSheet.FullPageNav />
       <PinListContent
         place={place}
-        pins={sortedPins}
+        pins={pins}
         sort={sort}
         onSortChange={setSort}
         onPinClick={onPinClick}
