@@ -83,7 +83,7 @@ export function PinRadiusOverlay({
             type="button"
             variant="cancel"
             size="bt"
-            className="pointer-events-auto text-grayscale-500"
+            className="pointer-events-auto"
             onClick={onCancel}
             disabled={isCompleting}
           >
@@ -93,7 +93,7 @@ export function PinRadiusOverlay({
             type="button"
             variant="confirm"
             size="bt"
-            className="pointer-events-auto text-grayscale-1300"
+            className="pointer-events-auto"
             onClick={handleComplete}
             disabled={isCompleting || isCompleteDisabled}
           >
