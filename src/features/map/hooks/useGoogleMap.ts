@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { DEFAULT_CENTER, type MapCoordinate } from '../types';
 
-// 지도 줌 하한선 (레벨 단위 유지, 상한선은 API 지원 한도까지 허용)
+// 지도 줌 하한/상한선 (핀 포커스 줌 레벨과 동일하게 상한 고정)
 const MIN_ZOOM = 6;
+const MAX_ZOOM = 21;
 
 // 대한민국 영역으로 패닝을 제한하는 경계 상자 (엄격 모드)
 const KOREA_BOUNDS: google.maps.LatLngBoundsLiteral = {
@@ -58,7 +59,7 @@ export function useGoogleMap({
         zoom,
         isFractionalZoomEnabled: true,
         minZoom: MIN_ZOOM,
-        // maxZoom은 지정하지 않음 → API 지원 한도까지 확대 허용
+        maxZoom: MAX_ZOOM,
         restriction: {
           latLngBounds: KOREA_BOUNDS,
           strictBounds: false,

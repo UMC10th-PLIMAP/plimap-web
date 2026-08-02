@@ -21,6 +21,9 @@ export type MapPin = {
   title: string;
   artist: string;
   coverUrl?: string;
+  nickname: string;
+  avatarUrl?: string;
+  introduction: string;
 };
 
 // 현재 위치 마커 기본 색상

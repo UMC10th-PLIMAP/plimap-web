@@ -16,6 +16,7 @@ type MapViewerProps = {
   onCenterChanged?: (center: MapCoordinate) => void;
   onSelectPlace?: (placeId: string) => void;
   onSelectMapPin?: (pinId: string) => void;
+  onPlayPin?: (pinId: string) => void;
 };
 
 export type MapViewerHandle = {
@@ -35,6 +36,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onCenterChanged,
     onSelectPlace,
     onSelectMapPin,
+    onPlayPin,
   },
   ref,
 ) {
@@ -54,7 +56,14 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
   useImperativeHandle(ref, () => ({ recenterToCurrentLocation }), [recenterToCurrentLocation]);
 
   usePlaceMarkers({ mapInstanceRef, isLoaded, placeResults, selectedPlaceId, onSelectPlace });
-  useMapPinOverlays({ mapInstanceRef, isLoaded, mapPins, selectedMapPinId, onSelectMapPin });
+  useMapPinOverlays({
+    mapInstanceRef,
+    isLoaded,
+    mapPins,
+    selectedMapPinId,
+    onSelectMapPin,
+    onPlayPin,
+  });
 
   return (
     <main className="relative h-full w-full">

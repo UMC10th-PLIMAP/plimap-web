@@ -9,6 +9,8 @@ export const MOCK_MAP_PINS: MapPin[] = [
     title: 'Never Gonna Give You Up',
     artist: 'Rick Astley',
     coverUrl: ellipseCoverUrl,
+    nickname: '냥코',
+    introduction: '도가니 살리기 위잉잉잉~',
   },
   {
     id: 'pin-2',
@@ -17,6 +19,8 @@ export const MOCK_MAP_PINS: MapPin[] = [
     title: 'Blinding Lights',
     artist: 'The Weeknd',
     coverUrl: ellipseCoverUrl,
+    nickname: '한강러버',
+    introduction: '야경 보면서 듣기 딱 좋아요',
   },
   {
     id: 'pin-3',
@@ -25,6 +29,8 @@ export const MOCK_MAP_PINS: MapPin[] = [
     title: 'Dynamite',
     artist: 'BTS',
     coverUrl: ellipseCoverUrl,
+    nickname: '방탄단',
+    introduction: '여기 벤치에서 듣던 노래예요',
   },
   {
     id: 'pin-4',
@@ -33,6 +39,8 @@ export const MOCK_MAP_PINS: MapPin[] = [
     title: 'Shape of You',
     artist: 'Ed Sheeran',
     coverUrl: ellipseCoverUrl,
+    nickname: '산책러',
+    introduction: '퇴근길 산책 플레이리스트',
   },
   {
     id: 'pin-5',
@@ -41,5 +49,7 @@ export const MOCK_MAP_PINS: MapPin[] = [
     title: 'Levitating',
     artist: 'Dua Lipa',
     coverUrl: ellipseCoverUrl,
+    nickname: '댄스머신',
+    introduction: '기분 좋아지는 노래 추천',
   },
 ];

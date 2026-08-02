@@ -18,6 +18,7 @@ type UseMapPinOverlaysParams = {
   mapPins: MapPin[];
   selectedMapPinId: string | null;
   onSelectMapPin?: (pinId: string) => void;
+  onPlayPin?: (pinId: string) => void;
 };
 
 /** 지도 위 핀(OverlayView)을 렌더링하고, 선택 상태에 따라 강조한다. */
@@ -27,15 +28,21 @@ export function useMapPinOverlays({
   mapPins,
   selectedMapPinId,
   onSelectMapPin,
+  onPlayPin,
 }: UseMapPinOverlaysParams) {
   const mapPinOverlaysRef = useRef<{ id: string; entry: MapPinOverlayEntry }[]>([]);
   const onSelectMapPinRef = useRef(onSelectMapPin);
+  const onPlayPinRef = useRef(onPlayPin);
   const selectedMapPinIdRef = useRef(selectedMapPinId);
   const cancelFlyToRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     onSelectMapPinRef.current = onSelectMapPin;
   }, [onSelectMapPin]);
+
+  useEffect(() => {
+    onPlayPinRef.current = onPlayPin;
+  }, [onPlayPin]);
 
   useEffect(() => {
     selectedMapPinIdRef.current = selectedMapPinId;
@@ -61,7 +68,7 @@ export function useMapPinOverlays({
           );
           onSelectMapPinRef.current?.(pin.id);
         },
-        ...toMapPinMarkerProps(pin, pin.id === selectedId),
+        ...toMapPinMarkerProps(pin, pin.id === selectedId, () => onPlayPinRef.current?.(pin.id)),
       });
       entry.overlay.setMap(map);
 
@@ -82,7 +89,10 @@ export function useMapPinOverlays({
       if (!pin) return;
 
       const isSelected = id === selectedMapPinId;
-      updateMapPinMarker(entry.mount, toMapPinMarkerProps(pin, isSelected));
+      updateMapPinMarker(
+        entry.mount,
+        toMapPinMarkerProps(pin, isSelected, () => onPlayPinRef.current?.(pin.id)),
+      );
       entry.overlay.setZIndex(isSelected ? 200 : 100);
     });
   }, [selectedMapPinId, mapPins]);

@@ -1,11 +1,23 @@
 import pinIconUrl from '@/assets/icons/pin.svg?url';
+import { MapPinMessageBox } from '@/features/map/components/MapPinMessageBox';
 
 export type MapPinMarkerProps = {
   coverUrl?: string;
   isSelected?: boolean;
+  nickname?: string;
+  avatarUrl?: string;
+  introduction?: string;
+  onPlay?: () => void;
 };
 
-export function MapPinMarker({ coverUrl, isSelected = false }: MapPinMarkerProps) {
+export function MapPinMarker({
+  coverUrl,
+  isSelected = false,
+  nickname,
+  avatarUrl,
+  introduction,
+  onPlay,
+}: MapPinMarkerProps) {
   return (
     <div
       className="relative cursor-pointer select-none transition-transform duration-150"
@@ -15,6 +27,17 @@ export function MapPinMarker({ coverUrl, isSelected = false }: MapPinMarkerProps
         transform: isSelected ? 'scale(1.2)' : undefined,
       }}
     >
+      {isSelected && nickname && introduction ? (
+        <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2">
+          <MapPinMessageBox
+            nickname={nickname}
+            avatarUrl={avatarUrl}
+            introduction={introduction}
+            onPlay={onPlay}
+          />
+        </div>
+      ) : null}
+
       <img
         src={pinIconUrl}
         alt="핀 아이콘"
