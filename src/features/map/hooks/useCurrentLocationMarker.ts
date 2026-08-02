@@ -1,21 +1,16 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { DEFAULT_MARKER_COLOR, type MapCoordinate } from '../types';
+import {
+  createCurrentLocationOverlay,
+  type CurrentLocationOverlayHandle,
+} from '../utils/currentLocationOverlay';
 
-// 현재 위치 점 아이콘 (Aura, White Border, Inner Dot)
-const createMarkerIcon = (mapsApi: typeof google.maps, color: string) => {
-  const svgString = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-      <circle cx="24" cy="24" r="20" fill="${color}" fill-opacity="0.25" />
-      <circle cx="24" cy="24" r="12" fill="#ffffff" />
-      <circle cx="24" cy="24" r="9" fill="${color}" />
-    </svg>
-  `;
-  return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgString.trim())}`,
-    anchor: new mapsApi.Point(24, 24),
-    scaledSize: new mapsApi.Size(48, 48),
-  };
-};
+// "현재 위치로 이동" 버튼을 눌렀을 때 항상 이 줌으로 고정한다.
+const RECENTER_ZOOM = 16;
+
+// 이 시간 동안 더 정확한 fix가 안 오면, 정확도가 나빠졌더라도 최신 위치를 받아들인다.
+// (GPS 신호가 실내 진입 등으로 영구적으로 나빠졌을 때 마커가 영원히 멈춰있는 것 방지)
+const ACCURACY_STALE_MS = 10000;
 
 // 기기 방향 이벤트에서 나침반 방향 추출 (절대 방위 기준일 때만 alpha를 신뢰)
 const getCompassHeading = (event: DeviceOrientationEvent): number | null => {
@@ -29,22 +24,6 @@ const getCompassHeading = (event: DeviceOrientationEvent): number | null => {
   return null;
 };
 
-// 방향 쐐기 아이콘 (오라 밖에서 시작하며 흰 테두리가 있는 삼각형)
-const createHeadingIcon = (
-  mapsApi: typeof google.maps,
-  color: string,
-  heading: number,
-): google.maps.Symbol => ({
-  path: 'M -6,-16 L 0,-23 L 6,-16 Z',
-  rotation: heading,
-  fillColor: color,
-  fillOpacity: 1,
-  strokeColor: '#ffffff',
-  strokeWeight: 2.5,
-  anchor: new mapsApi.Point(0, 0),
-  scale: 1,
-});
-
 type UseCurrentLocationMarkerParams = {
   mapInstanceRef: RefObject<google.maps.Map | null>;
   isLoaded: boolean;
@@ -57,43 +36,22 @@ export function useCurrentLocationMarker({
   isLoaded,
   onCenterChanged,
 }: UseCurrentLocationMarkerParams) {
-  const markerRef = useRef<google.maps.Marker | null>(null);
-  const headingMarkerRef = useRef<google.maps.Marker | null>(null);
+  const overlayRef = useRef<CurrentLocationOverlayHandle | null>(null);
+  const positionRef = useRef<MapCoordinate | null>(null);
+  const bestAccuracyRef = useRef(Infinity);
+  const lastAcceptedAtRef = useRef(0);
   const onCenterChangedRef = useRef(onCenterChanged);
 
   useEffect(() => {
     onCenterChangedRef.current = onCenterChanged;
   }, [onCenterChanged]);
 
-  // --- 기기 방향 이벤트 처리 (클래식 마커 회전) ---
-  const handleOrientation = useCallback(
-    (event: DeviceOrientationEvent) => {
-      const mapsApi = window.google?.maps;
-      const map = mapInstanceRef.current;
-      const marker = markerRef.current;
-      if (!mapsApi || !map || !marker) return;
-
-      const heading = getCompassHeading(event);
-      if (heading === null) return;
-
-      const position = marker.getPosition();
-      if (!position) return;
-
-      if (!headingMarkerRef.current) {
-        headingMarkerRef.current = new mapsApi.Marker({
-          map,
-          position,
-          icon: createHeadingIcon(mapsApi, DEFAULT_MARKER_COLOR, heading),
-          clickable: false,
-          zIndex: 11, // 메인 점(오라 포함) 위로 올라오게 설정
-        });
-      } else {
-        headingMarkerRef.current.setPosition(position);
-        headingMarkerRef.current.setIcon(createHeadingIcon(mapsApi, DEFAULT_MARKER_COLOR, heading));
-      }
-    },
-    [mapInstanceRef],
-  );
+  // --- 기기 방향 이벤트 처리 (방향 쐐기 회전) ---
+  const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
+    const heading = getCompassHeading(event);
+    if (heading === null) return;
+    overlayRef.current?.setHeading(heading);
+  }, []);
 
   // --- 나침반 리스너 등록 (iOS는 사용자 제스처 안에서 권한 요청 후에만 이벤트가 발생함) ---
   const compassRegisteredRef = useRef(false);
@@ -147,36 +105,34 @@ export function useCurrentLocationMarker({
         const map = mapInstanceRef.current;
         if (!map) return;
 
-        const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+        // 와이파이/기지국 기반의 부정확한 초기 fix 이후 더 정확한 fix가 갱신되면
+        // 반영하되, 이미 더 정확한 값을 알고 있는데 정확도가 나빠진 갱신이 오면
+        // (터널/실내 등) 무시해서 위치가 뒤로 튀지 않게 한다. 다만 그 상태로
+        // ACCURACY_STALE_MS 이상 더 나은 fix가 안 오면, 마커가 영영 멈춰있지
+        // 않도록 정확도와 상관없이 최신 위치를 받아들인다.
+        const now = Date.now();
+        const isStale = now - lastAcceptedAtRef.current > ACCURACY_STALE_MS;
+        if (overlayRef.current && position.coords.accuracy > bestAccuracyRef.current && !isStale) {
+          return;
+        }
+        bestAccuracyRef.current = position.coords.accuracy;
+        lastAcceptedAtRef.current = now;
 
-        if (!markerRef.current) {
+        const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+        positionRef.current = pos;
+
+        if (!overlayRef.current) {
           map.setCenter(pos);
 
-          markerRef.current = new mapsApi.Marker({
-            map,
-            position: pos,
-            icon: createMarkerIcon(mapsApi, DEFAULT_MARKER_COLOR),
-            zIndex: 10,
-          });
+          // 핀(overlayMouseTarget, zIndex 최대 200)보다 항상 위에 보이도록 floatPane에 렌더링한다.
+          overlayRef.current = createCurrentLocationOverlay(DEFAULT_MARKER_COLOR, pos);
+          overlayRef.current.setMap(map);
 
-          // 실제 기기 방향 값이 들어오기 전에 항상 방향 쐐기가 보이도록 함. 기본값(0도, 북쪽)
-          headingMarkerRef.current = new mapsApi.Marker({
-            map,
-            position: pos,
-            icon: createHeadingIcon(mapsApi, DEFAULT_MARKER_COLOR, 0),
-            clickable: false,
-            zIndex: 11,
-          });
-
-          // 사용자 제스처가 필요 없는 브라우저(iOS 외)에서는 위치를 얻는 시점에 나침반도 바로 켠다.
           enableCompassIfNeeded();
 
           onCenterChangedRef.current?.(pos);
         } else {
-          markerRef.current.setPosition(pos);
-          if (headingMarkerRef.current) {
-            headingMarkerRef.current.setPosition(pos);
-          }
+          overlayRef.current.setPosition(pos);
         }
       },
       (error) => {
@@ -189,6 +145,14 @@ export function useCurrentLocationMarker({
     return () => {
       ignore = true;
       navigator.geolocation.clearWatch(watchId);
+
+      // 이펙트가 unmount 없이 재실행될 때(예: isLoaded가 껐다 켜지는 경우) 다음
+      // 실행이 이전 오버레이/위치/정확도를 이어받지 않도록 완전히 초기화한다.
+      overlayRef.current?.setMap(null);
+      overlayRef.current = null;
+      positionRef.current = null;
+      bestAccuracyRef.current = Infinity;
+      lastAcceptedAtRef.current = 0;
     };
   }, [isLoaded, enableCompassIfNeeded, mapInstanceRef]);
 
@@ -198,13 +162,13 @@ export function useCurrentLocationMarker({
     enableCompassIfNeeded();
 
     const map = mapInstanceRef.current;
-    const position = markerRef.current?.getPosition();
+    const position = positionRef.current;
     if (!map || !position) return;
 
+    // 축소된 상태에서 panTo부터 하면 restriction이 넓은 뷰포트 기준으로
+    // 좌표를 다시 clamp해버릴 수 있어, 줌을 먼저 좁힌 뒤에 이동한다.
+    map.setZoom(RECENTER_ZOOM);
     map.panTo(position);
-    if ((map.getZoom() ?? 0) < 16) {
-      map.setZoom(16);
-    }
   }, [enableCompassIfNeeded, mapInstanceRef]);
 
   return { recenterToCurrentLocation };

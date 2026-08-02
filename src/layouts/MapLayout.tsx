@@ -7,6 +7,8 @@ type MapRouteHandle = {
   mapOverlay?: boolean;
 };
 
+export type MapOutletContext = Pick<AppOutletContext, 'selectMapPlace'>;
+
 const MapLayout = () => {
   const appContext = useOutletContext<AppOutletContext>();
   const matches = useMatches();
@@ -23,7 +25,7 @@ const MapLayout = () => {
       />
 
       {hasMapOverlay && outlet ? (
-        <div className="map-search-overlay absolute inset-0 z-30">{outlet}</div>
+        <div className="map-search-overlay absolute inset-0 z-[60]">{outlet}</div>
       ) : null}
     </div>
   );

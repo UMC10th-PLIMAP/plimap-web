@@ -65,7 +65,7 @@ export function setPlaceTrackLiked(queryClient: QueryClient, placeTrackId: strin
         return {
           ...track,
           isLiked: liked,
-          likeCount: liked ? track.likeCount + 1 : Math.max(0, track.likeCount - 1),
+          likeCount: liked ? (track.likeCount ?? 0) + 1 : Math.max(0, (track.likeCount ?? 0) - 1),
         };
       }),
     };

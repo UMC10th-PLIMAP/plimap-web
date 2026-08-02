@@ -27,11 +27,11 @@ export async function deleteLikedTracks(placeTrackId: string): Promise<PutLikedT
 
 // 3) POST /api/v1/tracks/playback-preparations - 구간 재생 준비
 export async function getPlaybackPreparations(
-  itunesTrackId: string,
+  itunesTrackId: number,
 ): Promise<GetPlaybackPreparationsResponse> {
   const { data } = await apiClient.post<ApiResponse<GetPlaybackPreparationsResponse>>(
     `/api/v1/tracks/playback-preparations`,
-    { itunesTrackId: Number(itunesTrackId) },
+    { itunesTrackId: itunesTrackId },
   );
   return data.result;
 }
@@ -46,9 +46,10 @@ export async function searchTracks(
   return data.result;
 }
 
-// 5) GET /api/v1/places/{placeId}/tracks - 장소별 곡 목록 조회 (placeId: 2, latitude: 37.5665, longitude: 126.978로 하드코드 상태 추후에 수정 필요)
+// 5) GET /api/v1/places/{placeId}/tracks - 장소별 곡 목록 조회
 
 export async function getPlaceTracks(
+  placeId: string,
   page: string,
   size: number,
   latitude: number,
@@ -56,7 +57,7 @@ export async function getPlaceTracks(
   sort: string,
 ): Promise<GetPlaceTracksResponse> {
   const { data } = await apiClient.get<ApiResponse<GetPlaceTracksResponse>>(
-    `/api/v1/places/2/tracks`,
+    `/api/v1/places/${placeId}/tracks`,
     {
       params: { page, size, latitude, longitude, sort },
     },
