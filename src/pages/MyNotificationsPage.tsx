@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
 import { NotificationRow } from '@/features/notification/components/NotificationRow';
+import { NotificationRowSkeleton } from '@/features/notification/components/NotificationRowSkeleton';
 import {
   useFollowBackNotification,
   useInfiniteNotifications,
   useNotificationSubscription,
 } from '@/features/notification/queries/useNotifications';
+
+const INITIAL_SKELETON_COUNT = 3;
 
 export default function MyNotificationsPage() {
   const navigate = useNavigate();
@@ -40,8 +43,12 @@ export default function MyNotificationsPage() {
     <div className="flex min-h-full flex-col">
       <TopBar onBack={() => navigate(-1)} title="내 소식" titleWeight="medium" />
 
-      <main className="px-4 pt-4">
-        {isPending && <p className="body-15-r text-center text-grayscale-500">불러오는 중...</p>}
+      <main className="flex flex-1 flex-col px-4 pt-4">
+        {isPending && (
+          <span className="sr-only" role="status">
+            내 소식을 불러오는 중
+          </span>
+        )}
 
         {isError && (
           <div className="flex flex-col items-center gap-3 py-10">
@@ -57,12 +64,20 @@ export default function MyNotificationsPage() {
         )}
 
         {!isPending && !isError && notifications.length === 0 && (
-          <p className="body-15-r py-10 text-center text-grayscale-500">
-            아직 새로운 소식이 없어요.
-          </p>
+          <div className="flex flex-1 items-center justify-center text-center">
+            <div className="flex flex-col items-center gap-0.5">
+              <p className="body-17-m text-grayscale-300">아직 새로운 소식이 없어요.</p>
+              <p className="body-15-m text-grayscale-700">새로운 알림이 오면 여기에 표시돼요.</p>
+            </div>
+          </div>
         )}
 
-        <ul className="flex flex-col gap-7">
+        <ul className="flex flex-col gap-7" aria-busy={isPending || isFetchingNextPage}>
+          {isPending &&
+            Array.from({ length: INITIAL_SKELETON_COUNT }, (_, index) => (
+              <NotificationRowSkeleton key={index} />
+            ))}
+
           {notifications.map((notification) => (
             <NotificationRow
               key={notification.notificationId}
@@ -75,10 +90,14 @@ export default function MyNotificationsPage() {
               onOpenPin={(pinId) => navigate(`/app/pins/${pinId}`)}
             />
           ))}
+
+          {isFetchingNextPage && <NotificationRowSkeleton />}
         </ul>
         <div ref={loadMoreRef} className="h-px" aria-hidden />
         {isFetchingNextPage && (
-          <p className="body-15-r py-4 text-center text-grayscale-500">불러오는 중...</p>
+          <span className="sr-only" role="status">
+            추가 소식을 불러오는 중
+          </span>
         )}
       </main>
     </div>
