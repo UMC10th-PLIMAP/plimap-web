@@ -12,7 +12,7 @@ export type ProfileImageUploadResponse = {
 
 export type MyProfileResponse = {
   id: number;
-  nickname: string;
+  nickname: string | null;
   name: string | null;
   introduction: string | null;
   profileImageObjectKey: string | null;

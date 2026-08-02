@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Key, ReactNode } from 'react';
 
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
@@ -11,6 +11,8 @@ type RecommendationContentCarouselProps<T> = {
   title?: ReactNode;
   ariaLabel?: string;
   className?: string;
+  pageClassName?: string;
+  itemClassName?: string;
   showPagination?: boolean;
   itemsPerPage?: number;
   currentPage?: number;
@@ -24,6 +26,8 @@ export function RecommendationContentCarousel<T>({
   title,
   ariaLabel = '추천 콘텐츠',
   className,
+  pageClassName,
+  itemClassName,
   showPagination = false,
   itemsPerPage = 1,
   currentPage,
@@ -88,9 +92,11 @@ export function RecommendationContentCarousel<T>({
           <CarouselContent className="ml-0 gap-3 touch-pan-y">
             {pages.map((page, pageIndex) => (
               <CarouselItem key={pageIndex} className="basis-full pl-0">
-                <div className="flex w-full min-w-0 gap-3">
+                <div className={cn('flex w-full min-w-0 gap-3', pageClassName)}>
                   {page.map((item) => (
-                    <Fragment key={getItemKey(item)}>{renderItem(item)}</Fragment>
+                    <div key={getItemKey(item)} className={cn('min-w-0', itemClassName)}>
+                      {renderItem(item)}
+                    </div>
                   ))}
                 </div>
               </CarouselItem>
