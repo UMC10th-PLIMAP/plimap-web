@@ -47,7 +47,9 @@ export default function TermsDetailViewPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <TopBar onBack={() => navigate(-1)} />
-      <TermsDetailContent term={term} />
+      <div className="pt-4">
+        <TermsDetailContent term={term} />
+      </div>
 
       {termId === 'MARKETING' && (
         <div className="-mt-5 flex items-center gap-2 px-4 pb-10">
