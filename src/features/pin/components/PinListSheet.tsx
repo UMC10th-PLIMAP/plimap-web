@@ -119,7 +119,11 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
 
 export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetProps) {
   const [sort, setSort] = useState<PinSort>('POPULAR');
+  const placeId = place.id.startsWith('place:') ? place.id.slice('place:'.length) : place.id;
   const { data } = usePlaceTrack({
+    placeId,
+    latitude: place.latitude,
+    longitude: place.longitude,
     sort: sort === 'LATEST' ? 'LATEST' : 'POPULAR',
     enabled: open,
   });
