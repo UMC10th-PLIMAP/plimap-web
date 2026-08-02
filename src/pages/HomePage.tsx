@@ -16,7 +16,7 @@ import {
 } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
-import { useHomeProfile } from '@/features/home/queries/useHomeProfile';
+import { useMyProfile } from '@/features/home/hooks/useMyProfile';
 
 function HomeLoadingState() {
   return (
@@ -93,14 +93,14 @@ function SavedPlaceCard({ place }: { place: SavedPlace }) {
 
 export default function HomePage() {
   const [hotPlaceFilter, setHotPlaceFilter] = useState<'nearby' | 'popular'>('nearby');
-  const homeProfileQuery = useHomeProfile();
+  const myProfileQuery = useMyProfile();
 
-  if (homeProfileQuery.isPending) {
+  if (myProfileQuery.isPending) {
     return <HomeLoadingState />;
   }
 
-  if (!homeProfileQuery.data) {
-    return <HomeErrorState onRetry={() => void homeProfileQuery.refetch()} />;
+  if (!myProfileQuery.data) {
+    return <HomeErrorState onRetry={() => void myProfileQuery.refetch()} />;
   }
 
   return (
@@ -125,9 +125,9 @@ export default function HomePage() {
 
           <div className="flex h-[94px] flex-col gap-1 px-4 py-4">
             <h1 className="head-24-sb text-grayscale-100">
-              {homeProfileQuery.data.nickname ? (
+              {myProfileQuery.data.nickname ? (
                 <>
-                  반가워요, <span className="text-neon-2">{homeProfileQuery.data.nickname}</span> 님
+                  반가워요, <span className="text-neon-2">{myProfileQuery.data.nickname}</span> 님
                 </>
               ) : (
                 '반가워요!'
