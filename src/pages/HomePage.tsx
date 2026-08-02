@@ -99,7 +99,7 @@ export default function HomePage() {
     return <HomeLoadingState />;
   }
 
-  if (homeProfileQuery.isError) {
+  if (!homeProfileQuery.data) {
     return <HomeErrorState onRetry={() => void homeProfileQuery.refetch()} />;
   }
 
@@ -125,7 +125,13 @@ export default function HomePage() {
 
           <div className="flex h-[94px] flex-col gap-1 px-4 py-4">
             <h1 className="head-24-sb text-grayscale-100">
-              반가워요, <span className="text-neon-2">{homeProfileQuery.data.nickname}</span> 님
+              {homeProfileQuery.data.nickname ? (
+                <>
+                  반가워요, <span className="text-neon-2">{homeProfileQuery.data.nickname}</span> 님
+                </>
+              ) : (
+                '반가워요!'
+              )}
             </h1>
             <div className="flex items-center gap-2 body-17-r">
               <span className="shrink-0 text-grayscale-500">현재 위치</span>
