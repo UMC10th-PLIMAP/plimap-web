@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 
 import { isApiRequestCanceled } from '@/api/client';
 import { SearchInput } from '@/components/ui/SearchInput';
@@ -20,8 +20,12 @@ export type PinPlaceSearchProps = {
   onCloseAnimationEnd?: () => void;
   onPlaceSelect: (place: PinSearchPlace) => void;
   validatePlace?: (place: PinSearchPlace) => string | null;
+  onValidationError?: (message: string) => void;
   onBack?: () => void;
   currentLocationOverride?: PlaceSearchHistoryRequest;
+  autoFocus?: boolean;
+  placeholder?: string;
+  headerContent?: ReactNode;
 };
 
 export function PinPlaceSearch({
@@ -31,8 +35,12 @@ export function PinPlaceSearch({
   onCloseAnimationEnd,
   onPlaceSelect,
   validatePlace,
+  onValidationError,
   onBack,
   currentLocationOverride,
+  autoFocus = true,
+  placeholder = '장소를 검색하세요',
+  headerContent,
 }: PinPlaceSearchProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const selectionControllerRef = useRef<AbortController | null>(null);
@@ -85,6 +93,8 @@ export function PinPlaceSearch({
         : null;
 
   useEffect(() => {
+    if (!autoFocus) return;
+
     let isCancelled = false;
     const focusSearchInput = () => {
       if (!isCancelled) searchInputRef.current?.focus({ preventScroll: true });
@@ -103,7 +113,7 @@ export function PinPlaceSearch({
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [autoFocus]);
 
   useEffect(() => {
     return () => selectionControllerRef.current?.abort();
@@ -131,7 +141,23 @@ export function PinPlaceSearch({
   const handlePlaceSelect = (place: PinSearchPlace) => {
     if (isSelectionLocked) return;
 
+    const reportConstraintError = (message: string) => {
+      if (onValidationError) {
+        setSelectionConstraintError(null);
+        onValidationError(message);
+        return;
+      }
+
+      setSelectionConstraintError(message);
+    };
+
     if (!place.searchSource || !currentLocation) {
+      const constraintError = validatePlace?.(place) ?? null;
+      if (constraintError) {
+        reportConstraintError(constraintError);
+        return;
+      }
+
       setQuery(place.placeName);
       onPlaceSelect(place);
       return;
@@ -152,7 +178,7 @@ export function PinPlaceSearch({
           setQuery(selectedPlaceResult.placeName);
           const constraintError = validatePlace?.(selectedPlaceResult) ?? null;
           if (constraintError) {
-            setSelectionConstraintError(constraintError);
+            reportConstraintError(constraintError);
             return;
           }
           onPlaceSelect(selectedPlaceResult);
@@ -208,11 +234,13 @@ export function PinPlaceSearch({
           onChange={handleQueryChange}
           onClear={resetSearch}
           onBack={onBack}
-          placeholder="장소를 검색하세요"
+          placeholder={placeholder}
           aria-label="핀 조회 장소 검색"
           leadingIcon="back"
         />
       </div>
+
+      {headerContent}
 
       {isShowingRecentPlaces ? (
         <h2 className="mt-3 shrink-0 px-[18px] body-15-m text-grayscale-600">최근 검색</h2>

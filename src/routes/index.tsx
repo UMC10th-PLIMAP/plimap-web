@@ -20,6 +20,7 @@ import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinLocationConfirmPage from '@/pages/PinLocationConfirmPage';
 import PinRegisterSearchPage from '@/pages/PinRegisterSearchPage';
+import PinRegisterEntryPage from '@/pages/PinRegisterEntryPage';
 import PinRegistrationLayout from '@/layouts/PinRegistrationLayout';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
@@ -139,6 +140,10 @@ export const router = createBrowserRouter([
           {
             path: 'my/plimap',
             element: <MyPlimapPage />,
+          },
+          {
+            path: 'pin/register/place',
+            element: <PinRegisterEntryPage />,
           },
           {
             path: 'pin/register',
