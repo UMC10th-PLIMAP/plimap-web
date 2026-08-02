@@ -20,3 +20,18 @@ export type MyProfileResponse = {
   followingCount: number;
   onboardingCompletedAt: string | null;
 };
+
+export type UpdateMyProfileRequest = {
+  nickname?: string;
+  name?: string;
+  introduction?: string;
+};
+
+export type UpdateMyProfileResponse = {
+  id: number;
+  nickname: string;
+  name: string;
+  introduction: string;
+  profileImageObjectKey: string;
+  updatedAt: string;
+};

@@ -4,6 +4,8 @@ import type {
   MyProfileResponse,
   NicknameCheckResponse,
   ProfileImageUploadResponse,
+  UpdateMyProfileRequest,
+  UpdateMyProfileResponse,
 } from '@/types/member.type';
 
 const ENDPOINT = '/api/v1/members';
@@ -32,5 +34,14 @@ export async function uploadProfileImage(image: File) {
 // 3) GET /api/v1/members/me - 내 프로필 조회 (로그인 여부 확인 용도로도 사용)
 export async function getMyProfile() {
   const { data } = await apiClient.get<ApiResponse<MyProfileResponse>>(`${ENDPOINT}/me`);
+  return data.result;
+}
+
+// 4) PATCH /api/v1/members/me - 내 프로필 수정
+export async function updateMyProfile(payload: UpdateMyProfileRequest) {
+  const { data } = await apiClient.patch<ApiResponse<UpdateMyProfileResponse>>(
+    `${ENDPOINT}/me`,
+    payload,
+  );
   return data.result;
 }
