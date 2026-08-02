@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import PlayIcon from '@/assets/icons/play.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
-import rectangleBg from '@/assets/Rectangle.png';
+
 import { Tag } from '@/components/ui/tag';
 import { SongSelectSheet } from '@/features/pin/components/SongSelectSheet';
 import {
@@ -156,7 +156,6 @@ export default function SongDetailPage() {
   const [isFeedPublic, setIsFeedPublic] = useState(true);
   const [isSongSelectOpen, setIsSongSelectOpen] = useState(false);
 
-  const coverUrl = song?.albumImageUrl || rectangleBg;
   const waveformPeaks = MOCK_WAVEFORM_PEAKS;
   const durationSec = song ? Math.max(song.durationMs / 1000, 1) : 30;
 
@@ -178,10 +177,10 @@ export default function SongDetailPage() {
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
       <section className="relative w-full overflow-hidden pb-4">
         <img
-          src={coverUrl}
-          alt=""
+          src={song?.albumImageUrl}
+          alt={song?.title}
           aria-hidden
-          className="pointer-events-none absolute inset-0 object-cover opacity-12 blur-[4px]"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-12 blur-[4px]"
         />
 
         <div
@@ -209,7 +208,11 @@ export default function SongDetailPage() {
 
           <div className="flex flex-col items-center">
             <div className="relative">
-              <img src={coverUrl} alt="" className="size-16 rounded-md object-cover" />
+              <img
+                src={song?.albumImageUrl}
+                alt={song?.title}
+                className="size-16 rounded-md object-cover"
+              />
 
               <button
                 type="button"

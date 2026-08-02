@@ -56,15 +56,17 @@ export function useGoogleMap({
       const map = new mapsApi.Map(mapRef.current, {
         center: DEFAULT_CENTER,
         zoom,
-        isFractionalZoomEnabled: false,
+        isFractionalZoomEnabled: true,
         minZoom: MIN_ZOOM,
         // maxZoom은 지정하지 않음 → API 지원 한도까지 확대 허용
         restriction: {
           latLngBounds: KOREA_BOUNDS,
-          strictBounds: true,
+          strictBounds: false,
         },
         disableDefaultUI: true,
         gestureHandling: 'greedy',
+        // 지하철역/POI 아이콘 클릭 시 뜨는 구글 기본 정보창 비활성화
+        clickableIcons: false,
         ...(mapId ? { mapId } : {}),
       });
       mapInstanceRef.current = map;

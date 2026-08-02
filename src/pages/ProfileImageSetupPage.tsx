@@ -2,25 +2,37 @@ import { type ChangeEvent, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Cropper, { type Area, type Point } from 'react-easy-crop';
 
+import { ApiError } from '@/api/client';
 import CameraIcon from '@/assets/icons/camera.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { TopBar } from '@/components/ui/TopBar';
 import { Button } from '@/components/ui/button';
+import { uploadProfileImage } from '@/api/member';
 import { getCroppedImageBlob } from '@/features/profile/utils/cropImage';
+import { useOnboardingStore } from '@/store/onboardingStore';
 
 type Step = 'select' | 'crop' | 'done';
+
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const INVALID_FORMAT_MESSAGE =
+  '올릴 수 없는 파일 형식이에요. JPG, PNG 또는 WebP 파일로 선택해 주세요.';
+const UPLOAD_FAILED_MESSAGE = '파일 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.';
+const IMAGE_PROCESSING_FAILED_MESSAGE = '이미지 처리에 실패했어요. 다시 시도해 주세요.';
 
 export default function ProfileImageSetupPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const setOnboardingProfileImage = useOnboardingStore((state) => state.setProfileImage);
 
   const [step, setStep] = useState<Step>('select');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [croppedImageFile, setCroppedImageFile] = useState<File | null>(null);
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handlePickImage = () => {
     fileInputRef.current?.click();
@@ -30,6 +42,11 @@ export default function ProfileImageSetupPage() {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      alert(INVALID_FORMAT_MESSAGE);
+      return;
+    }
 
     if (imageSrc) {
       URL.revokeObjectURL(imageSrc);
@@ -51,17 +68,19 @@ export default function ProfileImageSetupPage() {
     setIsProcessing(true);
 
     try {
-      const blob = await getCroppedImageBlob(imageSrc, croppedAreaPixels);
+      const file = await getCroppedImageBlob(imageSrc, croppedAreaPixels);
       URL.revokeObjectURL(imageSrc);
       setImageSrc(null);
 
       if (croppedImageUrl) {
         URL.revokeObjectURL(croppedImageUrl);
       }
-      setCroppedImageUrl(URL.createObjectURL(blob));
+      setCroppedImageFile(file);
+      setCroppedImageUrl(URL.createObjectURL(file));
       setStep('done');
     } catch (error) {
       console.error('크롭 실패:', error);
+      alert(IMAGE_PROCESSING_FAILED_MESSAGE);
     } finally {
       setIsProcessing(false);
     }
@@ -75,13 +94,24 @@ export default function ProfileImageSetupPage() {
     setStep(croppedImageUrl ? 'done' : 'select');
   };
 
-  const handleNext = () => {
-    // TODO: 프로필 사진 등록 API 연동 후 다음 화면으로 이동
-    navigate('/app/onboarding/welcome');
+  const handleNext = async () => {
+    if (!croppedImageFile || isUploading) return;
+    setIsUploading(true);
+
+    try {
+      const { imageUrl } = await uploadProfileImage(croppedImageFile);
+      setOnboardingProfileImage(croppedImageFile, imageUrl);
+      // 다음 페이지에서 이미지 로딩 시간을 줄이기 위해 브라우저 캐시에 미리 올려둠
+      new Image().src = imageUrl;
+      navigate('/app/onboarding/welcome');
+    } catch (error) {
+      alert(error instanceof ApiError ? error.message : UPLOAD_FAILED_MESSAGE);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSkip = () => {
-    // TODO: 프로필 사진 등록 건너뛰고 다음 화면으로 이동
     navigate('/app/onboarding/welcome');
   };
 
@@ -135,7 +165,7 @@ export default function ProfileImageSetupPage() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         onChange={handleFileChange}
         className="hidden"
       />
@@ -176,7 +206,7 @@ export default function ProfileImageSetupPage() {
           variant="cta"
           size="cta"
           className="w-full"
-          disabled={step !== 'done'}
+          disabled={step !== 'done' || isUploading}
           onClick={handleNext}
         >
           다음

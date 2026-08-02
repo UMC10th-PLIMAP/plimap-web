@@ -1,27 +1,22 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 
+import { isApiRequestCanceled } from '@/api/client';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { PlaceResultRow } from '@/features/pin/components/PlaceResultRow';
 import {
-  MOCK_PIN_SEARCH_PLACES,
-  MOCK_RECENT_PIN_SEARCH_PLACES,
-} from '@/features/pin/data/mockPinSearchPlaces';
+  useDeleteRecentSearchPlace,
+  usePlaceSearch,
+  useRecentSearchPlaces,
+  useSelectSearchPlace,
+} from '@/features/pin/queries/usePlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
+import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 
 export type PinPlaceSearchProps = {
   isReturningToMap?: boolean;
   onCloseAnimationEnd?: () => void;
-  onPlaceSelect?: (place: PinSearchPlace) => void;
+  onPlaceSelect: (place: PinSearchPlace) => void;
   onBack?: () => void;
-};
-
-const normalizeSearchText = (value: string) => value.trim().toLowerCase();
-
-const matchesQuery = (place: PinSearchPlace, query: string) => {
-  const normalizedQuery = normalizeSearchText(query);
-  const searchableText = normalizeSearchText(`${place.placeName} ${place.category}`);
-
-  return searchableText.includes(normalizedQuery);
 };
 
 export function PinPlaceSearch({
@@ -31,9 +26,52 @@ export function PinPlaceSearch({
   onBack,
 }: PinPlaceSearchProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const selectionControllerRef = useRef<AbortController | null>(null);
   const [query, setQuery] = useState('');
-  const [selectedPlace, setSelectedPlace] = useState<PinSearchPlace | null>(null);
-  const normalizedQuery = normalizeSearchText(query);
+  const currentPositionQuery = useCurrentPosition({
+    options: {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10_000,
+    },
+  });
+  const currentLocation = currentPositionQuery.data ?? null;
+  const locationError =
+    currentPositionQuery.isError && !currentPositionQuery.data
+      ? '현재 위치를 확인할 수 없어요. 위치 권한을 확인해주세요.'
+      : null;
+  const normalizedQuery = query.trim();
+  const recentSearchQuery = useRecentSearchPlaces(currentLocation);
+  const deleteRecentPlaceMutation = useDeleteRecentSearchPlace();
+  const selectPlaceMutation = useSelectSearchPlace();
+  const isSelectionLocked = isReturningToMap || selectPlaceMutation.isPending;
+  const placeSearchQuery = usePlaceSearch({
+    keyword: query,
+    location: currentLocation,
+    enabled: !isSelectionLocked,
+  });
+  const isSearchQueryCurrent =
+    placeSearchQuery.isDebounced && placeSearchQuery.debouncedKeyword === normalizedQuery;
+  const searchResults = isSearchQueryCurrent ? (placeSearchQuery.data ?? []) : [];
+  const recentPlaces = recentSearchQuery.data ?? [];
+  const isSearching =
+    normalizedQuery.length > 0 &&
+    Boolean(currentLocation) &&
+    !isSelectionLocked &&
+    (!placeSearchQuery.isDebounced || placeSearchQuery.isPending);
+  const isSelectingPlace = selectPlaceMutation.isPending;
+  const searchError =
+    selectPlaceMutation.error instanceof Error && !isApiRequestCanceled(selectPlaceMutation.error)
+      ? selectPlaceMutation.error.message
+      : isSearchQueryCurrent && placeSearchQuery.error instanceof Error
+        ? placeSearchQuery.error.message
+        : null;
+  const recentPlacesError =
+    deleteRecentPlaceMutation.error instanceof Error
+      ? deleteRecentPlaceMutation.error.message
+      : recentSearchQuery.error instanceof Error
+        ? recentSearchQuery.error.message
+        : null;
 
   useEffect(() => {
     let isCancelled = false;
@@ -56,36 +94,76 @@ export function PinPlaceSearch({
     };
   }, []);
 
-  const filteredPlaces = useMemo(() => {
-    if (!normalizedQuery || selectedPlace) return [];
+  useEffect(() => {
+    return () => selectionControllerRef.current?.abort();
+  }, []);
 
-    return MOCK_PIN_SEARCH_PLACES.filter((place) => matchesQuery(place, normalizedQuery));
-  }, [normalizedQuery, selectedPlace]);
-
-  const visiblePlaces = selectedPlace
-    ? []
-    : normalizedQuery
-      ? filteredPlaces
-      : MOCK_RECENT_PIN_SEARCH_PLACES;
-  const isShowingRecentPlaces = !normalizedQuery && !selectedPlace;
+  const visiblePlaces = isSelectionLocked ? [] : normalizedQuery ? searchResults : recentPlaces;
+  const isShowingRecentPlaces = !normalizedQuery && !isSelectionLocked;
 
   const resetSearch = () => {
+    selectionControllerRef.current?.abort();
+    selectionControllerRef.current = null;
     setQuery('');
-    setSelectedPlace(null);
+    selectPlaceMutation.reset();
   };
 
   const handleQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
+    selectionControllerRef.current?.abort();
+    selectionControllerRef.current = null;
     setQuery(event.target.value);
-    setSelectedPlace(null);
+    selectPlaceMutation.reset();
   };
 
   const handlePlaceSelect = (place: PinSearchPlace) => {
-    setQuery(place.placeName);
-    setSelectedPlace(place);
-    onPlaceSelect?.(place);
+    if (isSelectionLocked) return;
+
+    if (!place.searchSource || !currentLocation) {
+      setQuery(place.placeName);
+      onPlaceSelect(place);
+      return;
+    }
+
+    const controller = new AbortController();
+    selectionControllerRef.current?.abort();
+    selectionControllerRef.current = controller;
+    selectPlaceMutation.mutate(
+      {
+        place,
+        userLatitude: currentLocation.latitude,
+        userLongitude: currentLocation.longitude,
+        signal: controller.signal,
+      },
+      {
+        onSuccess: (selectedPlaceResult) => {
+          setQuery(selectedPlaceResult.placeName);
+          onPlaceSelect(selectedPlaceResult);
+        },
+        onSettled: () => {
+          if (selectionControllerRef.current === controller) {
+            selectionControllerRef.current = null;
+          }
+        },
+      },
+    );
   };
 
-  const hasNoResults = normalizedQuery.length > 0 && filteredPlaces.length === 0 && !selectedPlace;
+  const handleRecentPlaceDelete = (place: PinSearchPlace) => {
+    if (place.searchHistoryId === undefined || deleteRecentPlaceMutation.isPending) return;
+
+    deleteRecentPlaceMutation.mutate(place.searchHistoryId);
+  };
+
+  const isWaitingForLocation = normalizedQuery.length > 0 && !currentLocation && !locationError;
+  const hasNoResults =
+    normalizedQuery.length > 0 &&
+    !isSearching &&
+    !searchError &&
+    !locationError &&
+    !isSelectionLocked &&
+    isSearchQueryCurrent &&
+    placeSearchQuery.isSuccess &&
+    searchResults.length === 0;
 
   return (
     <main
@@ -131,7 +209,21 @@ export function PinPlaceSearch({
           <ul>
             {visiblePlaces.map((place) => (
               <li key={place.id} className="mx-2">
-                <PlaceResultRow place={place} onClick={() => handlePlaceSelect(place)} />
+                <PlaceResultRow
+                  place={place}
+                  variant={isShowingRecentPlaces ? 'recent-search' : 'search-result'}
+                  onClick={() => handlePlaceSelect(place)}
+                  onDelete={
+                    isShowingRecentPlaces && place.searchHistoryId !== undefined
+                      ? () => handleRecentPlaceDelete(place)
+                      : undefined
+                  }
+                  isDeleteDisabled={deleteRecentPlaceMutation.isPending}
+                  isDeletePending={
+                    deleteRecentPlaceMutation.isPending &&
+                    deleteRecentPlaceMutation.variables === place.searchHistoryId
+                  }
+                />
               </li>
             ))}
           </ul>
@@ -140,6 +232,42 @@ export function PinPlaceSearch({
         {hasNoResults ? (
           <p className="m-auto whitespace-nowrap body-15-r text-grayscale-600">
             검색 결과가 없어요.
+          </p>
+        ) : null}
+
+        {isWaitingForLocation ? (
+          <p className="m-auto whitespace-nowrap body-15-r text-grayscale-600">
+            현재 위치를 확인하고 있어요.
+          </p>
+        ) : null}
+
+        {isSearching ? (
+          <p className="m-auto whitespace-nowrap body-15-r text-grayscale-600">
+            장소를 검색하고 있어요.
+          </p>
+        ) : null}
+
+        {isSelectingPlace ? (
+          <p className="m-auto whitespace-nowrap body-15-r text-grayscale-600">
+            장소를 선택하고 있어요.
+          </p>
+        ) : null}
+
+        {isShowingRecentPlaces && recentSearchQuery.isPending && !locationError ? (
+          <p className="m-auto px-6 text-center body-15-r text-grayscale-600">
+            최근 검색 장소를 불러오고 있어요.
+          </p>
+        ) : null}
+
+        {isShowingRecentPlaces && recentPlacesError ? (
+          <p className="m-auto px-6 text-center body-15-r text-grayscale-600">
+            {recentPlacesError}
+          </p>
+        ) : null}
+
+        {locationError || searchError ? (
+          <p className="m-auto px-6 text-center body-15-r text-grayscale-600">
+            {locationError || searchError}
           </p>
         ) : null}
       </section>

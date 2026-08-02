@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 
 import { PinPlaceSearch } from '@/features/pin/components/PinPlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
-import type { AppOutletContext } from '@/layouts/RootLayout';
+import type { MapOutletContext } from '@/layouts/MapLayout';
 
 type PinSearchLocationState = {
   fromMap?: boolean;
@@ -12,7 +12,7 @@ type PinSearchLocationState = {
 export default function PinPlaceSearchPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectMapPlace } = useOutletContext<AppOutletContext>();
+  const { selectMapPlace } = useOutletContext<MapOutletContext>();
   const cameFromMap = (location.state as PinSearchLocationState | null)?.fromMap === true;
   const [isReturningToMap, setIsReturningToMap] = useState(false);
 
