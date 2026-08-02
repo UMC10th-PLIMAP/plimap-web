@@ -1,3 +1,5 @@
+import type { PlaceSearchSource } from '@/types/place.type';
+
 // --------------------------------------------------
 
 type TrackBase = {
@@ -45,8 +47,26 @@ export type MemberMeResponse = {
   hasNext: boolean;
 };
 
+export type GetPlaceTracksResponse = {
+  placeId: number;
+  distance: number;
+  isWithinRadius: boolean;
+  isTrackDetailAccessible: boolean;
+  tracks: (TrackBase & {
+    placeTrackId: number;
+    pinCount: number;
+    likeCount?: number;
+    isLiked: boolean;
+  })[];
+  page: number;
+  size: number;
+  hasNext: boolean;
+};
+
+export type PlaceTrack = GetPlaceTracksResponse['tracks'][number];
+
 // --------------------------------------------------
-export type PinSort = 'popular' | 'latest';
+export type PinSort = 'POPULAR' | 'LATEST';
 
 export type PlaceInfo = {
   id: string;
@@ -55,10 +75,13 @@ export type PlaceInfo = {
   distance: number;
   address?: string;
   isMine?: boolean;
+  latitude: number;
+  longitude: number;
 };
 
 /** PinCard — 찜한 곡 API와 동일 shape (+ UI 전용 옵션) */
-export type Pin = LikedTrack & {
+export type Pin = Omit<LikedTrack, 'likeCount'> & {
+  likeCount?: number;
   pinCount?: number;
   liked?: boolean;
   pinId?: string;
@@ -113,4 +136,6 @@ export type PinSearchPlace = PlaceResult & {
     lat: number;
     lng: number;
   };
+  searchHistoryId?: number;
+  searchSource?: PlaceSearchSource;
 };
