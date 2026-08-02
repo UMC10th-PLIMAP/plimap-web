@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { usePutPinLike } from '@/features/pin/queries/usePutPinLike';
 import type { PinFeedEntry } from '@/features/pin/types';
 import MoreIcon from '@/assets/icons/more.svg?react';
 import LikeIcon from '@/assets/icons/like.svg?react';
@@ -8,23 +9,21 @@ import PlayIcon from '@/assets/icons/play.svg?react';
 
 type SongFeedCardProps = {
   entry: PinFeedEntry;
-  onToggleLike?: (entryId: string) => void;
   onPlay?: (entryId: string) => void;
   onReport?: (entryId: string) => void;
   onEdit?: (entryId: string) => void;
   onDelete?: (entryId: string) => void;
 };
 
-export function SongFeedCard({
-  entry,
-  onToggleLike,
-  onPlay,
-  onReport,
-  onEdit,
-  onDelete,
-}: SongFeedCardProps) {
+export function SongFeedCard({ entry, onPlay, onReport, onEdit, onDelete }: SongFeedCardProps) {
+  const { mutate: putPinLike, isPending: isLikePending } = usePutPinLike();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+
+  const handleLikeClick = () => {
+    if (isLikePending || entry.liked) return;
+    putPinLike(entry.id);
+  };
 
   useEffect(() => {
     if (!isMoreOpen) return;
@@ -102,13 +101,14 @@ export function SongFeedCard({
       <footer className="flex items-center justify-between pt-2.5">
         <button
           type="button"
-          onClick={() => onToggleLike?.(entry.id)}
+          onClick={handleLikeClick}
           aria-pressed={entry.liked}
           aria-label="추천"
-          className="flex items-center gap-1.5 text-grayscale-400"
+          disabled={isLikePending}
+          className="flex cursor-pointer items-center gap-1.5 text-grayscale-400 disabled:opacity-100"
         >
           <LikeIcon
-            className={`size-5 ${entry.liked ? 'text-grayscale-100' : 'text-grayscale-400'}`}
+            className={`size-5 ${entry.liked ? 'fill-grayscale-100 text-grayscale-100' : 'text-grayscale-400'}`}
             aria-hidden
           />
           <span className="body-15-r">{entry.likeCount}</span>
