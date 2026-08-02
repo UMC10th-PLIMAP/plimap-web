@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { usePutPinLike } from '@/features/pin/queries/usePutPinLike';
+import { useDeletePinLike } from '@/features/pin/queries/useDeletePinLike';
 import type { PinFeedEntry } from '@/features/pin/types';
 import MoreIcon from '@/assets/icons/more.svg?react';
 import LikeIcon from '@/assets/icons/like.svg?react';
@@ -16,12 +17,19 @@ type SongFeedCardProps = {
 };
 
 export function SongFeedCard({ entry, onPlay, onReport, onEdit, onDelete }: SongFeedCardProps) {
-  const { mutate: putPinLike, isPending: isLikePending } = usePutPinLike();
+  const { mutate: putPinLike, isPending: isPutPending } = usePutPinLike();
+  const { mutate: deletePinLike, isPending: isDeletePending } = useDeletePinLike();
+  const isLikePending = isPutPending || isDeletePending;
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
   const handleLikeClick = () => {
-    if (isLikePending || entry.liked) return;
+    if (isLikePending) return;
+
+    if (entry.liked) {
+      deletePinLike(entry.id);
+      return;
+    }
     putPinLike(entry.id);
   };
 
