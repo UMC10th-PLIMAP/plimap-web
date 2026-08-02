@@ -35,14 +35,5 @@ export type MapPin = {
   coverUrl?: string;
 };
 
-export type MapCluster = {
-  id: string;
-  count: number;
-  lat: number;
-  lng: number;
-  regionName: string;
-  bounds: MapBounds;
-};
-
 // 현재 위치 마커 기본 색상
 export const DEFAULT_MARKER_COLOR = '#C8F940';

@@ -6,10 +6,11 @@ import type { MapViewport } from '@/features/map/types';
 const COORDINATE_PRECISION = 6;
 const MIN_API_ZOOM = 1;
 const MAX_API_ZOOM = 20;
+const PIN_MARKER_MIN_ZOOM = 14;
 
 const roundCoordinate = (value: number) => Number(value.toFixed(COORDINATE_PRECISION));
 
-export const normalizeMapZoom = (zoom: number) =>
+const normalizeMapZoom = (zoom: number) =>
   Math.min(MAX_API_ZOOM, Math.max(MIN_API_ZOOM, Math.round(zoom)));
 
 const toMapPinsRequest = (viewport: MapViewport): MapPinsRequest => ({
@@ -22,6 +23,7 @@ const toMapPinsRequest = (viewport: MapViewport): MapPinsRequest => ({
 
 export function useMapPins(viewport: MapViewport | null) {
   const request = viewport ? toMapPinsRequest(viewport) : null;
+  const shouldFetchPins = request !== null && request.zoomLevel >= PIN_MARKER_MIN_ZOOM;
 
   return useQuery({
     queryKey: ['pins', 'map', request],
@@ -29,8 +31,8 @@ export function useMapPins(viewport: MapViewport | null) {
       if (!request) throw new Error('지도 viewport가 필요합니다.');
       return getMapPins(request);
     },
-    enabled: Boolean(request),
-    placeholderData: keepPreviousData,
+    enabled: shouldFetchPins,
+    placeholderData: shouldFetchPins ? keepPreviousData : undefined,
     staleTime: 15_000,
     retry: 1,
   });

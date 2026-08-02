@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
-import { normalizeMapZoom, useMapPins } from '@/features/map/queries/useMapPins';
+import { useMapPins } from '@/features/map/queries/useMapPins';
 import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '@/features/map/types';
 import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceMeters';
 import { loadGoogleMapsScript } from '@/features/map/utils';
@@ -46,8 +46,6 @@ export default function PinRegistrationLayout() {
   const isSelectionStage = location.pathname === '/app/pin/register';
   const isConfirmStage = location.pathname === '/app/pin/register/confirm';
   const initialCenter = candidateCoordinate ?? place?.coordinates ?? DEFAULT_CENTER;
-  const normalizedZoom = normalizeMapZoom(zoom);
-  const displayedMapZoom = mapPinsQuery.data?.zoomLevel ?? normalizedZoom;
   const isOutsideAllowedRadius =
     currentLocation !== null &&
     candidateCoordinate !== null &&
@@ -127,8 +125,7 @@ export default function PinRegistrationLayout() {
         centerOnFirstLocation={!candidateCoordinate}
         placeResults={[]}
         selectedPlaceId={null}
-        mapPins={displayedMapZoom >= 14 ? (mapPinsQuery.data?.pins ?? []) : []}
-        mapClusters={displayedMapZoom < 14 ? (mapPinsQuery.data?.clusters ?? []) : []}
+        mapPins={mapPinsQuery.data?.pins ?? []}
         selectedMapPinId={null}
         projectionCoordinate={isSelectionStage ? currentLocation : null}
         projectionRadiusMeters={PIN_REGISTRATION_RADIUS_METERS}
@@ -138,7 +135,6 @@ export default function PinRegistrationLayout() {
         onCenterChanged={handleCenterChanged}
         onViewportChanged={handleViewportChanged}
         onProjectionChanged={setRadiusCenter}
-        onSelectCluster={(cluster) => mapViewerRef.current?.fitBounds(cluster.bounds)}
       />
 
       {mapStatus !== 'ready' ? (

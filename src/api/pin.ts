@@ -6,7 +6,7 @@ import type {
   GetPlaceTrackPinsResponse,
   PinSort,
 } from '@/features/pin/types';
-import type { MapBounds, MapCluster, MapPin } from '@/features/map/types';
+import type { MapPin } from '@/features/map/types';
 
 export type PinAvailabilityRequest = {
   latitude: number;
@@ -42,36 +42,13 @@ type MapPinPreviewResponse = {
   clipStartMs: number;
 };
 
-type MapClusterResponse = {
-  clusterLevel: string;
-  regionName: string;
-  latitude: number;
-  longitude: number;
-  pinCount: number;
-  bounds: {
-    southWestLat: number;
-    southWestLng: number;
-    northEastLat: number;
-    northEastLng: number;
-  };
-};
-
 export type MapPinsResponse = {
-  zoomLevel: number;
   pins: MapPin[];
-  clusters: MapCluster[];
 };
 
 type MapPinsApiResponse = {
-  zoomLevel: number;
   pins: MapPinPreviewResponse[] | null;
-  clusters: MapClusterResponse[] | null;
 };
-
-const toMapBounds = (bounds: MapClusterResponse['bounds']): MapBounds => ({
-  southWest: { lat: bounds.southWestLat, lng: bounds.southWestLng },
-  northEast: { lat: bounds.northEastLat, lng: bounds.northEastLng },
-});
 
 // 8) GET /api/v1/place-tracks/{placeTrackId}/pins - 특정 장소 노래의 PIN 목록 조회
 export async function getPlaceTrackPins(
@@ -111,28 +88,19 @@ export async function validatePinAvailability(
   return data.result;
 }
 
-/** GET /api/v1/pins/map viewport 기반 PIN/클러스터 조회 */
+/** GET /api/v1/pins/map 핀 등록 위치 선택기의 viewport 기반 기존 PIN 조회 */
 export async function getMapPins(request: MapPinsRequest): Promise<MapPinsResponse> {
   const { data } = await apiClient.get<ApiResponse<MapPinsApiResponse>>('/api/v1/pins/map', {
     params: request,
   });
 
   return {
-    zoomLevel: data.result.zoomLevel,
     pins: (data.result.pins ?? []).map((pin) => ({
       id: `place:${pin.placeId}`,
       placeId: pin.placeId,
       lat: pin.latitude,
       lng: pin.longitude,
       coverUrl: pin.albumImageUrl ?? undefined,
-    })),
-    clusters: (data.result.clusters ?? []).map((cluster) => ({
-      id: `${cluster.clusterLevel}:${cluster.regionName}`,
-      count: cluster.pinCount,
-      lat: cluster.latitude,
-      lng: cluster.longitude,
-      regionName: cluster.regionName,
-      bounds: toMapBounds(cluster.bounds),
     })),
   };
 }

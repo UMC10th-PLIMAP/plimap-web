@@ -157,13 +157,5 @@ export function useGoogleMap({
     map.panTo(coordinate);
   }, []);
 
-  const fitBounds = useCallback((bounds: google.maps.LatLngBoundsLiteral) => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    suppressNextCenterChangedRef.current = false;
-    map.fitBounds(bounds);
-  }, []);
-
-  return { mapRef, mapInstanceRef, panTo, fitBounds };
+  return { mapRef, mapInstanceRef, panTo };
 }

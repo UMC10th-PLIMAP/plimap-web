@@ -1,10 +1,9 @@
 import { forwardRef, useImperativeHandle } from 'react';
-import { MapCluster, MapCoordinate, MapPlace, MapPin, MapViewport } from '../types';
+import { MapCoordinate, MapPlace, MapPin, MapViewport } from '../types';
 import { useGoogleMap } from '../hooks/useGoogleMap';
 import { useCurrentLocationMarker } from '../hooks/useCurrentLocationMarker';
 import { useMapPinOverlays } from '../hooks/useMapPinOverlays';
 import { usePlaceMarkers } from '../hooks/usePlaceMarkers';
-import { useMapClusterOverlays } from '../hooks/useMapClusterOverlays';
 import { useCoordinateProjection } from '../hooks/useCoordinateProjection';
 import type { PinRadiusCenter } from '@/features/pin/components/PinRadiusOverlay';
 
@@ -16,7 +15,6 @@ type MapViewerProps = {
   placeResults: MapPlace[];
   selectedPlaceId: string | null;
   mapPins: MapPin[];
-  mapClusters?: MapCluster[];
   selectedMapPinId: string | null;
   projectionCoordinate?: MapCoordinate | null;
   projectionRadiusMeters?: number;
@@ -29,14 +27,12 @@ type MapViewerProps = {
   onProjectionChanged?: (center: PinRadiusCenter | null) => void;
   onSelectPlace?: (placeId: string) => void;
   onSelectMapPin?: (pinId: string) => void;
-  onSelectCluster?: (cluster: MapCluster) => void;
 };
 
 export type MapViewerHandle = {
   /** 지도를 현재 위치 마커로 이동시킨다. 위치를 아직 못 받았으면 아무 동작도 하지 않는다. */
   recenterToCurrentLocation: () => void;
   panTo: (coordinate: MapCoordinate, options?: { notifyCenterChanged?: boolean }) => void;
-  fitBounds: (bounds: MapCluster['bounds']) => void;
 };
 
 export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function MapViewer(
@@ -48,7 +44,6 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     placeResults,
     selectedPlaceId,
     mapPins,
-    mapClusters = [],
     selectedMapPinId,
     projectionCoordinate,
     projectionRadiusMeters,
@@ -61,11 +56,10 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onProjectionChanged,
     onSelectPlace,
     onSelectMapPin,
-    onSelectCluster,
   },
   ref,
 ) {
-  const { mapRef, mapInstanceRef, panTo, fitBounds } = useGoogleMap({
+  const { mapRef, mapInstanceRef, panTo } = useGoogleMap({
     isLoaded,
     isInteractionDisabled,
     zoom,
@@ -89,26 +83,12 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     () => ({
       recenterToCurrentLocation,
       panTo,
-      fitBounds: (bounds) => {
-        fitBounds({
-          south: bounds.southWest.lat,
-          west: bounds.southWest.lng,
-          north: bounds.northEast.lat,
-          east: bounds.northEast.lng,
-        });
-      },
     }),
-    [fitBounds, panTo, recenterToCurrentLocation],
+    [panTo, recenterToCurrentLocation],
   );
 
   usePlaceMarkers({ mapInstanceRef, isLoaded, placeResults, selectedPlaceId, onSelectPlace });
   useMapPinOverlays({ mapInstanceRef, isLoaded, mapPins, selectedMapPinId, onSelectMapPin });
-  useMapClusterOverlays({
-    mapInstanceRef,
-    isLoaded,
-    clusters: mapClusters,
-    onSelectCluster,
-  });
   useCoordinateProjection({
     mapInstanceRef,
     isLoaded,
