@@ -12,11 +12,20 @@ import type {
   PlaceMapSelectionResult,
   PlaceSelectionRequest,
   PlaceSelectionResponse,
+  PlaceDetailResponse,
+  PlaceBookmarkResponse,
 } from '@/types/place.type';
 
 const ENDPOINT = '/api/v1/places';
 
 type RequestOptions = {
+  signal?: AbortSignal;
+};
+
+type GetPlaceDetailRequest = {
+  placeId: number;
+  latitude: number;
+  longitude: number;
   signal?: AbortSignal;
 };
 
@@ -55,6 +64,36 @@ const toRecentPinSearchPlace = (item: PlaceSearchHistoryItem): PinSearchPlace =>
     lng: item.longitude,
   },
 });
+
+/** GET /api/v1/places/{placeId} 장소 상세 및 북마크 상태 조회 */
+export async function getPlaceDetail({
+  placeId,
+  latitude,
+  longitude,
+  signal,
+}: GetPlaceDetailRequest): Promise<PlaceDetailResponse> {
+  const { data } = await apiClient.get<ApiResponse<PlaceDetailResponse>>(`${ENDPOINT}/${placeId}`, {
+    params: { latitude, longitude },
+    signal,
+  });
+  return data.result;
+}
+
+/** PUT /api/v1/places/{placeId}/bookmarks 장소 북마크 등록 */
+export async function bookmarkPlace(placeId: number): Promise<PlaceBookmarkResponse> {
+  const { data } = await apiClient.put<ApiResponse<PlaceBookmarkResponse>>(
+    `${ENDPOINT}/${placeId}/bookmarks`,
+  );
+  return data.result;
+}
+
+/** DELETE /api/v1/places/{placeId}/bookmarks 장소 북마크 삭제 */
+export async function deletePlaceBookmark(placeId: number): Promise<PlaceBookmarkResponse> {
+  const { data } = await apiClient.delete<ApiResponse<PlaceBookmarkResponse>>(
+    `${ENDPOINT}/${placeId}/bookmarks`,
+  );
+  return data.result;
+}
 
 /** GET /api/v1/places/search 장소 검색 */
 export async function searchPlaces({
@@ -134,6 +173,7 @@ export async function selectSearchPlace({
     placeName: selection.placeName,
     address: selection.roadAddress || selection.address,
     distance: selection.distanceMeters,
+    bookmarkedByMe: selection.bookmarkedByMe,
   };
 }
 

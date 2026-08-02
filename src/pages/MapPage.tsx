@@ -22,12 +22,14 @@ type MapPageProps = {
 function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
   return {
     id: place.id,
+    placeId: place.placeId,
     name: place.placeName,
     creatorName: place.creatorName,
     distance: place.distance,
     address: place.address,
     latitude: place.coordinates.lat,
     longitude: place.coordinates.lng,
+    bookmarkedByMe: place.bookmarkedByMe,
   };
 }
 
