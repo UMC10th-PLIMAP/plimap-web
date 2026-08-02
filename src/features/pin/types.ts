@@ -3,9 +3,9 @@ import type { PlaceSearchSource } from '@/types/place.type';
 // --------------------------------------------------
 
 type TrackBase = {
-  trackName: string;
-  artistName: string;
-  artworkUrl: string;
+  trackName: string | null;
+  artistName: string | null;
+  artworkUrl: string | null;
 };
 
 export type searchTracksResponse = {

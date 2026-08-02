@@ -6,6 +6,7 @@ import { MyAllPinsCard } from '@/features/profile/components/MyAllPinsCard';
 import { MyPlimapTabs } from '@/features/profile/components/MyPlimapTabs';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { useLikeTrack } from '@/features/pin/queries/useLikeTrack';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import type { MyAllPin, MyPlimapTab } from '@/features/profile/types';
 
 const MOCK_MY_ALL_PINS: MyAllPin[] = [
@@ -34,11 +35,27 @@ const MOCK_MY_ALL_PINS: MyAllPin[] = [
 export default function MyPlimapPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<MyPlimapTab>('all');
-  const { data: likedTracks } = useLikeTrack({
+  const {
+    data: likedTracks,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useLikeTrack({
     enabled: tab === 'liked',
   });
 
   const tracks = likedTracks?.pages.flatMap((page) => page.tracks) ?? [];
+
+  const loadMoreRef = useInfiniteScroll(
+    () => {
+      if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) fetchNextPage();
+    },
+    {
+      enabled: tab === 'liked' && Boolean(hasNextPage) && !isFetchNextPageError,
+      reconnectKey: isFetchingNextPage,
+    },
+  );
 
   return (
     <div className="flex min-h-full flex-col">
@@ -69,15 +86,32 @@ export default function MyPlimapPage() {
               </p>
             </div>
           ) : (
-            tracks.map((track) => (
-              <PinCard
-                key={track.placeTrackId}
-                pin={{ ...track, liked: true }}
-                onClick={() => {
-                  // TODO: 맵으로 이동 연결
-                }}
-              />
-            ))
+            <>
+              {tracks.map((track) => (
+                <PinCard
+                  key={track.placeTrackId}
+                  pin={{ ...track, liked: true }}
+                  onClick={() => {
+                    // TODO: 맵으로 이동 연결
+                  }}
+                />
+              ))}
+              {isFetchNextPageError ? (
+                <div className="flex flex-col items-center gap-2 py-4">
+                  <p className="body-15-m text-grayscale-500">더 불러오지 못했어요</p>
+                  <button
+                    type="button"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="body-15-m text-grayscale-300 underline disabled:opacity-50 cursor-pointer"
+                  >
+                    다시 시도
+                  </button>
+                </div>
+              ) : (
+                <div ref={loadMoreRef} className="h-4" aria-hidden />
+              )}
+            </>
           )}
         </div>
       </div>
