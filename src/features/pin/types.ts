@@ -92,6 +92,25 @@ export type GetPlaybackPreparationsResponse = {
   previewUrl: string;
   durationMs: number;
 };
+
+export type GetPlaceTrackPinsResponse = {
+  data: {
+    pinId: number;
+    writerNickname: string;
+    writerProfileImage: string;
+    introduction: string;
+    tags: string[];
+    clipStartMs: number;
+    likeCount: number;
+    userLike: boolean;
+    staticCreatedAt: string;
+    createdAt: string;
+  }[];
+  nextCursor: string;
+  hasNext: boolean;
+  pageSize: number;
+};
+
 // --------------------------------------------------
 export type PinSort = 'POPULAR' | 'LATEST';
 

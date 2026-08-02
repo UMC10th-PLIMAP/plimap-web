@@ -40,7 +40,7 @@ export function SongFeedCard({
   }, [isMoreOpen]);
 
   return (
-    <article className="rounded-[20px] bg-pli-black-85 p-4">
+    <article className="rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3 ">
       <header className="flex items-center gap-2.5">
         {entry.avatarUrl ? (
           <img src={entry.avatarUrl} alt="" className="size-7 rounded-full object-cover" />
@@ -87,11 +87,11 @@ export function SongFeedCard({
         </div>
       </header>
 
-      <div className="pt-4 pb-2.5">
+      <div className="pt-4 pb-[14px]">
         <p className="whitespace-pre-wrap body-15-r text-grayscale-100">{entry.content}</p>
 
         {entry.tags.length > 0 && (
-          <p className="pt-1 body-15-r text-grayscale-700">
+          <p className="pt-2 body-15-r text-grayscale-700 h-[29px] ">
             {entry.tags.map((tag) => `#${tag}`).join(' ')}
           </p>
         )}
@@ -149,7 +149,7 @@ export function SongFeedCardMore({
       onClick={(event) => event.stopPropagation()}
     >
       {isMine ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 cursor-pointer">
           <button
             type="button"
             onClick={onEdit}
@@ -162,7 +162,7 @@ export function SongFeedCardMore({
           </button>
         </div>
       ) : (
-        <button type="button" onClick={onReport} className="body-15-m text-red cursor-pointer">
+        <button type="button" onClick={onReport} className="body-15-m text-red ">
           신고하기
         </button>
       )}
