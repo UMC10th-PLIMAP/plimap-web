@@ -114,6 +114,24 @@ export type GetPlaceTrackPinsResponse = {
 export type LikeCountResponse = {
   pinCount: number;
 };
+
+export type GetMyPinsResponse = {
+  data: {
+    pinId: number;
+    albumImageUrl: string;
+    trackTitle: string;
+    artist: string;
+    placeName: string;
+    introduction: string;
+    tags: string[];
+    staticCreatedAt: string;
+    createdAt: string;
+  }[];
+  nextCursor: string;
+  hasNext: boolean;
+  pageSize: number;
+};
+
 // --------------------------------------------------
 export type PinSort = 'POPULAR' | 'LATEST';
 

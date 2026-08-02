@@ -5,6 +5,7 @@ import type {
   MemberMeResponse,
   GetPlaceTrackPinsResponse,
   LikeCountResponse,
+  GetMyPinsResponse,
   PinSort,
 } from '@/features/pin/types';
 
@@ -36,6 +37,14 @@ export async function getPlaceTrackPins(
       params: { pageSize, cursor, pinSortType },
     },
   );
+  return data.result;
+}
+
+// 9) GET /api/v1/pins/members/me - 내가 작성한 PIN 목록 조회
+export async function getMyPins(pageSize: number, cursor?: string): Promise<GetMyPinsResponse> {
+  const { data } = await apiClient.get<ApiResponse<GetMyPinsResponse>>(`/api/v1/pins/members/me`, {
+    params: { pageSize, cursor },
+  });
   return data.result;
 }
 
