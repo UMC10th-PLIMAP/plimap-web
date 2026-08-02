@@ -65,6 +65,33 @@ export type GetPlaceTracksResponse = {
 
 export type PlaceTrack = GetPlaceTracksResponse['tracks'][number];
 
+export type PutLikedTracksResponse = {
+  placeTrackId: number;
+  isLiked: boolean;
+  likeCount: number;
+};
+
+export type GetPlaceTrackDetailResponse = {
+  placeTrackId: number;
+  trackId: number;
+  youtubeVideoId: string;
+  title: string;
+  artist: string;
+  albumImageUrl: string;
+  likeCount: number;
+  userLike: boolean;
+};
+
+export type GetPlaybackPreparationsResponse = {
+  itunesTrackId: number;
+  youtubeVideoId: string;
+  title: string;
+  artistName: string;
+  albumTitle: string;
+  albumImageUrl: string;
+  previewUrl: string;
+  durationMs: number;
+};
 // --------------------------------------------------
 export type PinSort = 'POPULAR' | 'LATEST';
 

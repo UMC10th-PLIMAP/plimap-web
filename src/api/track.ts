@@ -4,9 +4,38 @@ import type {
   searchTracksResponse,
   GetLikedTracksResponse,
   GetPlaceTracksResponse,
+  PutLikedTracksResponse,
+  GetPlaceTrackDetailResponse,
+  GetPlaybackPreparationsResponse,
 } from '@/features/pin/types';
 
-/** GET /api/v1/tracks/search 음악 검색 */
+// 1) PUT /api/v1/place-tracks/{placeTrackId}/likes - 장소별 곡 좋아요 등록
+export async function putLikedTracks(placeTrackId: string): Promise<PutLikedTracksResponse> {
+  const { data } = await apiClient.put<ApiResponse<PutLikedTracksResponse>>(
+    `/api/v1/place-tracks/${placeTrackId}/likes`,
+  );
+  return data.result;
+}
+
+// 2) DELETE /api/v1/place-tracks/{placeTrackId}/likes - 장소별 곡 좋아요 삭제
+export async function deleteLikedTracks(placeTrackId: string): Promise<PutLikedTracksResponse> {
+  const { data } = await apiClient.delete<ApiResponse<PutLikedTracksResponse>>(
+    `/api/v1/place-tracks/${placeTrackId}/likes`,
+  );
+  return data.result;
+}
+
+// 3) POST /api/v1/tracks/playback-preparations - 구간 재생 준비
+export async function getPlaybackPreparations(
+  itunesTrackId: string,
+): Promise<GetPlaybackPreparationsResponse> {
+  const { data } = await apiClient.post<ApiResponse<GetPlaybackPreparationsResponse>>(
+    `/api/v1/tracks/playback-preparations`,
+    { itunesTrackId: Number(itunesTrackId) },
+  );
+  return data.result;
+}
+// 4) GET /api/v1/tracks/search -  음악 검색
 export async function searchTracks(
   keyword: string,
   limit: number = 20,
@@ -35,6 +64,17 @@ export async function getPlaceTracks(
   );
   return data.result;
 }
+
+// 6) GET /api/v1/place-tracks/{placeTrackId} - 장소 노래 상세 조회
+export async function getPlaceTrackDetail(
+  placeTrackId: string,
+): Promise<GetPlaceTrackDetailResponse> {
+  const { data } = await apiClient.get<ApiResponse<GetPlaceTrackDetailResponse>>(
+    `/api/v1/place-tracks/${placeTrackId}`,
+  );
+  return data.result;
+}
+
 // 7) GET /api/v1/place-tracks/likes - 좋아요한 장소별 곡 목록 조회
 export async function getLikedTracks(
   page: string,

@@ -1,15 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
-
-import { SongFeedCard } from '@/features/pin/components/SongFeedCard';
-import { ReportModal } from '@/features/pin/components/ReportModal';
-
-import {
-  MOCK_SONG_DETAIL_LOVE_ATTACK,
-  MOCK_SONG_DETAILS,
-} from '@/features/pin/data/mockPinSearchPlaces';
+import { useDeleteLikedTrack } from '@/features/pin/queries/useDeleteLikedTrack';
+import { usePlaceTrackDetail } from '@/features/pin/queries/usePlaceTrackDetail';
+import { usePutLikedTrack } from '@/features/pin/queries/usePutLikedTrack';
 import type { PinSort } from '@/features/pin/types';
 import HeartIcon from '@/assets/icons/heart.svg?react';
 import ChangeIcon from '@/assets/icons/change.svg?react';
@@ -23,28 +18,33 @@ const SORT_LABEL: Record<PinSort, string> = {
 export default function PinDetailPage() {
   const navigate = useNavigate();
   const { pinId } = useParams<{ pinId: string }>();
+  const { data: pinDetail } = usePlaceTrackDetail({
+    placeTrackId: pinId,
+  });
 
-  const pinDetail = MOCK_SONG_DETAILS[pinId ?? ''] ?? MOCK_SONG_DETAIL_LOVE_ATTACK;
+  const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
+  const { mutate: deleteLikedTrack, isPending: isDeletePending } = useDeleteLikedTrack();
+  const isLikePending = isPutPending || isDeletePending;
 
   const [sort, setSort] = useState<PinSort>('LATEST');
-  const [liked, setLiked] = useState(Boolean(pinDetail.liked));
-  const [likeCount, setLikeCount] = useState(pinDetail.likeCount);
-  const [reportFeedId, setReportFeedId] = useState<string | null>(null);
 
-  const sortedFeeds = useMemo(
-    () =>
-      sort === 'POPULAR'
-        ? [...pinDetail.feeds].sort((a, b) => b.likeCount - a.likeCount)
-        : pinDetail.feeds,
-    [pinDetail.feeds, sort],
-  );
+  const handleLikeClick = () => {
+    if (!pinDetail || isLikePending) return;
+
+    const placeTrackId = String(pinDetail.placeTrackId);
+    if (pinDetail.userLike) {
+      deleteLikedTrack(placeTrackId);
+      return;
+    }
+    putLikedTrack(placeTrackId);
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-hide">
       <div className="relative h-[296px] shrink-0 overflow-hidden">
         <img
-          src={pinDetail.coverUrl}
-          alt={pinDetail.title}
+          src={pinDetail?.albumImageUrl}
+          alt={pinDetail?.title}
           aria-hidden
           className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-12 blur-[4px]"
         />
@@ -55,35 +55,36 @@ export default function PinDetailPage() {
         />
         <div className="relative z-10 flex h-full flex-col items-center">
           <img
-            src={pinDetail.coverUrl}
-            alt={pinDetail.title}
+            src={pinDetail?.albumImageUrl}
+            alt={pinDetail?.title}
             aria-hidden
             className="size-[112px] rounded-lg object-cover"
           />
-          <h1 className="pt-3 head-24-sb text-grayscale-100">{pinDetail.title}</h1>
-          <p className="body-15-r text-grayscale-600">{pinDetail.artist}</p>
+          <h1 className="pt-3 head-24-sb text-grayscale-100">{pinDetail?.title}</h1>
+          <p className="body-15-r text-grayscale-600">{pinDetail?.artist}</p>
 
           <button
             type="button"
-            aria-pressed={liked}
-            aria-label={liked ? '좋아요 취소' : '좋아요'}
-            onClick={() => {
-              setLiked((prev) => !prev);
-              setLikeCount((count) => count + (liked ? -1 : 1));
-            }}
-            className=" flex h-11 mt-[14px] w-full max-w-[183px] cursor-pointer items-center justify-center gap-[5px] rounded-lg bg-pli-black-75"
+            aria-pressed={pinDetail?.userLike}
+            aria-label={pinDetail?.userLike ? '좋아요 취소' : '좋아요'}
+            disabled={isLikePending}
+            onClick={handleLikeClick}
+            className="mt-[14px] flex h-11 w-full max-w-[183px] cursor-pointer items-center justify-center gap-[5px] rounded-lg bg-pli-black-75 disabled:opacity-100"
           >
             <HeartIcon
-              className={cn('size-[18px]', liked ? 'fill-red text-red' : 'text-grayscale-400')}
+              className={cn(
+                'size-[18px]',
+                pinDetail?.userLike ? 'fill-red text-red' : 'text-grayscale-400',
+              )}
               aria-hidden
             />
-            <span className="body-15-m text-grayscale-300">{likeCount}</span>
+            <span className="body-15-m text-grayscale-300">{pinDetail?.likeCount}</span>
           </button>
         </div>
       </div>
 
       <div className="flex  items-center justify-between px-4 pt-6">
-        <p className="body-15-m text-grayscale-300">{pinDetail.registerCount}명이 등록</p>
+        <p className="body-15-m text-grayscale-300">명이 등록</p>
 
         <button
           type="button"
@@ -97,19 +98,8 @@ export default function PinDetailPage() {
       </div>
 
       <div className="flex flex-col gap-4 px-[11px] pt-[17.5px] pb-[env(safe-area-inset-bottom)]">
-        {sortedFeeds.map((feed) => (
-          <SongFeedCard
-            key={feed.id}
-            entry={feed}
-            onToggleLike={() => {}}
-            onReport={setReportFeedId}
-            onEdit={() => {}}
-            onDelete={() => {}}
-          />
-        ))}
+        <p className="py-10 text-center body-15-r text-grayscale-600">아직 등록된 피드가 없어요</p>
       </div>
-
-      <ReportModal open={reportFeedId !== null} onClose={() => setReportFeedId(null)} />
     </div>
   );
 }
