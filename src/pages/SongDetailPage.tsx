@@ -16,7 +16,6 @@ import {
   timeToPercent,
 } from '@/features/pin/data/songPreview';
 import { cn } from '@/lib/utils';
-import type { Song } from '@/features/pin/types';
 
 const INTRO_MAX_LENGTH = 100;
 const MAX_TAG_COUNT = 4;
@@ -280,8 +279,8 @@ export default function SongDetailPage() {
       <SongSelectSheet
         open={isSongSelectOpen}
         onClose={() => setIsSongSelectOpen(false)}
-        onSelect={(selected: Song) => {
-          navigate(`/app/song/detail/${selected.id}`, { replace: true });
+        onSelect={(selected) => {
+          navigate(`/app/song/detail/${selected.itunesTrackId}`, { replace: true });
         }}
       />
     </div>

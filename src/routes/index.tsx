@@ -19,6 +19,8 @@ import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
+import FollowListPage from '@/pages/FollowListPage';
+import RecommendationPinCardPreviewPage from '@/pages/RecommendationPinCardPreviewPage';
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +34,10 @@ export const router = createBrowserRouter([
   {
     path: '/preview/report-modal',
     element: <ReportModalPreviewPage />,
+  },
+  {
+    path: '/preview/recommendation-pin-card',
+    element: <RecommendationPinCardPreviewPage />,
   },
   {
     path: '/app',
@@ -76,7 +82,6 @@ export const router = createBrowserRouter([
             path: 'onboarding/profile-image',
             element: <ProfileImageSetupPage />,
           },
-
           {
             path: 'onboarding/welcome',
             element: <WelcomePage />,
@@ -100,6 +105,14 @@ export const router = createBrowserRouter([
           {
             path: 'my',
             element: <MyProfilePage />,
+          },
+          {
+            path: 'my/following',
+            element: <FollowListPage />,
+          },
+          {
+            path: 'my/followers',
+            element: <FollowListPage />,
           },
           {
             path: 'my/plimap',
