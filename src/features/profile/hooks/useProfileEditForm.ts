@@ -187,7 +187,8 @@ export function useProfileEditForm(initialValues: ProfileEditValues) {
     nicknameField,
     nameField,
     introductionField,
-    canSubmit: isDirty && isNicknameValid && isNameValid && isIntroductionValid,
+    isDirty,
+    isValid: isNicknameValid && isNameValid && isIntroductionValid,
     buildPayload,
   };
 }
