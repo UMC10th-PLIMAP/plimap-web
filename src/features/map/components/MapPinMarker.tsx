@@ -19,14 +19,7 @@ export function MapPinMarker({
   onPlay,
 }: MapPinMarkerProps) {
   return (
-    <div
-      className="relative cursor-pointer select-none transition-transform duration-150"
-      style={{
-        width: 51,
-        height: 57,
-        transform: isSelected ? 'scale(1.2)' : undefined,
-      }}
-    >
+    <div className="relative cursor-pointer select-none" style={{ width: 51, height: 57 }}>
       {isSelected && nickname && introduction ? (
         <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2">
           <MapPinMessageBox
@@ -38,27 +31,32 @@ export function MapPinMarker({
         </div>
       ) : null}
 
-      <img
-        src={pinIconUrl}
-        alt="핀 아이콘"
-        draggable={false}
-        className="pointer-events-none block size-full object-contain"
-      />
-
       <div
-        className="pointer-events-none absolute overflow-hidden rounded-full"
-        style={{
-          left: '49.7%',
-          top: '36%',
-          width: 24,
-          height: 24,
-          transform: 'translate(-50%, -50%)',
-          background: coverUrl,
-        }}
+        className="relative size-full transition-transform duration-150"
+        style={{ transform: isSelected ? 'scale(1.2)' : undefined }}
       >
-        {coverUrl ? (
-          <img src={coverUrl} alt="" draggable={false} className="size-full object-cover" />
-        ) : null}
+        <img
+          src={pinIconUrl}
+          alt="핀 아이콘"
+          draggable={false}
+          className="pointer-events-none block size-full object-contain"
+        />
+
+        <div
+          className="pointer-events-none absolute overflow-hidden rounded-full"
+          style={{
+            left: '49.7%',
+            top: '36%',
+            width: 24,
+            height: 24,
+            transform: 'translate(-50%, -50%)',
+            background: coverUrl,
+          }}
+        >
+          {coverUrl ? (
+            <img src={coverUrl} alt="" draggable={false} className="size-full object-cover" />
+          ) : null}
+        </div>
       </div>
     </div>
   );

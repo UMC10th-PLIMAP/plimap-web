@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { SearchLauncher } from '@/components/ui/SearchInput';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
-import type { MapCoordinate, MapPlace } from '@/features/map/types';
+import type { MapCoordinate, MapPlace, MapViewport } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
+import { useMapPins } from '@/features/map/queries/useMapPins';
+import { DEV_MOCK_MAP_PINS } from '@/features/map/constants/devMockMapPins';
 import { PinListSheet } from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
@@ -54,6 +56,13 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   );
   const [currentLocation, setCurrentLocation] = useState<MapCoordinate | null>(null);
   const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
+  const [viewport, setViewport] = useState<MapViewport | null>(null);
+  const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
+  const { data: mapPinsData } = useMapPins(viewport);
+  const mapPins =
+    import.meta.env.DEV && mapPinsData !== undefined && mapPinsData.pins.length === 0
+      ? DEV_MOCK_MAP_PINS
+      : (mapPinsData?.pins ?? []);
   // develop 방식: selectedMapPlace prop으로 장소 결과 관리
   const placeResults = useMemo<MapPlace[]>(
     () => (selectedMapPlace ? [selectedMapPlace] : []),
@@ -225,10 +234,12 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
         zoom={zoom}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
-        mapPins={[]}
-        selectedMapPinId={null}
+        mapPins={mapPins}
+        selectedMapPinId={selectedMapPinId}
         onZoomChanged={handleZoomChange}
         onCurrentLocationChanged={setCurrentLocation}
+        onViewportChanged={setViewport}
+        onSelectMapPin={setSelectedMapPinId}
       />
     </div>
   );
