@@ -34,7 +34,7 @@ type TermsDetailContentProps = {
 
 export function TermsDetailContent({ term }: TermsDetailContentProps) {
   return (
-    <div className="flex flex-col gap-5 pt-[44px] pr-[14px] pb-10 pl-4">
+    <div className="flex flex-col gap-5 pr-[14px] pb-10 pl-4">
       <div className="flex flex-col gap-5">
         <h1 className="head-24-sb whitespace-pre-line text-grayscale-100">{term.title}</h1>
         <p className="body-15-m text-grayscale-500">

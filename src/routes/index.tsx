@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import RootLayout from '@/layouts/RootLayout';
+import BottomNavLayout from '@/layouts/BottomNavLayout';
 import MapLayout from '@/layouts/MapLayout';
 import AuthGuard from '@/layouts/AuthGuard';
 import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
@@ -17,16 +18,24 @@ import PinDetailPage from '@/pages/PinDetailPage';
 import SongListPage from '@/pages/SongListPage';
 import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
+import PinLocationConfirmPage from '@/pages/PinLocationConfirmPage';
+import PinRegisterSearchPage from '@/pages/PinRegisterSearchPage';
+import PinRegisterEntryPage from '@/pages/PinRegisterEntryPage';
+import PinRegistrationLayout from '@/layouts/PinRegistrationLayout';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
 import FollowListPage from '@/pages/FollowListPage';
 import RecommendationPinCardPreviewPage from '@/pages/RecommendationPinCardPreviewPage';
+import SettingsPage from '@/pages/SettingsPage';
+import AccountManagementPage from '@/pages/AccountManagementPage';
+import TermsDetailViewPage from '@/pages/TermsDetailViewPage';
 import RecommendationContentCarouselPreviewPage from '@/pages/RecommendationContentCarouselPreviewPage';
+import HomePage from '@/pages/HomePage';
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/app" replace />,
+    element: <Navigate to="/app/home" replace />,
   },
   {
     path: '/preview/pin-radius',
@@ -62,16 +71,32 @@ export const router = createBrowserRouter([
         element: <AuthGuard />,
         children: [
           {
-            element: <MapLayout />,
+            element: <BottomNavLayout />,
             children: [
               {
-                index: true,
-                element: null,
+                path: 'home',
+                element: <HomePage />,
+                handle: { bottomNavItem: 'home' },
               },
               {
-                path: 'pin/search',
-                element: <PinPlaceSearchPage />,
-                handle: { mapOverlay: true },
+                element: <MapLayout />,
+                handle: { bottomNavItem: 'plimap' },
+                children: [
+                  {
+                    index: true,
+                    element: null,
+                  },
+                  {
+                    path: 'pin/search',
+                    element: <PinPlaceSearchPage />,
+                    handle: { mapOverlay: true },
+                  },
+                ],
+              },
+              {
+                path: 'my',
+                element: <MyProfilePage />,
+                handle: { bottomNavItem: 'my' },
               },
             ],
           },
@@ -108,10 +133,6 @@ export const router = createBrowserRouter([
             element: <SongDetailPage />,
           },
           {
-            path: 'my',
-            element: <MyProfilePage />,
-          },
-          {
             path: 'my/following',
             element: <FollowListPage />,
           },
@@ -124,8 +145,38 @@ export const router = createBrowserRouter([
             element: <MyPlimapPage />,
           },
           {
+            path: 'pin/register/place',
+            element: <PinRegisterEntryPage />,
+          },
+          {
             path: 'pin/register',
-            element: <PinRegisterPage />,
+            element: <PinRegistrationLayout />,
+            children: [
+              {
+                index: true,
+                element: <PinRegisterPage />,
+              },
+              {
+                path: 'search',
+                element: <PinRegisterSearchPage />,
+              },
+              {
+                path: 'confirm',
+                element: <PinLocationConfirmPage />,
+              },
+            ],
+          },
+          {
+            path: 'settings',
+            element: <SettingsPage />,
+          },
+          {
+            path: 'settings/account',
+            element: <AccountManagementPage />,
+          },
+          {
+            path: 'settings/terms/:termId',
+            element: <TermsDetailViewPage />,
           },
         ],
       },

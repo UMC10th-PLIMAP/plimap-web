@@ -10,7 +10,8 @@ const buttonVariants = cva(
       variant: {
         cta: 'bg-grayscale-300 disabled:bg-grayscale-900 text-grayscale-1250',
         pin: 'bg-gradient-neon text-grayscale-1200 disabled:bg-none disabled:bg-pli-black-75 disabled:text-grayscale-600',
-        confirm: 'bg-grayscale-100 text-grayscale-1250',
+        confirm:
+          'bg-grayscale-100 text-grayscale-1250 disabled:cursor-not-allowed disabled:bg-pli-black-50 disabled:text-grayscale-400',
         cancel: 'bg-pli-black-50 text-grayscale-400',
         kakao: 'bg-kakao text-kakao-text disabled:opacity-50 disabled:cursor-not-allowed',
         google:

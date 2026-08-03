@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import lottie from 'lottie-web/build/player/lottie_svg';
 
@@ -52,6 +53,7 @@ function ConfettiLottie({ data }: { data: string }) {
 
 export default function WelcomePage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const nickname = useOnboardingStore((state) => state.nickname);
   const profileImageFile = useOnboardingStore((state) => state.profileImageFile);
   const profileImageUrl = useOnboardingStore((state) => state.profileImageUrl);
@@ -75,6 +77,7 @@ export default function WelcomePage() {
 
     try {
       await completeOnboarding(nickname);
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
       useOnboardingStore.getState().reset();
       navigate('/app', { replace: true });
     } catch (error) {

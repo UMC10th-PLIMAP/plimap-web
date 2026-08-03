@@ -5,6 +5,17 @@ export type MapCoordinate = {
 
 export const DEFAULT_CENTER: MapCoordinate = { lat: 37.5665, lng: 126.978 };
 
+export type MapBounds = {
+  southWest: MapCoordinate;
+  northEast: MapCoordinate;
+};
+
+export type MapViewport = {
+  center: MapCoordinate;
+  bounds: MapBounds;
+  zoom: number;
+};
+
 export type MapPlace = {
   id: string;
   placeName: string;
@@ -16,10 +27,11 @@ export type MapPlace = {
 
 export type MapPin = {
   id: string;
+  placeId?: number;
   lat: number;
   lng: number;
-  title: string;
-  artist: string;
+  title?: string;
+  artist?: string;
   coverUrl?: string;
   nickname: string;
   avatarUrl?: string;

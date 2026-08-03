@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
+import { SongFeedCard } from '@/features/pin/components/SongFeedCard';
 import { useDeleteLikedTrack } from '@/features/pin/queries/useDeleteLikedTrack';
 import { usePlaceTrackDetail } from '@/features/pin/queries/usePlaceTrackDetail';
+import { usePlaceTrackPins } from '@/features/pin/queries/usePlaceTrackPins';
 import { usePutLikedTrack } from '@/features/pin/queries/usePutLikedTrack';
-import type { PinSort } from '@/features/pin/types';
+import type { GetPlaceTrackPinsResponse, PinFeedEntry, PinSort } from '@/features/pin/types';
 import HeartIcon from '@/assets/icons/heart.svg?react';
 import ChangeIcon from '@/assets/icons/change.svg?react';
 import { cn } from '@/lib/utils';
@@ -15,18 +17,39 @@ const SORT_LABEL: Record<PinSort, string> = {
   POPULAR: '인기순',
 };
 
+type PlaceTrackPin = GetPlaceTrackPinsResponse['data'][number];
+
+function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
+  return {
+    id: String(pin.pinId),
+    nickname: pin.writerNickname,
+    avatarUrl: pin.writerProfileImage,
+    createdAtLabel: pin.staticCreatedAt,
+    content: pin.introduction,
+    tags: pin.tags,
+    likeCount: pin.likeCount,
+    liked: pin.userLike,
+  };
+}
+
 export default function PinDetailPage() {
   const navigate = useNavigate();
   const { pinId } = useParams<{ pinId: string }>();
+  const [sort, setSort] = useState<PinSort>('LATEST');
+
   const { data: pinDetail } = usePlaceTrackDetail({
     placeTrackId: pinId,
+  });
+  const { data: pinPages } = usePlaceTrackPins({
+    placeTrackId: pinId,
+    pinSortType: sort,
   });
 
   const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
   const { mutate: deleteLikedTrack, isPending: isDeletePending } = useDeleteLikedTrack();
   const isLikePending = isPutPending || isDeletePending;
 
-  const [sort, setSort] = useState<PinSort>('LATEST');
+  const pins = pinPages?.pages.flatMap((page) => page.data.map(toPinFeedEntry)) ?? [];
 
   const handleLikeClick = () => {
     if (!pinDetail || isLikePending) return;
@@ -83,8 +106,8 @@ export default function PinDetailPage() {
         </div>
       </div>
 
-      <div className="flex  items-center justify-between px-4 pt-6">
-        <p className="body-15-m text-grayscale-300">명이 등록</p>
+      <div className="flex items-center justify-between px-4 pt-6">
+        <p className="body-15-m text-grayscale-300">{pins.length}명이 등록</p>
 
         <button
           type="button"
@@ -98,7 +121,9 @@ export default function PinDetailPage() {
       </div>
 
       <div className="flex flex-col gap-4 px-[11px] pt-[17.5px] pb-[env(safe-area-inset-bottom)]">
-        <p className="py-10 text-center body-15-r text-grayscale-600">아직 등록된 피드가 없어요</p>
+        {pins.map((entry) => (
+          <SongFeedCard key={entry.id} entry={entry} />
+        ))}
       </div>
     </div>
   );

@@ -9,8 +9,7 @@ import type { AppOutletContext } from '@/layouts/RootLayout';
 const SESSION_CHECK_FAILED_MESSAGE = '로그인 상태를 확인하지 못했어요. 다시 로그인해 주세요.';
 
 const AuthGuard = () => {
-  const outletContext = useOutletContext<AppOutletContext>();
-
+  const context = useOutletContext<AppOutletContext>();
   const { status, error } = useQuery({
     queryKey: ['me'],
     queryFn: getMyProfile,
@@ -28,7 +27,7 @@ const AuthGuard = () => {
   if (status === 'pending') return null;
   if (status === 'error') return <Navigate to="/app/login" replace />;
 
-  return <Outlet context={outletContext} />;
+  return <Outlet context={context} />;
 };
 
 export default AuthGuard;
