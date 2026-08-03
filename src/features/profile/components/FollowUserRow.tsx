@@ -25,7 +25,7 @@ export function FollowUserRow({ user, onActionClick }: FollowUserRowProps) {
           user.isFollowing ? 'bg-pli-black-50 text-grayscale-100' : 'bg-neon-2 text-grayscale-1200'
         }`}
       >
-        {user.isFollowing ? '맞팔로우' : '팔로잉'}
+        {user.isFollowing ? '팔로잉' : '맞팔로우'}
       </button>
     </li>
   );
