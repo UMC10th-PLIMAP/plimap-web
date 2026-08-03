@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 
 import { isApiRequestCanceled } from '@/api/client';
 import { SearchInput } from '@/components/ui/SearchInput';
@@ -10,38 +10,60 @@ import {
   useSelectSearchPlace,
 } from '@/features/pin/queries/usePlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
+import type { MapCoordinate } from '@/features/map/types';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
+import type { PlaceSearchHistoryRequest } from '@/types/place.type';
 
 export type PinPlaceSearchProps = {
+  initialQuery?: string;
+  showRecentPlaces?: boolean;
   isReturningToMap?: boolean;
   onCloseAnimationEnd?: () => void;
   onPlaceSelect: (place: PinSearchPlace) => void;
+  validatePlace?: (place: PinSearchPlace) => string | null;
+  onValidationError?: (message: string) => void;
+  onCurrentLocationChanged?: (coordinate: MapCoordinate) => void;
   onBack?: () => void;
+  currentLocationOverride?: PlaceSearchHistoryRequest;
+  autoFocus?: boolean;
+  placeholder?: string;
+  headerContent?: ReactNode;
 };
 
 export function PinPlaceSearch({
+  initialQuery = '',
+  showRecentPlaces = true,
   isReturningToMap = false,
   onCloseAnimationEnd,
   onPlaceSelect,
+  validatePlace,
+  onValidationError,
+  onCurrentLocationChanged,
   onBack,
+  currentLocationOverride,
+  autoFocus = true,
+  placeholder = '장소를 검색하세요',
+  headerContent,
 }: PinPlaceSearchProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const selectionControllerRef = useRef<AbortController | null>(null);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
+  const [selectionConstraintError, setSelectionConstraintError] = useState<string | null>(null);
   const currentPositionQuery = useCurrentPosition({
+    enabled: !currentLocationOverride,
     options: {
       enableHighAccuracy: true,
       maximumAge: 0,
       timeout: 10_000,
     },
   });
-  const currentLocation = currentPositionQuery.data ?? null;
+  const currentLocation = currentLocationOverride ?? currentPositionQuery.data ?? null;
   const locationError =
-    currentPositionQuery.isError && !currentPositionQuery.data
+    !currentLocationOverride && currentPositionQuery.isError && !currentPositionQuery.data
       ? '현재 위치를 확인할 수 없어요. 위치 권한을 확인해주세요.'
       : null;
   const normalizedQuery = query.trim();
-  const recentSearchQuery = useRecentSearchPlaces(currentLocation);
+  const recentSearchQuery = useRecentSearchPlaces(currentLocation, showRecentPlaces);
   const deleteRecentPlaceMutation = useDeleteRecentSearchPlace();
   const selectPlaceMutation = useSelectSearchPlace();
   const isSelectionLocked = isReturningToMap || selectPlaceMutation.isPending;
@@ -65,7 +87,7 @@ export function PinPlaceSearch({
       ? selectPlaceMutation.error.message
       : isSearchQueryCurrent && placeSearchQuery.error instanceof Error
         ? placeSearchQuery.error.message
-        : null;
+        : selectionConstraintError;
   const recentPlacesError =
     deleteRecentPlaceMutation.error instanceof Error
       ? deleteRecentPlaceMutation.error.message
@@ -74,6 +96,8 @@ export function PinPlaceSearch({
         : null;
 
   useEffect(() => {
+    if (!autoFocus) return;
+
     let isCancelled = false;
     const focusSearchInput = () => {
       if (!isCancelled) searchInputRef.current?.focus({ preventScroll: true });
@@ -92,19 +116,29 @@ export function PinPlaceSearch({
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [autoFocus]);
 
   useEffect(() => {
     return () => selectionControllerRef.current?.abort();
   }, []);
 
+  useEffect(() => {
+    if (!currentLocation) return;
+
+    onCurrentLocationChanged?.({
+      lat: currentLocation.latitude,
+      lng: currentLocation.longitude,
+    });
+  }, [currentLocation, onCurrentLocationChanged]);
+
   const visiblePlaces = isSelectionLocked ? [] : normalizedQuery ? searchResults : recentPlaces;
-  const isShowingRecentPlaces = !normalizedQuery && !isSelectionLocked;
+  const isShowingRecentPlaces = showRecentPlaces && !normalizedQuery && !isSelectionLocked;
 
   const resetSearch = () => {
     selectionControllerRef.current?.abort();
     selectionControllerRef.current = null;
     setQuery('');
+    setSelectionConstraintError(null);
     selectPlaceMutation.reset();
   };
 
@@ -112,13 +146,30 @@ export function PinPlaceSearch({
     selectionControllerRef.current?.abort();
     selectionControllerRef.current = null;
     setQuery(event.target.value);
+    setSelectionConstraintError(null);
     selectPlaceMutation.reset();
   };
 
   const handlePlaceSelect = (place: PinSearchPlace) => {
     if (isSelectionLocked) return;
 
+    const reportConstraintError = (message: string) => {
+      if (onValidationError) {
+        setSelectionConstraintError(null);
+        onValidationError(message);
+        return;
+      }
+
+      setSelectionConstraintError(message);
+    };
+
     if (!place.searchSource || !currentLocation) {
+      const constraintError = validatePlace?.(place) ?? null;
+      if (constraintError) {
+        reportConstraintError(constraintError);
+        return;
+      }
+
       setQuery(place.placeName);
       onPlaceSelect(place);
       return;
@@ -137,6 +188,11 @@ export function PinPlaceSearch({
       {
         onSuccess: (selectedPlaceResult) => {
           setQuery(selectedPlaceResult.placeName);
+          const constraintError = validatePlace?.(selectedPlaceResult) ?? null;
+          if (constraintError) {
+            reportConstraintError(constraintError);
+            return;
+          }
           onPlaceSelect(selectedPlaceResult);
         },
         onSettled: () => {
@@ -190,11 +246,13 @@ export function PinPlaceSearch({
           onChange={handleQueryChange}
           onClear={resetSearch}
           onBack={onBack}
-          placeholder="장소를 검색하세요"
+          placeholder={placeholder}
           aria-label="핀 조회 장소 검색"
           leadingIcon="back"
         />
       </div>
+
+      {headerContent}
 
       {isShowingRecentPlaces ? (
         <h2 className="mt-3 shrink-0 px-[18px] body-15-m text-grayscale-600">최근 검색</h2>

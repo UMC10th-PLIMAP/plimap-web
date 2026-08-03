@@ -15,7 +15,13 @@ export const loadGoogleMapsScript = (apiKey: string) => {
     }
     const script = document.createElement('script');
     script.id = 'google-maps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=maps,marker`;
+    const params = new URLSearchParams({
+      key: apiKey,
+      libraries: 'maps,marker',
+      language: 'ko',
+      region: 'KR',
+    });
+    script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     script.async = true;
     script.defer = true;
     script.onload = () => resolve();

@@ -7,8 +7,8 @@ type SortTabsProps = {
 };
 
 const OPTIONS: { value: PinSort; label: string }[] = [
-  { value: 'popular', label: '인기순' },
-  { value: 'latest', label: '최신순' },
+  { value: 'POPULAR', label: '인기순' },
+  { value: 'LATEST', label: '최신순' },
 ];
 
 export function SortTabs({ value, onChange }: SortTabsProps) {
@@ -28,7 +28,7 @@ export function SortTabs({ value, onChange }: SortTabsProps) {
             aria-pressed={selected}
             onClick={() => onChange(option.value)}
             className={cn(
-              'flex flex-1 items-center justify-center rounded-[10px] body-15-m',
+              'flex flex-1 items-center justify-center rounded-[10px] body-15-m cursor-pointer',
               selected
                 ? 'bg-grayscale-200 text-grayscale-1300'
                 : 'bg-pli-black-75 text-grayscale-700',

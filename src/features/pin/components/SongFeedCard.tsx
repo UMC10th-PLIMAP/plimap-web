@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { usePutPinLike } from '@/features/pin/queries/usePutPinLike';
+import { useDeletePinLike } from '@/features/pin/queries/useDeletePinLike';
 import type { PinFeedEntry } from '@/features/pin/types';
 import MoreIcon from '@/assets/icons/more.svg?react';
 import LikeIcon from '@/assets/icons/like.svg?react';
@@ -8,23 +10,28 @@ import PlayIcon from '@/assets/icons/play.svg?react';
 
 type SongFeedCardProps = {
   entry: PinFeedEntry;
-  onToggleLike?: (entryId: string) => void;
   onPlay?: (entryId: string) => void;
   onReport?: (entryId: string) => void;
   onEdit?: (entryId: string) => void;
   onDelete?: (entryId: string) => void;
 };
 
-export function SongFeedCard({
-  entry,
-  onToggleLike,
-  onPlay,
-  onReport,
-  onEdit,
-  onDelete,
-}: SongFeedCardProps) {
+export function SongFeedCard({ entry, onPlay, onReport, onEdit, onDelete }: SongFeedCardProps) {
+  const { mutate: putPinLike, isPending: isPutPending } = usePutPinLike();
+  const { mutate: deletePinLike, isPending: isDeletePending } = useDeletePinLike();
+  const isLikePending = isPutPending || isDeletePending;
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+
+  const handleLikeClick = () => {
+    if (isLikePending) return;
+
+    if (entry.liked) {
+      deletePinLike(entry.id);
+      return;
+    }
+    putPinLike(entry.id);
+  };
 
   useEffect(() => {
     if (!isMoreOpen) return;
@@ -40,7 +47,7 @@ export function SongFeedCard({
   }, [isMoreOpen]);
 
   return (
-    <article className="rounded-[20px] bg-pli-black-85 p-4">
+    <article className="rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3 ">
       <header className="flex items-center gap-2.5">
         {entry.avatarUrl ? (
           <img src={entry.avatarUrl} alt="" className="size-7 rounded-full object-cover" />
@@ -87,11 +94,11 @@ export function SongFeedCard({
         </div>
       </header>
 
-      <div className="pt-4 pb-2.5">
+      <div className="pt-4 pb-[14px]">
         <p className="whitespace-pre-wrap body-15-r text-grayscale-100">{entry.content}</p>
 
         {entry.tags.length > 0 && (
-          <p className="pt-1 body-15-r text-grayscale-700">
+          <p className="pt-2 body-15-r text-grayscale-700 h-[29px] ">
             {entry.tags.map((tag) => `#${tag}`).join(' ')}
           </p>
         )}
@@ -102,13 +109,14 @@ export function SongFeedCard({
       <footer className="flex items-center justify-between pt-2.5">
         <button
           type="button"
-          onClick={() => onToggleLike?.(entry.id)}
+          onClick={handleLikeClick}
           aria-pressed={entry.liked}
           aria-label="추천"
-          className="flex items-center gap-1.5 text-grayscale-400"
+          disabled={isLikePending}
+          className="flex cursor-pointer items-center gap-1.5 text-grayscale-400 disabled:opacity-100"
         >
           <LikeIcon
-            className={`size-5 ${entry.liked ? 'text-grayscale-100' : 'text-grayscale-400'}`}
+            className={`size-5 ${entry.liked ? 'fill-grayscale-100 text-grayscale-100' : 'text-grayscale-400'}`}
             aria-hidden
           />
           <span className="body-15-r">{entry.likeCount}</span>
@@ -149,7 +157,7 @@ export function SongFeedCardMore({
       onClick={(event) => event.stopPropagation()}
     >
       {isMine ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 cursor-pointer">
           <button
             type="button"
             onClick={onEdit}
@@ -162,7 +170,7 @@ export function SongFeedCardMore({
           </button>
         </div>
       ) : (
-        <button type="button" onClick={onReport} className="body-15-m text-red cursor-pointer">
+        <button type="button" onClick={onReport} className="body-15-m text-red ">
           신고하기
         </button>
       )}

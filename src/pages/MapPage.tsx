@@ -2,19 +2,26 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
+import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
-import type { MapPlace } from '@/features/map/types';
+import type { MapCoordinate, MapPlace, MapViewport } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
-import { MOCK_MAP_PINS } from '@/features/map/constants/mockMapPins';
-import { BottomNav, type NavItemId } from '@/components/BottomNav';
+import { useMapPins } from '@/features/map/queries/useMapPins';
+import { DEV_MOCK_MAP_PINS } from '@/features/map/constants/devMockMapPins';
 import { PinListSheet } from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
-import PlusIcon from '@/assets/icons/plus.svg?react';
+import { usePinCreationStore } from '@/store/pinCreationStore';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
+const REGISTRATION_TOAST_DURATION_MS = 2_000;
+
+type RegistrationToast = {
+  attempt: number;
+  message: string;
+};
 
 type MapPageProps = {
   selectedMapPlace: PinSearchPlace | null;
@@ -24,10 +31,14 @@ type MapPageProps = {
 function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
   return {
     id: place.id,
+    placeId: place.placeId,
     name: place.placeName,
     creatorName: place.creatorName,
     distance: place.distance,
     address: place.address,
+    latitude: place.coordinates.lat,
+    longitude: place.coordinates.lng,
+    bookmarkedByMe: place.bookmarkedByMe,
   };
 }
 
@@ -43,16 +54,25 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   const [mapLoadError, setMapLoadError] = useState<string | null>(
     hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
-  const [activeNavId, setActiveNavId] = useState<NavItemId>('plimap');
-
+  const [currentLocation, setCurrentLocation] = useState<MapCoordinate | null>(null);
+  const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
+  const [viewport, setViewport] = useState<MapViewport | null>(null);
+  const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
+  const { data: mapPinsData } = useMapPins(viewport);
+  const mapPins =
+    import.meta.env.DEV && mapPinsData !== undefined && mapPinsData.pins.length === 0
+      ? DEV_MOCK_MAP_PINS
+      : (mapPinsData?.pins ?? []);
   // develop 방식: selectedMapPlace prop으로 장소 결과 관리
   const placeResults = useMemo<MapPlace[]>(
     () => (selectedMapPlace ? [selectedMapPlace] : []),
     [selectedMapPlace],
   );
   const selectedPlaceId = selectedMapPlace?.id ?? null;
-  const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
   const isPlaceSheetOpen = selectedMapPlace !== null;
+  const resetPinCreation = usePinCreationStore((state) => state.reset);
+  const setPinCreationCurrentLocation = usePinCreationStore((state) => state.setCurrentLocation);
+  const setPinCreationPlace = usePinCreationStore((state) => state.setPlace);
 
   const mapViewerRef = useRef<MapViewerHandle>(null);
 
@@ -97,6 +117,31 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
     setZoom(newZoom);
   };
 
+  const handleRegisterSelectedPlace = () => {
+    if (!selectedMapPlace || selectedMapPlace.placeId === undefined) return;
+
+    if (!currentLocation) {
+      setRegistrationToast((currentToast) => ({
+        attempt: (currentToast?.attempt ?? 0) + 1,
+        message: '현재 위치를 확인하고 있어요. 위치 권한을 확인한 뒤 다시 시도해 주세요.',
+      }));
+      return;
+    }
+
+    resetPinCreation();
+    setPinCreationCurrentLocation(currentLocation);
+    setPinCreationPlace({
+      placeId: selectedMapPlace.placeId,
+      placeName: selectedMapPlace.placeName,
+      address: selectedMapPlace.address,
+      roadAddress: selectedMapPlace.searchSource?.roadAddress ?? null,
+      source: selectedMapPlace.source ?? 'PLACE_SEARCH',
+      coordinates: selectedMapPlace.coordinates,
+      distanceMeters: selectedMapPlace.distance,
+    });
+    navigate('/app/song/list');
+  };
+
   if (mapLoadStatus === 'error') {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-pli-black-100 p-6 text-center">
@@ -115,8 +160,8 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   return (
     <div className="relative h-full w-full">
       {/* 상단 장소 검색 바 + 북마크/현재 위치 버튼 */}
-      <div className="absolute inset-x-0 top-0 z-20 flex flex-col">
-        <div className="shrink-0 px-[15px] pt-[calc(env(safe-area-inset-top)+16px)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col">
+        <div className="pointer-events-auto shrink-0 px-[15px] pt-[calc(env(safe-area-inset-top)+16px)]">
           <SearchLauncher
             className="map-search-hero"
             value={selectedMapPlace?.placeName}
@@ -133,7 +178,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
           <button
             type="button"
             aria-label="북마크"
-            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
+            className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
           >
             <BookmarkIcon className="size-7" />
           </button>
@@ -141,39 +186,37 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
             type="button"
             aria-label="현재 위치로 이동"
             onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
-            className="flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
+            className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
           >
             <FocusIcon className="size-7" />
           </button>
         </div>
       </div>
 
-      {!isPlaceSheetOpen ? (
-        <BottomNav activeId={activeNavId} onTabChange={setActiveNavId}>
-          {/* 핀 등록 버튼: BottomNav와의 간격은 BottomNav가 관리하므로 여기선 위치를 계산하지 않는다 */}
-          <button
-            type="button"
-            aria-label="핀 등록"
-            onClick={() => navigate('/app/pin/register')}
-            className="flex size-16 items-center justify-center rounded-full bg-gradient-neon text-grayscale-1200 shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
-          >
-            <PlusIcon className="size-7" />
-          </button>
-        </BottomNav>
-      ) : null}
-
       {isPlaceSheetOpen ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(50%+16px)] z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4">
-          <Button
-            type="button"
-            variant="pin"
-            size="pin"
-            className="pointer-events-auto"
-            onClick={() => navigate('/app/song/list')}
-          >
-            등록하기
-          </Button>
-        </div>
+        <ToastProvider duration={REGISTRATION_TOAST_DURATION_MS}>
+          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(50%+16px)] z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4">
+            <Button
+              type="button"
+              variant="pin"
+              size="pin"
+              className="pointer-events-auto"
+              onClick={handleRegisterSelectedPlace}
+              disabled={selectedMapPlace?.placeId === undefined}
+            >
+              등록하기
+            </Button>
+          </div>
+
+          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">
+            {registrationToast ? (
+              <Toast key={`${registrationToast.message}:${registrationToast.attempt}`} defaultOpen>
+                {registrationToast.message}
+              </Toast>
+            ) : null}
+            <ToastViewport />
+          </div>
+        </ToastProvider>
       ) : null}
 
       {selectedMapPlace ? (
@@ -181,7 +224,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
           open={isPlaceSheetOpen}
           onClose={() => onClearMapPlace?.()}
           place={toPlaceInfo(selectedMapPlace)}
-          pins={[]}
+          onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
         />
       ) : null}
 
@@ -191,9 +234,11 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
         zoom={zoom}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
-        mapPins={MOCK_MAP_PINS}
+        mapPins={mapPins}
         selectedMapPinId={selectedMapPinId}
         onZoomChanged={handleZoomChange}
+        onCurrentLocationChanged={setCurrentLocation}
+        onViewportChanged={setViewport}
         onSelectMapPin={setSelectedMapPinId}
       />
     </div>

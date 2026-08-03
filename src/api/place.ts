@@ -8,13 +8,24 @@ import type {
   PlaceSearchItem,
   PlaceSearchRequest,
   PlaceSearchResponse,
+  PlaceMapSelectionRequest,
+  PlaceMapSelectionResult,
   PlaceSelectionRequest,
   PlaceSelectionResponse,
+  PlaceDetailResponse,
+  PlaceBookmarkResponse,
 } from '@/types/place.type';
 
 const ENDPOINT = '/api/v1/places';
 
 type RequestOptions = {
+  signal?: AbortSignal;
+};
+
+type GetPlaceDetailRequest = {
+  placeId: number;
+  latitude: number;
+  longitude: number;
   signal?: AbortSignal;
 };
 
@@ -41,6 +52,7 @@ const toPinSearchPlace = (item: PlaceSearchItem): PinSearchPlace => ({
 
 const toRecentPinSearchPlace = (item: PlaceSearchHistoryItem): PinSearchPlace => ({
   id: `place:${item.placeId}`,
+  placeId: item.placeId,
   searchHistoryId: item.historyId,
   creatorName: item.hasPin ? (item.firstPinCreatorNickname ?? undefined) : undefined,
   category: item.category || '장소',
@@ -52,6 +64,36 @@ const toRecentPinSearchPlace = (item: PlaceSearchHistoryItem): PinSearchPlace =>
     lng: item.longitude,
   },
 });
+
+/** GET /api/v1/places/{placeId} 장소 상세 및 북마크 상태 조회 */
+export async function getPlaceDetail({
+  placeId,
+  latitude,
+  longitude,
+  signal,
+}: GetPlaceDetailRequest): Promise<PlaceDetailResponse> {
+  const { data } = await apiClient.get<ApiResponse<PlaceDetailResponse>>(`${ENDPOINT}/${placeId}`, {
+    params: { latitude, longitude },
+    signal,
+  });
+  return data.result;
+}
+
+/** PUT /api/v1/places/{placeId}/bookmarks 장소 북마크 등록 */
+export async function bookmarkPlace(placeId: number): Promise<PlaceBookmarkResponse> {
+  const { data } = await apiClient.put<ApiResponse<PlaceBookmarkResponse>>(
+    `${ENDPOINT}/${placeId}/bookmarks`,
+  );
+  return data.result;
+}
+
+/** DELETE /api/v1/places/{placeId}/bookmarks 장소 북마크 삭제 */
+export async function deletePlaceBookmark(placeId: number): Promise<PlaceBookmarkResponse> {
+  const { data } = await apiClient.delete<ApiResponse<PlaceBookmarkResponse>>(
+    `${ENDPOINT}/${placeId}/bookmarks`,
+  );
+  return data.result;
+}
 
 /** GET /api/v1/places/search 장소 검색 */
 export async function searchPlaces({
@@ -123,10 +165,28 @@ export async function selectSearchPlace({
   const selection = data.result;
   return {
     ...place,
+    placeId: selection.placeId,
+    source: selection.source,
+    withinAccessRange: selection.withinAccessRange,
     id: `place:${selection.placeId}`,
     creatorName: selection.hasPin ? (selection.firstPinCreatorNickname ?? undefined) : undefined,
     placeName: selection.placeName,
     address: selection.roadAddress || selection.address,
     distance: selection.distanceMeters,
+    bookmarkedByMe: selection.bookmarkedByMe,
   };
+}
+
+/** POST /api/v1/places/map-selections 지도 선택 장소 판정 */
+export async function confirmMapSelection(
+  request: PlaceMapSelectionRequest,
+  options?: RequestOptions,
+): Promise<PlaceMapSelectionResult> {
+  const { data } = await apiClient.post<ApiResponse<PlaceMapSelectionResult>>(
+    `${ENDPOINT}/map-selections`,
+    request,
+    { signal: options?.signal },
+  );
+
+  return data.result;
 }

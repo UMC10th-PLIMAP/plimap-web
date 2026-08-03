@@ -10,9 +10,17 @@ export type MapPinMarkerMount = {
   mount: HTMLDivElement;
 };
 
-export const toMapPinMarkerProps = (pin: MapPin, isSelected = false): MapPinMarkerProps => ({
+export const toMapPinMarkerProps = (
+  pin: MapPin,
+  isSelected = false,
+  onPlay?: () => void,
+): MapPinMarkerProps => ({
   coverUrl: pin.coverUrl,
   isSelected,
+  nickname: pin.nickname,
+  avatarUrl: pin.avatarUrl,
+  introduction: pin.introduction,
+  onPlay,
 });
 
 export const renderMapPinMarker = (mount: HTMLElement, props: MapPinMarkerProps) => {
