@@ -142,6 +142,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
     try {
       if (croppedImageFile) {
         await uploadImage(croppedImageFile);
+        setCroppedImageFile(null);
       }
 
       const payload = buildPayload();
