@@ -1,14 +1,11 @@
 import { useState } from 'react';
 
-import { ApiError } from '@/api/client';
 import { Dialog } from '@/components/ui/Dialog';
 import { cn } from '@/lib/utils';
 import { REPORT_REASONS, type ReportReason } from '@/features/pin/constants/reportReasons';
 import CloseIcon from '@/assets/icons/close.svg?react';
 import RadioDefaultIcon from '@/assets/icons/radio-default.svg?react';
 import RadioSelectedIcon from '@/assets/icons/radio-selected.svg?react';
-
-const SUBMIT_FAILED_MESSAGE = '신고 처리 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.';
 
 type ReportModalProps = {
   open: boolean;
@@ -25,7 +22,6 @@ export function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
   const [detail, setDetail] = useState('');
   const [prevOpen, setPrevOpen] = useState(open);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // 스와이프/뒤로가기 등 onClick을 거치지 않는 닫힘까지 포함해 다음에 열 때 처음 상태로 리셋한다.
   if (open !== prevOpen) {
@@ -34,7 +30,6 @@ export function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
       setStep('select');
       setReason(null);
       setDetail('');
-      setSubmitError(null);
       setIsSubmitting(false);
     }
   }
@@ -45,13 +40,12 @@ export function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
   const handleSubmit = async () => {
     if (!canSubmit || !reason || isSubmitting || !onSubmit) return;
     setIsSubmitting(true);
-    setSubmitError(null);
 
     try {
       await onSubmit(reason, isOtherSelected ? detail.trim() : undefined);
       setStep('complete');
-    } catch (error) {
-      setSubmitError(error instanceof ApiError ? error.message : SUBMIT_FAILED_MESSAGE);
+    } catch {
+      // 오류 메시지는 추후 별도 정책으로 처리한다.
     } finally {
       setIsSubmitting(false);
     }
@@ -125,8 +119,6 @@ export function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
             className="h-[100px] w-full resize-none rounded-lg border border-grayscale-1000 px-4 py-3 body-15-r text-grayscale-200 outline-none placeholder:text-grayscale-700"
           />
         )}
-
-        {submitError && <p className="body-15-r text-red">{submitError}</p>}
       </div>
 
       <div className="flex flex-col items-center pb-7">
