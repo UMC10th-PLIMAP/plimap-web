@@ -54,3 +54,13 @@ export async function getFollowerList({ memberId, pageSize, cursor }: FollowList
   );
   return data.result;
 }
+
+// 6) POST /api/v1/members/{memberId}/follow - 팔로우
+export async function followMember(memberId: number) {
+  await apiClient.post(`${ENDPOINT}/${memberId}/follow`);
+}
+
+// 7) DELETE /api/v1/members/{memberId}/follow - 언팔로우
+export async function unfollowMember(memberId: number) {
+  await apiClient.delete(`${ENDPOINT}/${memberId}/follow`);
+}

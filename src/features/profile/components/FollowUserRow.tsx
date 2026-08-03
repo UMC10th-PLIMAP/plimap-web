@@ -4,9 +4,10 @@ import type { FollowListItem } from '@/types/member.type';
 type FollowUserRowProps = {
   user: FollowListItem;
   onActionClick?: (user: FollowListItem) => void;
+  disabled?: boolean;
 };
 
-export function FollowUserRow({ user, onActionClick }: FollowUserRowProps) {
+export function FollowUserRow({ user, onActionClick, disabled }: FollowUserRowProps) {
   return (
     <li className="flex items-center gap-[14px] ">
       <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-pli-black-75">
@@ -21,7 +22,8 @@ export function FollowUserRow({ user, onActionClick }: FollowUserRowProps) {
       <button
         type="button"
         onClick={() => onActionClick?.(user)}
-        className={`flex h-8 min-w-[102px] items-center justify-center rounded-lg etc-13-sb cursor-pointer ${
+        disabled={disabled}
+        className={`flex h-8 min-w-[102px] items-center justify-center rounded-lg etc-13-sb cursor-pointer disabled:opacity-50 ${
           user.isFollowing ? 'bg-pli-black-50 text-grayscale-100' : 'bg-neon-2 text-grayscale-1200'
         }`}
       >

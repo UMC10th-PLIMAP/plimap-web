@@ -1,14 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+import { ApiError } from '@/api/client';
 import { getMyProfile } from '@/api/member';
 import { TopBar } from '@/components/ui/TopBar';
 import { FollowUserRow } from '@/features/profile/components/FollowUserRow';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { useInfiniteFollowList } from '@/features/profile/queries/useFollowList';
+import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 import type { FollowTab } from '@/features/profile/types';
+import type { FollowListItem } from '@/types/member.type';
+
+const FOLLOW_TOGGLE_FAILED_MESSAGE = '요청을 처리하지 못했어요. 다시 시도해주세요.';
 
 const OPTIONS: { value: FollowTab; label: string; path: string }[] = [
   { value: 'following', label: '팔로잉', path: '/app/my/following' },
@@ -50,6 +55,23 @@ export default function FollowListPage() {
   } = useInfiniteFollowList({ memberId: profile?.id, tab });
 
   const users = followList?.pages.flatMap((page) => page.data) ?? [];
+
+  const {
+    mutate: toggleFollow,
+    isPending: isToggling,
+    variables: toggleVariables,
+  } = useToggleFollow();
+
+  const handleActionClick = (target: FollowListItem) => {
+    toggleFollow(
+      { memberId: target.id, isFollowing: target.isFollowing },
+      {
+        onError: (error) => {
+          alert(error instanceof ApiError ? error.message : FOLLOW_TOGGLE_FAILED_MESSAGE);
+        },
+      },
+    );
+  };
 
   const loadMoreRef = useInfiniteScroll(
     () => {
@@ -106,7 +128,12 @@ export default function FollowListPage() {
         <>
           <ul className="flex flex-col gap-5 px-4 pt-5">
             {users.map((user) => (
-              <FollowUserRow key={user.id} user={user} />
+              <FollowUserRow
+                key={user.id}
+                user={user}
+                onActionClick={handleActionClick}
+                disabled={isToggling && toggleVariables?.memberId === user.id}
+              />
             ))}
           </ul>
           {isFetchNextPageError ? (
