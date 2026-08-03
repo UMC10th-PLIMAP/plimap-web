@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -39,6 +40,7 @@ export default function FollowListPage() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const tab = getTabFromPath(pathname);
+  const [keyword, setKeyword] = useState('');
 
   const { data: profile } = useQuery({
     queryKey: ['me'],
@@ -55,6 +57,11 @@ export default function FollowListPage() {
   } = useInfiniteFollowList({ memberId: profile?.id, tab });
 
   const users = followList?.pages.flatMap((page) => page.data) ?? [];
+
+  const trimmedKeyword = keyword.trim();
+  const filteredUsers = trimmedKeyword
+    ? users.filter((user) => user.nickname.toLowerCase().includes(trimmedKeyword.toLowerCase()))
+    : users;
 
   const {
     mutate: toggleFollow,
@@ -117,17 +124,27 @@ export default function FollowListPage() {
         })}
       </div>
       <div className="px-[15px] pt-3">
-        <SearchInput placeholder="사용자의 닉네임을 검색하세요" variant="song" />
+        <SearchInput
+          placeholder="사용자의 닉네임을 검색하세요"
+          variant="song"
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
+          onClear={() => setKeyword('')}
+        />
       </div>
       {users.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-[2px] text-center">
           <p className="body-17-m text-grayscale-300">{EMPTY_STATE[tab].title}</p>
           <p className="body-15-m text-grayscale-700">{EMPTY_STATE[tab].description}</p>
         </div>
+      ) : filteredUsers.length === 0 ? (
+        <p className="flex flex-1 items-center justify-center body-15-r text-grayscale-600">
+          검색 결과가 없어요.
+        </p>
       ) : (
         <>
           <ul className="flex flex-col gap-5 px-4 pt-5">
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <FollowUserRow
                 key={user.id}
                 user={user}
