@@ -64,7 +64,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
   },
   ref,
 ) {
-  const { mapRef, mapInstanceRef, panTo } = useGoogleMap({
+  const { mapRef, mapInstanceRef, panTo, flyTo } = useGoogleMap({
     isLoaded,
     isInteractionDisabled,
     zoom,
@@ -99,6 +99,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     isLoaded,
     mapPins,
     selectedMapPinId,
+    flyTo,
     onSelectMapPin,
     onPlayPin,
   });
