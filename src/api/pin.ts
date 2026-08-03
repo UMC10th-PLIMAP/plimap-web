@@ -157,6 +157,9 @@ export async function getMapPins(
       lat: pin.latitude,
       lng: pin.longitude,
       coverUrl: pin.albumImageUrl ?? undefined,
+      nickname: pin.writerNickname,
+      avatarUrl: pin.writerProfileImage ?? undefined,
+      introduction: pin.introduction,
     })),
   };
 }

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '../types';
 
-// 지도 줌 하한선 (레벨 단위 유지, 상한선은 API 지원 한도까지 허용)
+// 지도 줌 하한/상한선 (핀 포커스 줌 레벨과 동일하게 상한 고정)
 const MIN_ZOOM = 6;
+const MAX_ZOOM = 21;
 const CENTER_EQUALITY_EPSILON = 1e-9;
 const CENTER_CHANGE_SUPPRESSION_TIMEOUT_MS = 2_000;
 
@@ -111,7 +112,7 @@ export function useGoogleMap({
         zoom,
         isFractionalZoomEnabled: true,
         minZoom: MIN_ZOOM,
-        // maxZoom은 지정하지 않음 → API 지원 한도까지 확대 허용
+        maxZoom: MAX_ZOOM,
         restriction: {
           latLngBounds: KOREA_BOUNDS,
           strictBounds: false,

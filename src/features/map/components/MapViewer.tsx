@@ -27,6 +27,7 @@ type MapViewerProps = {
   onProjectionChanged?: (center: PinRadiusCenter | null) => void;
   onSelectPlace?: (placeId: string) => void;
   onSelectMapPin?: (pinId: string) => void;
+  onPlayPin?: (pinId: string) => void;
 };
 
 export type MapViewerHandle = {
@@ -56,6 +57,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onProjectionChanged,
     onSelectPlace,
     onSelectMapPin,
+    onPlayPin,
   },
   ref,
 ) {
@@ -88,7 +90,14 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
   );
 
   usePlaceMarkers({ mapInstanceRef, isLoaded, placeResults, selectedPlaceId, onSelectPlace });
-  useMapPinOverlays({ mapInstanceRef, isLoaded, mapPins, selectedMapPinId, onSelectMapPin });
+  useMapPinOverlays({
+    mapInstanceRef,
+    isLoaded,
+    mapPins,
+    selectedMapPinId,
+    onSelectMapPin,
+    onPlayPin,
+  });
   useCoordinateProjection({
     mapInstanceRef,
     isLoaded,
