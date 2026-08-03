@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
+
+import { reportPin } from '@/api/report';
 import { SongFeedCard } from '@/features/pin/components/SongFeedCard';
 import { useDeleteLikedTrack } from '@/features/pin/queries/useDeleteLikedTrack';
 import { usePlaceTrackDetail } from '@/features/pin/queries/usePlaceTrackDetail';
@@ -125,6 +127,14 @@ export default function PinDetailPage() {
           <SongFeedCard key={entry.id} entry={entry} />
         ))}
       </div>
+
+      <ReportModal
+        open={reportFeedId !== null}
+        onClose={() => setReportFeedId(null)}
+        onSubmit={async (reason, detail) => {
+          await reportPin(Number(reportFeedId), reason, detail);
+        }}
+      />
     </div>
   );
 }
