@@ -20,3 +20,7 @@ export type MyProfileResponse = {
   followingCount: number;
   onboardingCompletedAt: string | null;
 };
+
+export type OtherMemberProfileResponse = MyProfileResponse & {
+  isFollowing: boolean;
+};
