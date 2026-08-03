@@ -23,6 +23,8 @@ type UseGoogleMapParams = {
   onZoomChanged?: (newZoom: number) => void;
   onCenterChanged?: (center: MapCoordinate) => void;
   onViewportChanged?: (viewport: MapViewport) => void;
+  /** 핀 등 오버레이가 아닌, 지도의 빈 영역을 클릭했을 때만 호출된다. */
+  onMapClick?: () => void;
 };
 
 type PanToOptions = {
@@ -38,12 +40,14 @@ export function useGoogleMap({
   onZoomChanged,
   onCenterChanged,
   onViewportChanged,
+  onMapClick,
 }: UseGoogleMapParams) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
   const onZoomChangedRef = useRef(onZoomChanged);
   const onViewportChangedRef = useRef(onViewportChanged);
+  const onMapClickRef = useRef(onMapClick);
   const initialCenterRef = useRef(initialCenter);
   const suppressNextCenterChangedRef = useRef(false);
   const centerChangeSuppressionTimeoutRef = useRef<number | null>(null);
@@ -67,6 +71,10 @@ export function useGoogleMap({
   useEffect(() => {
     onViewportChangedRef.current = onViewportChanged;
   }, [onViewportChanged]);
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   useEffect(() => {
     mapInstanceRef.current?.setOptions({
@@ -138,6 +146,12 @@ export function useGoogleMap({
 
       map.addListener('dragstart', () => {
         clearCenterChangeSuppression();
+      });
+
+      // 핀 오버레이는 overlayMouseTarget 페인에서 클릭을 자체 처리하므로,
+      // 이 리스너는 오버레이가 없는 빈 영역을 클릭했을 때만 호출된다.
+      map.addListener('click', () => {
+        onMapClickRef.current?.();
       });
 
       map.addListener('idle', () => {
