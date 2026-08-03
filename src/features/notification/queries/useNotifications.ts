@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { getOtherMemberProfile, followMember } from '@/api/member';
@@ -23,14 +23,24 @@ export function useInfiniteNotifications({ pageSize = 10 }: UseInfiniteNotificat
 
 export function useNotificationSubscription() {
   const queryClient = useQueryClient();
+  const [isDisconnected, setIsDisconnected] = useState(false);
 
   useEffect(() => {
-    const eventSource = subscribeToNotifications(() => {
-      void queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+    const eventSource = subscribeToNotifications({
+      onNotification: () => {
+        void queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+      },
+      onOpen: () => setIsDisconnected(false),
+      onTerminalError: () => {
+        setIsDisconnected(true);
+        void queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+      },
     });
 
     return () => eventSource.close();
   }, [queryClient]);
+
+  return isDisconnected;
 }
 
 export function useActorProfile(actorId: number, enabled: boolean) {

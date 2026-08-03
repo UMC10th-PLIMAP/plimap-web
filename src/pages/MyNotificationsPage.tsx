@@ -20,7 +20,7 @@ export default function MyNotificationsPage() {
   const followBackMutation = useFollowBackNotification();
   const notifications = data?.pages.flatMap((page) => page.data) ?? [];
 
-  useNotificationSubscription();
+  const isNotificationStreamDisconnected = useNotificationSubscription();
 
   useEffect(() => {
     const loadMoreElement = loadMoreRef.current;
@@ -44,6 +44,23 @@ export default function MyNotificationsPage() {
       <TopBar onBack={() => navigate(-1)} title="내 소식" titleWeight="medium" />
 
       <main className="flex flex-1 flex-col px-4 pt-4">
+        {isNotificationStreamDisconnected && (
+          <div className="mb-4 rounded-xl bg-pli-black-75 px-4 py-3" role="status">
+            <p className="body-15-r text-grayscale-300">
+              실시간 알림 연결이 끊어졌어요. 새로고침하면 최신 소식을 확인할 수 있어요.
+            </p>
+          </div>
+        )}
+
+        {followBackMutation.isError && (
+          <p
+            className="mb-4 rounded-xl bg-pli-black-75 px-4 py-3 body-15-r text-grayscale-300"
+            role="alert"
+          >
+            맞팔로우하지 못했어요. 다시 시도해주세요.
+          </p>
+        )}
+
         {isPending && (
           <span className="sr-only" role="status">
             내 소식을 불러오는 중

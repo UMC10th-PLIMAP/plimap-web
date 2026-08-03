@@ -17,7 +17,10 @@ type NotificationRowProps = {
 };
 
 function formatCreatedAt(createdAt: string) {
-  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - Date.parse(createdAt)) / 1_000));
+  const createdAtTimestamp = Date.parse(createdAt);
+  if (Number.isNaN(createdAtTimestamp)) return null;
+
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - createdAtTimestamp) / 1_000));
 
   if (elapsedSeconds < 60) return '방금';
   if (elapsedSeconds < 3_600) return `${Math.floor(elapsedSeconds / 60)}분전`;
@@ -25,7 +28,7 @@ function formatCreatedAt(createdAt: string) {
   if (elapsedSeconds < 604_800) return `${Math.floor(elapsedSeconds / 86_400)}일전`;
 
   return new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric' }).format(
-    new Date(createdAt),
+    new Date(createdAtTimestamp),
   );
 }
 
@@ -64,26 +67,32 @@ export function NotificationRow({
   const actorProfile = useActorProfile(notification.actorId, isFollowNotification);
   const isFollowing = actorProfile.data?.isFollowing ?? false;
   const canOpenPin = notification.pinId !== null && !isFollowNotification;
+  const createdAtLabel = formatCreatedAt(notification.createdAt);
+  const notificationContent = (
+    <>
+      <span className="font-semibold text-grayscale-100">{notification.actorNickname}</span>
+      {NOTIFICATION_MESSAGE[notification.type]}{' '}
+      {createdAtLabel && <span className="etc-12-r text-grayscale-600">{createdAtLabel}</span>}
+    </>
+  );
 
   return (
     <li className="flex items-center gap-2.5">
       <ProfileImage notification={notification} />
 
-      <button
-        type="button"
-        disabled={!canOpenPin}
-        onClick={() => notification.pinId !== null && onOpenPin(notification.pinId)}
-        className={cn(
-          'body-15-r min-w-0 flex-1 text-left text-grayscale-200',
-          canOpenPin && 'cursor-pointer',
-        )}
-      >
-        <span className="font-semibold text-grayscale-100">{notification.actorNickname}</span>
-        {NOTIFICATION_MESSAGE[notification.type]}{' '}
-        <span className="etc-12-r text-grayscale-600">
-          {formatCreatedAt(notification.createdAt)}
-        </span>
-      </button>
+      {canOpenPin ? (
+        <button
+          type="button"
+          onClick={() => notification.pinId !== null && onOpenPin(notification.pinId)}
+          className="body-15-r min-w-0 flex-1 cursor-pointer text-left text-grayscale-200"
+        >
+          {notificationContent}
+        </button>
+      ) : (
+        <div className="body-15-r min-w-0 flex-1 text-left text-grayscale-200">
+          {notificationContent}
+        </div>
+      )}
 
       {isFollowNotification && (
         <button
