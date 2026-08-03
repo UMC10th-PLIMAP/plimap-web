@@ -1,6 +1,8 @@
 import { apiClient } from '@/api/client';
 import type { ApiResponse } from '@/api/types';
 import type {
+  FollowListRequest,
+  FollowListResponse,
   MyProfileResponse,
   NicknameCheckResponse,
   ProfileImageUploadResponse,
@@ -32,5 +34,23 @@ export async function uploadProfileImage(image: File) {
 // 3) GET /api/v1/members/me - 내 프로필 조회 (로그인 여부 확인 용도로도 사용)
 export async function getMyProfile() {
   const { data } = await apiClient.get<ApiResponse<MyProfileResponse>>(`${ENDPOINT}/me`);
+  return data.result;
+}
+
+// 4) GET /api/v1/members/{memberId}/following - 팔로잉 목록 조회
+export async function getFollowingList({ memberId, pageSize, cursor }: FollowListRequest) {
+  const { data } = await apiClient.get<ApiResponse<FollowListResponse>>(
+    `${ENDPOINT}/${memberId}/following`,
+    { params: { pageSize, cursor } },
+  );
+  return data.result;
+}
+
+// 5) GET /api/v1/members/{memberId}/followers - 팔로워 목록 조회
+export async function getFollowerList({ memberId, pageSize, cursor }: FollowListRequest) {
+  const { data } = await apiClient.get<ApiResponse<FollowListResponse>>(
+    `${ENDPOINT}/${memberId}/followers`,
+    { params: { pageSize, cursor } },
+  );
   return data.result;
 }

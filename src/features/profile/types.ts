@@ -26,11 +26,3 @@ export type MyProfile = {
   postCount: number;
 };
 export type FollowTab = 'following' | 'follower';
-
-export type FollowUser = {
-  id: string;
-  nickname: string;
-  name: string;
-  avatarUrl: string;
-  relation: FollowTab;
-};

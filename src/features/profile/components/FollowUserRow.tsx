@@ -1,19 +1,17 @@
-import type { FollowTab, FollowUser } from '@/features/profile/types';
+import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
+import type { FollowListItem } from '@/types/member.type';
 
 type FollowUserRowProps = {
-  user: FollowUser;
-  onActionClick?: (user: FollowUser) => void;
-};
-
-const RELATION_LABEL: Record<FollowTab, string> = {
-  following: '팔로잉',
-  follower: '팔로워',
+  user: FollowListItem;
+  onActionClick?: (user: FollowListItem) => void;
 };
 
 export function FollowUserRow({ user, onActionClick }: FollowUserRowProps) {
   return (
     <li className="flex items-center gap-[14px] ">
-      <img src={user.avatarUrl} alt={user.name} className="size-12 rounded-full object-cover" />
+      <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-pli-black-75">
+        <UserPlaceholderIcon className="size-6 text-pli-black-50" />
+      </div>
 
       <div className="min-w-0 flex-1">
         <p className="truncate body-15-m text-grayscale-100">{user.nickname}</p>
@@ -23,9 +21,11 @@ export function FollowUserRow({ user, onActionClick }: FollowUserRowProps) {
       <button
         type="button"
         onClick={() => onActionClick?.(user)}
-        className="flex h-8 min-w-[102px] items-center justify-center rounded-lg etc-13-sb cursor-pointer bg-pli-black-50 text-grayscale-100"
+        className={`flex h-8 min-w-[102px] items-center justify-center rounded-lg etc-13-sb cursor-pointer ${
+          user.isFollowing ? 'bg-pli-black-50 text-grayscale-100' : 'bg-neon-2 text-grayscale-1200'
+        }`}
       >
-        {RELATION_LABEL[user.relation]}
+        {user.isFollowing ? '맞팔로우' : '팔로잉'}
       </button>
     </li>
   );

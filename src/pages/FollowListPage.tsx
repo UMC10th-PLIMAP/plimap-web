@@ -1,17 +1,14 @@
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+import { getMyProfile } from '@/api/member';
 import { TopBar } from '@/components/ui/TopBar';
 import { FollowUserRow } from '@/features/profile/components/FollowUserRow';
 import { SearchInput } from '@/components/ui/SearchInput';
+import { useInfiniteFollowList } from '@/features/profile/queries/useFollowList';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
-import { MOCK_FOLLOWING_USERS } from '@/features/profile/constants/mockFollowUsers';
-import { MOCK_MY_PROFILE } from '@/features/profile/constants/mockMyProfile';
-import type { FollowTab, FollowUser } from '@/features/profile/types';
-
-const USERS_BY_TAB: Record<FollowTab, FollowUser[]> = {
-  following: MOCK_FOLLOWING_USERS,
-  follower: MOCK_FOLLOWING_USERS,
-};
+import type { FollowTab } from '@/features/profile/types';
 
 const OPTIONS: { value: FollowTab; label: string; path: string }[] = [
   { value: 'following', label: '팔로잉', path: '/app/my/following' },
@@ -22,15 +19,49 @@ function getTabFromPath(pathname: string): FollowTab {
   return pathname.endsWith('/followers') ? 'follower' : 'following';
 }
 
+const EMPTY_STATE: Record<FollowTab, { title: string; description: string }> = {
+  following: {
+    title: '아직 팔로잉이 없어요.',
+    description: '관심 있는 사용자를 팔로우하면 여기에 표시돼요.',
+  },
+  follower: {
+    title: '아직 팔로워가 없어요.',
+    description: '다른 사용자가 회원님을 팔로우하면 여기에 표시돼요.',
+  },
+};
+
 export default function FollowListPage() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const tab = getTabFromPath(pathname);
 
+  const { data: profile } = useQuery({
+    queryKey: ['me'],
+    queryFn: getMyProfile,
+    staleTime: Infinity,
+  });
+
+  const {
+    data: followList,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useInfiniteFollowList({ memberId: profile?.id, tab });
+
+  const users = followList?.pages.flatMap((page) => page.data) ?? [];
+
+  const loadMoreRef = useInfiniteScroll(
+    () => {
+      if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) fetchNextPage();
+    },
+    { enabled: Boolean(hasNextPage) && !isFetchNextPageError, reconnectKey: isFetchingNextPage },
+  );
+
   return (
-    <div className="flex flex-col">
+    <div className="flex min-h-screen flex-col">
       <TopBar
-        title={MOCK_MY_PROFILE.nickname}
+        title={profile?.nickname ?? ''}
         titleWeight="medium"
         onBack={() => navigate('/app/my')}
       />
@@ -66,11 +97,35 @@ export default function FollowListPage() {
       <div className="px-[15px] pt-3">
         <SearchInput placeholder="사용자의 닉네임을 검색하세요" variant="song" />
       </div>
-      <ul className="flex flex-col gap-5 px-4 pt-5">
-        {USERS_BY_TAB[tab].map((user) => (
-          <FollowUserRow key={user.id} user={user} />
-        ))}
-      </ul>
+      {users.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-[2px] text-center">
+          <p className="body-17-m text-grayscale-300">{EMPTY_STATE[tab].title}</p>
+          <p className="body-15-m text-grayscale-700">{EMPTY_STATE[tab].description}</p>
+        </div>
+      ) : (
+        <>
+          <ul className="flex flex-col gap-5 px-4 pt-5">
+            {users.map((user) => (
+              <FollowUserRow key={user.id} user={user} />
+            ))}
+          </ul>
+          {isFetchNextPageError ? (
+            <div className="flex flex-col items-center gap-2 py-4">
+              <p className="body-15-m text-grayscale-500">더 불러오지 못했어요</p>
+              <button
+                type="button"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="body-15-m text-grayscale-300 underline disabled:opacity-50 cursor-pointer"
+              >
+                다시 시도
+              </button>
+            </div>
+          ) : (
+            <div ref={loadMoreRef} className="h-4" aria-hidden />
+          )}
+        </>
+      )}
     </div>
   );
 }
