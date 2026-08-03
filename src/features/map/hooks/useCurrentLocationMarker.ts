@@ -63,6 +63,10 @@ export function useCurrentLocationMarker({
     onCurrentLocationErrorRef.current = onCurrentLocationError;
   }, [onCurrentLocationError]);
 
+  useEffect(() => {
+    centerOnFirstLocationRef.current = centerOnFirstLocation;
+  }, [centerOnFirstLocation]);
+
   // --- 기기 방향 이벤트 처리 (방향 쐐기 회전) ---
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
     const heading = getCompassHeading(event);

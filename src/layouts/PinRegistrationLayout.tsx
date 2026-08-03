@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useMatch } from 'react-router-dom';
 
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
 import { useMapPins } from '@/features/map/queries/useMapPins';
@@ -43,8 +43,8 @@ export default function PinRegistrationLayout() {
   const [isMapInteractionDisabled, setMapInteractionDisabled] = useState(false);
   const mapPinsQuery = useMapPins(viewport);
 
-  const isSelectionStage = location.pathname === '/app/pin/register';
-  const isConfirmStage = location.pathname === '/app/pin/register/confirm';
+  const isSelectionStage = useMatch('/app/pin/register') !== null;
+  const isConfirmStage = useMatch('/app/pin/register/confirm') !== null;
   const isMapInteractionLocked = isMapInteractionDisabled || isConfirmStage;
   const initialCenter = candidateCoordinate ?? place?.coordinates ?? DEFAULT_CENTER;
   const isOutsideAllowedRadius =

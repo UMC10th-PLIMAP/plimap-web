@@ -116,9 +116,13 @@ export async function createPin(request: CreatePinRequest): Promise<CreatePinRes
 }
 
 /** GET /api/v1/pins/map 핀 등록 위치 선택기의 viewport 기반 기존 PIN 조회 */
-export async function getMapPins(request: MapPinsRequest): Promise<MapPinsResponse> {
+export async function getMapPins(
+  request: MapPinsRequest,
+  options?: { signal?: AbortSignal },
+): Promise<MapPinsResponse> {
   const { data } = await apiClient.get<ApiResponse<MapPinsApiResponse>>('/api/v1/pins/map', {
     params: request,
+    signal: options?.signal,
   });
 
   return {

@@ -27,9 +27,9 @@ export function useMapPins(viewport: MapViewport | null) {
 
   return useQuery({
     queryKey: ['pins', 'map', request],
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       if (!request) throw new Error('지도 viewport가 필요합니다.');
-      return getMapPins(request);
+      return getMapPins(request, { signal });
     },
     enabled: shouldFetchPins,
     placeholderData: shouldFetchPins ? keepPreviousData : undefined,

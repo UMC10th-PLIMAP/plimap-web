@@ -21,6 +21,7 @@ export default function PinRegisterEntryPage() {
   const reset = usePinCreationStore((state) => state.reset);
   const setPlace = usePinCreationStore((state) => state.setPlace);
   const setCurrentLocation = usePinCreationStore((state) => state.setCurrentLocation);
+  const currentLocation = usePinCreationStore((state) => state.currentLocation);
   const [validationToast, setValidationToast] = useState<ValidationToast | null>(null);
 
   const handleBack = () => {
@@ -35,6 +36,11 @@ export default function PinRegisterEntryPage() {
 
   const handlePlaceSelect = (place: PinSearchPlace) => {
     if (place.placeId === undefined) return;
+
+    if (!currentLocation) {
+      handleValidationError('현재 위치를 확인하고 있어요. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
 
     setPlace({
       placeId: place.placeId,

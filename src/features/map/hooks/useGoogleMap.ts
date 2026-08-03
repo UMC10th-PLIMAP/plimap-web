@@ -4,6 +4,7 @@ import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '../types';
 // 지도 줌 하한선 (레벨 단위 유지, 상한선은 API 지원 한도까지 허용)
 const MIN_ZOOM = 6;
 const CENTER_EQUALITY_EPSILON = 1e-9;
+const CENTER_CHANGE_SUPPRESSION_TIMEOUT_MS = 2_000;
 
 // 대한민국 영역으로 패닝을 제한하는 경계 상자 (엄격 모드)
 const KOREA_BOUNDS: google.maps.LatLngBoundsLiteral = {
@@ -44,6 +45,15 @@ export function useGoogleMap({
   const onViewportChangedRef = useRef(onViewportChanged);
   const initialCenterRef = useRef(initialCenter);
   const suppressNextCenterChangedRef = useRef(false);
+  const centerChangeSuppressionTimeoutRef = useRef<number | null>(null);
+
+  const clearCenterChangeSuppression = useCallback(() => {
+    suppressNextCenterChangedRef.current = false;
+    if (centerChangeSuppressionTimeoutRef.current !== null) {
+      window.clearTimeout(centerChangeSuppressionTimeoutRef.current);
+      centerChangeSuppressionTimeoutRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     onCenterChangedRef.current = onCenterChanged;
@@ -105,7 +115,7 @@ export function useGoogleMap({
       });
 
       map.addListener('dragstart', () => {
-        suppressNextCenterChangedRef.current = false;
+        clearCenterChangeSuppression();
       });
 
       map.addListener('idle', () => {
@@ -121,7 +131,7 @@ export function useGoogleMap({
         if (!suppressNextCenterChangedRef.current) {
           onCenterChangedRef.current?.(center);
         }
-        suppressNextCenterChangedRef.current = false;
+        clearCenterChangeSuppression();
 
         const southWest = bounds.getSouthWest();
         const northEast = bounds.getNorthEast();
@@ -137,25 +147,37 @@ export function useGoogleMap({
     } else if (mapInstanceRef.current.getZoom() !== zoom) {
       mapInstanceRef.current.setZoom(zoom);
     }
-  }, [isInteractionDisabled, isLoaded, zoom]);
+  }, [clearCenterChangeSuppression, isInteractionDisabled, isLoaded, zoom]);
 
-  const panTo = useCallback((coordinate: MapCoordinate, options?: PanToOptions) => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
+  useEffect(() => clearCenterChangeSuppression, [clearCenterChangeSuppression]);
 
-    const currentCenter = map.getCenter();
-    if (
-      currentCenter &&
-      Math.abs(currentCenter.lat() - coordinate.lat) < CENTER_EQUALITY_EPSILON &&
-      Math.abs(currentCenter.lng() - coordinate.lng) < CENTER_EQUALITY_EPSILON
-    ) {
-      suppressNextCenterChangedRef.current = false;
-      return;
-    }
+  const panTo = useCallback(
+    (coordinate: MapCoordinate, options?: PanToOptions) => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
 
-    suppressNextCenterChangedRef.current = options?.notifyCenterChanged === false;
-    map.panTo(coordinate);
-  }, []);
+      const currentCenter = map.getCenter();
+      if (
+        currentCenter &&
+        Math.abs(currentCenter.lat() - coordinate.lat) < CENTER_EQUALITY_EPSILON &&
+        Math.abs(currentCenter.lng() - coordinate.lng) < CENTER_EQUALITY_EPSILON
+      ) {
+        clearCenterChangeSuppression();
+        return;
+      }
+
+      clearCenterChangeSuppression();
+      if (options?.notifyCenterChanged === false) {
+        suppressNextCenterChangedRef.current = true;
+        centerChangeSuppressionTimeoutRef.current = window.setTimeout(
+          clearCenterChangeSuppression,
+          CENTER_CHANGE_SUPPRESSION_TIMEOUT_MS,
+        );
+      }
+      map.panTo(coordinate);
+    },
+    [clearCenterChangeSuppression],
+  );
 
   return { mapRef, mapInstanceRef, panTo };
 }

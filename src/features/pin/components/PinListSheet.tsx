@@ -168,9 +168,7 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
   const isBookmarked =
     isCurrentPlaceMutation && bookmarkMutation.isPending
       ? bookmarkMutation.variables.bookmarked
-      : bookmarkMutation.data?.placeId === placeId
-        ? bookmarkMutation.data.bookmarkedByMe
-        : resolvedBookmarkState;
+      : resolvedBookmarkState;
   const isBookmarkStateLoading =
     open && place.bookmarkedByMe === undefined && placeDetailQuery.isPending;
   const { data } = usePlaceTrack({
@@ -220,16 +218,16 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
           onBookmarkToggle={handleBookmarkToggle}
           onPinClick={onPinClick}
         />
-
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">
-          {bookmarkToast ? (
-            <Toast key={`${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
-              {bookmarkToast.message}
-            </Toast>
-          ) : null}
-          <ToastViewport />
-        </div>
       </BottomSheet>
+
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">
+        {bookmarkToast ? (
+          <Toast key={`${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
+            {bookmarkToast.message}
+          </Toast>
+        ) : null}
+        <ToastViewport />
+      </div>
     </ToastProvider>
   );
 }
