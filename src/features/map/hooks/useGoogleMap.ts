@@ -75,6 +75,24 @@ export function useGoogleMap({
   }, [isInteractionDisabled]);
 
   useEffect(() => {
+    const mapElement = mapRef.current;
+    if (!isLoaded || !mapElement) return;
+
+    // A suppressed programmatic pan must never consume the next user-initiated
+    // center update, even when the pan was clamped and emitted no idle event.
+    const handleUserInteraction = () => clearCenterChangeSuppression();
+    mapElement.addEventListener('pointerdown', handleUserInteraction, true);
+    mapElement.addEventListener('wheel', handleUserInteraction, true);
+    mapElement.addEventListener('keydown', handleUserInteraction, true);
+
+    return () => {
+      mapElement.removeEventListener('pointerdown', handleUserInteraction, true);
+      mapElement.removeEventListener('wheel', handleUserInteraction, true);
+      mapElement.removeEventListener('keydown', handleUserInteraction, true);
+    };
+  }, [clearCenterChangeSuppression, isLoaded]);
+
+  useEffect(() => {
     const mapsApi = window.google?.maps;
     if (!isLoaded || !mapRef.current || !mapsApi) return;
 
@@ -108,6 +126,9 @@ export function useGoogleMap({
       mapInstanceRef.current = map;
 
       map.addListener('zoom_changed', () => {
+        // panTo does not change zoom, so a zoom event belongs to another
+        // interaction and must not inherit its center-change suppression.
+        clearCenterChangeSuppression();
         const newZoom = map.getZoom();
         if (newZoom !== undefined) {
           onZoomChangedRef.current?.(newZoom);
@@ -169,6 +190,9 @@ export function useGoogleMap({
       clearCenterChangeSuppression();
       if (options?.notifyCenterChanged === false) {
         suppressNextCenterChangedRef.current = true;
+        // A restricted/no-op pan may emit neither center_changed nor idle.
+        // User interaction clears suppression immediately; this timeout only
+        // bounds the remaining no-event programmatic case.
         centerChangeSuppressionTimeoutRef.current = window.setTimeout(
           clearCenterChangeSuppression,
           CENTER_CHANGE_SUPPRESSION_TIMEOUT_MS,
