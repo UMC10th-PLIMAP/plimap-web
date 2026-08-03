@@ -1,5 +1,6 @@
 import SoundWaveIcon from '@/assets/icons/soundwaves.svg?react';
 import PlayIcon from '@/assets/icons/play.svg?react';
+import './MapPinMessageBox.css';
 
 export type MapPinMessageBoxProps = {
   nickname: string;
@@ -15,16 +16,16 @@ export function MapPinMessageBox({
   onPlay,
 }: MapPinMessageBoxProps) {
   return (
-    <div className="flex w-[236px] flex-col items-center gap-3.5 rounded-2xl bg-black/10 px-5 pt-4 pb-[18px] backdrop-blur-[10px] [box-shadow:0px_4px_8.4px_0px_rgba(0,0,0,0.25)]">
-      <div className="flex w-full items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="size-6 shrink-0 overflow-hidden rounded-full bg-grayscale-0">
+    <div className="glass-card">
+      <div className="gc-row">
+        <div className="gc-user">
+          <div className="gc-avatar overflow-hidden bg-grayscale-0">
             {avatarUrl ? <img src={avatarUrl} alt="" className="size-full object-cover" /> : null}
           </div>
-          <span className="etc-13-sb text-grayscale-500">{nickname}</span>
+          <span className="gc-name">{nickname}</span>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="gc-actions">
           <SoundWaveIcon className="size-6 text-grayscale-400" aria-hidden />
           <button
             type="button"
@@ -33,16 +34,14 @@ export function MapPinMessageBox({
               event.stopPropagation();
               onPlay?.();
             }}
-            className="flex size-[30px] items-center justify-center rounded-full bg-neon text-grayscale-1250"
+            className="gc-play cursor-pointer text-grayscale-1250"
           >
             <PlayIcon className="size-[18px]" aria-hidden />
           </button>
         </div>
       </div>
 
-      <p className="w-full truncate body-15-m text-grayscale-100 [text-shadow:0px_0px_4px_rgba(0,0,0,0.5)]">
-        {introduction}
-      </p>
+      <p className="gc-title">{introduction}</p>
     </div>
   );
 }
