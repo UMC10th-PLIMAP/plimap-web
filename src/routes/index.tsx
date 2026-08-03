@@ -13,6 +13,7 @@ import WelcomePage from '@/pages/WelcomePage';
 
 import MyProfilePage from '@/pages/MyProfilePage';
 import MyPlimapPage from '@/pages/MyPlimapPage';
+import MyNotificationsPage from '@/pages/MyNotificationsPage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 import PinDetailPage from '@/pages/PinDetailPage';
 import SongListPage from '@/pages/SongListPage';
@@ -143,6 +144,10 @@ export const router = createBrowserRouter([
           {
             path: 'my/plimap',
             element: <MyPlimapPage />,
+          },
+          {
+            path: 'my/notifications',
+            element: <MyNotificationsPage />,
           },
           {
             path: 'pin/register/place',
