@@ -33,3 +33,8 @@ export async function completeOnboarding(nickname: string) {
   );
   return data.result;
 }
+
+// 3) DELETE /api/v1/auth/logout - 로그아웃
+export async function logout() {
+  await apiClient.delete<ApiResponse<null>>(`${ENDPOINT}/logout`);
+}
