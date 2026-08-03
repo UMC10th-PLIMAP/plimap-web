@@ -273,6 +273,12 @@ const MapPage: React.FC<MapPageProps> = ({
           open={isPlaceSheetOpen}
           onClose={() => onClearMapPlace?.()}
           place={toPlaceInfo(selectedMapPlace)}
+          detailLocation={
+            selectedMapPlace.selectionLocation ??
+            (currentLocation
+              ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
+              : null)
+          }
           onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
         />
       ) : selectedMapPin ? (
@@ -280,6 +286,11 @@ const MapPage: React.FC<MapPageProps> = ({
           open
           onClose={() => onSelectMapPinChange(null)}
           place={mapPinToPlaceInfo(selectedMapPin)}
+          detailLocation={
+            currentLocation
+              ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
+              : null
+          }
           onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
         />
       ) : null}

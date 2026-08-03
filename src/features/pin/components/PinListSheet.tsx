@@ -9,13 +9,16 @@ import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { usePlaceTrack } from '@/features/pin/queries/usePlaceTrack';
 import type { Pin, PinSort, PlaceInfo } from '@/features/pin/types';
-import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { cn } from '@/lib/utils';
+import type { PlaceSearchHistoryRequest } from '@/types/place.type';
+
+type BookmarkStatus = 'loading' | 'error' | 'ready';
 
 type PinListSheetProps = {
   open: boolean;
   onClose: () => void;
   place: PlaceInfo;
+  detailLocation: PlaceSearchHistoryRequest | null;
   onPinClick?: (pin: Pin) => void;
 };
 
@@ -43,6 +46,7 @@ type PinListContentProps = {
   sort: PinSort;
   onSortChange: (sort: PinSort) => void;
   isBookmarked: boolean;
+  bookmarkStatus: BookmarkStatus;
   isBookmarkPending: boolean;
   onBookmarkToggle: () => void;
   onPinClick?: (pin: Pin) => void;
@@ -54,6 +58,7 @@ function PinListContent({
   sort,
   onSortChange,
   isBookmarked,
+  bookmarkStatus,
   isBookmarkPending,
   onBookmarkToggle,
   onPinClick,
@@ -61,6 +66,12 @@ function PinListContent({
   const { isFullPage } = useBottomSheet();
   const distance = formatDistance(place.distance);
   const hasPins = pins.length > 0;
+  const bookmarkLabel =
+    bookmarkStatus === 'loading'
+      ? '북마크 상태 불러오는 중'
+      : bookmarkStatus === 'error'
+        ? '북마크 상태를 불러오지 못함'
+        : `${place.name} ${isBookmarked ? '북마크 해제' : '북마크 등록'}`;
 
   return (
     <>
@@ -103,14 +114,20 @@ function PinListContent({
 
           <button
             type="button"
-            aria-label={`${place.name} ${isBookmarked ? '북마크 해제' : '북마크 등록'}`}
-            aria-pressed={isBookmarked}
-            aria-busy={isBookmarkPending || undefined}
-            disabled={isBookmarkPending}
+            aria-label={bookmarkLabel}
+            aria-pressed={bookmarkStatus === 'ready' ? isBookmarked : undefined}
+            aria-busy={bookmarkStatus === 'loading' || isBookmarkPending || undefined}
+            disabled={bookmarkStatus !== 'ready' || isBookmarkPending}
             onClick={onBookmarkToggle}
             className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pli-black-75 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isBookmarked ? (
+            {bookmarkStatus === 'loading' ? (
+              <span aria-hidden className="size-6 animate-pulse rounded-md bg-grayscale-700" />
+            ) : bookmarkStatus === 'error' ? (
+              <span aria-hidden className="body-15-m text-grayscale-500">
+                !
+              </span>
+            ) : isBookmarked ? (
               <BookmarkActiveIcon className="size-7" aria-hidden />
             ) : (
               <BookmarkIcon className="size-7" aria-hidden />
@@ -152,7 +169,13 @@ type BookmarkToast = {
   message: string;
 };
 
-export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetProps) {
+export function PinListSheet({
+  open,
+  onClose,
+  place,
+  detailLocation,
+  onPinClick,
+}: PinListSheetProps) {
   const [sort, setSort] = useState<PinSort>('POPULAR');
   const [bookmarkToast, setBookmarkToast] = useState<BookmarkToast | null>(null);
   const normalizedPlaceId = place.id.startsWith('place:')
@@ -160,14 +183,13 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
     : place.id;
   const parsedPlaceId = place.placeId ?? Number(normalizedPlaceId);
   const placeId = Number.isSafeInteger(parsedPlaceId) && parsedPlaceId > 0 ? parsedPlaceId : null;
-  const { data: currentPosition } = useCurrentPosition({ enabled: open });
-  const queryLatitude = currentPosition?.latitude ?? place.latitude;
-  const queryLongitude = currentPosition?.longitude ?? place.longitude;
+  const queryLatitude = detailLocation?.latitude ?? place.latitude;
+  const queryLongitude = detailLocation?.longitude ?? place.longitude;
   const placeDetailQuery = usePlaceDetail({
     placeId,
-    latitude: queryLatitude,
-    longitude: queryLongitude,
-    enabled: open,
+    latitude: detailLocation?.latitude ?? 0,
+    longitude: detailLocation?.longitude ?? 0,
+    enabled: open && detailLocation !== null,
   });
   const resolvedPlace: PlaceInfo = {
     ...place,
@@ -179,15 +201,14 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
     isMine: placeDetailQuery.data?.pinnedByMe ?? place.isMine,
   };
   const bookmarkMutation = useTogglePlaceBookmark();
-  const resolvedBookmarkState =
-    placeDetailQuery.data?.bookmarkedByMe ?? place.bookmarkedByMe ?? false;
+  const resolvedBookmarkState = placeDetailQuery.data?.bookmarkedByMe ?? place.bookmarkedByMe;
+  const bookmarkStatus: BookmarkStatus =
+    resolvedBookmarkState !== undefined ? 'ready' : placeDetailQuery.isError ? 'error' : 'loading';
   const isCurrentPlaceMutation = bookmarkMutation.variables?.placeId === placeId;
   const isBookmarked =
     isCurrentPlaceMutation && bookmarkMutation.isPending
       ? bookmarkMutation.variables.bookmarked
-      : resolvedBookmarkState;
-  const isBookmarkStateLoading =
-    open && place.bookmarkedByMe === undefined && placeDetailQuery.isPending;
+      : (resolvedBookmarkState ?? false);
   const { data } = usePlaceTrack({
     placeId: normalizedPlaceId,
     latitude: queryLatitude,
@@ -197,7 +218,7 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
   });
 
   const handleBookmarkToggle = () => {
-    if (placeId === null || bookmarkMutation.isPending || isBookmarkStateLoading) return;
+    if (placeId === null || bookmarkMutation.isPending || bookmarkStatus !== 'ready') return;
 
     bookmarkMutation.mutate(
       { placeId, bookmarked: !isBookmarked },
@@ -221,15 +242,6 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
       liked: track.isLiked,
     })) ?? [];
 
-  // 호출부가 name/address/distance를 정확히 모르고 열 수도 있어서(예: 지도 핀
-  // 탭), 실제 장소 상세 조회 결과가 도착하면 그 값으로 덮어써서 채운다.
-  const resolvedPlace: PlaceInfo = {
-    ...place,
-    name: placeDetailQuery.data?.placeName ?? place.name,
-    address: placeDetailQuery.data?.address ?? place.address,
-    distance: placeDetailQuery.data?.distanceMeters ?? place.distance,
-  };
-
   return (
     <ToastProvider duration={BOOKMARK_TOAST_DURATION_MS}>
       <BottomSheet
@@ -245,7 +257,8 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
           sort={sort}
           onSortChange={setSort}
           isBookmarked={isBookmarked}
-          isBookmarkPending={bookmarkMutation.isPending || isBookmarkStateLoading}
+          bookmarkStatus={bookmarkStatus}
+          isBookmarkPending={bookmarkMutation.isPending}
           onBookmarkToggle={handleBookmarkToggle}
           onPinClick={onPinClick}
         />

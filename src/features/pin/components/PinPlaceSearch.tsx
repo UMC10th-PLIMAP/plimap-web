@@ -164,14 +164,17 @@ export function PinPlaceSearch({
     };
 
     if (!place.searchSource || !currentLocation) {
-      const constraintError = validatePlace?.(place) ?? null;
+      const selectedPlace = currentLocation
+        ? { ...place, selectionLocation: currentLocation }
+        : place;
+      const constraintError = validatePlace?.(selectedPlace) ?? null;
       if (constraintError) {
         reportConstraintError(constraintError);
         return;
       }
 
       setQuery(place.placeName);
-      onPlaceSelect(place);
+      onPlaceSelect(selectedPlace);
       return;
     }
 
@@ -188,12 +191,16 @@ export function PinPlaceSearch({
       {
         onSuccess: (selectedPlaceResult) => {
           setQuery(selectedPlaceResult.placeName);
-          const constraintError = validatePlace?.(selectedPlaceResult) ?? null;
+          const selectedPlace = {
+            ...selectedPlaceResult,
+            selectionLocation: currentLocation,
+          };
+          const constraintError = validatePlace?.(selectedPlace) ?? null;
           if (constraintError) {
             reportConstraintError(constraintError);
             return;
           }
-          onPlaceSelect(selectedPlaceResult);
+          onPlaceSelect(selectedPlace);
         },
         onSettled: () => {
           if (selectionControllerRef.current === controller) {
