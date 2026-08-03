@@ -60,7 +60,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
   const { data: mapPinsData } = useMapPins(viewport);
   const mapPins =
-    import.meta.env.DEV && (mapPinsData?.pins.length ?? 0) === 0
+    import.meta.env.DEV && mapPinsData !== undefined && mapPinsData.pins.length === 0
       ? DEV_MOCK_MAP_PINS
       : (mapPinsData?.pins ?? []);
   // develop 방식: selectedMapPlace prop으로 장소 결과 관리
