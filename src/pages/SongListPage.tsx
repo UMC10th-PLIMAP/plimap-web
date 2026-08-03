@@ -1,16 +1,23 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { SongCard } from '@/features/pin/components/SongCard';
 import { useSearchTracks } from '@/features/pin/queries/useSearchTracks';
+import { usePinCreationStore } from '@/store/pinCreationStore';
 
 export default function SongListPage() {
   const navigate = useNavigate();
+  const place = usePinCreationStore((state) => state.place);
+  const currentLocation = usePinCreationStore((state) => state.currentLocation);
   const [query, setQuery] = useState('');
 
   const { data: tracks } = useSearchTracks({ keyword: query, limit: 200 });
+
+  if (!place || !currentLocation) {
+    return <Navigate to="/app/pin/register/place" replace />;
+  }
 
   return (
     <div>

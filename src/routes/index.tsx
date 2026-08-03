@@ -18,6 +18,10 @@ import PinDetailPage from '@/pages/PinDetailPage';
 import SongListPage from '@/pages/SongListPage';
 import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
+import PinLocationConfirmPage from '@/pages/PinLocationConfirmPage';
+import PinRegisterSearchPage from '@/pages/PinRegisterSearchPage';
+import PinRegisterEntryPage from '@/pages/PinRegisterEntryPage';
+import PinRegistrationLayout from '@/layouts/PinRegistrationLayout';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
 import FollowListPage from '@/pages/FollowListPage';
@@ -141,8 +145,26 @@ export const router = createBrowserRouter([
             element: <MyPlimapPage />,
           },
           {
+            path: 'pin/register/place',
+            element: <PinRegisterEntryPage />,
+          },
+          {
             path: 'pin/register',
-            element: <PinRegisterPage />,
+            element: <PinRegistrationLayout />,
+            children: [
+              {
+                index: true,
+                element: <PinRegisterPage />,
+              },
+              {
+                path: 'search',
+                element: <PinRegisterSearchPage />,
+              },
+              {
+                path: 'confirm',
+                element: <PinLocationConfirmPage />,
+              },
+            ],
           },
           {
             path: 'settings',

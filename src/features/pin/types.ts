@@ -137,6 +137,7 @@ export type PinSort = 'POPULAR' | 'LATEST';
 
 export type PlaceInfo = {
   id: string;
+  placeId?: number;
   name: string;
   creatorName?: string;
   distance: number;
@@ -144,6 +145,7 @@ export type PlaceInfo = {
   isMine?: boolean;
   latitude: number;
   longitude: number;
+  bookmarkedByMe?: boolean;
 };
 
 /** PinCard — 찜한 곡 API와 동일 shape (+ UI 전용 옵션) */
@@ -199,6 +201,10 @@ export type PlaceResult = {
 };
 
 export type PinSearchPlace = PlaceResult & {
+  placeId?: number;
+  bookmarkedByMe?: boolean;
+  source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
+  withinAccessRange?: boolean;
   coordinates: {
     lat: number;
     lng: number;

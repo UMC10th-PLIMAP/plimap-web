@@ -1,8 +1,10 @@
-import { useEffect, useRef } from 'react';
-import { DEFAULT_CENTER, type MapCoordinate } from '../types';
+import { useCallback, useEffect, useRef } from 'react';
+import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '../types';
 
 // 지도 줌 하한선 (레벨 단위 유지, 상한선은 API 지원 한도까지 허용)
 const MIN_ZOOM = 6;
+const CENTER_EQUALITY_EPSILON = 1e-9;
+const CENTER_CHANGE_SUPPRESSION_TIMEOUT_MS = 2_000;
 
 // 대한민국 영역으로 패닝을 제한하는 경계 상자 (엄격 모드)
 const KOREA_BOUNDS: google.maps.LatLngBoundsLiteral = {
@@ -15,21 +17,43 @@ const KOREA_BOUNDS: google.maps.LatLngBoundsLiteral = {
 type UseGoogleMapParams = {
   isLoaded: boolean;
   zoom: number;
+  initialCenter?: MapCoordinate;
+  isInteractionDisabled?: boolean;
   onZoomChanged?: (newZoom: number) => void;
   onCenterChanged?: (center: MapCoordinate) => void;
+  onViewportChanged?: (viewport: MapViewport) => void;
+};
+
+type PanToOptions = {
+  notifyCenterChanged?: boolean;
 };
 
 /** 구글맵 인스턴스를 생성하고, zoom/center 변경을 리스닝한다. */
 export function useGoogleMap({
   isLoaded,
   zoom,
+  initialCenter = DEFAULT_CENTER,
+  isInteractionDisabled = false,
   onZoomChanged,
   onCenterChanged,
+  onViewportChanged,
 }: UseGoogleMapParams) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
   const onZoomChangedRef = useRef(onZoomChanged);
+  const onViewportChangedRef = useRef(onViewportChanged);
+  const initialCenterRef = useRef(initialCenter);
+  const suppressNextCenterChangedRef = useRef(false);
+  const centerChangeSuppressionTimeoutRef = useRef<number | null>(null);
+
+  const clearCenterChangeSuppression = useCallback(() => {
+    suppressNextCenterChangedRef.current = false;
+    if (centerChangeSuppressionTimeoutRef.current !== null) {
+      window.clearTimeout(centerChangeSuppressionTimeoutRef.current);
+      centerChangeSuppressionTimeoutRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     onCenterChangedRef.current = onCenterChanged;
@@ -38,6 +62,35 @@ export function useGoogleMap({
   useEffect(() => {
     onZoomChangedRef.current = onZoomChanged;
   }, [onZoomChanged]);
+
+  useEffect(() => {
+    onViewportChangedRef.current = onViewportChanged;
+  }, [onViewportChanged]);
+
+  useEffect(() => {
+    mapInstanceRef.current?.setOptions({
+      gestureHandling: isInteractionDisabled ? 'none' : 'greedy',
+      keyboardShortcuts: !isInteractionDisabled,
+    });
+  }, [isInteractionDisabled]);
+
+  useEffect(() => {
+    const mapElement = mapRef.current;
+    if (!isLoaded || !mapElement) return;
+
+    // A suppressed programmatic pan must never consume the next user-initiated
+    // center update, even when the pan was clamped and emitted no idle event.
+    const handleUserInteraction = () => clearCenterChangeSuppression();
+    mapElement.addEventListener('pointerdown', handleUserInteraction, true);
+    mapElement.addEventListener('wheel', handleUserInteraction, true);
+    mapElement.addEventListener('keydown', handleUserInteraction, true);
+
+    return () => {
+      mapElement.removeEventListener('pointerdown', handleUserInteraction, true);
+      mapElement.removeEventListener('wheel', handleUserInteraction, true);
+      mapElement.removeEventListener('keydown', handleUserInteraction, true);
+    };
+  }, [clearCenterChangeSuppression, isLoaded]);
 
   useEffect(() => {
     const mapsApi = window.google?.maps;
@@ -54,7 +107,7 @@ export function useGoogleMap({
 
       // --- 구글맵 인스턴스 초기 생성 (벡터 맵: 스타일은 Cloud Console에서 Map ID에 연결된 것을 사용) ---
       const map = new mapsApi.Map(mapRef.current, {
-        center: DEFAULT_CENTER,
+        center: initialCenterRef.current,
         zoom,
         isFractionalZoomEnabled: true,
         minZoom: MIN_ZOOM,
@@ -64,7 +117,8 @@ export function useGoogleMap({
           strictBounds: false,
         },
         disableDefaultUI: true,
-        gestureHandling: 'greedy',
+        gestureHandling: isInteractionDisabled ? 'none' : 'greedy',
+        keyboardShortcuts: !isInteractionDisabled,
         // 지하철역/POI 아이콘 클릭 시 뜨는 구글 기본 정보창 비활성화
         clickableIcons: false,
         ...(mapId ? { mapId } : {}),
@@ -72,25 +126,82 @@ export function useGoogleMap({
       mapInstanceRef.current = map;
 
       map.addListener('zoom_changed', () => {
+        // panTo does not change zoom, so a zoom event belongs to another
+        // interaction and must not inherit its center-change suppression.
+        clearCenterChangeSuppression();
         const newZoom = map.getZoom();
         if (newZoom !== undefined) {
           onZoomChangedRef.current?.(newZoom);
         }
       });
 
+      map.addListener('dragstart', () => {
+        clearCenterChangeSuppression();
+      });
+
       map.addListener('idle', () => {
         const newCenter = map.getCenter();
-        if (!newCenter) return;
+        const bounds = map.getBounds();
+        const newZoom = map.getZoom();
+        if (!newCenter || !bounds || newZoom === undefined) return;
 
-        onCenterChangedRef.current?.({
+        const center = {
           lat: newCenter.lat(),
           lng: newCenter.lng(),
+        };
+        if (!suppressNextCenterChangedRef.current) {
+          onCenterChangedRef.current?.(center);
+        }
+        clearCenterChangeSuppression();
+
+        const southWest = bounds.getSouthWest();
+        const northEast = bounds.getNorthEast();
+        onViewportChangedRef.current?.({
+          center,
+          zoom: newZoom,
+          bounds: {
+            southWest: { lat: southWest.lat(), lng: southWest.lng() },
+            northEast: { lat: northEast.lat(), lng: northEast.lng() },
+          },
         });
       });
     } else if (mapInstanceRef.current.getZoom() !== zoom) {
       mapInstanceRef.current.setZoom(zoom);
     }
-  }, [isLoaded, zoom]);
+  }, [clearCenterChangeSuppression, isInteractionDisabled, isLoaded, zoom]);
 
-  return { mapRef, mapInstanceRef };
+  useEffect(() => clearCenterChangeSuppression, [clearCenterChangeSuppression]);
+
+  const panTo = useCallback(
+    (coordinate: MapCoordinate, options?: PanToOptions) => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+
+      const currentCenter = map.getCenter();
+      if (
+        currentCenter &&
+        Math.abs(currentCenter.lat() - coordinate.lat) < CENTER_EQUALITY_EPSILON &&
+        Math.abs(currentCenter.lng() - coordinate.lng) < CENTER_EQUALITY_EPSILON
+      ) {
+        clearCenterChangeSuppression();
+        return;
+      }
+
+      clearCenterChangeSuppression();
+      if (options?.notifyCenterChanged === false) {
+        suppressNextCenterChangedRef.current = true;
+        // A restricted/no-op pan may emit neither center_changed nor idle.
+        // User interaction clears suppression immediately; this timeout only
+        // bounds the remaining no-event programmatic case.
+        centerChangeSuppressionTimeoutRef.current = window.setTimeout(
+          clearCenterChangeSuppression,
+          CENTER_CHANGE_SUPPRESSION_TIMEOUT_MS,
+        );
+      }
+      map.panTo(coordinate);
+    },
+    [clearCenterChangeSuppression],
+  );
+
+  return { mapRef, mapInstanceRef, panTo };
 }
