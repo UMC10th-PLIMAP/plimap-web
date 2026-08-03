@@ -204,12 +204,21 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
       liked: track.isLiked,
     })) ?? [];
 
+  // 호출부가 name/address/distance를 정확히 모르고 열 수도 있어서(예: 지도 핀
+  // 탭), 실제 장소 상세 조회 결과가 도착하면 그 값으로 덮어써서 채운다.
+  const resolvedPlace: PlaceInfo = {
+    ...place,
+    name: placeDetailQuery.data?.placeName ?? place.name,
+    address: placeDetailQuery.data?.address ?? place.address,
+    distance: placeDetailQuery.data?.distanceMeters ?? place.distance,
+  };
+
   return (
     <ToastProvider duration={BOOKMARK_TOAST_DURATION_MS}>
       <BottomSheet open={open} onClose={onClose}>
         <BottomSheet.FullPageNav />
         <PinListContent
-          place={place}
+          place={resolvedPlace}
           pins={pins}
           sort={sort}
           onSortChange={setSort}
