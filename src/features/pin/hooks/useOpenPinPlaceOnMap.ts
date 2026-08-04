@@ -22,20 +22,34 @@ async function resolvePlaceTrackId(params: {
   latitude: number;
   longitude: number;
 }) {
-  const tracks = await getPlaceTracks(
-    String(params.placeId),
-    '0',
-    50,
-    params.latitude,
-    params.longitude,
-    'POPULAR',
-  );
+  const pageSize = 50;
+  let page = 0;
 
-  for (const track of tracks.tracks) {
-    const pins = await getPlaceTrackPins(String(track.placeTrackId), 50);
-    if (pins.data.some((pin) => pin.pinId === params.pinId)) {
-      return track.placeTrackId;
+  while (true) {
+    const tracks = await getPlaceTracks(
+      String(params.placeId),
+      String(page),
+      pageSize,
+      params.latitude,
+      params.longitude,
+      'POPULAR',
+    );
+
+    for (const track of tracks.tracks) {
+      let cursor: string | undefined;
+
+      while (true) {
+        const pins = await getPlaceTrackPins(String(track.placeTrackId), pageSize, cursor);
+        if (pins.data.some((pin) => pin.pinId === params.pinId)) {
+          return track.placeTrackId;
+        }
+        if (!pins.hasNext) break;
+        cursor = pins.nextCursor;
+      }
     }
+
+    if (!tracks.hasNext) break;
+    page += 1;
   }
 
   return null;

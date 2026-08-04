@@ -30,6 +30,13 @@ type EditToast = {
   message: string;
 };
 
+function areSameTags(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((tag, index) => tag === sortedB[index]);
+}
+
 function FeedVisibilityToggle({
   checked,
   onChange,
@@ -62,7 +69,7 @@ export default function PinEditPage() {
   const location = useLocation();
   const locationState = (location.state as PinEditLocationState | null) ?? null;
 
-  const { data: pinDetail } = usePinDetail({ pinId });
+  const { data: pinDetail, isPending: isPinDetailPending } = usePinDetail({ pinId });
   const { data: currentPosition } = useCurrentPosition({
     enabled: Boolean(pinDetail?.placeId),
   });
@@ -76,15 +83,27 @@ export default function PinEditPage() {
   const patchPinMutation = usePatchPin();
 
   const baselineIntroduction = locationState?.introduction ?? pinDetail?.introduction ?? '';
+  const baselineTags = locationState?.tags ?? pinDetail?.tags ?? [];
+  const baselineFeedOpen = locationState?.feedOpen ?? pinDetail?.feedOpen ?? true;
+
   const [introductionDraft, setIntroductionDraft] = useState<string | null>(
     locationState?.introduction ?? null,
   );
-  const [selectedTags, setSelectedTags] = useState<string[]>(locationState?.tags ?? []);
-  const [isFeedPublic, setIsFeedPublic] = useState(locationState?.feedOpen ?? true);
+  const [tagsDraft, setTagsDraft] = useState<string[] | null>(locationState?.tags ?? null);
+  const [feedOpenDraft, setFeedOpenDraft] = useState<boolean | null>(
+    locationState?.feedOpen ?? null,
+  );
   const [toast, setToast] = useState<EditToast | null>(null);
 
   const introduction = introductionDraft ?? baselineIntroduction;
+  const selectedTags = tagsDraft ?? baselineTags;
+  const isFeedPublic = feedOpenDraft ?? baselineFeedOpen;
+
   const hasIntroductionChanged = introduction !== baselineIntroduction;
+  const hasTagsChanged = !areSameTags(selectedTags, baselineTags);
+  const hasFeedOpenChanged = isFeedPublic !== baselineFeedOpen;
+  const hasChanges = hasIntroductionChanged || hasTagsChanged || hasFeedOpenChanged;
+  const isBaselineReady = Boolean(locationState) || Boolean(pinDetail);
 
   const coverUrl = locationState?.albumImageUrl || pinDetail?.albumImageUrl || '';
   const title = locationState?.title ?? 'PIN 수정';
@@ -99,15 +118,16 @@ export default function PinEditPage() {
   };
 
   const toggleTag = (tag: string) => {
-    setSelectedTags((prev) => {
-      if (prev.includes(tag)) return prev.filter((item) => item !== tag);
-      if (prev.length >= MAX_TAG_COUNT) return prev;
-      return [...prev, tag];
+    setTagsDraft((prev) => {
+      const current = prev ?? baselineTags;
+      if (current.includes(tag)) return current.filter((item) => item !== tag);
+      if (current.length >= MAX_TAG_COUNT) return current;
+      return [...current, tag];
     });
   };
 
   const handleSubmit = () => {
-    if (!pinId || patchPinMutation.isPending) return;
+    if (!pinId || patchPinMutation.isPending || !isBaselineReady || !hasChanges) return;
 
     const normalizedIntroduction = introduction.trim();
     if (!normalizedIntroduction) {
@@ -166,11 +186,16 @@ export default function PinEditPage() {
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={patchPinMutation.isPending || !hasIntroductionChanged}
+                    disabled={
+                      patchPinMutation.isPending ||
+                      !hasChanges ||
+                      !isBaselineReady ||
+                      isPinDetailPending
+                    }
                     aria-busy={patchPinMutation.isPending || undefined}
                     className={cn(
                       'cursor-pointer body-17-m disabled:cursor-not-allowed',
-                      hasIntroductionChanged
+                      hasChanges && isBaselineReady
                         ? 'text-grayscale-0'
                         : 'text-grayscale-1000 disabled:text-grayscale-1000',
                     )}
@@ -246,22 +271,10 @@ export default function PinEditPage() {
                   <span className="body-15-r text-grayscale-300">피드 공개</span>
                   <FeedVisibilityToggle
                     checked={isFeedPublic}
-                    onChange={setIsFeedPublic}
+                    onChange={(checked) => setFeedOpenDraft(checked)}
                     disabled={patchPinMutation.isPending}
                   />
                 </section>
-
-                <div className="flex justify-center pt-[5px]">
-                  <button
-                    type="button"
-                    className="flex h-[53px] w-[180px] cursor-pointer items-center justify-center rounded-[50px] bg-pli-black-75 body-15-m text-red"
-                    onClick={() => {
-                      // TODO: PIN 삭제 API 연동
-                    }}
-                  >
-                    삭제하기
-                  </button>
-                </div>
               </div>
             </div>
           </section>

@@ -14,7 +14,12 @@ export default function MyProfilePage() {
   const navigate = useNavigate();
   const { data: myProfile } = useMyProfile();
   const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
-  const { data: memberMePages } = useInfiniteMemberMe();
+  const {
+    data: memberMePages,
+    isPending: isMemberMePending,
+    isError: isMemberMeError,
+    refetch: refetchMemberMe,
+  } = useInfiniteMemberMe();
 
   if (!myProfile) return null;
 
@@ -61,6 +66,11 @@ export default function MyProfilePage() {
       <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
       <ProfilePinGrid
         pins={memberMePages?.pages.flatMap((page) => page.data) ?? []}
+        isPending={isMemberMePending}
+        isError={isMemberMeError}
+        onRetry={() => {
+          void refetchMemberMe();
+        }}
         onPinClick={(pin) => {
           void openPinPlaceOnMap({
             pinId: pin.pinId,

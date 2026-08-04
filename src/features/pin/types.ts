@@ -150,6 +150,8 @@ export type PinDetailResponse = {
   albumImageUrl: string;
   youtubeVideoId: string;
   clipStartMs: number;
+  tags: string[];
+  feedOpen: boolean;
 };
 
 export type PatchPinRequest = {

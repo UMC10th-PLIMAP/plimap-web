@@ -4,6 +4,9 @@ import type { MemberMeFeedItem } from '@/features/pin/types';
 
 type ProfilePinGridProps = {
   pins: MemberMeFeedItem[];
+  isPending?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   onPinClick?: (pin: MemberMeFeedItem) => void;
   onRegisterPin?: () => void;
 };
@@ -58,7 +61,39 @@ function ProfilePinGridItem({
   );
 }
 
-export function ProfilePinGrid({ pins, onPinClick, onRegisterPin }: ProfilePinGridProps) {
+export function ProfilePinGrid({
+  pins,
+  isPending = false,
+  isError = false,
+  onRetry,
+  onPinClick,
+  onRegisterPin,
+}: ProfilePinGridProps) {
+  if (isPending) {
+    return (
+      <div className="flex flex-col items-center justify-center px-[69px] pt-7.5">
+        <p className="body-15-r text-grayscale-500">핀을 불러오는 중이에요.</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 px-[69px] pt-7.5">
+        <p className="body-15-r text-grayscale-500">핀을 불러오지 못했어요.</p>
+        {onRetry ? (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="h-10 rounded-xl bg-grayscale-0 px-4 body-15-m text-grayscale-1250 cursor-pointer"
+          >
+            다시 시도
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
   if (pins.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center px-[69px] pt-7.5">
