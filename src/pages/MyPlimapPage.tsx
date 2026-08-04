@@ -12,6 +12,7 @@ import { useInfiniteMyPins } from '@/features/pin/queries/useMyPins';
 import type { PinSearchPlace } from '@/features/pin/types';
 import type { MyPlimapTab } from '@/features/profile/types';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { getCurrentPosition } from '@/utils/geolocation';
 import type { AppOutletContext } from '@/layouts/RootLayout';
 
 export default function MyPlimapPage() {
@@ -49,10 +50,15 @@ export default function MyPlimapPage() {
     setIsNavigatingToMap(true);
     try {
       const pinDetail = await getPinDetail(String(pinId));
+      const positionResult = await getCurrentPosition();
+      const userCoordinate = positionResult.ok
+        ? positionResult.coordinate
+        : { lat: pinDetail.latitude, lng: pinDetail.longitude };
+
       const placeDetail = await getPlaceDetail({
         placeId: pinDetail.placeId,
-        latitude: pinDetail.latitude,
-        longitude: pinDetail.longitude,
+        latitude: userCoordinate.lat,
+        longitude: userCoordinate.lng,
       });
 
       const place: PinSearchPlace = {
