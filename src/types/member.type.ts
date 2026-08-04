@@ -21,6 +21,27 @@ export type MyProfileResponse = {
   onboardingCompletedAt: string | null;
 };
 
+export type FollowListRequest = {
+  memberId: number;
+  pageSize?: number;
+  cursor?: string;
+};
+
+export type FollowListItem = {
+  id: number;
+  nickname: string;
+  name: string | null;
+  profileImageUrl: string | null;
+  followedAt: string;
+  isFollowing: boolean;
+};
+
+export type FollowListResponse = {
+  data: FollowListItem[];
+  nextCursor: string;
+  hasNext: boolean;
+  pageSize: number;
+};
 export type MemberProfileResponse = {
   id: number;
   nickname: string;
