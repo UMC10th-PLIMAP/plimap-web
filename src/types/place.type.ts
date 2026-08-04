@@ -82,6 +82,26 @@ export type PlaceBookmarkResponse = {
   bookmarkedByMe: boolean;
 };
 
+export type PopularPlaceScope = 'NEARBY' | 'GLOBAL';
+
+export type PopularPlaceItem = {
+  placeId: number;
+  placeName: string;
+  distanceMeters: number;
+  pinCount: number;
+  representativeImageUrl: string | null;
+};
+
+export type PopularPlaceListResponse = {
+  items: PopularPlaceItem[];
+};
+
+export type PopularPlaceListRequest = {
+  scope: PopularPlaceScope;
+  latitude: number;
+  longitude: number;
+};
+
 export type PlaceBookmarkListItem = {
   placeId: number;
   placeName: string;

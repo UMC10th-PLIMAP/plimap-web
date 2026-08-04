@@ -6,18 +6,14 @@ import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { Chip } from '@/components/ui/chip';
-import {
-  MOCK_FRIEND_PINS,
-  MOCK_HOME_USER,
-  MOCK_HOT_PLACES,
-  type HotPlace,
-} from '@/features/home/constants/mockHome';
+import { MOCK_FRIEND_PINS, MOCK_HOME_USER } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
 import { useMyProfile } from '@/features/home/hooks/useMyProfile';
+import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
-import type { PlaceBookmarkListItem } from '@/types/place.type';
+import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
 function HomeLoadingState() {
   return (
@@ -46,29 +42,7 @@ function HomeErrorState({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function HotPlaceCard({ place }: { place: HotPlace }) {
-  return (
-    <button
-      type="button"
-      aria-label={`${place.name}, ${place.distance}, ${place.pinCount}개의 핀`}
-      className="relative block size-full overflow-hidden rounded-xl border border-pli-black-50 text-left"
-    >
-      <img src={place.imageSrc} alt="" className="size-full object-cover" />
-      <span className="absolute inset-0 bg-gradient-to-b from-transparent from-[33%] to-pli-black-100 to-[92%]" />
-      <span className="absolute inset-x-3 bottom-3 flex min-w-0 flex-col">
-        <span className="flex min-w-0 items-center text-grayscale-100">
-          <span className="truncate body-17-m">{place.name}</span>
-          <NextIcon aria-hidden className="size-5 shrink-0" />
-        </span>
-        <span className="truncate body-15-r text-grayscale-500">
-          {place.distance} · {place.pinCount}개의 핀
-        </span>
-      </span>
-    </button>
-  );
-}
-
-function formatSavedPlaceDistance(distanceMeters: number) {
+function formatDistanceMeters(distanceMeters: number) {
   const normalizedDistance = Math.max(0, distanceMeters);
 
   if (normalizedDistance >= 1000) {
@@ -77,6 +51,34 @@ function formatSavedPlaceDistance(distanceMeters: number) {
   }
 
   return `${Math.round(normalizedDistance)}m`;
+}
+
+function HotPlaceCard({ place }: { place: PopularPlaceItem }) {
+  const distance = formatDistanceMeters(place.distanceMeters);
+
+  return (
+    <button
+      type="button"
+      aria-label={`${place.placeName}, ${distance}, ${place.pinCount}개의 핀`}
+      className="relative block size-full overflow-hidden rounded-xl border border-pli-black-50 text-left"
+    >
+      {place.representativeImageUrl ? (
+        <img src={place.representativeImageUrl} alt="" className="size-full object-cover" />
+      ) : (
+        <span aria-hidden className="block size-full bg-pli-black-75" />
+      )}
+      <span className="absolute inset-0 bg-gradient-to-b from-transparent from-[33%] to-pli-black-100 to-[92%]" />
+      <span className="absolute inset-x-3 bottom-3 flex min-w-0 flex-col">
+        <span className="flex min-w-0 items-center text-grayscale-100">
+          <span className="truncate body-17-m">{place.placeName}</span>
+          <NextIcon aria-hidden className="size-5 shrink-0" />
+        </span>
+        <span className="truncate body-15-r text-grayscale-500">
+          {distance} · {place.pinCount}개의 핀
+        </span>
+      </span>
+    </button>
+  );
 }
 
 type SavedPlaceCardProps = {
@@ -102,7 +104,7 @@ function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps
           ) : (
             '생성되지 않음 · '
           )}
-          {formatSavedPlaceDistance(place.distanceMeters)}
+          {formatDistanceMeters(place.distanceMeters)}
         </span>
       </button>
       <button
@@ -122,6 +124,12 @@ export default function HomePage() {
   const [hotPlaceFilter, setHotPlaceFilter] = useState<'nearby' | 'popular'>('nearby');
   const myProfileQuery = useMyProfile();
   const currentPositionQuery = useCurrentPosition();
+  const popularPlacesQuery = usePopularPlaces({
+    scope: hotPlaceFilter === 'nearby' ? 'NEARBY' : 'GLOBAL',
+    latitude: currentPositionQuery.data?.latitude ?? null,
+    longitude: currentPositionQuery.data?.longitude ?? null,
+  });
+  const popularPlaces = popularPlacesQuery.data?.items ?? [];
   const savedPlacesQuery = usePlaceBookmarks({
     latitude: currentPositionQuery.data?.latitude ?? null,
     longitude: currentPositionQuery.data?.longitude ?? null,
@@ -224,15 +232,40 @@ export default function HomePage() {
             </Chip>
           </div>
           <div className="px-[19px]">
-            <RecommendationContentCarousel
-              ariaLabel="내 주변 인기 장소"
-              items={MOCK_HOT_PLACES}
-              getItemKey={(place) => place.id}
-              itemsPerPage={2}
-              showPagination
-              itemClassName="aspect-square min-w-0 flex-1 self-start"
-              renderItem={(place) => <HotPlaceCard place={place} />}
-            />
+            {currentPositionQuery.isError ? (
+              <p className="py-6 text-center body-15-r text-grayscale-500">
+                위치 정보를 확인할 수 없어요.
+              </p>
+            ) : popularPlacesQuery.isPending ? (
+              <div
+                role="status"
+                aria-label="인기 장소 불러오는 중"
+                className="flex h-[171px] items-center justify-center"
+              >
+                <span className="size-6 animate-spin rounded-full border-2 border-grayscale-700 border-t-neon-2" />
+              </div>
+            ) : popularPlacesQuery.isError ? (
+              <div className="flex flex-col items-center gap-3 py-6 text-center">
+                <p className="body-15-r text-grayscale-500">인기 장소를 불러오지 못했어요.</p>
+                <button
+                  type="button"
+                  onClick={() => void popularPlacesQuery.refetch()}
+                  className="rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100"
+                >
+                  다시 시도
+                </button>
+              </div>
+            ) : (
+              <RecommendationContentCarousel
+                ariaLabel="내 주변 인기 장소"
+                items={popularPlaces}
+                getItemKey={(place) => place.placeId}
+                itemsPerPage={2}
+                showPagination
+                itemClassName="aspect-square min-w-0 flex-1 self-start"
+                renderItem={(place) => <HotPlaceCard place={place} />}
+              />
+            )}
           </div>
         </section>
 
