@@ -31,18 +31,25 @@ export type SearchTrack = searchTracksResponse['tracks'][number];
 export type LikedTrack = GetLikedTracksResponse['tracks'][number];
 
 export type MemberMeRequest = {
-  pageSize: number;
+  pageSize?: number;
   cursor?: string;
+  userLatitude: number;
+  userLongitude: number;
+};
+
+export type MemberMeFeedItem = {
+  pinId: number;
+  albumImageUrl: string;
+  latitude: number;
+  longitude: number;
+  placeName: string;
+  distanceFromUser: number;
+  pinCount: number;
+  createdAt: string;
 };
 
 export type MemberMeResponse = {
-  data: {
-    pinId: number;
-    albumImageUrl: string;
-    latitude: number;
-    longitude: number;
-    createdAt: string;
-  }[];
+  data: MemberMeFeedItem[];
   nextCursor: string;
   hasNext: boolean;
 };
