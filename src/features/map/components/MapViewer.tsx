@@ -27,6 +27,9 @@ type MapViewerProps = {
   onProjectionChanged?: (center: PinRadiusCenter | null) => void;
   onSelectPlace?: (placeId: string) => void;
   onSelectMapPin?: (pinId: string) => void;
+  onPlayPin?: (pinId: string) => void;
+  /** 핀이 아닌 지도의 빈 영역을 클릭했을 때 호출된다. */
+  onMapClick?: () => void;
 };
 
 export type MapViewerHandle = {
@@ -56,10 +59,12 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onProjectionChanged,
     onSelectPlace,
     onSelectMapPin,
+    onPlayPin,
+    onMapClick,
   },
   ref,
 ) {
-  const { mapRef, mapInstanceRef, panTo } = useGoogleMap({
+  const { mapRef, mapInstanceRef, panTo, flyTo } = useGoogleMap({
     isLoaded,
     isInteractionDisabled,
     zoom,
@@ -67,6 +72,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onZoomChanged,
     onCenterChanged,
     onViewportChanged,
+    onMapClick,
   });
 
   const { recenterToCurrentLocation } = useCurrentLocationMarker({
@@ -88,7 +94,15 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
   );
 
   usePlaceMarkers({ mapInstanceRef, isLoaded, placeResults, selectedPlaceId, onSelectPlace });
-  useMapPinOverlays({ mapInstanceRef, isLoaded, mapPins, selectedMapPinId, onSelectMapPin });
+  useMapPinOverlays({
+    mapInstanceRef,
+    isLoaded,
+    mapPins,
+    selectedMapPinId,
+    flyTo,
+    onSelectMapPin,
+    onPlayPin,
+  });
   useCoordinateProjection({
     mapInstanceRef,
     isLoaded,

@@ -3,9 +3,12 @@ import type { ApiResponse } from '@/api/types';
 import type {
   FollowListRequest,
   FollowListResponse,
+  MemberProfileResponse,
   MyProfileResponse,
   NicknameCheckResponse,
   ProfileImageUploadResponse,
+  UpdateMyProfileRequest,
+  UpdateMyProfileResponse,
 } from '@/types/member.type';
 
 const ENDPOINT = '/api/v1/members';
@@ -37,7 +40,16 @@ export async function getMyProfile() {
   return data.result;
 }
 
-// 4) GET /api/v1/members/{memberId}/following - 팔로잉 목록 조회
+// 4) PATCH /api/v1/members/me - 내 프로필 수정
+export async function updateMyProfile(payload: UpdateMyProfileRequest) {
+  const { data } = await apiClient.patch<ApiResponse<UpdateMyProfileResponse>>(
+    `${ENDPOINT}/me`,
+    payload,
+  );
+  return data.result;
+}
+
+// 5) GET /api/v1/members/{memberId}/following - 팔로잉 목록 조회
 export async function getFollowingList({ memberId, pageSize, cursor }: FollowListRequest) {
   const { data } = await apiClient.get<ApiResponse<FollowListResponse>>(
     `${ENDPOINT}/${memberId}/following`,
@@ -46,7 +58,7 @@ export async function getFollowingList({ memberId, pageSize, cursor }: FollowLis
   return data.result;
 }
 
-// 5) GET /api/v1/members/{memberId}/followers - 팔로워 목록 조회
+// 6) GET /api/v1/members/{memberId}/followers - 팔로워 목록 조회
 export async function getFollowerList({ memberId, pageSize, cursor }: FollowListRequest) {
   const { data } = await apiClient.get<ApiResponse<FollowListResponse>>(
     `${ENDPOINT}/${memberId}/followers`,
@@ -55,12 +67,20 @@ export async function getFollowerList({ memberId, pageSize, cursor }: FollowList
   return data.result;
 }
 
-// 6) POST /api/v1/members/{memberId}/follow - 팔로우
-export async function followMember(memberId: number) {
-  await apiClient.post(`${ENDPOINT}/${memberId}/follow`);
+// 7) GET /api/v1/members/{memberId} - 다른 사용자 프로필 조회
+export async function getOtherMemberProfile(memberId: string | number) {
+  const { data } = await apiClient.get<ApiResponse<MemberProfileResponse>>(
+    `${ENDPOINT}/${memberId}`,
+  );
+  return data.result;
 }
 
-// 7) DELETE /api/v1/members/{memberId}/follow - 언팔로우
+// 8) POST /api/v1/members/{memberId}/follow - 팔로우
+export async function followMember(memberId: number) {
+  await apiClient.post<ApiResponse<null>>(`${ENDPOINT}/${memberId}/follow`);
+}
+
+// 9) DELETE /api/v1/members/{memberId}/follow - 언팔로우
 export async function unfollowMember(memberId: number) {
   await apiClient.delete(`${ENDPOINT}/${memberId}/follow`);
 }

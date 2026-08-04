@@ -39,9 +39,9 @@ export function TopBar({
         )}
       </div>
 
-      {title && (
-        <p className={`${TITLE_CLASS_BY_WEIGHT[titleWeight]} truncate text-center`}>{title}</p>
-      )}
+      {/* title이 없어도 그리드 3칸(back/title/close)을 항상 채워야, close 버튼이
+          가운데(1fr) 칸으로 auto-placement 되어 왼쪽으로 밀리지 않는다. */}
+      <p className={`${TITLE_CLASS_BY_WEIGHT[titleWeight]} truncate text-center`}>{title}</p>
 
       <div className="flex items-center justify-end">
         {onClose && (

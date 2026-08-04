@@ -16,13 +16,4 @@ export type MyAllPin = {
   createdAtLabel: string;
 };
 
-export type MyProfile = {
-  nickname: string;
-  name?: string;
-  bio?: string;
-  avatarUrl: string;
-  followingCount: number;
-  followerCount: number;
-  postCount: number;
-};
 export type FollowTab = 'following' | 'follower';

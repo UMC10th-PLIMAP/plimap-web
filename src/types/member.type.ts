@@ -15,7 +15,7 @@ export type MyProfileResponse = {
   nickname: string | null;
   name: string | null;
   introduction: string | null;
-  profileImageObjectKey: string | null;
+  profileImageUrl: string | null;
   followerCount: number;
   followingCount: number;
   onboardingCompletedAt: string | null;
@@ -42,3 +42,31 @@ export type FollowListResponse = {
   hasNext: boolean;
   pageSize: number;
 };
+export type MemberProfileResponse = {
+  id: number;
+  nickname: string;
+  name: string | null;
+  introduction: string | null;
+  profileImageUrl: string | null;
+  followerCount: number;
+  followingCount: number;
+  isFollowing: boolean;
+};
+
+export type UpdateMyProfileRequest = {
+  nickname?: string;
+  name?: string;
+  introduction?: string;
+};
+
+export type UpdateMyProfileResponse = {
+  id: number;
+  nickname: string;
+  name: string;
+  introduction: string;
+  profileImageObjectKey: string;
+  updatedAt: string;
+};
+
+/** @deprecated MemberProfileResponse 사용 */
+export type OtherMemberProfileResponse = MemberProfileResponse;

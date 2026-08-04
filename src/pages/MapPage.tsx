@@ -4,9 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { SearchLauncher } from '@/components/ui/SearchInput';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
-import type { MapCoordinate, MapPlace } from '@/features/map/types';
+import type { MapCoordinate, MapPin, MapPlace, MapViewport } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
+import { useMapPins } from '@/features/map/queries/useMapPins';
+import { useAutoFocusNearestPin } from '@/features/map/hooks/useAutoFocusNearestPin';
+import { DEV_MOCK_MAP_PINS } from '@/features/map/constants/devMockMapPins';
 import { PinListSheet } from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
@@ -15,6 +18,10 @@ import { usePinCreationStore } from '@/store/pinCreationStore';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 const REGISTRATION_TOAST_DURATION_MS = 2_000;
+// mapPinsData 로딩 중(undefined)에는 매 렌더마다 새 배열 리터럴이 생기면 안 된다 -
+// useAutoFocusNearestPin이 mapPins 참조 변경을 감지해 상태를 갱신하므로, 참조가
+// 계속 바뀌면 무한 렌더 루프(React #301)가 된다.
+const EMPTY_MAP_PINS: MapPin[] = [];
 
 type RegistrationToast = {
   attempt: number;
@@ -24,6 +31,8 @@ type RegistrationToast = {
 type MapPageProps = {
   selectedMapPlace: PinSearchPlace | null;
   onClearMapPlace?: () => void;
+  selectedMapPinId: string | null;
+  onSelectMapPinChange: (pinId: string | null) => void;
 };
 
 function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
@@ -34,13 +43,32 @@ function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
     creatorName: place.creatorName,
     distance: place.distance,
     address: place.address,
+    isMine: place.isMine,
     latitude: place.coordinates.lat,
     longitude: place.coordinates.lng,
     bookmarkedByMe: place.bookmarkedByMe,
   };
 }
 
-const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) => {
+// 지도 핀 탭으로 바텀시트를 열 때는 정확한 이름/거리를 아직 모른다 - PinListSheet가
+// usePlaceDetail 응답을 받으면 그 값으로 채워준다.
+function mapPinToPlaceInfo(pin: MapPin): PlaceInfo {
+  return {
+    id: pin.id,
+    placeId: pin.placeId,
+    name: '',
+    distance: 0,
+    latitude: pin.lat,
+    longitude: pin.lng,
+  };
+}
+
+const MapPage: React.FC<MapPageProps> = ({
+  selectedMapPlace,
+  onClearMapPlace,
+  selectedMapPinId,
+  onSelectMapPinChange,
+}) => {
   const navigate = useNavigate();
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
@@ -53,7 +81,20 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
     hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
   const [currentLocation, setCurrentLocation] = useState<MapCoordinate | null>(null);
+  const [currentLocationError, setCurrentLocationError] = useState<string | null>(null);
   const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
+  const [viewport, setViewport] = useState<MapViewport | null>(null);
+  const { data: mapPinsData } = useMapPins(viewport);
+  const mapPins =
+    import.meta.env.DEV && mapPinsData !== undefined && mapPinsData.pins.length === 0
+      ? DEV_MOCK_MAP_PINS
+      : (mapPinsData?.pins ?? EMPTY_MAP_PINS);
+  // 최대 줌에서 화면 중심 근처 핀을 자동으로 포커스 (탭으로 연 시트가 있으면 그게 우선)
+  const autoFocusedPinId = useAutoFocusNearestPin({ mapPins, viewport });
+  const displayedMapPinId = selectedMapPinId ?? autoFocusedPinId;
+  const selectedMapPin = selectedMapPinId
+    ? (mapPins.find((pin) => pin.id === selectedMapPinId) ?? null)
+    : null;
   // develop 방식: selectedMapPlace prop으로 장소 결과 관리
   const placeResults = useMemo<MapPlace[]>(
     () => (selectedMapPlace ? [selectedMapPlace] : []),
@@ -86,6 +127,19 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
     startGoogleMapsLoad(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
   }, [startGoogleMapsLoad, hasApiKey]);
 
+  // 선택된 장소가 있으면 해당 위도·경도로 지도를 이동한다.
+  // 현재 위치 최초 센터링보다 우선한다.
+  useEffect(() => {
+    if (mapLoadStatus !== 'ready' || !selectedMapPlace) return;
+
+    const coordinate = selectedMapPlace.coordinates;
+    const frameId = window.requestAnimationFrame(() => {
+      mapViewerRef.current?.panTo(coordinate);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [mapLoadStatus, selectedMapPlace]);
+
   // --- 지도 로드 재시도 (실패한 스크립트 태그를 지우고 다시 요청, 클릭 핸들러이므로 동기 setState 가능) ---
   const handleRetryMapLoad = () => {
     document.getElementById('google-maps-script')?.remove();
@@ -106,6 +160,16 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
   // --- 줌(배율) 변경 핸들러 ---
   const handleZoomChange = (newZoom: number) => {
     setZoom(newZoom);
+  };
+
+  const handleCurrentLocationChanged = (coordinate: MapCoordinate) => {
+    setCurrentLocation(coordinate);
+    setCurrentLocationError(null);
+  };
+
+  // --- 지도 빈 영역 탭: 핀 탭으로 연 시트 닫기 ---
+  const handleMapClick = () => {
+    onSelectMapPinChange(null);
   };
 
   const handleRegisterSelectedPlace = () => {
@@ -215,6 +279,26 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
           open={isPlaceSheetOpen}
           onClose={() => onClearMapPlace?.()}
           place={toPlaceInfo(selectedMapPlace)}
+          detailLocation={
+            selectedMapPlace.selectionLocation ??
+            (currentLocation
+              ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
+              : null)
+          }
+          detailLocationError={currentLocationError}
+          onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
+        />
+      ) : selectedMapPin ? (
+        <PinListSheet
+          open
+          onClose={() => onSelectMapPinChange(null)}
+          place={mapPinToPlaceInfo(selectedMapPin)}
+          detailLocation={
+            currentLocation
+              ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
+              : null
+          }
+          detailLocationError={currentLocationError}
           onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
         />
       ) : null}
@@ -225,10 +309,15 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
         zoom={zoom}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
-        mapPins={[]}
-        selectedMapPinId={null}
+        mapPins={mapPins}
+        selectedMapPinId={selectedMapPlace ? null : displayedMapPinId}
+        centerOnFirstLocation={!selectedMapPlace}
         onZoomChanged={handleZoomChange}
-        onCurrentLocationChanged={setCurrentLocation}
+        onCurrentLocationChanged={handleCurrentLocationChanged}
+        onCurrentLocationError={setCurrentLocationError}
+        onViewportChanged={setViewport}
+        onSelectMapPin={onSelectMapPinChange}
+        onMapClick={handleMapClick}
       />
     </div>
   );
