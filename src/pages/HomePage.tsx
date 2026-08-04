@@ -252,10 +252,7 @@ export default function HomePage() {
               renderItem={(place) => (
                 <SavedPlaceCard
                   place={place}
-                  isRemoving={
-                    toggleBookmarkMutation.isPending &&
-                    toggleBookmarkMutation.variables?.placeId === place.placeId
-                  }
+                  isRemoving={toggleBookmarkMutation.isPending}
                   onUnbookmark={(placeId) =>
                     toggleBookmarkMutation.mutate({ placeId, bookmarked: false })
                   }
