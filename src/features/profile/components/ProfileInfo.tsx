@@ -1,7 +1,7 @@
-import type { MyProfile } from '../types';
+import type { MyProfileResponse } from '@/types/member.type';
 
 type ProfileInfoProps = {
-  profile: MyProfile;
+  profile: MyProfileResponse;
   onFollowingClick?: () => void;
   onFollowerClick?: () => void;
 };
@@ -41,8 +41,12 @@ export function ProfileInfo({ profile, onFollowingClick, onFollowerClick }: Prof
   return (
     <section className="flex flex-col items-center px-4">
       <div className="flex size-22 rounded-full overflow-hidden">
-        {profile.avatarUrl ? (
-          <img src={profile.avatarUrl} alt="프로필 이미지" className="size-full object-cover" />
+        {profile.profileImageUrl ? (
+          <img
+            src={profile.profileImageUrl}
+            alt="프로필 이미지"
+            className="size-full object-cover"
+          />
         ) : (
           <div className="size-full bg-pli-black-50" />
         )}
@@ -51,11 +55,11 @@ export function ProfileInfo({ profile, onFollowingClick, onFollowerClick }: Prof
       <div className="mt-4 flex w-full max-w-[236px] h-[46px] items-center justify-between">
         <StatItem label="팔로잉" value={profile.followingCount} onClick={onFollowingClick} />
         <StatItem label="팔로워" value={profile.followerCount} onClick={onFollowerClick} />
-        <StatItem label="게시물" value={profile.postCount} />
+        <StatItem label="게시물" value={0} />
       </div>
 
-      {profile.bio && (
-        <p className="mt-5 text-center body-15-r text-grayscale-200">{profile.bio}</p>
+      {profile.introduction && (
+        <p className="mt-5 text-center body-15-r text-grayscale-200">{profile.introduction}</p>
       )}
     </section>
   );

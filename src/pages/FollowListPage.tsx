@@ -3,9 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { TopBar } from '@/components/ui/TopBar';
 import { FollowUserRow } from '@/features/profile/components/FollowUserRow';
 import { SearchInput } from '@/components/ui/SearchInput';
-
+import { useOnboardingStore } from '@/store/onboardingStore';
 import { MOCK_FOLLOWING_USERS } from '@/features/profile/constants/mockFollowUsers';
-import { MOCK_MY_PROFILE } from '@/features/profile/constants/mockMyProfile';
+
 import type { FollowTab, FollowUser } from '@/features/profile/types';
 
 const USERS_BY_TAB: Record<FollowTab, FollowUser[]> = {
@@ -26,14 +26,11 @@ export default function FollowListPage() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const tab = getTabFromPath(pathname);
+  const nickname = useOnboardingStore((s) => s.nickname);
 
   return (
     <div className="flex flex-col">
-      <TopBar
-        title={MOCK_MY_PROFILE.nickname}
-        titleWeight="medium"
-        onBack={() => navigate('/app/my')}
-      />
+      <TopBar title={nickname} titleWeight="medium" onBack={() => navigate('/app/my')} />
 
       <div
         role="tablist"
