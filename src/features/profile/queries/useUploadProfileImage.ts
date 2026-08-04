@@ -11,7 +11,7 @@ export function useUploadProfileImage() {
     onSuccess: (data) => {
       queryClient.setQueryData<MyProfileResponse>(
         ['me'],
-        (old) => old && { ...old, profileImageObjectKey: data.objectKey },
+        (old) => old && { ...old, profileImageUrl: data.imageUrl },
       );
     },
   });

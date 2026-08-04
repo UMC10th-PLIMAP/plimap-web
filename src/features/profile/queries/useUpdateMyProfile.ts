@@ -17,7 +17,6 @@ export function useUpdateMyProfile() {
             nickname: data.nickname,
             name: data.name,
             introduction: data.introduction,
-            profileImageObjectKey: data.profileImageObjectKey,
           },
       );
     },

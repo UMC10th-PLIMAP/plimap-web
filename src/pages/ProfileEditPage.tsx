@@ -77,6 +77,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
 
   const isImageChanged = croppedImageFile !== null;
   const canSubmit = (isDirty || isImageChanged) && isValid;
+  const profileImageSrc = croppedImageUrl ?? profile.profileImageUrl;
 
   const handlePickImage = () => {
     fileInputRef.current?.click();
@@ -223,8 +224,8 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           className="relative size-22 shrink-0"
         >
           <div className="flex size-full items-center justify-center overflow-hidden rounded-full bg-pli-black-75">
-            {croppedImageUrl ? (
-              <img src={croppedImageUrl} alt="" className="size-full object-cover" />
+            {profileImageSrc ? (
+              <img src={profileImageSrc} alt="프로필 사진" className="size-full object-cover" />
             ) : (
               <UserPlaceholderIcon className="size-[52px] text-pli-black-50" />
             )}
