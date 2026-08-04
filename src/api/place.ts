@@ -14,6 +14,8 @@ import type {
   PlaceSelectionResponse,
   PlaceDetailResponse,
   PlaceBookmarkResponse,
+  PopularPlaceListRequest,
+  PopularPlaceListResponse,
 } from '@/types/place.type';
 
 const ENDPOINT = '/api/v1/places';
@@ -91,6 +93,23 @@ export async function bookmarkPlace(placeId: number): Promise<PlaceBookmarkRespo
 export async function deletePlaceBookmark(placeId: number): Promise<PlaceBookmarkResponse> {
   const { data } = await apiClient.delete<ApiResponse<PlaceBookmarkResponse>>(
     `${ENDPOINT}/${placeId}/bookmarks`,
+  );
+  return data.result;
+}
+
+/** GET /api/v1/places/popular 인기 장소 목록 조회 (NEARBY/GLOBAL, 최대 6개) */
+export async function getPopularPlaces({
+  scope,
+  latitude,
+  longitude,
+  signal,
+}: PopularPlaceListRequest & RequestOptions): Promise<PopularPlaceListResponse> {
+  const { data } = await apiClient.get<ApiResponse<PopularPlaceListResponse>>(
+    `${ENDPOINT}/popular`,
+    {
+      params: { scope, latitude, longitude },
+      signal,
+    },
   );
   return data.result;
 }
