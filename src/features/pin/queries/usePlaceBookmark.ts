@@ -1,9 +1,35 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { bookmarkPlace, deletePlaceBookmark, getPlaceDetail } from '@/api/place';
+import { bookmarkPlace, deletePlaceBookmark, getPlaceBookmarks, getPlaceDetail } from '@/api/place';
 import type { PlaceDetailResponse } from '@/types/place.type';
 
 const placeDetailQueryKey = (placeId: number) => ['pin', 'places', 'detail', placeId] as const;
+const placeBookmarkListQueryKey = ['pin', 'places', 'bookmarks'] as const;
+
+type UsePlaceBookmarksParams = {
+  latitude: number | null;
+  longitude: number | null;
+  enabled?: boolean;
+};
+
+/** 현재 위치 500m 이내 저장 장소 목록 (거리순 최대 9개) */
+export function usePlaceBookmarks({
+  latitude,
+  longitude,
+  enabled = true,
+}: UsePlaceBookmarksParams) {
+  return useQuery({
+    queryKey: [...placeBookmarkListQueryKey, { latitude, longitude }],
+    queryFn: ({ signal }) => {
+      if (latitude === null || longitude === null) {
+        throw new Error('현재 위치 정보가 필요해요.');
+      }
+      return getPlaceBookmarks({ latitude, longitude, signal });
+    },
+    enabled: enabled && latitude !== null && longitude !== null,
+    staleTime: 60_000,
+  });
+}
 
 type UsePlaceDetailParams = {
   placeId: number | null;
@@ -68,6 +94,7 @@ export function useTogglePlaceBookmark() {
     },
     onSettled: (_result, _error, request) => {
       void queryClient.invalidateQueries({ queryKey: placeDetailQueryKey(request.placeId) });
+      void queryClient.invalidateQueries({ queryKey: placeBookmarkListQueryKey });
     },
   });
 }

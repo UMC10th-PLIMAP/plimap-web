@@ -14,6 +14,8 @@ import type {
   PlaceSelectionResponse,
   PlaceDetailResponse,
   PlaceBookmarkResponse,
+  PlaceBookmarkListRequest,
+  PlaceBookmarkListResponse,
 } from '@/types/place.type';
 
 const ENDPOINT = '/api/v1/places';
@@ -91,6 +93,22 @@ export async function bookmarkPlace(placeId: number): Promise<PlaceBookmarkRespo
 export async function deletePlaceBookmark(placeId: number): Promise<PlaceBookmarkResponse> {
   const { data } = await apiClient.delete<ApiResponse<PlaceBookmarkResponse>>(
     `${ENDPOINT}/${placeId}/bookmarks`,
+  );
+  return data.result;
+}
+
+/** GET /api/v1/places/bookmarks 저장한 장소 목록 조회 (500m 이내, 거리순 최대 9개) */
+export async function getPlaceBookmarks({
+  latitude,
+  longitude,
+  signal,
+}: PlaceBookmarkListRequest & RequestOptions): Promise<PlaceBookmarkListResponse> {
+  const { data } = await apiClient.get<ApiResponse<PlaceBookmarkListResponse>>(
+    `${ENDPOINT}/bookmarks`,
+    {
+      params: { latitude, longitude },
+      signal,
+    },
   );
   return data.result;
 }

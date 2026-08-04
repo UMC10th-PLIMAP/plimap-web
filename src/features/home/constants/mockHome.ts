@@ -15,13 +15,6 @@ export type HotPlace = {
   imageSrc: string;
 };
 
-export type SavedPlace = {
-  id: string;
-  name: string;
-  creatorName: string;
-  distance: string;
-};
-
 export const MOCK_HOME_USER = {
   nickname: '1mhyori',
   currentLocation: '경기도 성남시 분당구',
@@ -88,16 +81,4 @@ export const MOCK_HOT_PLACES: readonly HotPlace[] = [
     imageSrc: RecommendationCardImage,
   },
   { id: 'hot-6', name: '세빛섬', distance: '350m', pinCount: 8, imageSrc: RecommendationCardImage },
-] as const;
-
-export const MOCK_SAVED_PLACES: readonly SavedPlace[] = [
-  { id: 'saved-1', name: '물빛무대 앞 광장', creatorName: '홍길동', distance: '470m' },
-  { id: 'saved-2', name: '뚝섬역 2호선', creatorName: '홍길동', distance: '470m' },
-  { id: 'saved-3', name: '한강서점', creatorName: '홍길동', distance: '470m' },
-  { id: 'saved-4', name: '서울숲 가족마당', creatorName: '지수', distance: '520m' },
-  { id: 'saved-5', name: '성수연방', creatorName: '민준', distance: '610m' },
-  { id: 'saved-6', name: '서울숲역 4번 출구', creatorName: '서윤', distance: '680m' },
-  { id: 'saved-7', name: '언더스탠드에비뉴', creatorName: '하늘', distance: '720m' },
-  { id: 'saved-8', name: '서울숲 거울연못', creatorName: '은우', distance: '790m' },
-  { id: 'saved-9', name: '성수동 카페거리', creatorName: '유진', distance: '840m' },
 ] as const;
