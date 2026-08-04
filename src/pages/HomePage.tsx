@@ -232,15 +232,40 @@ export default function HomePage() {
             </Chip>
           </div>
           <div className="px-[19px]">
-            <RecommendationContentCarousel
-              ariaLabel="내 주변 인기 장소"
-              items={popularPlaces}
-              getItemKey={(place) => place.placeId}
-              itemsPerPage={2}
-              showPagination
-              itemClassName="aspect-square min-w-0 flex-1 self-start"
-              renderItem={(place) => <HotPlaceCard place={place} />}
-            />
+            {currentPositionQuery.isError ? (
+              <p className="py-6 text-center body-15-r text-grayscale-500">
+                위치 정보를 확인할 수 없어요.
+              </p>
+            ) : popularPlacesQuery.isPending ? (
+              <div
+                role="status"
+                aria-label="인기 장소 불러오는 중"
+                className="flex h-[171px] items-center justify-center"
+              >
+                <span className="size-6 animate-spin rounded-full border-2 border-grayscale-700 border-t-neon-2" />
+              </div>
+            ) : popularPlacesQuery.isError ? (
+              <div className="flex flex-col items-center gap-3 py-6 text-center">
+                <p className="body-15-r text-grayscale-500">인기 장소를 불러오지 못했어요.</p>
+                <button
+                  type="button"
+                  onClick={() => void popularPlacesQuery.refetch()}
+                  className="rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100"
+                >
+                  다시 시도
+                </button>
+              </div>
+            ) : (
+              <RecommendationContentCarousel
+                ariaLabel="내 주변 인기 장소"
+                items={popularPlaces}
+                getItemKey={(place) => place.placeId}
+                itemsPerPage={2}
+                showPagination
+                itemClassName="aspect-square min-w-0 flex-1 self-start"
+                renderItem={(place) => <HotPlaceCard place={place} />}
+              />
+            )}
           </div>
         </section>
 
