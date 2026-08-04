@@ -81,6 +81,7 @@ const MapPage: React.FC<MapPageProps> = ({
     hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
   const [currentLocation, setCurrentLocation] = useState<MapCoordinate | null>(null);
+  const [currentLocationError, setCurrentLocationError] = useState<string | null>(null);
   const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
   const { data: mapPinsData } = useMapPins(viewport);
@@ -159,6 +160,11 @@ const MapPage: React.FC<MapPageProps> = ({
   // --- 줌(배율) 변경 핸들러 ---
   const handleZoomChange = (newZoom: number) => {
     setZoom(newZoom);
+  };
+
+  const handleCurrentLocationChanged = (coordinate: MapCoordinate) => {
+    setCurrentLocation(coordinate);
+    setCurrentLocationError(null);
   };
 
   // --- 지도 빈 영역 탭: 핀 탭으로 연 시트 닫기 ---
@@ -279,6 +285,7 @@ const MapPage: React.FC<MapPageProps> = ({
               ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
               : null)
           }
+          detailLocationError={currentLocationError}
           onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
         />
       ) : selectedMapPin ? (
@@ -291,6 +298,7 @@ const MapPage: React.FC<MapPageProps> = ({
               ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
               : null
           }
+          detailLocationError={currentLocationError}
           onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
         />
       ) : null}
@@ -305,7 +313,8 @@ const MapPage: React.FC<MapPageProps> = ({
         selectedMapPinId={selectedMapPlace ? null : displayedMapPinId}
         centerOnFirstLocation={!selectedMapPlace}
         onZoomChanged={handleZoomChange}
-        onCurrentLocationChanged={setCurrentLocation}
+        onCurrentLocationChanged={handleCurrentLocationChanged}
+        onCurrentLocationError={setCurrentLocationError}
         onViewportChanged={setViewport}
         onSelectMapPin={onSelectMapPinChange}
         onMapClick={handleMapClick}

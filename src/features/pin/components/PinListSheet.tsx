@@ -19,6 +19,7 @@ type PinListSheetProps = {
   onClose: () => void;
   place: PlaceInfo;
   detailLocation: PlaceSearchHistoryRequest | null;
+  detailLocationError?: string | null;
   onPinClick?: (pin: Pin) => void;
 };
 
@@ -47,6 +48,7 @@ type PinListContentProps = {
   onSortChange: (sort: PinSort) => void;
   isBookmarked: boolean;
   bookmarkStatus: BookmarkStatus;
+  detailErrorMessage: string | null;
   isBookmarkPending: boolean;
   onBookmarkToggle: () => void;
   onPinClick?: (pin: Pin) => void;
@@ -59,6 +61,7 @@ function PinListContent({
   onSortChange,
   isBookmarked,
   bookmarkStatus,
+  detailErrorMessage,
   isBookmarkPending,
   onBookmarkToggle,
   onPinClick,
@@ -88,9 +91,16 @@ function PinListContent({
 
               <div className="min-w-0">
                 <BottomSheet.Title className="block truncate head-24-sb text-grayscale-100">
-                  {place.name}
+                  {place.name ||
+                    (detailErrorMessage
+                      ? '장소 정보를 불러올 수 없어요'
+                      : '장소 정보를 불러오고 있어요')}
                 </BottomSheet.Title>
-                {place.address ? (
+                {detailErrorMessage ? (
+                  <p role="alert" className="body-15-r text-red">
+                    {detailErrorMessage}
+                  </p>
+                ) : place.address ? (
                   <p className="truncate body-15-r text-grayscale-500">{place.address}</p>
                 ) : null}
               </div>
@@ -174,6 +184,7 @@ export function PinListSheet({
   onClose,
   place,
   detailLocation,
+  detailLocationError = null,
   onPinClick,
 }: PinListSheetProps) {
   const [sort, setSort] = useState<PinSort>('POPULAR');
@@ -183,8 +194,8 @@ export function PinListSheet({
     : place.id;
   const parsedPlaceId = place.placeId ?? Number(normalizedPlaceId);
   const placeId = Number.isSafeInteger(parsedPlaceId) && parsedPlaceId > 0 ? parsedPlaceId : null;
-  const queryLatitude = detailLocation?.latitude ?? place.latitude;
-  const queryLongitude = detailLocation?.longitude ?? place.longitude;
+  const queryLatitude = detailLocation?.latitude ?? 0;
+  const queryLongitude = detailLocation?.longitude ?? 0;
   const placeDetailQuery = usePlaceDetail({
     placeId,
     latitude: detailLocation?.latitude ?? 0,
@@ -202,8 +213,14 @@ export function PinListSheet({
   };
   const bookmarkMutation = useTogglePlaceBookmark();
   const resolvedBookmarkState = placeDetailQuery.data?.bookmarkedByMe ?? place.bookmarkedByMe;
+  const detailErrorMessage =
+    detailLocation === null
+      ? detailLocationError
+      : placeDetailQuery.isError
+        ? '장소 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
+        : null;
   const bookmarkStatus: BookmarkStatus =
-    resolvedBookmarkState !== undefined ? 'ready' : placeDetailQuery.isError ? 'error' : 'loading';
+    resolvedBookmarkState !== undefined ? 'ready' : detailErrorMessage ? 'error' : 'loading';
   const isCurrentPlaceMutation = bookmarkMutation.variables?.placeId === placeId;
   const isBookmarked =
     isCurrentPlaceMutation && bookmarkMutation.isPending
@@ -214,7 +231,7 @@ export function PinListSheet({
     latitude: queryLatitude,
     longitude: queryLongitude,
     sort: sort === 'LATEST' ? 'LATEST' : 'POPULAR',
-    enabled: open,
+    enabled: open && detailLocation !== null,
   });
 
   const handleBookmarkToggle = () => {
@@ -258,6 +275,7 @@ export function PinListSheet({
           onSortChange={setSort}
           isBookmarked={isBookmarked}
           bookmarkStatus={bookmarkStatus}
+          detailErrorMessage={detailErrorMessage}
           isBookmarkPending={bookmarkMutation.isPending}
           onBookmarkToggle={handleBookmarkToggle}
           onPinClick={onPinClick}
