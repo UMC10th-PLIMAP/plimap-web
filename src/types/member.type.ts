@@ -31,7 +31,7 @@ export type FollowListItem = {
   id: number;
   nickname: string;
   name: string | null;
-  profileImageObjectKey: string | null;
+  profileImageUrl: string | null;
   followedAt: string;
   isFollowing: boolean;
 };

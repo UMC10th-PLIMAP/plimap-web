@@ -11,7 +11,11 @@ export function FollowUserRow({ user, onActionClick, disabled }: FollowUserRowPr
   return (
     <li className="flex items-center gap-[14px] ">
       <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-pli-black-75">
-        <UserPlaceholderIcon className="size-6 text-pli-black-50" />
+        {user.profileImageUrl ? (
+          <img src={user.profileImageUrl} alt="프로필 이미지" className="size-full object-cover" />
+        ) : (
+          <UserPlaceholderIcon className="size-6 text-pli-black-50" />
+        )}
       </div>
 
       <div className="min-w-0 flex-1">
