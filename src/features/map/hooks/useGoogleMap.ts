@@ -225,6 +225,12 @@ export function useGoogleMap({
       clearFlyingSuppression();
       isFlyingRef.current = true;
       flyingCancelRef.current = flyToLocation(map, position, targetZoom, () => {
+        // 마지막 프레임의 zoom_changed는 비동기라, 값이 직전 프레임과 겹치면
+        // 아예 안 올 수도 있다 - 그러면 억제가 풀린 뒤에도 zoom state가
+        // targetZoom과 어긋난 채로 남아, 나중에 zoom 동기화 effect가 지도를
+        // 그 오래된 값으로 되돌려버릴 수 있다. 이벤트에 의존하지 않고 도착
+        // 시점에 직접 동기화한다.
+        onZoomChangedRef.current?.(targetZoom);
         clearFlyingSuppression();
         onArrive?.();
       });
