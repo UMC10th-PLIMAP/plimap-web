@@ -18,7 +18,7 @@ const tagVariants = cva(
   },
 );
 
-type TagProps = React.ComponentProps<'button'> &
+type TagProps = React.ComponentPropsWithoutRef<'button'> &
   VariantProps<typeof tagVariants> & {
     variant?: 'default' | 'selected';
   };

@@ -248,7 +248,7 @@ const MapPage: React.FC<MapPageProps> = ({
         </div>
       </div>
 
-      {isPlaceSheetOpen ? (
+      {isPlaceSheetOpen && !selectedMapPlace?.focusedFeedPin ? (
         <ToastProvider duration={REGISTRATION_TOAST_DURATION_MS}>
           <div className="pointer-events-none fixed inset-x-0 bottom-[calc(50%+16px)] z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4">
             <Button
@@ -279,6 +279,7 @@ const MapPage: React.FC<MapPageProps> = ({
           open={isPlaceSheetOpen}
           onClose={() => onClearMapPlace?.()}
           place={toPlaceInfo(selectedMapPlace)}
+          focusedFeedPin={selectedMapPlace.focusedFeedPin}
           detailLocation={
             selectedMapPlace.selectionLocation ??
             (currentLocation
@@ -287,6 +288,7 @@ const MapPage: React.FC<MapPageProps> = ({
           }
           detailLocationError={currentLocationError}
           onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
+          onFocusedTrackClick={(placeTrackId) => navigate(`/app/pins/${placeTrackId}`)}
         />
       ) : selectedMapPin ? (
         <PinListSheet

@@ -9,6 +9,7 @@ import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
 import { ProfileShareDialog } from '@/features/profile/components/ProfileShareDialog';
 
+import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteMemberMe } from '@/features/pin/queries/useMemberMe';
 import { useMyProfile } from '@/features/home/hooks/useMyProfile';
 
@@ -21,7 +22,13 @@ type ShareToast = {
 export default function MyProfilePage() {
   const navigate = useNavigate();
   const { data: myProfile } = useMyProfile();
-  const { data: memberMePages } = useInfiniteMemberMe();
+  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
+  const {
+    data: memberMePages,
+    isPending: isMemberMePending,
+    isError: isMemberMeError,
+    refetch: refetchMemberMe,
+  } = useInfiniteMemberMe();
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareToast, setShareToast] = useState<ShareToast | null>(null);
 
@@ -67,6 +74,19 @@ export default function MyProfilePage() {
         <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
         <ProfilePinGrid
           pins={memberMePages?.pages.flatMap((page) => page.data) ?? []}
+          isPending={isMemberMePending}
+          isError={isMemberMeError}
+          onRetry={() => {
+            void refetchMemberMe();
+          }}
+          onPinClick={(pin) => {
+            void openPinPlaceOnMap({
+              pinId: pin.pinId,
+              fallbackPlaceName: pin.placeName,
+              isMine: true,
+              showMyRegisteredTrackCta: true,
+            });
+          }}
           onRegisterPin={() => navigate('/app')}
         />
 
