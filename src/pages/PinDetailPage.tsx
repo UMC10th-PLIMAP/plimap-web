@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { TopBar } from '@/components/ui/TopBar';
 
 import { reportPin } from '@/api/report';
+import { ReportModal } from '@/features/pin/components/ReportModal';
 import { SongFeedCard } from '@/features/pin/components/SongFeedCard';
 import { useDeleteLikedTrack } from '@/features/pin/queries/useDeleteLikedTrack';
 import { usePlaceTrackDetail } from '@/features/pin/queries/usePlaceTrackDetail';
@@ -38,6 +39,7 @@ export default function PinDetailPage() {
   const navigate = useNavigate();
   const { pinId } = useParams<{ pinId: string }>();
   const [sort, setSort] = useState<PinSort>('LATEST');
+  const [reportFeedId, setReportFeedId] = useState<string | null>(null);
 
   const { data: pinDetail } = usePlaceTrackDetail({
     placeTrackId: pinId,
@@ -124,7 +126,7 @@ export default function PinDetailPage() {
 
       <div className="flex flex-col gap-4 px-[11px] pt-[17.5px] pb-[env(safe-area-inset-bottom)]">
         {pins.map((entry) => (
-          <SongFeedCard key={entry.id} entry={entry} />
+          <SongFeedCard key={entry.id} entry={entry} onReport={setReportFeedId} />
         ))}
       </div>
 
