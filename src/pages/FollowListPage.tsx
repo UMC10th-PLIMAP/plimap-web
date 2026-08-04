@@ -63,21 +63,23 @@ export default function FollowListPage() {
     ? users.filter((user) => user.nickname.toLowerCase().includes(trimmedKeyword.toLowerCase()))
     : users;
 
-  const {
-    mutate: toggleFollow,
-    isPending: isToggling,
-    variables: toggleVariables,
-  } = useToggleFollow();
+  const { mutateAsync: toggleFollow } = useToggleFollow();
+  const [pendingMemberIds, setPendingMemberIds] = useState<Set<number>>(new Set());
 
-  const handleActionClick = (target: FollowListItem) => {
-    toggleFollow(
-      { memberId: target.id, isFollowing: target.isFollowing },
-      {
-        onError: (error) => {
-          alert(error instanceof ApiError ? error.message : FOLLOW_TOGGLE_FAILED_MESSAGE);
-        },
-      },
-    );
+  const handleActionClick = async (target: FollowListItem) => {
+    setPendingMemberIds((prev) => new Set(prev).add(target.id));
+
+    try {
+      await toggleFollow({ memberId: target.id, isFollowing: target.isFollowing });
+    } catch (error) {
+      alert(error instanceof ApiError ? error.message : FOLLOW_TOGGLE_FAILED_MESSAGE);
+    } finally {
+      setPendingMemberIds((prev) => {
+        const next = new Set(prev);
+        next.delete(target.id);
+        return next;
+      });
+    }
   };
 
   const loadMoreRef = useInfiniteScroll(
@@ -149,7 +151,7 @@ export default function FollowListPage() {
                 key={user.id}
                 user={user}
                 onActionClick={handleActionClick}
-                disabled={isToggling && toggleVariables?.memberId === user.id}
+                disabled={pendingMemberIds.has(user.id)}
               />
             ))}
           </ul>
