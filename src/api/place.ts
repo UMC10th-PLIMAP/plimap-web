@@ -16,6 +16,8 @@ import type {
   PlaceBookmarkResponse,
   PopularPlaceListRequest,
   PopularPlaceListResponse,
+  PlaceBookmarkListRequest,
+  PlaceBookmarkListResponse,
 } from '@/types/place.type';
 
 const ENDPOINT = '/api/v1/places';
@@ -108,6 +110,22 @@ export async function getPopularPlaces({
     `${ENDPOINT}/popular`,
     {
       params: { scope, latitude, longitude },
+      signal,
+    },
+  );
+  return data.result;
+}
+
+/** GET /api/v1/places/bookmarks 저장한 장소 목록 조회 (500m 이내, 거리순 최대 9개) */
+export async function getPlaceBookmarks({
+  latitude,
+  longitude,
+  signal,
+}: PlaceBookmarkListRequest & RequestOptions): Promise<PlaceBookmarkListResponse> {
+  const { data } = await apiClient.get<ApiResponse<PlaceBookmarkListResponse>>(
+    `${ENDPOINT}/bookmarks`,
+    {
+      params: { latitude, longitude },
       signal,
     },
   );

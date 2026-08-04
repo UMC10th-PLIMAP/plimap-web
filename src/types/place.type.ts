@@ -102,6 +102,22 @@ export type PopularPlaceListRequest = {
   longitude: number;
 };
 
+export type PlaceBookmarkListItem = {
+  placeId: number;
+  placeName: string;
+  firstPinCreatorNickname: string | null;
+  distanceMeters: number;
+};
+
+export type PlaceBookmarkListResponse = {
+  items: PlaceBookmarkListItem[];
+};
+
+export type PlaceBookmarkListRequest = {
+  latitude: number;
+  longitude: number;
+};
+
 export type PlaceMapSelectionRequest = {
   latitude: number;
   longitude: number;

@@ -26,10 +26,25 @@ export type MemberProfileResponse = {
   nickname: string;
   name: string | null;
   introduction: string | null;
-  profileImageObjectKey: string | null;
+  profileImageUrl: string | null;
   followerCount: number;
   followingCount: number;
   isFollowing: boolean;
+};
+
+export type UpdateMyProfileRequest = {
+  nickname?: string;
+  name?: string;
+  introduction?: string;
+};
+
+export type UpdateMyProfileResponse = {
+  id: number;
+  nickname: string;
+  name: string;
+  introduction: string;
+  profileImageObjectKey: string;
+  updatedAt: string;
 };
 
 /** @deprecated MemberProfileResponse 사용 */

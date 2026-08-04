@@ -5,6 +5,8 @@ import type {
   MyProfileResponse,
   NicknameCheckResponse,
   ProfileImageUploadResponse,
+  UpdateMyProfileRequest,
+  UpdateMyProfileResponse,
 } from '@/types/member.type';
 
 const ENDPOINT = '/api/v1/members';
@@ -36,7 +38,15 @@ export async function getMyProfile() {
   return data.result;
 }
 
-// 7) GET /api/v1/members/{memberId} - 다른 사용자 프로필 조회
+// 4) PATCH /api/v1/members/me - 내 프로필 수정
+export async function updateMyProfile(payload: UpdateMyProfileRequest) {
+  const { data } = await apiClient.patch<ApiResponse<UpdateMyProfileResponse>>(
+    `${ENDPOINT}/me`,
+    payload,
+  );
+  return data.result;
+}
+// 5) GET /api/v1/members/{memberId} - 다른 사용자 프로필 조회
 export async function getOtherMemberProfile(memberId: string | number) {
   const { data } = await apiClient.get<ApiResponse<MemberProfileResponse>>(
     `${ENDPOINT}/${memberId}`,

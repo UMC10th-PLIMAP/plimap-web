@@ -6,18 +6,14 @@ import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { Chip } from '@/components/ui/chip';
-import {
-  MOCK_FRIEND_PINS,
-  MOCK_HOME_USER,
-  MOCK_SAVED_PLACES,
-  type SavedPlace,
-} from '@/features/home/constants/mockHome';
+import { MOCK_FRIEND_PINS, MOCK_HOME_USER } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
 import { useMyProfile } from '@/features/home/hooks/useMyProfile';
 import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
+import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
-import type { PopularPlaceItem } from '@/types/place.type';
+import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
 function HomeLoadingState() {
   return (
@@ -85,23 +81,38 @@ function HotPlaceCard({ place }: { place: PopularPlaceItem }) {
   );
 }
 
-function SavedPlaceCard({ place }: { place: SavedPlace }) {
+type SavedPlaceCardProps = {
+  place: PlaceBookmarkListItem;
+  isRemoving: boolean;
+  onUnbookmark: (placeId: number) => void;
+};
+
+function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps) {
   return (
     <article className="flex h-[88px] w-full items-center justify-between rounded-xl bg-pli-black-85 px-5">
       <button type="button" className="min-w-0 text-left">
         <span className="flex min-w-0 items-center text-grayscale-100">
-          <span className="truncate body-17-m">{place.name}</span>
+          <span className="truncate body-17-m">{place.placeName}</span>
           <NextIcon aria-hidden className="size-5 shrink-0" />
         </span>
         <span className="mt-1 block truncate body-15-m text-grayscale-500">
-          <span className="text-grayscale-300">{place.creatorName}</span> 님이 생성한 핀 ·{' '}
-          {place.distance}
+          {place.firstPinCreatorNickname ? (
+            <>
+              <span className="text-grayscale-300">{place.firstPinCreatorNickname}</span> 님이
+              생성한 핀 ·{' '}
+            </>
+          ) : (
+            '생성되지 않음 · '
+          )}
+          {formatDistanceMeters(place.distanceMeters)}
         </span>
       </button>
       <button
         type="button"
-        aria-label={`${place.name} 북마크 해제`}
-        className="ml-4 flex size-[52px] shrink-0 items-center justify-center rounded-full bg-pli-black-100"
+        aria-label={`${place.placeName} 북마크 해제`}
+        disabled={isRemoving}
+        onClick={() => onUnbookmark(place.placeId)}
+        className="ml-4 flex size-[52px] shrink-0 items-center justify-center rounded-full bg-pli-black-100 disabled:opacity-50"
       >
         <BookmarkActiveIcon aria-hidden className="size-6" />
       </button>
@@ -119,6 +130,12 @@ export default function HomePage() {
     longitude: currentPositionQuery.data?.longitude ?? null,
   });
   const popularPlaces = popularPlacesQuery.data?.items ?? [];
+  const savedPlacesQuery = usePlaceBookmarks({
+    latitude: currentPositionQuery.data?.latitude ?? null,
+    longitude: currentPositionQuery.data?.longitude ?? null,
+  });
+  const toggleBookmarkMutation = useTogglePlaceBookmark();
+  const savedPlaces = savedPlacesQuery.data?.items ?? [];
 
   if (myProfileQuery.isPending) {
     return <HomeLoadingState />;
@@ -227,21 +244,31 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="flex flex-col gap-5 px-4">
-          <h2 className="text-[22px] leading-[1.4] font-medium text-white">
-            저장해둔 장소, 지금 근처예요!
-          </h2>
-          <RecommendationContentCarousel
-            ariaLabel="가까운 저장 장소"
-            items={MOCK_SAVED_PLACES}
-            getItemKey={(place) => place.id}
-            itemsPerPage={3}
-            showPagination
-            pageClassName="flex-col gap-4"
-            itemClassName="w-full"
-            renderItem={(place) => <SavedPlaceCard place={place} />}
-          />
-        </section>
+        {savedPlaces.length > 0 ? (
+          <section className="flex flex-col gap-5 px-4">
+            <h2 className="text-[22px] leading-[1.4] font-medium text-white">
+              저장해둔 장소, 지금 근처예요!
+            </h2>
+            <RecommendationContentCarousel
+              ariaLabel="가까운 저장 장소"
+              items={savedPlaces}
+              getItemKey={(place) => place.placeId}
+              itemsPerPage={3}
+              showPagination
+              pageClassName="flex-col gap-4"
+              itemClassName="w-full"
+              renderItem={(place) => (
+                <SavedPlaceCard
+                  place={place}
+                  isRemoving={toggleBookmarkMutation.isPending}
+                  onUnbookmark={(placeId) =>
+                    toggleBookmarkMutation.mutate({ placeId, bookmarked: false })
+                  }
+                />
+              )}
+            />
+          </section>
+        ) : null}
       </div>
     </main>
   );

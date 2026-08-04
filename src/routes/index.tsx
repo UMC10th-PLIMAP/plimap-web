@@ -12,6 +12,7 @@ import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import WelcomePage from '@/pages/WelcomePage';
 
 import MyProfilePage from '@/pages/MyProfilePage';
+import ProfileEditPage from '@/pages/ProfileEditPage';
 import MyPlimapPage from '@/pages/MyPlimapPage';
 import MyNotificationsPage from '@/pages/MyNotificationsPage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
@@ -118,10 +119,6 @@ export const router = createBrowserRouter([
             element: <WelcomePage />,
           },
           {
-            path: 'pin/search',
-            element: <PinPlaceSearchPage />,
-          },
-          {
             path: 'pins/:pinId',
             element: <PinDetailPage />,
           },
@@ -132,6 +129,14 @@ export const router = createBrowserRouter([
           {
             path: 'song/detail/:songId',
             element: <SongDetailPage />,
+          },
+          {
+            path: 'my',
+            element: <MyProfilePage />,
+          },
+          {
+            path: 'my/edit',
+            element: <ProfileEditPage />,
           },
           {
             path: 'my/following',
