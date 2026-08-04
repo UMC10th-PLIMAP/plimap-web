@@ -9,14 +9,15 @@ import { Chip } from '@/components/ui/chip';
 import {
   MOCK_FRIEND_PINS,
   MOCK_HOME_USER,
-  MOCK_HOT_PLACES,
   MOCK_SAVED_PLACES,
-  type HotPlace,
   type SavedPlace,
 } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
 import { useMyProfile } from '@/features/home/hooks/useMyProfile';
+import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
+import { useCurrentPosition } from '@/hooks/useCurrentPosition';
+import type { PopularPlaceItem } from '@/types/place.type';
 
 function HomeLoadingState() {
   return (
@@ -45,22 +46,39 @@ function HomeErrorState({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function HotPlaceCard({ place }: { place: HotPlace }) {
+function formatDistanceMeters(distanceMeters: number) {
+  const normalizedDistance = Math.max(0, distanceMeters);
+
+  if (normalizedDistance >= 1000) {
+    const kilometers = normalizedDistance / 1000;
+    return `${Number.isInteger(kilometers) ? kilometers : kilometers.toFixed(1)}km`;
+  }
+
+  return `${Math.round(normalizedDistance)}m`;
+}
+
+function HotPlaceCard({ place }: { place: PopularPlaceItem }) {
+  const distance = formatDistanceMeters(place.distanceMeters);
+
   return (
     <button
       type="button"
-      aria-label={`${place.name}, ${place.distance}, ${place.pinCount}개의 핀`}
+      aria-label={`${place.placeName}, ${distance}, ${place.pinCount}개의 핀`}
       className="relative block size-full overflow-hidden rounded-xl border border-pli-black-50 text-left"
     >
-      <img src={place.imageSrc} alt="" className="size-full object-cover" />
+      {place.representativeImageUrl ? (
+        <img src={place.representativeImageUrl} alt="" className="size-full object-cover" />
+      ) : (
+        <span aria-hidden className="block size-full bg-pli-black-75" />
+      )}
       <span className="absolute inset-0 bg-gradient-to-b from-transparent from-[33%] to-pli-black-100 to-[92%]" />
       <span className="absolute inset-x-3 bottom-3 flex min-w-0 flex-col">
         <span className="flex min-w-0 items-center text-grayscale-100">
-          <span className="truncate body-17-m">{place.name}</span>
+          <span className="truncate body-17-m">{place.placeName}</span>
           <NextIcon aria-hidden className="size-5 shrink-0" />
         </span>
         <span className="truncate body-15-r text-grayscale-500">
-          {place.distance} · {place.pinCount}개의 핀
+          {distance} · {place.pinCount}개의 핀
         </span>
       </span>
     </button>
@@ -94,6 +112,13 @@ function SavedPlaceCard({ place }: { place: SavedPlace }) {
 export default function HomePage() {
   const [hotPlaceFilter, setHotPlaceFilter] = useState<'nearby' | 'popular'>('nearby');
   const myProfileQuery = useMyProfile();
+  const currentPositionQuery = useCurrentPosition();
+  const popularPlacesQuery = usePopularPlaces({
+    scope: hotPlaceFilter === 'nearby' ? 'NEARBY' : 'GLOBAL',
+    latitude: currentPositionQuery.data?.latitude ?? null,
+    longitude: currentPositionQuery.data?.longitude ?? null,
+  });
+  const popularPlaces = popularPlacesQuery.data?.items ?? [];
 
   if (myProfileQuery.isPending) {
     return <HomeLoadingState />;
@@ -192,8 +217,8 @@ export default function HomePage() {
           <div className="px-[19px]">
             <RecommendationContentCarousel
               ariaLabel="내 주변 인기 장소"
-              items={MOCK_HOT_PLACES}
-              getItemKey={(place) => place.id}
+              items={popularPlaces}
+              getItemKey={(place) => place.placeId}
               itemsPerPage={2}
               showPagination
               itemClassName="aspect-square min-w-0 flex-1 self-start"
