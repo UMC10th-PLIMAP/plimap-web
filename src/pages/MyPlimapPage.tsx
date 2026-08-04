@@ -1,18 +1,24 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 
+import { getPlaceDetail } from '@/api/place';
+import { getPinDetail } from '@/api/pin';
 import { TopBar } from '@/components/ui/TopBar';
 import { MyAllPinsCard } from '@/features/profile/components/MyAllPinsCard';
 import { MyPlimapTabs } from '@/features/profile/components/MyPlimapTabs';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { useLikeTrack } from '@/features/pin/queries/useLikeTrack';
 import { useInfiniteMyPins } from '@/features/pin/queries/useMyPins';
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import type { PinSearchPlace } from '@/features/pin/types';
 import type { MyPlimapTab } from '@/features/profile/types';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import type { AppOutletContext } from '@/layouts/RootLayout';
 
 export default function MyPlimapPage() {
   const navigate = useNavigate();
+  const { selectMapPlace } = useOutletContext<AppOutletContext>();
   const [tab, setTab] = useState<MyPlimapTab>('liked');
+  const [isNavigatingToMap, setIsNavigatingToMap] = useState(false);
   const { data: myPins } = useInfiniteMyPins();
   const {
     data: likedTracks,
@@ -37,6 +43,42 @@ export default function MyPlimapPage() {
     },
   );
 
+  const handlePlaceClick = async (pinId: number, fallbackPlaceName: string) => {
+    if (isNavigatingToMap) return;
+
+    setIsNavigatingToMap(true);
+    try {
+      const pinDetail = await getPinDetail(String(pinId));
+      const placeDetail = await getPlaceDetail({
+        placeId: pinDetail.placeId,
+        latitude: pinDetail.latitude,
+        longitude: pinDetail.longitude,
+      });
+
+      const place: PinSearchPlace = {
+        id: `place:${placeDetail.placeId}`,
+        placeId: placeDetail.placeId,
+        placeName: placeDetail.placeName || fallbackPlaceName,
+        category: placeDetail.category ?? '',
+        address: placeDetail.address,
+        distance: placeDetail.distanceMeters,
+        creatorName: pinDetail.writerNickname,
+        bookmarkedByMe: placeDetail.bookmarkedByMe,
+        isMine: true,
+        coordinates: {
+          lat: pinDetail.latitude,
+          lng: pinDetail.longitude,
+        },
+      };
+
+      selectMapPlace(place);
+      navigate('/app');
+    } catch (error) {
+      console.error(error);
+      setIsNavigatingToMap(false);
+    }
+  };
+
   return (
     <div className="flex min-h-full flex-col">
       <TopBar onBack={() => navigate(-1)} title="내 PLIMAP" titleWeight="medium" />
@@ -60,7 +102,7 @@ export default function MyPlimapPage() {
                   createdAtLabel: pin.staticCreatedAt,
                 }}
                 onPlaceClick={() => {
-                  // TODO: 장소 상세/맵 이동 연결
+                  void handlePlaceClick(pin.pinId, pin.placeName);
                 }}
                 onMoreClick={() => {
                   // TODO: 더보기 메뉴 연결

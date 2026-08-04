@@ -36,6 +36,7 @@ function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
     creatorName: place.creatorName,
     distance: place.distance,
     address: place.address,
+    isMine: place.isMine,
     latitude: place.coordinates.lat,
     longitude: place.coordinates.lng,
     bookmarkedByMe: place.bookmarkedByMe,
@@ -94,6 +95,19 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
     if (!hasApiKey) return;
     startGoogleMapsLoad(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
   }, [startGoogleMapsLoad, hasApiKey]);
+
+  // 선택된 장소가 있으면 해당 위도·경도로 지도를 이동한다.
+  // 현재 위치 최초 센터링보다 우선한다.
+  useEffect(() => {
+    if (mapLoadStatus !== 'ready' || !selectedMapPlace) return;
+
+    const coordinate = selectedMapPlace.coordinates;
+    const frameId = window.requestAnimationFrame(() => {
+      mapViewerRef.current?.panTo(coordinate);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [mapLoadStatus, selectedMapPlace]);
 
   // --- 지도 로드 재시도 (실패한 스크립트 태그를 지우고 다시 요청, 클릭 핸들러이므로 동기 setState 가능) ---
   const handleRetryMapLoad = () => {
@@ -236,6 +250,7 @@ const MapPage: React.FC<MapPageProps> = ({ selectedMapPlace, onClearMapPlace }) 
         selectedPlaceId={selectedPlaceId}
         mapPins={mapPins}
         selectedMapPinId={selectedMapPinId}
+        centerOnFirstLocation={!selectedMapPlace}
         onZoomChanged={handleZoomChange}
         onCurrentLocationChanged={setCurrentLocation}
         onViewportChanged={setViewport}

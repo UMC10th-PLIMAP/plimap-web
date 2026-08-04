@@ -6,6 +6,7 @@ import type {
   GetPlaceTrackPinsResponse,
   LikeCountResponse,
   GetMyPinsResponse,
+  PinDetailResponse,
   PinSort,
 } from '@/features/pin/types';
 import type { MapPin } from '@/features/map/types';
@@ -86,6 +87,12 @@ export async function deletePinLike(pinId: string): Promise<LikeCountResponse> {
   const { data } = await apiClient.delete<ApiResponse<LikeCountResponse>>(
     `/api/v1/pins/${pinId}/likes`,
   );
+  return data.result;
+}
+
+// 5) GET /api/v1/pins/{pinId} - PIN 상세 보기
+export async function getPinDetail(pinId: string): Promise<PinDetailResponse> {
+  const { data } = await apiClient.get<ApiResponse<PinDetailResponse>>(`/api/v1/pins/${pinId}`);
   return data.result;
 }
 // 8) GET /api/v1/place-tracks/{placeTrackId}/pins - 특정 장소 노래의 PIN 목록 조회
