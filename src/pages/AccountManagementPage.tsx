@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
-import { ConfirmAlertDialog } from '@/features/settings/components/ConfirmAlertDialog';
 import { SettingsRow } from '@/features/settings/components/SettingsRow';
+import { WithdrawConfirmDialog } from '@/features/settings/components/WithdrawConfirmDialog';
 
 export default function AccountManagementPage() {
   const navigate = useNavigate();
@@ -30,17 +30,10 @@ export default function AccountManagementPage() {
         </div>
       </div>
 
-      <ConfirmAlertDialog
+      <WithdrawConfirmDialog
         open={isWithdrawDialogOpen}
         onClose={() => setIsWithdrawDialogOpen(false)}
-        title="회원 탈퇴"
-        message={
-          '정말 탈퇴하시겠어요? \n탈퇴 시 기존의 모든 데이터와 이용 내역이 삭제되며 복구할 수 없습니다.'
-        }
-        actions={[
-          { label: '회원 탈퇴', onClick: handleWithdraw, tone: 'danger' },
-          { label: '취소', onClick: () => setIsWithdrawDialogOpen(false) },
-        ]}
+        onConfirm={handleWithdraw}
       />
     </div>
   );
