@@ -22,6 +22,8 @@ const MapLayout = () => {
       <MapPage
         selectedMapPlace={appContext.selectedMapPlace}
         onClearMapPlace={() => appContext.selectMapPlace(null)}
+        selectedMapPinId={appContext.selectedMapPinId}
+        onSelectMapPinChange={appContext.selectMapPin}
       />
 
       {hasMapOverlay && outlet ? (

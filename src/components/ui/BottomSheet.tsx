@@ -84,6 +84,8 @@ type BottomSheetProps = {
    * 마지막 지점(끝까지 올림)에 도달하면 페이지 형식으로 전환된다.
    */
   snapPoints?: SnapPoint[];
+  /** 처음 열릴 때(및 풀페이지에서 뒤로가기 시) 돌아갈 스냅 지점. 생략하면 snapPoints의 첫 값을 쓴다. */
+  defaultSnapPoint?: SnapPoint;
   className?: string;
 };
 
@@ -98,9 +100,10 @@ function BottomSheet({
   showHandle = true,
   dismissible = true,
   snapPoints = DEFAULT_SNAP_POINTS,
+  defaultSnapPoint,
   className,
 }: BottomSheetProps) {
-  const firstSnap = snapPoints[0] ?? null;
+  const firstSnap = defaultSnapPoint ?? snapPoints[0] ?? null;
   const lastSnap = snapPoints[snapPoints.length - 1];
   const [activeSnap, setActiveSnap] = React.useState<SnapPoint | null>(firstSnap);
   const [prevOpen, setPrevOpen] = React.useState(open);
