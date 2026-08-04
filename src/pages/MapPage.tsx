@@ -18,6 +18,10 @@ import { usePinCreationStore } from '@/store/pinCreationStore';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 const REGISTRATION_TOAST_DURATION_MS = 2_000;
+// mapPinsData 로딩 중(undefined)에는 매 렌더마다 새 배열 리터럴이 생기면 안 된다 -
+// useAutoFocusNearestPin이 mapPins 참조 변경을 감지해 상태를 갱신하므로, 참조가
+// 계속 바뀌면 무한 렌더 루프(React #301)가 된다.
+const EMPTY_MAP_PINS: MapPin[] = [];
 
 type RegistrationToast = {
   attempt: number;
@@ -82,7 +86,7 @@ const MapPage: React.FC<MapPageProps> = ({
   const mapPins =
     import.meta.env.DEV && mapPinsData !== undefined && mapPinsData.pins.length === 0
       ? DEV_MOCK_MAP_PINS
-      : (mapPinsData?.pins ?? []);
+      : (mapPinsData?.pins ?? EMPTY_MAP_PINS);
   // 최대 줌에서 화면 중심 근처 핀을 자동으로 포커스 (탭으로 연 시트가 있으면 그게 우선)
   const autoFocusedPinId = useAutoFocusNearestPin({ mapPins, viewport });
   const displayedMapPinId = selectedMapPinId ?? autoFocusedPinId;
