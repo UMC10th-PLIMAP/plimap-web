@@ -1,4 +1,4 @@
-const FLY_TO_DURATION_MS = 450;
+export const FLY_TO_DURATION_MS = 450;
 
 const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t);
 
@@ -10,6 +10,7 @@ export function flyToLocation(
   map: google.maps.Map,
   position: google.maps.LatLngLiteral,
   targetZoom: number,
+  onArrive?: () => void,
 ): () => void {
   const startZoom = map.getZoom() ?? targetZoom;
   const startCenter = map.getCenter();
@@ -32,6 +33,8 @@ export function flyToLocation(
 
     if (t < 1) {
       frameId = requestAnimationFrame(step);
+    } else {
+      onArrive?.();
     }
   };
 

@@ -1,4 +1,4 @@
-import type { PlaceSearchSource } from '@/types/place.type';
+import type { PlaceSearchHistoryRequest, PlaceSearchSource } from '@/types/place.type';
 
 // --------------------------------------------------
 
@@ -92,11 +92,64 @@ export type GetPlaybackPreparationsResponse = {
   previewUrl: string;
   durationMs: number;
 };
+
+export type GetPlaceTrackPinsResponse = {
+  data: {
+    pinId: number;
+    writerNickname: string;
+    writerProfileImage: string;
+    introduction: string;
+    tags: string[];
+    clipStartMs: number;
+    likeCount: number;
+    userLike: boolean;
+    staticCreatedAt: string;
+    createdAt: string;
+  }[];
+  nextCursor: string;
+  hasNext: boolean;
+  pageSize: number;
+};
+
+export type LikeCountResponse = {
+  pinCount: number;
+};
+
+export type GetMyPinsResponse = {
+  data: {
+    pinId: number;
+    albumImageUrl: string;
+    trackTitle: string;
+    artist: string;
+    placeName: string;
+    introduction: string;
+    tags: string[];
+    staticCreatedAt: string;
+    createdAt: string;
+  }[];
+  nextCursor: string;
+  hasNext: boolean;
+  pageSize: number;
+};
+
+export type PinDetailResponse = {
+  placeId: number;
+  latitude: number;
+  longitude: number;
+  writerNickname: string;
+  writerProfileImage: string;
+  introduction: string;
+  albumImageUrl: string;
+  youtubeVideoId: string;
+  clipStartMs: number;
+};
+
 // --------------------------------------------------
 export type PinSort = 'POPULAR' | 'LATEST';
 
 export type PlaceInfo = {
   id: string;
+  placeId?: number;
   name: string;
   creatorName?: string;
   distance: number;
@@ -104,6 +157,7 @@ export type PlaceInfo = {
   isMine?: boolean;
   latitude: number;
   longitude: number;
+  bookmarkedByMe?: boolean;
 };
 
 /** PinCard — 찜한 곡 API와 동일 shape (+ UI 전용 옵션) */
@@ -159,6 +213,12 @@ export type PlaceResult = {
 };
 
 export type PinSearchPlace = PlaceResult & {
+  placeId?: number;
+  bookmarkedByMe?: boolean;
+  isMine?: boolean;
+  source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
+  withinAccessRange?: boolean;
+  selectionLocation?: PlaceSearchHistoryRequest;
   coordinates: {
     lat: number;
     lng: number;

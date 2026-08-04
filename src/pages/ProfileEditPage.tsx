@@ -66,7 +66,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
 
   const { nicknameField, nameField, introductionField, isDirty, isValid, buildPayload } =
     useProfileEditForm({
-      nickname: profile.nickname,
+      nickname: profile.nickname ?? '',
       name: profile.name ?? '',
       introduction: profile.introduction ?? '',
     });

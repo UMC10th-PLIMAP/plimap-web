@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import type { MyProfile } from '../types';
+import type { MyProfileResponse } from '@/types/member.type';
 
 type ProfileInfoProps = {
-  profile: MyProfile;
+  myProfile: MyProfileResponse;
   onClick?: () => void;
 };
 
@@ -27,34 +27,38 @@ function StatItem({
   );
 }
 
-export function ProfileInfo({ profile }: ProfileInfoProps) {
+export function ProfileInfo({ myProfile }: ProfileInfoProps) {
   const navigate = useNavigate();
   return (
     <section className="flex flex-col items-center px-4">
-      <div className="flex size-22 rounded-full">
-        {profile.avatarUrl ? (
-          <img src={profile.avatarUrl} alt="프로필 이미지" className="size-full object-cover" />
+      <div className="flex size-22 rounded-full overflow-hidden">
+        {myProfile.profileImageUrl ? (
+          <img
+            src={myProfile.profileImageUrl}
+            alt="프로필 이미지"
+            className="size-full object-cover rounded-full"
+          />
         ) : (
           <div className="size-full  bg-pli-black-50" />
         )}
       </div>
-      {profile.name && <p className="mt-2.5 body-16-r text-grayscale-500">{profile.name}</p>}
+      {myProfile.name && <p className="mt-2.5 body-16-r text-grayscale-500">{myProfile.name}</p>}
       <div className="mt-4 flex w-full max-w-[236px] h-[46px] items-center justify-between">
         <StatItem
           label="팔로잉"
-          value={profile.followingCount}
+          value={myProfile.followingCount}
           onClick={() => navigate('/app/my/following')}
         />
         <StatItem
           label="팔로워"
-          value={profile.followerCount}
+          value={myProfile.followingCount}
           onClick={() => navigate('/app/my/followers')}
         />
-        <StatItem label="게시물" value={profile.postCount} />
+        <StatItem label="게시물" value={0} />
       </div>
 
-      {profile.bio && (
-        <p className="mt-5 text-center body-15-r text-grayscale-200">{profile.bio}</p>
+      {myProfile.introduction && (
+        <p className="mt-5 text-center body-15-r text-grayscale-200">{myProfile.introduction}</p>
       )}
     </section>
   );

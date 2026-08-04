@@ -12,7 +12,7 @@ export function useGetPlaybackPreparations({
 }: UseGetPlaybackPreparationsParams = {}) {
   return useQuery({
     queryKey: ['pin', 'playbackPreparations', itunesTrackId],
-    queryFn: () => getPlaybackPreparations(itunesTrackId!),
-    enabled: enabled && Boolean(itunesTrackId),
+    queryFn: () => getPlaybackPreparations(Number(itunesTrackId)),
+    enabled: enabled && Boolean(itunesTrackId) && !isNaN(Number(itunesTrackId)),
   });
 }

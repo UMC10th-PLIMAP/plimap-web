@@ -1,40 +1,26 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 
+import { getPlaceDetail } from '@/api/place';
+import { getPinDetail } from '@/api/pin';
 import { TopBar } from '@/components/ui/TopBar';
 import { MyAllPinsCard } from '@/features/profile/components/MyAllPinsCard';
 import { MyPlimapTabs } from '@/features/profile/components/MyPlimapTabs';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { useLikeTrack } from '@/features/pin/queries/useLikeTrack';
+import { useInfiniteMyPins } from '@/features/pin/queries/useMyPins';
+import type { PinSearchPlace } from '@/features/pin/types';
+import type { MyPlimapTab } from '@/features/profile/types';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
-import type { MyAllPin, MyPlimapTab } from '@/features/profile/types';
-
-const MOCK_MY_ALL_PINS: MyAllPin[] = [
-  {
-    id: '1',
-    placeName: '서울특별시 강남구 영동대로 513',
-    albumImageUrl: 'https://picsum.photos/seed/plimap-pin-1/200',
-    trackName: '밤편지',
-    artistName: '아이유',
-    content: '지우고 널 지우려 해봐도\n가슴 한켠에 남아서\n자꾸 니가 떠올라\n또 하루를 넘겨',
-    tags: ['감성'],
-    createdAtLabel: '방금',
-  },
-  {
-    id: '2',
-    placeName: '뚝섬 한강공원',
-    albumImageUrl: 'https://picsum.photos/seed/plimap-pin-2/200',
-    trackName: '밤편지',
-    artistName: '아이유',
-    content: '지우고 널 지우려 해봐도\n가슴 한켠에 남아서\n자꾸 니가 떠올라\n또 하루를 넘겨',
-    tags: ['감성'],
-    createdAtLabel: '방금',
-  },
-];
+import { getCurrentPosition } from '@/utils/geolocation';
+import type { AppOutletContext } from '@/layouts/RootLayout';
 
 export default function MyPlimapPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<MyPlimapTab>('all');
+  const { selectMapPlace } = useOutletContext<AppOutletContext>();
+  const [tab, setTab] = useState<MyPlimapTab>('liked');
+  const [isNavigatingToMap, setIsNavigatingToMap] = useState(false);
+  const { data: myPins } = useInfiniteMyPins();
   const {
     data: likedTracks,
     fetchNextPage,
@@ -45,6 +31,7 @@ export default function MyPlimapPage() {
     enabled: tab === 'liked',
   });
 
+  const pins = myPins?.pages.flatMap((page) => page.data) ?? [];
   const tracks = likedTracks?.pages.flatMap((page) => page.tracks) ?? [];
 
   const loadMoreRef = useInfiniteScroll(
@@ -57,6 +44,47 @@ export default function MyPlimapPage() {
     },
   );
 
+  const handlePlaceClick = async (pinId: number, fallbackPlaceName: string) => {
+    if (isNavigatingToMap) return;
+
+    setIsNavigatingToMap(true);
+    try {
+      const pinDetail = await getPinDetail(String(pinId));
+      const positionResult = await getCurrentPosition();
+      const userCoordinate = positionResult.ok
+        ? positionResult.coordinate
+        : { lat: pinDetail.latitude, lng: pinDetail.longitude };
+
+      const placeDetail = await getPlaceDetail({
+        placeId: pinDetail.placeId,
+        latitude: userCoordinate.lat,
+        longitude: userCoordinate.lng,
+      });
+
+      const place: PinSearchPlace = {
+        id: `place:${placeDetail.placeId}`,
+        placeId: placeDetail.placeId,
+        placeName: placeDetail.placeName || fallbackPlaceName,
+        category: placeDetail.category ?? '',
+        address: placeDetail.address,
+        distance: placeDetail.distanceMeters,
+        creatorName: pinDetail.writerNickname,
+        bookmarkedByMe: placeDetail.bookmarkedByMe,
+        isMine: true,
+        coordinates: {
+          lat: pinDetail.latitude,
+          lng: pinDetail.longitude,
+        },
+      };
+
+      selectMapPlace(place);
+      navigate('/app');
+    } catch (error) {
+      console.error(error);
+      setIsNavigatingToMap(false);
+    }
+  };
+
   return (
     <div className="flex min-h-full flex-col">
       <TopBar onBack={() => navigate(-1)} title="내 PLIMAP" titleWeight="medium" />
@@ -66,12 +94,21 @@ export default function MyPlimapPage() {
 
         <div className="flex flex-1 flex-col gap-3 pt-5">
           {tab === 'all' ? (
-            MOCK_MY_ALL_PINS.map((pin) => (
+            pins.map((pin) => (
               <MyAllPinsCard
-                key={pin.id}
-                pin={pin}
+                key={pin.pinId}
+                pin={{
+                  id: String(pin.pinId),
+                  placeName: pin.placeName,
+                  albumImageUrl: pin.albumImageUrl,
+                  trackName: pin.trackTitle,
+                  artistName: pin.artist,
+                  content: pin.introduction,
+                  tags: pin.tags,
+                  createdAtLabel: pin.staticCreatedAt,
+                }}
                 onPlaceClick={() => {
-                  // TODO: 장소 상세/맵 이동 연결
+                  void handlePlaceClick(pin.pinId, pin.placeName);
                 }}
                 onMoreClick={() => {
                   // TODO: 더보기 메뉴 연결

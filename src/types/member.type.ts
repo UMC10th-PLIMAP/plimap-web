@@ -12,13 +12,24 @@ export type ProfileImageUploadResponse = {
 
 export type MyProfileResponse = {
   id: number;
-  nickname: string;
+  nickname: string | null;
   name: string | null;
   introduction: string | null;
   profileImageUrl: string | null;
   followerCount: number;
   followingCount: number;
   onboardingCompletedAt: string | null;
+};
+
+export type MemberProfileResponse = {
+  id: number;
+  nickname: string;
+  name: string | null;
+  introduction: string | null;
+  profileImageUrl: string | null;
+  followerCount: number;
+  followingCount: number;
+  isFollowing: boolean;
 };
 
 export type UpdateMyProfileRequest = {
@@ -35,3 +46,6 @@ export type UpdateMyProfileResponse = {
   profileImageObjectKey: string;
   updatedAt: string;
 };
+
+/** @deprecated MemberProfileResponse 사용 */
+export type OtherMemberProfileResponse = MemberProfileResponse;

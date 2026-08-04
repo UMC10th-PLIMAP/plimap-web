@@ -27,11 +27,11 @@ export async function deleteLikedTracks(placeTrackId: string): Promise<PutLikedT
 
 // 3) POST /api/v1/tracks/playback-preparations - 구간 재생 준비
 export async function getPlaybackPreparations(
-  itunesTrackId: string,
+  itunesTrackId: number,
 ): Promise<GetPlaybackPreparationsResponse> {
   const { data } = await apiClient.post<ApiResponse<GetPlaybackPreparationsResponse>>(
     `/api/v1/tracks/playback-preparations`,
-    { itunesTrackId: Number(itunesTrackId) },
+    { itunesTrackId: itunesTrackId },
   );
   return data.result;
 }

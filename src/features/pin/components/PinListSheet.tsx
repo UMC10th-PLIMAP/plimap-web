@@ -1,19 +1,31 @@
 import { useState } from 'react';
 
+import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
+import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
+import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { usePlaceTrack } from '@/features/pin/queries/usePlaceTrack';
 import type { Pin, PinSort, PlaceInfo } from '@/features/pin/types';
 import { cn } from '@/lib/utils';
+import type { PlaceSearchHistoryRequest } from '@/types/place.type';
+
+type BookmarkStatus = 'loading' | 'error' | 'ready';
 
 type PinListSheetProps = {
   open: boolean;
   onClose: () => void;
   place: PlaceInfo;
+  detailLocation: PlaceSearchHistoryRequest | null;
+  detailLocationError?: string | null;
   onPinClick?: (pin: Pin) => void;
 };
+
+// 화면 전체 높이 874 기준 Figma 스냅: 최소 161px, 기본 340px, 확장 80%, 풀페이지 100%
+const PIN_LIST_SHEET_SNAP_POINTS = [161 / 874, 340 / 874, 0.8, 1];
+const PIN_LIST_SHEET_DEFAULT_SNAP_POINT = 340 / 874;
 
 function formatDistance(distance: number) {
   const normalizedDistance = Math.max(0, distance);
@@ -34,13 +46,35 @@ type PinListContentProps = {
   pins: Pin[];
   sort: PinSort;
   onSortChange: (sort: PinSort) => void;
+  isBookmarked: boolean;
+  bookmarkStatus: BookmarkStatus;
+  detailErrorMessage: string | null;
+  isBookmarkPending: boolean;
+  onBookmarkToggle: () => void;
   onPinClick?: (pin: Pin) => void;
 };
 
-function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinListContentProps) {
+function PinListContent({
+  place,
+  pins,
+  sort,
+  onSortChange,
+  isBookmarked,
+  bookmarkStatus,
+  detailErrorMessage,
+  isBookmarkPending,
+  onBookmarkToggle,
+  onPinClick,
+}: PinListContentProps) {
   const { isFullPage } = useBottomSheet();
   const distance = formatDistance(place.distance);
   const hasPins = pins.length > 0;
+  const bookmarkLabel =
+    bookmarkStatus === 'loading'
+      ? '북마크 상태 불러오는 중'
+      : bookmarkStatus === 'error'
+        ? '북마크 상태를 불러오지 못함'
+        : `${place.name} ${isBookmarked ? '북마크 해제' : '북마크 등록'}`;
 
   return (
     <>
@@ -57,9 +91,16 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
 
               <div className="min-w-0">
                 <BottomSheet.Title className="block truncate head-24-sb text-grayscale-100">
-                  {place.name}
+                  {place.name ||
+                    (detailErrorMessage
+                      ? '장소 정보를 불러올 수 없어요'
+                      : '장소 정보를 불러오고 있어요')}
                 </BottomSheet.Title>
-                {place.address ? (
+                {detailErrorMessage ? (
+                  <p role="alert" className="body-15-r text-red">
+                    {detailErrorMessage}
+                  </p>
+                ) : place.address ? (
                   <p className="truncate body-15-r text-grayscale-500">{place.address}</p>
                 ) : null}
               </div>
@@ -83,10 +124,24 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
 
           <button
             type="button"
-            aria-label="북마크"
-            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pli-black-75"
+            aria-label={bookmarkLabel}
+            aria-pressed={bookmarkStatus === 'ready' ? isBookmarked : undefined}
+            aria-busy={bookmarkStatus === 'loading' || isBookmarkPending || undefined}
+            disabled={bookmarkStatus !== 'ready' || isBookmarkPending}
+            onClick={onBookmarkToggle}
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pli-black-75 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <BookmarkIcon className="size-7" />
+            {bookmarkStatus === 'loading' ? (
+              <span aria-hidden className="size-6 animate-pulse rounded-md bg-grayscale-700" />
+            ) : bookmarkStatus === 'error' ? (
+              <span aria-hidden className="body-15-m text-grayscale-500">
+                !
+              </span>
+            ) : isBookmarked ? (
+              <BookmarkActiveIcon className="size-7" aria-hidden />
+            ) : (
+              <BookmarkIcon className="size-7" aria-hidden />
+            )}
           </button>
         </div>
 
@@ -117,16 +172,86 @@ function PinListContent({ place, pins, sort, onSortChange, onPinClick }: PinList
   );
 }
 
-export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetProps) {
+const BOOKMARK_TOAST_DURATION_MS = 2_000;
+
+type BookmarkToast = {
+  attempt: number;
+  message: string;
+};
+
+export function PinListSheet({
+  open,
+  onClose,
+  place,
+  detailLocation,
+  detailLocationError = null,
+  onPinClick,
+}: PinListSheetProps) {
   const [sort, setSort] = useState<PinSort>('POPULAR');
-  const placeId = place.id.startsWith('place:') ? place.id.slice('place:'.length) : place.id;
-  const { data } = usePlaceTrack({
+  const [bookmarkToast, setBookmarkToast] = useState<BookmarkToast | null>(null);
+  const normalizedPlaceId = place.id.startsWith('place:')
+    ? place.id.slice('place:'.length)
+    : place.id;
+  const parsedPlaceId = place.placeId ?? Number(normalizedPlaceId);
+  const placeId = Number.isSafeInteger(parsedPlaceId) && parsedPlaceId > 0 ? parsedPlaceId : null;
+  const queryLatitude = detailLocation?.latitude ?? 0;
+  const queryLongitude = detailLocation?.longitude ?? 0;
+  const placeDetailQuery = usePlaceDetail({
     placeId,
-    latitude: place.latitude,
-    longitude: place.longitude,
-    sort: sort === 'LATEST' ? 'LATEST' : 'POPULAR',
-    enabled: open,
+    latitude: detailLocation?.latitude ?? 0,
+    longitude: detailLocation?.longitude ?? 0,
+    enabled: open && detailLocation !== null,
   });
+  const resolvedPlace: PlaceInfo = {
+    ...place,
+    name: placeDetailQuery.data?.placeName ?? place.name,
+    distance: placeDetailQuery.data?.distanceMeters ?? place.distance,
+    address: placeDetailQuery.data
+      ? placeDetailQuery.data.roadAddress || placeDetailQuery.data.address
+      : place.address,
+    isMine: placeDetailQuery.data?.pinnedByMe ?? place.isMine,
+  };
+  const bookmarkMutation = useTogglePlaceBookmark();
+  const resolvedBookmarkState = placeDetailQuery.data?.bookmarkedByMe ?? place.bookmarkedByMe;
+  const detailErrorMessage =
+    detailLocation === null
+      ? detailLocationError
+      : placeDetailQuery.isError
+        ? '장소 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
+        : null;
+  const bookmarkStatus: BookmarkStatus =
+    resolvedBookmarkState !== undefined ? 'ready' : detailErrorMessage ? 'error' : 'loading';
+  const isCurrentPlaceMutation = bookmarkMutation.variables?.placeId === placeId;
+  const isBookmarked =
+    isCurrentPlaceMutation && bookmarkMutation.isPending
+      ? bookmarkMutation.variables.bookmarked
+      : (resolvedBookmarkState ?? false);
+  const { data } = usePlaceTrack({
+    placeId: normalizedPlaceId,
+    latitude: queryLatitude,
+    longitude: queryLongitude,
+    sort: sort === 'LATEST' ? 'LATEST' : 'POPULAR',
+    enabled: open && detailLocation !== null,
+  });
+
+  const handleBookmarkToggle = () => {
+    if (placeId === null || bookmarkMutation.isPending || bookmarkStatus !== 'ready') return;
+
+    bookmarkMutation.mutate(
+      { placeId, bookmarked: !isBookmarked },
+      {
+        onError: (error) => {
+          setBookmarkToast((currentToast) => ({
+            attempt: (currentToast?.attempt ?? 0) + 1,
+            message:
+              error instanceof Error
+                ? error.message
+                : '북마크를 변경하지 못했어요. 다시 시도해 주세요.',
+          }));
+        },
+      },
+    );
+  };
 
   const pins: Pin[] =
     data?.tracks.map((track) => ({
@@ -135,15 +260,36 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
     })) ?? [];
 
   return (
-    <BottomSheet open={open} onClose={onClose}>
-      <BottomSheet.FullPageNav />
-      <PinListContent
-        place={place}
-        pins={pins}
-        sort={sort}
-        onSortChange={setSort}
-        onPinClick={onPinClick}
-      />
-    </BottomSheet>
+    <ToastProvider duration={BOOKMARK_TOAST_DURATION_MS}>
+      <BottomSheet
+        open={open}
+        onClose={onClose}
+        snapPoints={PIN_LIST_SHEET_SNAP_POINTS}
+        defaultSnapPoint={PIN_LIST_SHEET_DEFAULT_SNAP_POINT}
+      >
+        <BottomSheet.FullPageNav />
+        <PinListContent
+          place={resolvedPlace}
+          pins={pins}
+          sort={sort}
+          onSortChange={setSort}
+          isBookmarked={isBookmarked}
+          bookmarkStatus={bookmarkStatus}
+          detailErrorMessage={detailErrorMessage}
+          isBookmarkPending={bookmarkMutation.isPending}
+          onBookmarkToggle={handleBookmarkToggle}
+          onPinClick={onPinClick}
+        />
+      </BottomSheet>
+
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">
+        {bookmarkToast ? (
+          <Toast key={`${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
+            {bookmarkToast.message}
+          </Toast>
+        ) : null}
+        <ToastViewport />
+      </div>
+    </ToastProvider>
   );
 }
