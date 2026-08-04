@@ -15,7 +15,7 @@ export type MyProfileResponse = {
   nickname: string | null;
   name: string | null;
   introduction: string | null;
-  profileImageObjectKey: string | null;
+  profileImageUrl: string | null;
   followerCount: number;
   followingCount: number;
   onboardingCompletedAt: string | null;
@@ -31,3 +31,6 @@ export type MemberProfileResponse = {
   followingCount: number;
   isFollowing: boolean;
 };
+
+/** @deprecated MemberProfileResponse 사용 */
+export type OtherMemberProfileResponse = MemberProfileResponse;

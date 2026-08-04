@@ -1,4 +1,4 @@
-import type { PlaceSearchSource } from '@/types/place.type';
+import type { PlaceSearchHistoryRequest, PlaceSearchSource } from '@/types/place.type';
 
 // --------------------------------------------------
 
@@ -235,6 +235,7 @@ export type PinSearchPlace = PlaceResult & {
   focusedFeedPin?: FocusedFeedPin;
   source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
   withinAccessRange?: boolean;
+  selectionLocation?: PlaceSearchHistoryRequest;
   coordinates: {
     lat: number;
     lng: number;
