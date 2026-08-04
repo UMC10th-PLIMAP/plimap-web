@@ -7,6 +7,8 @@ import type {
   LikeCountResponse,
   GetMyPinsResponse,
   PinDetailResponse,
+  PatchPinRequest,
+  PatchPinResponse,
   PinSort,
 } from '@/features/pin/types';
 import type { MapPin } from '@/features/map/types';
@@ -95,6 +97,16 @@ export async function getPinDetail(pinId: string): Promise<PinDetailResponse> {
   const { data } = await apiClient.get<ApiResponse<PinDetailResponse>>(`/api/v1/pins/${pinId}`);
   return data.result;
 }
+
+// 7) PATCH /api/v1/pins/{pinId} - PIN 수정
+export async function patchPin(pinId: string, request: PatchPinRequest): Promise<PatchPinResponse> {
+  const { data } = await apiClient.patch<ApiResponse<PatchPinResponse>>(
+    `/api/v1/pins/${pinId}`,
+    request,
+  );
+  return data.result;
+}
+
 // 8) GET /api/v1/place-tracks/{placeTrackId}/pins - 특정 장소 노래의 PIN 목록 조회
 export async function getPlaceTrackPins(
   placeTrackId: string,
@@ -121,9 +133,14 @@ export async function getMyPins(pageSize: number, cursor?: string): Promise<GetM
 
 // 11) GET /api/v1/feed/members/me - 내 피드 목록 조회
 
-export async function getMemberMe({ pageSize, cursor }: MemberMeRequest) {
+export async function getMemberMe({
+  pageSize,
+  cursor,
+  userLatitude,
+  userLongitude,
+}: MemberMeRequest): Promise<MemberMeResponse> {
   const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(`/api/v1/feed/members/me`, {
-    params: { pageSize, cursor },
+    params: { pageSize, cursor, userLatitude, userLongitude },
   });
   return data.result;
 }

@@ -31,18 +31,25 @@ export type SearchTrack = searchTracksResponse['tracks'][number];
 export type LikedTrack = GetLikedTracksResponse['tracks'][number];
 
 export type MemberMeRequest = {
-  pageSize: number;
+  pageSize?: number;
   cursor?: string;
+  userLatitude?: number;
+  userLongitude?: number;
+};
+
+export type MemberMeFeedItem = {
+  pinId: number;
+  albumImageUrl: string;
+  latitude: number;
+  longitude: number;
+  placeName: string;
+  distanceFromUser: number;
+  pinCount: number;
+  createdAt: string;
 };
 
 export type MemberMeResponse = {
-  data: {
-    pinId: number;
-    albumImageUrl: string;
-    latitude: number;
-    longitude: number;
-    createdAt: string;
-  }[];
+  data: MemberMeFeedItem[];
   nextCursor: string;
   hasNext: boolean;
 };
@@ -105,6 +112,7 @@ export type GetPlaceTrackPinsResponse = {
     userLike: boolean;
     staticCreatedAt: string;
     createdAt: string;
+    pinByMe: boolean;
   }[];
   nextCursor: string;
   hasNext: boolean;
@@ -142,6 +150,22 @@ export type PinDetailResponse = {
   albumImageUrl: string;
   youtubeVideoId: string;
   clipStartMs: number;
+  tags: string[];
+  feedOpen: boolean;
+};
+
+export type PatchPinRequest = {
+  introduction: string;
+  tags: string[];
+  feedOpen: boolean;
+  clipStartMs?: number;
+};
+
+export type PatchPinResponse = {
+  introduction: string;
+  tags: string[];
+  feedOpen: boolean;
+  clipStartMs?: number;
 };
 
 // --------------------------------------------------
@@ -212,10 +236,20 @@ export type PlaceResult = {
   distance: number;
 };
 
+export type FocusedFeedPin = {
+  pinId: number;
+  placeTrackId: number;
+  nickname: string;
+  avatarUrl?: string;
+  albumImageUrl: string;
+};
+
 export type PinSearchPlace = PlaceResult & {
   placeId?: number;
   bookmarkedByMe?: boolean;
   isMine?: boolean;
+  /** 프로필 피드 게시물에서 진입했을 때, 등록 곡 상세 CTA에 쓰는 정보 */
+  focusedFeedPin?: FocusedFeedPin;
   source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
   withinAccessRange?: boolean;
   selectionLocation?: PlaceSearchHistoryRequest;
