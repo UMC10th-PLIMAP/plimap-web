@@ -12,7 +12,11 @@ export function useInfiniteMemberMe({
   pageSize = 10,
   enabled = true,
 }: UseInfiniteMemberMeParams = {}) {
-  const { data: currentPosition } = useCurrentPosition({ enabled });
+  const {
+    data: currentPosition,
+    isFetched: isPositionFetched,
+    isError: isPositionError,
+  } = useCurrentPosition({ enabled });
 
   return useInfiniteQuery({
     queryKey: [
@@ -29,11 +33,12 @@ export function useInfiniteMemberMe({
       getMemberMe({
         pageSize,
         cursor: pageParam,
-        userLatitude: currentPosition!.latitude,
-        userLongitude: currentPosition!.longitude,
+        userLatitude: currentPosition?.latitude,
+        userLongitude: currentPosition?.longitude,
       }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
-    enabled: enabled && Boolean(currentPosition),
+    // 위치 조회가 끝나거나 실패해도 피드는 조회한다 (위치 실패 ≠ 빈 피드)
+    enabled: enabled && (isPositionFetched || isPositionError),
   });
 }

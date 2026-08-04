@@ -33,8 +33,8 @@ export type LikedTrack = GetLikedTracksResponse['tracks'][number];
 export type MemberMeRequest = {
   pageSize?: number;
   cursor?: string;
-  userLatitude: number;
-  userLongitude: number;
+  userLatitude?: number;
+  userLongitude?: number;
 };
 
 export type MemberMeFeedItem = {
@@ -152,10 +152,18 @@ export type PinDetailResponse = {
   clipStartMs: number;
 };
 
+export type PatchPinRequest = {
+  introduction: string;
+  tags: string[];
+  feedOpen: boolean;
+  clipStartMs?: number;
+};
+
 export type PatchPinResponse = {
   introduction: string;
   tags: string[];
   feedOpen: boolean;
+  clipStartMs?: number;
 };
 
 // --------------------------------------------------
@@ -228,6 +236,7 @@ export type PlaceResult = {
 
 export type FocusedFeedPin = {
   pinId: number;
+  placeTrackId: number;
   nickname: string;
   avatarUrl?: string;
   albumImageUrl: string;

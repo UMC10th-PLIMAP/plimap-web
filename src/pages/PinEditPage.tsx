@@ -121,6 +121,7 @@ export default function PinEditPage() {
         introduction: normalizedIntroduction,
         tags: selectedTags,
         feedOpen: isFeedPublic,
+        clipStartMs: pinDetail?.clipStartMs,
       },
       {
         onSuccess: () => navigate(-1),

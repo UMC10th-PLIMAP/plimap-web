@@ -7,6 +7,7 @@ import type {
   LikeCountResponse,
   GetMyPinsResponse,
   PinDetailResponse,
+  PatchPinRequest,
   PatchPinResponse,
   PinSort,
 } from '@/features/pin/types';
@@ -98,10 +99,7 @@ export async function getPinDetail(pinId: string): Promise<PinDetailResponse> {
 }
 
 // 7) PATCH /api/v1/pins/{pinId} - PIN 수정
-export async function patchPin(
-  pinId: string,
-  request: PatchPinResponse,
-): Promise<PatchPinResponse> {
+export async function patchPin(pinId: string, request: PatchPinRequest): Promise<PatchPinResponse> {
   const { data } = await apiClient.patch<ApiResponse<PatchPinResponse>>(
     `/api/v1/pins/${pinId}`,
     request,

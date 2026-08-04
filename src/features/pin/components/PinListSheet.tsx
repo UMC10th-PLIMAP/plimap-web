@@ -48,13 +48,9 @@ function formatDistance(distance: number) {
   return { value: String(Math.round(normalizedDistance)), unit: 'm' };
 }
 
-function findFocusedPlaceTrackId(pins: Pin[], focusedFeedPin?: FocusedFeedPin) {
+function findFocusedPlaceTrackId(focusedFeedPin?: FocusedFeedPin) {
   if (!focusedFeedPin) return null;
-
-  const matched = pins.find(
-    (pin) => pin.artworkUrl != null && pin.artworkUrl === focusedFeedPin.albumImageUrl,
-  );
-  return matched ? String(matched.placeTrackId) : null;
+  return String(focusedFeedPin.placeTrackId);
 }
 
 type PinListContentProps = {
@@ -307,7 +303,7 @@ export function PinListSheet({
       liked: track.isLiked,
     })) ?? [];
 
-  const focusedPlaceTrackId = findFocusedPlaceTrackId(pins, focusedFeedPin);
+  const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin);
 
   return (
     <ToastProvider duration={BOOKMARK_TOAST_DURATION_MS}>

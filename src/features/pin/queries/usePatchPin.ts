@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { patchPin } from '@/api/pin';
-import type { PatchPinResponse } from '@/features/pin/types';
+import type { PatchPinRequest } from '@/features/pin/types';
 
-type PatchPinVariables = PatchPinResponse & {
+type PatchPinVariables = PatchPinRequest & {
   pinId: string;
 };
 
