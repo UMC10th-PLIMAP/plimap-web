@@ -27,23 +27,14 @@ function StatItem({
   );
 }
 
-// id: number;
-// nickname: string | null;
-// name: string | null;
-// introduction: string | null;
-// profileImageObjectKey: string | null;
-// followerCount: number;
-// followingCount: number;
-// onboardingCompletedAt: string | null;
-
 export function ProfileInfo({ myProfile }: ProfileInfoProps) {
   const navigate = useNavigate();
   return (
     <section className="flex flex-col items-center px-4">
       <div className="flex size-22 rounded-full overflow-hidden">
-        {myProfile.profileImageObjectKey ? (
+        {myProfile.profileImageUrl ? (
           <img
-            src={myProfile.profileImageObjectKey}
+            src={myProfile.profileImageUrl}
             alt="프로필 이미지"
             className="size-full object-cover rounded-full"
           />
