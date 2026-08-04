@@ -49,7 +49,7 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-2">
           <p className="etc-13-r text-grayscale-400">고객 지원</p>
           <div className="flex flex-col gap-0.5">
-            <SettingsRow label="서비스 이용가이드" />
+            <SettingsRow label="서비스 이용가이드" disabled />
           </div>
         </div>
 
