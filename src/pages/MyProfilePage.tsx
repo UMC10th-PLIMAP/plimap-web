@@ -7,11 +7,13 @@ import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
 
 import { MOCK_MY_PROFILE } from '@/features/profile/constants/mockMyProfile';
+import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteMemberMe } from '@/features/pin/queries/useMemberMe';
 
 export default function MyProfilePage() {
   const navigate = useNavigate();
   const profile = MOCK_MY_PROFILE;
+  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
 
   const { data: memberMePages } = useInfiniteMemberMe();
 
@@ -58,6 +60,14 @@ export default function MyProfilePage() {
       <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
       <ProfilePinGrid
         pins={memberMePages?.pages.flatMap((page) => page.data) ?? []}
+        onPinClick={(pin) => {
+          void openPinPlaceOnMap({
+            pinId: pin.pinId,
+            fallbackPlaceName: pin.placeName,
+            isMine: true,
+            showMyRegisteredTrackCta: true,
+          });
+        }}
         onRegisterPin={() => navigate('/app')}
       />
     </div>

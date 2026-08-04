@@ -2,13 +2,15 @@ import { useState } from 'react';
 
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
+import NextIcon from '@/assets/icons/next.svg?react';
+import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { usePlaceTrack } from '@/features/pin/queries/usePlaceTrack';
-import type { Pin, PinSort, PlaceInfo } from '@/features/pin/types';
+import type { FocusedFeedPin, Pin, PinSort, PlaceInfo } from '@/features/pin/types';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { cn } from '@/lib/utils';
 
@@ -16,12 +18,17 @@ type PinListSheetProps = {
   open: boolean;
   onClose: () => void;
   place: PlaceInfo;
+  focusedFeedPin?: FocusedFeedPin;
   onPinClick?: (pin: Pin) => void;
+  onFocusedTrackClick?: (placeTrackId: string) => void;
 };
 
-// 화면 전체 높이 874 기준 Figma 스냅: 최소 161px, 기본 340px, 확장 80%, 풀페이지 100%
+// 화면 전체 높이 874 기준 Figma 스냅
 const PIN_LIST_SHEET_SNAP_POINTS = [161 / 874, 340 / 874, 0.8, 1];
 const PIN_LIST_SHEET_DEFAULT_SNAP_POINT = 340 / 874;
+// 프로필 피드 진입: MY·장소정보·등록곡 CTA·정렬 탭까지 보이는 높이 (Figma FD-01-04)
+const PIN_LIST_SHEET_FEED_SNAP_POINTS = [161 / 874, 300 / 874, 0.8, 1];
+const PIN_LIST_SHEET_FEED_DEFAULT_SNAP_POINT = 300 / 874;
 
 function formatDistance(distance: number) {
   const normalizedDistance = Math.max(0, distance);
@@ -37,6 +44,15 @@ function formatDistance(distance: number) {
   return { value: String(Math.round(normalizedDistance)), unit: 'm' };
 }
 
+function findFocusedPlaceTrackId(pins: Pin[], focusedFeedPin?: FocusedFeedPin) {
+  if (!focusedFeedPin) return null;
+
+  const matched = pins.find(
+    (pin) => pin.artworkUrl != null && pin.artworkUrl === focusedFeedPin.albumImageUrl,
+  );
+  return matched ? String(matched.placeTrackId) : null;
+}
+
 type PinListContentProps = {
   place: PlaceInfo;
   pins: Pin[];
@@ -46,6 +62,8 @@ type PinListContentProps = {
   isBookmarkPending: boolean;
   onBookmarkToggle: () => void;
   onPinClick?: (pin: Pin) => void;
+  focusedFeedPin?: FocusedFeedPin;
+  onFocusedTrackClick?: () => void;
 };
 
 function PinListContent({
@@ -57,6 +75,8 @@ function PinListContent({
   isBookmarkPending,
   onBookmarkToggle,
   onPinClick,
+  focusedFeedPin,
+  onFocusedTrackClick,
 }: PinListContentProps) {
   const { isFullPage } = useBottomSheet();
   const distance = formatDistance(place.distance);
@@ -118,6 +138,32 @@ function PinListContent({
           </button>
         </div>
 
+        {focusedFeedPin ? (
+          <button
+            type="button"
+            onClick={onFocusedTrackClick}
+            disabled={!onFocusedTrackClick}
+            className="mt-4 flex w-full min-w-0 items-center gap-3 rounded-xl bg-pli-black-85 px-3 py-3 text-left disabled:opacity-50 cursor-pointer"
+          >
+            {focusedFeedPin.avatarUrl ? (
+              <img
+                src={focusedFeedPin.avatarUrl}
+                alt=""
+                className="size-7 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex size-7 items-center justify-center rounded-full bg-pli-black-75 ">
+                <UserPlaceholderIcon className="size-4 text-pli-black-50" aria-hidden />
+              </span>
+            )}
+            <p className="min-w-0 flex-1 truncate body-15-r text-grayscale-100">
+              <span className="text-neon-2">{focusedFeedPin.nickname} </span>님이 등록한 곡 상세
+              보기
+            </p>
+            <NextIcon className="size-5 text-grayscale-400" aria-hidden />
+          </button>
+        ) : null}
+
         {hasPins ? (
           <div className="mt-6">
             <SortTabs value={sort} onChange={onSortChange} />
@@ -152,7 +198,14 @@ type BookmarkToast = {
   message: string;
 };
 
-export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetProps) {
+export function PinListSheet({
+  open,
+  onClose,
+  place,
+  focusedFeedPin,
+  onPinClick,
+  onFocusedTrackClick,
+}: PinListSheetProps) {
   const [sort, setSort] = useState<PinSort>('POPULAR');
   const [bookmarkToast, setBookmarkToast] = useState<BookmarkToast | null>(null);
   const normalizedPlaceId = place.id.startsWith('place:')
@@ -212,8 +265,8 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
       liked: track.isLiked,
     })) ?? [];
 
-  // 호출부가 name/address/distance를 정확히 모르고 열 수도 있어서(예: 지도 핀
-  // 탭), 실제 장소 상세 조회 결과가 도착하면 그 값으로 덮어써서 채운다.
+  const focusedPlaceTrackId = findFocusedPlaceTrackId(pins, focusedFeedPin);
+
   const resolvedPlace: PlaceInfo = {
     ...place,
     name: placeDetailQuery.data?.placeName ?? place.name,
@@ -226,8 +279,12 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
       <BottomSheet
         open={open}
         onClose={onClose}
-        snapPoints={PIN_LIST_SHEET_SNAP_POINTS}
-        defaultSnapPoint={PIN_LIST_SHEET_DEFAULT_SNAP_POINT}
+        snapPoints={focusedFeedPin ? PIN_LIST_SHEET_FEED_SNAP_POINTS : PIN_LIST_SHEET_SNAP_POINTS}
+        defaultSnapPoint={
+          focusedFeedPin
+            ? PIN_LIST_SHEET_FEED_DEFAULT_SNAP_POINT
+            : PIN_LIST_SHEET_DEFAULT_SNAP_POINT
+        }
       >
         <BottomSheet.FullPageNav />
         <PinListContent
@@ -239,6 +296,12 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
           isBookmarkPending={bookmarkMutation.isPending || isBookmarkStateLoading}
           onBookmarkToggle={handleBookmarkToggle}
           onPinClick={onPinClick}
+          focusedFeedPin={focusedFeedPin}
+          onFocusedTrackClick={
+            focusedPlaceTrackId && onFocusedTrackClick
+              ? () => onFocusedTrackClick(focusedPlaceTrackId)
+              : undefined
+          }
         />
       </BottomSheet>
 

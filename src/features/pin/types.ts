@@ -219,10 +219,19 @@ export type PlaceResult = {
   distance: number;
 };
 
+export type FocusedFeedPin = {
+  pinId: number;
+  nickname: string;
+  avatarUrl?: string;
+  albumImageUrl: string;
+};
+
 export type PinSearchPlace = PlaceResult & {
   placeId?: number;
   bookmarkedByMe?: boolean;
   isMine?: boolean;
+  /** 프로필 피드 게시물에서 진입했을 때, 등록 곡 상세 CTA에 쓰는 정보 */
+  focusedFeedPin?: FocusedFeedPin;
   source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
   withinAccessRange?: boolean;
   coordinates: {

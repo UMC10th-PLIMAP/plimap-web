@@ -4,7 +4,7 @@ import type { MemberMeFeedItem } from '@/features/pin/types';
 
 type ProfilePinGridProps = {
   pins: MemberMeFeedItem[];
-  onPinClick?: (pinId: string) => void;
+  onPinClick?: (pin: MemberMeFeedItem) => void;
   onRegisterPin?: () => void;
 };
 
@@ -24,7 +24,7 @@ function ProfilePinGridItem({
   onPinClick,
 }: {
   pin: MemberMeFeedItem;
-  onPinClick?: (pinId: string) => void;
+  onPinClick?: (pin: MemberMeFeedItem) => void;
 }) {
   const distanceLabel = formatDistanceMeters(pin.distanceFromUser);
 
@@ -32,7 +32,7 @@ function ProfilePinGridItem({
     <li className="aspect-square">
       <button
         type="button"
-        onClick={() => onPinClick?.(pin.pinId.toString())}
+        onClick={() => onPinClick?.(pin)}
         className="group relative size-full overflow-hidden rounded-[4.5px] text-left cursor-pointer"
         aria-label={`${pin.placeName}, ${distanceLabel}, ${pin.pinCount}개의 핀`}
       >
