@@ -11,8 +11,8 @@ import type { TermId } from '@/features/auth/terms/types';
 
 const TERM_LIST_ITEMS: { id: TermId; label: string }[] = [
   { id: 'SERVICE', label: 'PLIMAP 서비스 이용약관' },
-  { id: 'LOCATION', label: '위치 정보 수집 동의' },
   { id: 'PRIVACY', label: '개인정보 처리 방침' },
+  { id: 'LOCATION', label: '위치 정보 수집 동의' },
   { id: 'MARKETING', label: '마케팅 정보 수신 설정' },
 ];
 
@@ -47,6 +47,13 @@ export default function SettingsPage() {
 
       <div className="flex flex-col gap-5 px-4 pt-[35px]">
         <div className="flex flex-col gap-2">
+          <p className="etc-13-r text-grayscale-400">고객 지원</p>
+          <div className="flex flex-col gap-0.5">
+            <SettingsRow label="서비스 이용가이드" />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
           <p className="etc-13-r text-grayscale-400">약관 및 정책</p>
           <div className="flex flex-col gap-0.5">
             {TERM_LIST_ITEMS.map((item) => (
@@ -60,7 +67,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <p className="etc-13-r text-grayscale-400">계정 관리</p>
+          <p className="etc-13-r text-grayscale-400">내 계정</p>
           <div className="flex flex-col gap-0.5">
             <SettingsRow label="계정 관리" onClick={() => navigate('/app/settings/account')} />
             <SettingsRow
