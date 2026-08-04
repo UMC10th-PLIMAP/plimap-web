@@ -36,14 +36,15 @@ export async function getMyProfile() {
   return data.result;
 }
 
-export async function getOtherMemberProfile(memberId: number) {
+// 7) GET /api/v1/members/{memberId} - 다른 사용자 프로필 조회
+export async function getOtherMemberProfile(memberId: string | number) {
   const { data } = await apiClient.get<ApiResponse<MemberProfileResponse>>(
     `${ENDPOINT}/${memberId}`,
   );
-
   return data.result;
 }
 
+// POST /api/v1/members/{memberId}/follow - 팔로우
 export async function followMember(memberId: number) {
   await apiClient.post<ApiResponse<null>>(`${ENDPOINT}/${memberId}/follow`);
 }
