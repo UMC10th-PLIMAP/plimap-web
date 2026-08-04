@@ -17,22 +17,10 @@ export default function UserProfilePage() {
   const { data: member } = useOtherMemberProfile(memberId);
   const followMutation = useFollowMember(id);
 
-  const profile = member
-    ? {
-        nickname: member.nickname,
-        name: member.name ?? undefined,
-        bio: member.introduction ?? undefined,
-        avatarUrl: member.profileImageObjectKey ?? '',
-        followingCount: member.followingCount,
-        followerCount: member.followerCount,
-        postCount: 0,
-      }
-    : null;
-
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
-      await navigator.share({ title: profile?.nickname, url });
+      await navigator.share({ title: member?.nickname, url });
       return;
     }
     await navigator.clipboard.writeText(url);
@@ -50,7 +38,7 @@ export default function UserProfilePage() {
           <BackIcon className="size-6" />
         </button>
         <h1 className="text-center head-24-sb text-grayscale-100 truncate">
-          {profile?.nickname ?? ''}
+          {member?.nickname ?? ''}
         </h1>
         <button
           type="button"
@@ -61,18 +49,26 @@ export default function UserProfilePage() {
         </button>
       </header>
 
-      {profile && (
+      {member && (
         <div className="mt-[3px] flex flex-col">
-          <ProfileInfo profile={profile} />
+          <ProfileInfo
+            profile={{
+              name: member.name,
+              introduction: member.introduction,
+              profileImageUrl: member.profileImageObjectKey,
+              followerCount: member.followerCount,
+              followingCount: member.followingCount,
+            }}
+          />
           <ProfileActions
             actions={[
               {
-                label: member?.isFollowing ? '팔로잉' : '팔로우',
+                label: member.isFollowing ? '팔로잉' : '팔로우',
                 onClick: () => {
-                  if (member?.isFollowing || followMutation.isPending) return;
+                  if (member.isFollowing || followMutation.isPending) return;
                   followMutation.mutate();
                 },
-                className: member?.isFollowing
+                className: member.isFollowing
                   ? undefined
                   : 'bg-neon-2 text-grayscale-1200 body-15-m',
               },

@@ -1,7 +1,12 @@
 import type { MyProfileResponse } from '@/types/member.type';
 
+type ProfileInfoData = Pick<
+  MyProfileResponse,
+  'name' | 'introduction' | 'profileImageUrl' | 'followerCount' | 'followingCount'
+>;
+
 type ProfileInfoProps = {
-  profile: MyProfileResponse;
+  profile: ProfileInfoData;
   onFollowingClick?: () => void;
   onFollowerClick?: () => void;
 };
