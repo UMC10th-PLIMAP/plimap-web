@@ -98,6 +98,12 @@ export async function getPinDetail(pinId: string): Promise<PinDetailResponse> {
   return data.result;
 }
 
+// 6) DELETE /api/v1/pins/{pinId} - PIN 삭제
+export async function deletePin(pinId: string): Promise<void> {
+  const { data } = await apiClient.delete<ApiResponse<void>>(`/api/v1/pins/${pinId}`);
+  return data.result;
+}
+
 // 7) PATCH /api/v1/pins/{pinId} - PIN 수정
 export async function patchPin(pinId: string, request: PatchPinRequest): Promise<PatchPinResponse> {
   const { data } = await apiClient.patch<ApiResponse<PatchPinResponse>>(
