@@ -21,6 +21,16 @@ export type MyProfileResponse = {
   onboardingCompletedAt: string | null;
 };
 
-export type OtherMemberProfileResponse = MyProfileResponse & {
+export type MemberProfileResponse = {
+  id: number;
+  nickname: string;
+  name: string | null;
+  introduction: string | null;
+  profileImageObjectKey: string | null;
+  followerCount: number;
+  followingCount: number;
   isFollowing: boolean;
 };
+
+/** @deprecated MemberProfileResponse 사용 */
+export type OtherMemberProfileResponse = MemberProfileResponse;

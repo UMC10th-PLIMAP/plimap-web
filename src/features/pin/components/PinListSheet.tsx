@@ -9,6 +9,7 @@ import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { usePlaceTrack } from '@/features/pin/queries/usePlaceTrack';
 import type { Pin, PinSort, PlaceInfo } from '@/features/pin/types';
+import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { cn } from '@/lib/utils';
 
 type PinListSheetProps = {
@@ -17,6 +18,10 @@ type PinListSheetProps = {
   place: PlaceInfo;
   onPinClick?: (pin: Pin) => void;
 };
+
+// 화면 전체 높이 874 기준 Figma 스냅: 최소 161px, 기본 340px, 확장 80%, 풀페이지 100%
+const PIN_LIST_SHEET_SNAP_POINTS = [161 / 874, 340 / 874, 0.8, 1];
+const PIN_LIST_SHEET_DEFAULT_SNAP_POINT = 340 / 874;
 
 function formatDistance(distance: number) {
   const normalizedDistance = Math.max(0, distance);
@@ -155,10 +160,13 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
     : place.id;
   const parsedPlaceId = place.placeId ?? Number(normalizedPlaceId);
   const placeId = Number.isSafeInteger(parsedPlaceId) && parsedPlaceId > 0 ? parsedPlaceId : null;
+  const { data: currentPosition } = useCurrentPosition({ enabled: open });
+  const queryLatitude = currentPosition?.latitude ?? place.latitude;
+  const queryLongitude = currentPosition?.longitude ?? place.longitude;
   const placeDetailQuery = usePlaceDetail({
     placeId,
-    latitude: place.latitude,
-    longitude: place.longitude,
+    latitude: queryLatitude,
+    longitude: queryLongitude,
     enabled: open,
   });
   const bookmarkMutation = useTogglePlaceBookmark();
@@ -173,8 +181,8 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
     open && place.bookmarkedByMe === undefined && placeDetailQuery.isPending;
   const { data } = usePlaceTrack({
     placeId: normalizedPlaceId,
-    latitude: place.latitude,
-    longitude: place.longitude,
+    latitude: queryLatitude,
+    longitude: queryLongitude,
     sort: sort === 'LATEST' ? 'LATEST' : 'POPULAR',
     enabled: open,
   });
@@ -204,12 +212,26 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
       liked: track.isLiked,
     })) ?? [];
 
+  // 호출부가 name/address/distance를 정확히 모르고 열 수도 있어서(예: 지도 핀
+  // 탭), 실제 장소 상세 조회 결과가 도착하면 그 값으로 덮어써서 채운다.
+  const resolvedPlace: PlaceInfo = {
+    ...place,
+    name: placeDetailQuery.data?.placeName ?? place.name,
+    address: placeDetailQuery.data?.address ?? place.address,
+    distance: placeDetailQuery.data?.distanceMeters ?? place.distance,
+  };
+
   return (
     <ToastProvider duration={BOOKMARK_TOAST_DURATION_MS}>
-      <BottomSheet open={open} onClose={onClose}>
+      <BottomSheet
+        open={open}
+        onClose={onClose}
+        snapPoints={PIN_LIST_SHEET_SNAP_POINTS}
+        defaultSnapPoint={PIN_LIST_SHEET_DEFAULT_SNAP_POINT}
+      >
         <BottomSheet.FullPageNav />
         <PinListContent
-          place={place}
+          place={resolvedPlace}
           pins={pins}
           sort={sort}
           onSortChange={setSort}
