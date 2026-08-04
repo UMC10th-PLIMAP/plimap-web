@@ -9,6 +9,7 @@ import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { usePlaceTrack } from '@/features/pin/queries/usePlaceTrack';
 import type { Pin, PinSort, PlaceInfo } from '@/features/pin/types';
+import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { cn } from '@/lib/utils';
 
 type PinListSheetProps = {
@@ -159,10 +160,13 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
     : place.id;
   const parsedPlaceId = place.placeId ?? Number(normalizedPlaceId);
   const placeId = Number.isSafeInteger(parsedPlaceId) && parsedPlaceId > 0 ? parsedPlaceId : null;
+  const { data: currentPosition } = useCurrentPosition({ enabled: open });
+  const queryLatitude = currentPosition?.latitude ?? place.latitude;
+  const queryLongitude = currentPosition?.longitude ?? place.longitude;
   const placeDetailQuery = usePlaceDetail({
     placeId,
-    latitude: place.latitude,
-    longitude: place.longitude,
+    latitude: queryLatitude,
+    longitude: queryLongitude,
     enabled: open,
   });
   const bookmarkMutation = useTogglePlaceBookmark();
@@ -177,8 +181,8 @@ export function PinListSheet({ open, onClose, place, onPinClick }: PinListSheetP
     open && place.bookmarkedByMe === undefined && placeDetailQuery.isPending;
   const { data } = usePlaceTrack({
     placeId: normalizedPlaceId,
-    latitude: place.latitude,
-    longitude: place.longitude,
+    latitude: queryLatitude,
+    longitude: queryLongitude,
     sort: sort === 'LATEST' ? 'LATEST' : 'POPULAR',
     enabled: open,
   });

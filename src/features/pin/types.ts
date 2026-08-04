@@ -132,6 +132,18 @@ export type GetMyPinsResponse = {
   pageSize: number;
 };
 
+export type PinDetailResponse = {
+  placeId: number;
+  latitude: number;
+  longitude: number;
+  writerNickname: string;
+  writerProfileImage: string;
+  introduction: string;
+  albumImageUrl: string;
+  youtubeVideoId: string;
+  clipStartMs: number;
+};
+
 // --------------------------------------------------
 export type PinSort = 'POPULAR' | 'LATEST';
 
@@ -203,6 +215,7 @@ export type PlaceResult = {
 export type PinSearchPlace = PlaceResult & {
   placeId?: number;
   bookmarkedByMe?: boolean;
+  isMine?: boolean;
   source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
   withinAccessRange?: boolean;
   coordinates: {
