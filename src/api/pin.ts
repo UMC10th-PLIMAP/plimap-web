@@ -96,6 +96,12 @@ export async function getPinDetail(pinId: string): Promise<PinDetailResponse> {
   return data.result;
 }
 
+// // 7) PATCH /api/v1/pins/{pinId} - PIN 수정
+// export async function patchPin(pinId: string): Promise<PatchPinResponse> {
+//   const { data } = await apiClient.patch<ApiResponse<PatchPinResponse>>(`/api/v1/pins/${pinId}`);
+//   return data.result;
+// }
+
 // 8) GET /api/v1/place-tracks/{placeTrackId}/pins - 특정 장소 노래의 PIN 목록 조회
 export async function getPlaceTrackPins(
   placeTrackId: string,

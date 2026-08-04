@@ -112,6 +112,7 @@ export type GetPlaceTrackPinsResponse = {
     userLike: boolean;
     staticCreatedAt: string;
     createdAt: string;
+    pinByMe: boolean;
   }[];
   nextCursor: string;
   hasNext: boolean;

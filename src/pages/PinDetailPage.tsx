@@ -32,6 +32,7 @@ function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
     tags: pin.tags,
     likeCount: pin.likeCount,
     liked: pin.userLike,
+    isMine: pin.pinByMe,
   };
 }
 
