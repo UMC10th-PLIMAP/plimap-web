@@ -14,9 +14,17 @@ type SongFeedCardProps = {
   onReport?: (entryId: string) => void;
   onEdit?: (entryId: string) => void;
   onDelete?: (entryId: string) => void;
+  onNicknameClick?: (entry: PinFeedEntry) => void;
 };
 
-export function SongFeedCard({ entry, onPlay, onReport, onEdit, onDelete }: SongFeedCardProps) {
+export function SongFeedCard({
+  entry,
+  onPlay,
+  onReport,
+  onEdit,
+  onDelete,
+  onNicknameClick,
+}: SongFeedCardProps) {
   const { mutate: putPinLike, isPending: isPutPending } = usePutPinLike();
   const { mutate: deletePinLike, isPending: isDeletePending } = useDeletePinLike();
   const isLikePending = isPutPending || isDeletePending;
@@ -56,7 +64,13 @@ export function SongFeedCard({ entry, onPlay, onReport, onEdit, onDelete }: Song
         )}
 
         <div className="flex flex-1 items-center gap-[6px]">
-          <p className="body-15-m text-grayscale-300">{entry.nickname}</p>
+          <button
+            type="button"
+            onClick={() => onNicknameClick?.(entry)}
+            className="body-15-m text-grayscale-300 cursor-pointer"
+          >
+            {entry.nickname}
+          </button>
           <span className="etc-13-r text-grayscale-600">•</span>
           <span className="body-15-m text-grayscale-500">{entry.createdAtLabel}</span>
         </div>

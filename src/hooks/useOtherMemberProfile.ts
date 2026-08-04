@@ -7,7 +7,7 @@ export function useOtherMemberProfile(memberId?: string | number) {
 
   return useQuery({
     queryKey: ['members', id],
-    queryFn: () => getOtherMemberProfile(id!),
+    queryFn: () => getOtherMemberProfile(Number(id)),
     enabled: Boolean(id),
   });
 }

@@ -25,6 +25,7 @@ type PlaceTrackPin = GetPlaceTrackPinsResponse['data'][number];
 function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
   return {
     id: String(pin.pinId),
+    memberId: pin.memberId,
     nickname: pin.writerNickname,
     avatarUrl: pin.writerProfileImage,
     createdAtLabel: pin.staticCreatedAt,
@@ -32,6 +33,7 @@ function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
     tags: pin.tags,
     likeCount: pin.likeCount,
     liked: pin.userLike,
+    isMine: pin.pinByMe,
   };
 }
 
@@ -126,7 +128,18 @@ export default function PinDetailPage() {
 
       <div className="flex flex-col gap-4 px-[11px] pt-[17.5px] pb-[env(safe-area-inset-bottom)]">
         {pins.map((entry) => (
-          <SongFeedCard key={entry.id} entry={entry} onReport={setReportFeedId} />
+          <SongFeedCard
+            key={entry.id}
+            entry={entry}
+            onReport={setReportFeedId}
+            onNicknameClick={() => {
+              if (entry.isMine) {
+                navigate('/app/my');
+                return;
+              }
+              navigate(`/app/users/${entry.memberId}`);
+            }}
+          />
         ))}
       </div>
 
