@@ -20,7 +20,9 @@ export default function BottomNavLayout() {
     const { bottomNavItem } = (match.handle as BottomNavRouteHandle | undefined) ?? {};
     return bottomNavItem ?? activeItem;
   }, null);
-  const isMapNavHidden = activeNavItem === 'plimap' && appContext.selectedMapPlace !== null;
+  const isMapNavHidden =
+    activeNavItem === 'plimap' &&
+    (appContext.selectedMapPlace !== null || appContext.selectedMapPinId !== null);
 
   return (
     <>

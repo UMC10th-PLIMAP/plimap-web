@@ -20,3 +20,14 @@ export type MyProfileResponse = {
   followingCount: number;
   onboardingCompletedAt: string | null;
 };
+
+export type MemberProfileResponse = {
+  id: number;
+  nickname: string;
+  name: string | null;
+  introduction: string | null;
+  profileImageObjectKey: string | null;
+  followerCount: number;
+  followingCount: number;
+  isFollowing: boolean;
+};

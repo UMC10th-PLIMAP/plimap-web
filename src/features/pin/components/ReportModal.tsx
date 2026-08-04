@@ -10,7 +10,8 @@ import RadioSelectedIcon from '@/assets/icons/radio-selected.svg?react';
 type ReportModalProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit?: (reason: ReportReason, detail?: string) => void;
+  // 실제 API 호출은 부모가 담당한다 (ReportModal은 신고 대상 id를 모름).
+  onSubmit?: (reason: ReportReason, detail?: string) => Promise<void>;
 };
 
 type Step = 'select' | 'complete';
@@ -20,6 +21,7 @@ export function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [detail, setDetail] = useState('');
   const [prevOpen, setPrevOpen] = useState(open);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 스와이프/뒤로가기 등 onClick을 거치지 않는 닫힘까지 포함해 다음에 열 때 처음 상태로 리셋한다.
   if (open !== prevOpen) {
@@ -28,16 +30,25 @@ export function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
       setStep('select');
       setReason(null);
       setDetail('');
+      setIsSubmitting(false);
     }
   }
 
   const isOtherSelected = reason === 'OTHER';
   const canSubmit = reason !== null && (!isOtherSelected || detail.trim().length > 0);
 
-  const handleSubmit = () => {
-    if (!canSubmit || !reason) return;
-    onSubmit?.(reason, isOtherSelected ? detail.trim() : undefined);
-    setStep('complete');
+  const handleSubmit = async () => {
+    if (!canSubmit || !reason || isSubmitting || !onSubmit) return;
+    setIsSubmitting(true);
+
+    try {
+      await onSubmit(reason, isOtherSelected ? detail.trim() : undefined);
+      setStep('complete');
+    } catch {
+      // 오류 메시지는 추후 별도 정책으로 처리한다.
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (step === 'complete') {
@@ -113,14 +124,14 @@ export function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
       <div className="flex flex-col items-center pb-7">
         <button
           type="button"
-          disabled={!canSubmit}
+          disabled={!canSubmit || isSubmitting}
           onClick={handleSubmit}
           className={cn(
             'w-[276px] rounded-lg px-2.5 py-4 body-17-m text-grayscale-100',
-            canSubmit ? 'bg-red' : 'bg-pli-black-10',
+            canSubmit && !isSubmitting ? 'bg-red' : 'bg-pli-black-10',
           )}
         >
-          신고하기
+          {isSubmitting ? '신고 중...' : '신고하기'}
         </button>
       </div>
     </Dialog>
