@@ -16,6 +16,7 @@ import MyPlimapPage from '@/pages/MyPlimapPage';
 import MyNotificationsPage from '@/pages/MyNotificationsPage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 import PinDetailPage from '@/pages/PinDetailPage';
+import PinEditPage from '@/pages/PinEditPage';
 import SongListPage from '@/pages/SongListPage';
 import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
@@ -124,6 +125,10 @@ export const router = createBrowserRouter([
           {
             path: 'pins/:pinId',
             element: <PinDetailPage />,
+          },
+          {
+            path: 'pins/:pinId/edit',
+            element: <PinEditPage />,
           },
           {
             path: 'song/list',

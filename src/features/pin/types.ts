@@ -152,6 +152,12 @@ export type PinDetailResponse = {
   clipStartMs: number;
 };
 
+export type PatchPinResponse = {
+  introduction: string;
+  tags: string[];
+  feedOpen: boolean;
+};
+
 // --------------------------------------------------
 export type PinSort = 'POPULAR' | 'LATEST';
 

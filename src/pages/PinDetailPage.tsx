@@ -127,7 +127,23 @@ export default function PinDetailPage() {
 
       <div className="flex flex-col gap-4 px-[11px] pt-[17.5px] pb-[env(safe-area-inset-bottom)]">
         {pins.map((entry) => (
-          <SongFeedCard key={entry.id} entry={entry} onReport={setReportFeedId} />
+          <SongFeedCard
+            key={entry.id}
+            entry={entry}
+            onReport={setReportFeedId}
+            onEdit={(entryId) => {
+              navigate(`/app/pins/${entryId}/edit`, {
+                state: {
+                  title: pinDetail?.title,
+                  artist: pinDetail?.artist,
+                  albumImageUrl: pinDetail?.albumImageUrl,
+                  introduction: entry.content,
+                  tags: entry.tags,
+                  feedOpen: true,
+                },
+              });
+            }}
+          />
         ))}
       </div>
 
