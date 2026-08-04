@@ -31,7 +31,11 @@ export default function MyProfilePage() {
       </header>
 
       <div className="mt-[3px] flex flex-col ">
-        <ProfileInfo profile={profile} />
+        <ProfileInfo
+          profile={profile}
+          onFollowingClick={() => navigate('/app/my/following')}
+          onFollowerClick={() => navigate('/app/my/followers')}
+        />
         <ProfileActions
           actions={[
             {
@@ -50,7 +54,7 @@ export default function MyProfilePage() {
                 // TODO: 프로필 공유 연동
               },
               'aria-label': '프로필 공유',
-              className: 'max-w-9 max-h-9',
+              className: 'max-w-9 max-h-9 shrink-0',
             },
           ]}
         />
