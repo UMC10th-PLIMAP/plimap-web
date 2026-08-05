@@ -16,6 +16,7 @@ type UseMapPinOverlaysParams = {
   isLoaded: boolean;
   mapPins: MapPin[];
   selectedMapPinId: string | null;
+  playingMapPinId?: string | null;
   flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
   onSelectMapPin?: (pinId: string) => void;
   onPlayPin?: (pinId: string) => void;
@@ -27,6 +28,7 @@ export function useMapPinOverlays({
   isLoaded,
   mapPins,
   selectedMapPinId,
+  playingMapPinId = null,
   flyTo,
   onSelectMapPin,
   onPlayPin,
@@ -35,6 +37,7 @@ export function useMapPinOverlays({
   const onSelectMapPinRef = useRef(onSelectMapPin);
   const onPlayPinRef = useRef(onPlayPin);
   const selectedMapPinIdRef = useRef(selectedMapPinId);
+  const playingMapPinIdRef = useRef(playingMapPinId);
   const flyToRef = useRef(flyTo);
 
   useEffect(() => {
@@ -50,6 +53,10 @@ export function useMapPinOverlays({
   }, [selectedMapPinId]);
 
   useEffect(() => {
+    playingMapPinIdRef.current = playingMapPinId;
+  }, [playingMapPinId]);
+
+  useEffect(() => {
     flyToRef.current = flyTo;
   }, [flyTo]);
 
@@ -59,6 +66,7 @@ export function useMapPinOverlays({
     if (!isLoaded || !map) return;
 
     const selectedId = selectedMapPinIdRef.current;
+    const playingId = playingMapPinIdRef.current;
 
     mapPinOverlaysRef.current = mapPins.map((pin) => {
       const entry = createMapPinOverlay({
@@ -71,7 +79,12 @@ export function useMapPinOverlays({
             onSelectMapPinRef.current?.(pin.id);
           });
         },
-        ...toMapPinMarkerProps(pin, pin.id === selectedId, () => onPlayPinRef.current?.(pin.id)),
+        ...toMapPinMarkerProps(
+          pin,
+          pin.id === selectedId,
+          () => onPlayPinRef.current?.(pin.id),
+          pin.id === playingId,
+        ),
       });
       entry.overlay.setMap(map);
 
@@ -84,7 +97,7 @@ export function useMapPinOverlays({
     };
   }, [isLoaded, mapPins, mapInstanceRef]);
 
-  // --- 선택된 지도 핀 강조 ---
+  // --- 선택된 지도 핀 강조 / 재생 상태 ---
   useEffect(() => {
     mapPinOverlaysRef.current.forEach(({ id, entry }) => {
       const pin = mapPins.find((candidate) => candidate.id === id);
@@ -93,9 +106,14 @@ export function useMapPinOverlays({
       const isSelected = id === selectedMapPinId;
       updateMapPinMarker(
         entry.mount,
-        toMapPinMarkerProps(pin, isSelected, () => onPlayPinRef.current?.(pin.id)),
+        toMapPinMarkerProps(
+          pin,
+          isSelected,
+          () => onPlayPinRef.current?.(pin.id),
+          id === playingMapPinId,
+        ),
       );
       entry.overlay.setZIndex(isSelected ? 200 : 100);
     });
-  }, [selectedMapPinId, mapPins]);
+  }, [selectedMapPinId, playingMapPinId, mapPins]);
 }

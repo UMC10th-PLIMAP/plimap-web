@@ -6,6 +6,7 @@ export type MapPinMessageBoxProps = {
   nickname: string;
   avatarUrl?: string;
   introduction: string;
+  isPlaying?: boolean;
   onPlay?: () => void;
 };
 
@@ -13,6 +14,7 @@ export function MapPinMessageBox({
   nickname,
   avatarUrl,
   introduction,
+  isPlaying = false,
   onPlay,
 }: MapPinMessageBoxProps) {
   return (
@@ -29,14 +31,22 @@ export function MapPinMessageBox({
           <SoundWaveIcon className="size-6 text-grayscale-400" aria-hidden />
           <button
             type="button"
-            aria-label="미리듣기 재생"
+            aria-label={isPlaying ? '미리듣기 일시정지' : '미리듣기 재생'}
+            aria-pressed={isPlaying}
             onClick={(event) => {
               event.stopPropagation();
               onPlay?.();
             }}
             className="gc-play cursor-pointer text-grayscale-1250"
           >
-            <PlayIcon className="size-[18px]" aria-hidden />
+            {isPlaying ? (
+              <span className="flex items-center gap-[3px]" aria-hidden>
+                <span className="h-[14px] w-[3px] rounded-full bg-grayscale-1250" />
+                <span className="h-[14px] w-[3px] rounded-full bg-grayscale-1250" />
+              </span>
+            ) : (
+              <PlayIcon className="size-[18px]" aria-hidden />
+            )}
           </button>
         </div>
       </div>

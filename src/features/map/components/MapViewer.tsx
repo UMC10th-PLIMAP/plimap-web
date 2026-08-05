@@ -30,6 +30,7 @@ type MapViewerProps = {
   onSelectPlace?: (placeId: string) => void;
   onSelectMapPin?: (pinId: string) => void;
   onPlayPin?: (pinId: string) => void;
+  playingMapPinId?: string | null;
   /** 핀이 아닌 지도의 빈 영역을 클릭했을 때 호출된다. */
   onMapClick?: () => void;
 };
@@ -63,6 +64,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onSelectPlace,
     onSelectMapPin,
     onPlayPin,
+    playingMapPinId = null,
     onMapClick,
   },
   ref,
@@ -102,6 +104,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     isLoaded,
     mapPins,
     selectedMapPinId,
+    playingMapPinId,
     flyTo,
     onSelectMapPin,
     onPlayPin,

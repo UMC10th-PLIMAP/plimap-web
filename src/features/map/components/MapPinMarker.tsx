@@ -4,6 +4,7 @@ import { MapPinMessageBox } from '@/features/map/components/MapPinMessageBox';
 export type MapPinMarkerProps = {
   coverUrl?: string;
   isSelected?: boolean;
+  isPlaying?: boolean;
   nickname?: string;
   avatarUrl?: string;
   introduction?: string;
@@ -13,6 +14,7 @@ export type MapPinMarkerProps = {
 export function MapPinMarker({
   coverUrl,
   isSelected = false,
+  isPlaying = false,
   nickname,
   avatarUrl,
   introduction,
@@ -26,6 +28,7 @@ export function MapPinMarker({
             nickname={nickname}
             avatarUrl={avatarUrl}
             introduction={introduction}
+            isPlaying={isPlaying}
             onPlay={onPlay}
           />
         </div>

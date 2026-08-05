@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
@@ -13,6 +13,7 @@ import { usePlaceTrackPins } from '@/features/pin/queries/usePlaceTrackPins';
 import { usePutLikedTrack } from '@/features/pin/queries/usePutLikedTrack';
 import type { GetPlaceTrackPinsResponse, PinFeedEntry, PinSort } from '@/features/pin/types';
 import { ConfirmAlertDialog } from '@/features/settings/components/ConfirmAlertDialog';
+import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
 import HeartIcon from '@/assets/icons/heart.svg?react';
 import ChangeIcon from '@/assets/icons/change.svg?react';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
     likeCount: pin.likeCount,
     liked: pin.userLike,
     isMine: pin.pinByMe,
+    clipStartMs: pin.clipStartMs,
   };
 }
 
@@ -45,6 +47,7 @@ export default function PinDetailPage() {
   const [sort, setSort] = useState<PinSort>('LATEST');
   const [reportFeedId, setReportFeedId] = useState<string | null>(null);
   const [deletePinId, setDeletePinId] = useState<string | null>(null);
+  const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
 
   const { data: pinDetail } = usePlaceTrackDetail({
     placeTrackId: pinId,
@@ -60,6 +63,23 @@ export default function PinDetailPage() {
   const isLikePending = isPutPending || isDeletePending;
 
   const pins = pinPages?.pages.flatMap((page) => page.data.map(toPinFeedEntry)) ?? [];
+
+  useEffect(() => {
+    preloadYouTubeIframeApi();
+  }, []);
+
+  useEffect(() => {
+    stopClipPlayback();
+  }, [pinId, sort, stopClipPlayback]);
+
+  const handlePlay = (entry: PinFeedEntry) => {
+    if (!pinDetail?.youtubeVideoId) return;
+
+    toggleClipPlayback(entry.id, {
+      videoId: pinDetail.youtubeVideoId,
+      clipStartMs: entry.clipStartMs,
+    });
+  };
 
   const handleLikeClick = () => {
     if (!pinDetail || isLikePending) return;
@@ -135,6 +155,8 @@ export default function PinDetailPage() {
           <SongFeedCard
             key={entry.id}
             entry={entry}
+            isPlaying={playingKey === entry.id}
+            onPlay={() => handlePlay(entry)}
             onReport={setReportFeedId}
             onNicknameClick={() => {
               if (entry.isMine) {

@@ -216,6 +216,7 @@ export type PinFeedEntry = {
   likeCount: number;
   liked?: boolean;
   isMine?: boolean;
+  clipStartMs: number;
 };
 
 export type PinDetail = {

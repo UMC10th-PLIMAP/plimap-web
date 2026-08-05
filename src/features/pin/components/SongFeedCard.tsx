@@ -10,6 +10,7 @@ import PlayIcon from '@/assets/icons/play.svg?react';
 
 type SongFeedCardProps = {
   entry: PinFeedEntry;
+  isPlaying?: boolean;
   onPlay?: (entryId: string) => void;
   onReport?: (entryId: string) => void;
   onEdit?: (entryId: string) => void;
@@ -19,6 +20,7 @@ type SongFeedCardProps = {
 
 export function SongFeedCard({
   entry,
+  isPlaying = false,
   onPlay,
   onReport,
   onEdit,
@@ -140,11 +142,19 @@ export function SongFeedCard({
           <SoundWaveIcon className="size-6 text-grayscale-400" aria-hidden />
           <button
             type="button"
-            aria-label="미리듣기 재생"
+            aria-label={isPlaying ? '미리듣기 일시정지' : '미리듣기 재생'}
+            aria-pressed={isPlaying}
             onClick={() => onPlay?.(entry.id)}
-            className="flex size-[30px] items-center justify-center rounded-full bg-neon text-grayscale-1250"
+            className="flex size-[30px] cursor-pointer items-center justify-center rounded-full bg-neon text-grayscale-1250"
           >
-            <PlayIcon className="size-5" aria-hidden />
+            {isPlaying ? (
+              <span className="flex items-center gap-[3px]" aria-hidden>
+                <span className="h-3.5 w-[3px] rounded-full bg-grayscale-1250" />
+                <span className="h-3.5 w-[3px] rounded-full bg-grayscale-1250" />
+              </span>
+            ) : (
+              <PlayIcon className="size-5" aria-hidden />
+            )}
           </button>
         </div>
       </footer>
