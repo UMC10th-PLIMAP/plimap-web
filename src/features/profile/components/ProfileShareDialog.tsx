@@ -1,5 +1,6 @@
 import CloseIcon from '@/assets/icons/close.svg?react';
 import { Dialog } from '@/components/ui/Dialog';
+import UserIcon from '@/assets/icons/user-placeholder.svg?react';
 
 type ProfileShareDialogProps = {
   open: boolean;
@@ -42,7 +43,9 @@ export function ProfileShareDialog({
           {profileImageUrl ? (
             <img src={profileImageUrl} alt="" className="size-full object-cover" />
           ) : (
-            <div className="size-full bg-pli-black-50" />
+            <div className="size-full bg-pli-black-75 flex items-center justify-center">
+              <UserIcon className="size-[52px] text-pli-black-50" />
+            </div>
           )}
         </div>
         <button

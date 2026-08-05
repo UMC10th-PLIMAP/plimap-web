@@ -1,4 +1,5 @@
 import type { MyProfileResponse } from '@/types/member.type';
+import UserIcon from '@/assets/icons/user-placeholder.svg?react';
 
 type ProfileInfoData = Pick<
   MyProfileResponse,
@@ -53,7 +54,9 @@ export function ProfileInfo({ profile, onFollowingClick, onFollowerClick }: Prof
             className="size-full object-cover rounded-full"
           />
         ) : (
-          <div className="size-full bg-pli-black-50" />
+          <div className="size-full bg-pli-black-75 flex items-center justify-center">
+            <UserIcon className="size-[52px] text-pli-black-50" />
+          </div>
         )}
       </div>
       {profile.name && <p className="mt-2.5 body-16-r text-grayscale-500">{profile.name}</p>}
