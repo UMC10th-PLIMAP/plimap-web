@@ -27,6 +27,7 @@ type PlaceTrackPin = GetPlaceTrackPinsResponse['data'][number];
 function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
   return {
     id: String(pin.pinId),
+    memberId: pin.memberId,
     nickname: pin.writerNickname,
     avatarUrl: pin.writerProfileImage,
     createdAtLabel: pin.staticCreatedAt,
@@ -135,6 +136,13 @@ export default function PinDetailPage() {
             key={entry.id}
             entry={entry}
             onReport={setReportFeedId}
+            onNicknameClick={() => {
+              if (entry.isMine) {
+                navigate('/app/my');
+                return;
+              }
+              navigate(`/app/users/${entry.memberId}`);
+            }}
             onEdit={(entryId) => {
               navigate(`/app/pins/${entryId}/edit`, {
                 state: {

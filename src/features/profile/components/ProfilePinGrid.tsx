@@ -104,13 +104,15 @@ export function ProfilePinGrid({
           <p className=" body-15-m text-grayscale-700">원하는 장소에 나만의 음악을 기록해보세요</p>
         </div>
 
-        <button
-          type="button"
-          onClick={onRegisterPin}
-          className="mt-5 w-[144px] h-10 rounded-xl bg-grayscale-0 body-15-m text-grayscale-1250 cursor-pointer"
-        >
-          핀 등록하러 가기
-        </button>
+        {onRegisterPin && (
+          <button
+            type="button"
+            onClick={onRegisterPin}
+            className="mt-5 w-[144px] h-10 rounded-xl bg-grayscale-0 body-15-m text-grayscale-1250 cursor-pointer"
+          >
+            핀 등록하러 가기
+          </button>
+        )}
       </div>
     );
   }

@@ -102,6 +102,7 @@ export type GetPlaybackPreparationsResponse = {
 
 export type GetPlaceTrackPinsResponse = {
   data: {
+    memberId: number;
     pinId: number;
     writerNickname: string;
     writerProfileImage: string;
@@ -202,6 +203,7 @@ export type Song = {
 // 곡 상세 댓글 정보 타입
 export type PinFeedEntry = {
   id: string;
+  memberId: number;
   nickname: string;
   avatarUrl?: string;
   createdAtLabel: string;

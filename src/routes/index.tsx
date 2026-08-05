@@ -15,6 +15,7 @@ import MyProfilePage from '@/pages/MyProfilePage';
 import ProfileEditPage from '@/pages/ProfileEditPage';
 import MyPlimapPage from '@/pages/MyPlimapPage';
 import MyNotificationsPage from '@/pages/MyNotificationsPage';
+import UserProfilePage from '@/pages/UserProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 import PinDetailPage from '@/pages/PinDetailPage';
 import PinEditPage from '@/pages/PinEditPage';
@@ -136,8 +137,8 @@ export const router = createBrowserRouter([
             element: <SongDetailPage />,
           },
           {
-            path: 'my',
-            element: <MyProfilePage />,
+            path: 'users/:memberId',
+            element: <UserProfilePage />,
           },
           {
             path: 'my/edit',
