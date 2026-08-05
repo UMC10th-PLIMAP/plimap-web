@@ -31,8 +31,13 @@ const SINGLE_PLACE_ZOOM = 21;
 // 핀 아이콘이 아니라 여전히 숫자 버블로 보여준다.
 const SINGLE_PLACE_PIN_MIN_ZOOM = 14;
 
+// 위경도 값은 서버 직렬화 과정에서 마지막 자리가 미세하게 달라질 수 있어, 정확히
+// 같은 값인지(===)가 아니라 오차 허용 범위 안에 있는지로 퇴화 여부를 판단한다.
+const DEGENERATE_BOUNDS_EPSILON = 1e-7;
+
 const isDegenerateBounds = (bounds: PinCluster['bounds']) =>
-  bounds.southWestLat === bounds.northEastLat && bounds.southWestLng === bounds.northEastLng;
+  Math.abs(bounds.southWestLat - bounds.northEastLat) < DEGENERATE_BOUNDS_EPSILON &&
+  Math.abs(bounds.southWestLng - bounds.northEastLng) < DEGENERATE_BOUNDS_EPSILON;
 
 type UseClusterOverlaysParams = {
   mapInstanceRef: RefObject<google.maps.Map | null>;

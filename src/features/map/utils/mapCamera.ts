@@ -36,9 +36,13 @@ export function getBoundsZoomLevel(
   const latZoom = zoomForFraction(mapPixelSize.height * BOUNDS_FIT_PADDING_RATIO, latFraction);
   const lngZoom = zoomForFraction(mapPixelSize.width * BOUNDS_FIT_PADDING_RATIO, lngFraction);
 
-  if (!Number.isFinite(latZoom) || !Number.isFinite(lngZoom)) return maxZoom;
+  // 한 축의 fraction이 0이면(위도 또는 경도가 같은 두 지점) 그 축의 zoom은
+  // Infinity가 되는데, 이때도 유한한 다른 축의 값을 그대로 써야 한다 - 두 축
+  // 모두 무한할 때만(완전히 같은 점) maxZoom으로 대체한다.
+  const finiteZooms = [latZoom, lngZoom].filter(Number.isFinite);
+  if (finiteZooms.length === 0) return maxZoom;
 
-  return Math.max(1, Math.min(Math.floor(Math.min(latZoom, lngZoom)), maxZoom));
+  return Math.max(1, Math.min(Math.floor(Math.min(...finiteZooms)), maxZoom));
 }
 
 /**
