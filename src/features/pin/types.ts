@@ -216,6 +216,7 @@ export type PinFeedEntry = {
   likeCount: number;
   liked?: boolean;
   isMine?: boolean;
+  clipStartMs: number;
 };
 
 export type PinDetail = {
@@ -249,6 +250,9 @@ export type FocusedFeedPin = {
   avatarUrl?: string;
   albumImageUrl: string;
   introduction: string;
+  /** 말풍선 미리듣기 재생용 */
+  youtubeVideoId?: string;
+  clipStartMs?: number;
 };
 
 export type PinSearchPlace = PlaceResult & {

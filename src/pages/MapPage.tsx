@@ -21,6 +21,7 @@ import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 import { usePinCreationStore } from '@/store/pinCreationStore';
+import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 const REGISTRATION_TOAST_DURATION_MS = 2_000;
@@ -118,6 +119,8 @@ const MapPage: React.FC<MapPageProps> = ({
       nickname: overlayFocusPin.nickname,
       avatarUrl: overlayFocusPin.avatarUrl,
       introduction: overlayFocusPin.introduction,
+      youtubeVideoId: overlayFocusPin.youtubeVideoId,
+      clipStartMs: overlayFocusPin.clipStartMs,
     };
 
     return [...mapPins.filter((pin) => pin.id !== focusedPin.id), focusedPin];
@@ -141,6 +144,25 @@ const MapPage: React.FC<MapPageProps> = ({
   const setPinCreationPlace = usePinCreationStore((state) => state.setPlace);
 
   const mapViewerRef = useRef<MapViewerHandle>(null);
+  const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
+
+  const handlePlayMapPin = useCallback(
+    (pinId: string) => {
+      const pin = displayMapPins.find((candidate) => candidate.id === pinId);
+      if (!pin?.youtubeVideoId) return;
+
+      toggleClipPlayback(pinId, {
+        videoId: pin.youtubeVideoId,
+        clipStartMs: pin.clipStartMs ?? 0,
+      });
+    },
+    [displayMapPins, toggleClipPlayback],
+  );
+
+  // 말풍선을 띄우는 핀이 바뀌면(선택·자동 포커스 포함) 재생 중인 클립을 멈춘다.
+  useEffect(() => {
+    stopClipPlayback();
+  }, [viewerSelectedMapPinId, stopClipPlayback]);
 
   // --- 구글맵 스크립트 로드 (setState는 전부 프로미스 콜백 안에서만 일어나 effect에서 안전하게 호출 가능) ---
   const startGoogleMapsLoad = useCallback((apiKey: string) => {
@@ -160,6 +182,11 @@ const MapPage: React.FC<MapPageProps> = ({
     if (!hasApiKey) return;
     startGoogleMapsLoad(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
   }, [startGoogleMapsLoad, hasApiKey]);
+
+  useEffect(() => {
+    if (mapLoadStatus !== 'ready') return;
+    preloadYouTubeIframeApi();
+  }, [mapLoadStatus]);
 
   // 선택된 장소가 있으면 해당 위도·경도로 지도를 이동한다.
   // 현재 위치 최초 센터링보다 우선한다.
@@ -354,6 +381,8 @@ const MapPage: React.FC<MapPageProps> = ({
         onCurrentLocationError={setCurrentLocationError}
         onViewportChanged={setViewport}
         onSelectMapPin={onSelectMapPinChange}
+        onPlayPin={handlePlayMapPin}
+        playingMapPinId={playingKey}
         onMapClick={handleMapClick}
       />
     </div>

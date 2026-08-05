@@ -14,9 +14,11 @@ export const toMapPinMarkerProps = (
   pin: MapPin,
   isSelected = false,
   onPlay?: () => void,
+  isPlaying = false,
 ): MapPinMarkerProps => ({
   coverUrl: pin.coverUrl,
   isSelected,
+  isPlaying,
   nickname: pin.nickname,
   avatarUrl: pin.avatarUrl,
   introduction: pin.introduction,

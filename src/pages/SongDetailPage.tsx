@@ -17,6 +17,7 @@ import {
 } from '@/features/pin/data/songPreview';
 import { useCreatePin } from '@/features/pin/queries/useCreatePin';
 import { useGetPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
+import { useAudioPreview } from '@/hooks/useAudioPreview';
 import { cn } from '@/lib/utils';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
@@ -88,15 +89,17 @@ function SongWaveform({ peaks, trimStartIndex, trimEndIndex }: SongWaveformProps
 type SongPreviewSectionProps = {
   waveformPeaks: readonly number[];
   durationSec: number;
+  previewUrl?: string | null;
 };
 
-function SongPreviewSection({ waveformPeaks, durationSec }: SongPreviewSectionProps) {
+function SongPreviewSection({ waveformPeaks, durationSec, previewUrl }: SongPreviewSectionProps) {
   const trim = peaksToTrimRange(
     DEFAULT_TRIM_START_INDEX,
     DEFAULT_TRIM_END_INDEX,
     waveformPeaks,
     durationSec,
   );
+  const { isPlaying, toggle, canPlay } = useAudioPreview({ src: previewUrl });
 
   const trimStartPercent = timeToPercent(trim.start, durationSec);
   const trimEndPercent = timeToPercent(trim.end, durationSec);
@@ -108,10 +111,22 @@ function SongPreviewSection({ waveformPeaks, durationSec }: SongPreviewSectionPr
 
         <button
           type="button"
-          aria-label="재생"
-          className="flex size-7 items-center justify-center rounded-full bg-grayscale-100"
+          aria-label={isPlaying ? '일시정지' : '재생'}
+          aria-pressed={isPlaying}
+          disabled={!canPlay}
+          onClick={() => {
+            void toggle();
+          }}
+          className="flex size-7 items-center justify-center rounded-full bg-grayscale-100 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <PlayIcon className="size-4.5 text-grayscale-1200" aria-hidden />
+          {isPlaying ? (
+            <span className="flex items-center gap-[3px]" aria-hidden>
+              <span className="h-3.5 w-[3px] rounded-full bg-grayscale-1200" />
+              <span className="h-3.5 w-[3px] rounded-full bg-grayscale-1200" />
+            </span>
+          ) : (
+            <PlayIcon className="size-4.5 text-grayscale-1200" aria-hidden />
+          )}
         </button>
       </div>
 
@@ -331,7 +346,12 @@ export default function SongDetailPage() {
                   <p className="body-15-r text-grayscale-500">{preparedTrack?.artistName}</p>
                 </div>
 
-                <SongPreviewSection waveformPeaks={waveformPeaks} durationSec={durationSec} />
+                <SongPreviewSection
+                  key={preparedTrack?.previewUrl ?? 'preview-loading'}
+                  waveformPeaks={waveformPeaks}
+                  durationSec={durationSec}
+                  previewUrl={preparedTrack?.previewUrl}
+                />
               </div>
             </div>
           </section>
