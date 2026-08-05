@@ -26,6 +26,7 @@ async function resolvePlace(params: {
   fallbackPlaceName: string;
   isMine: boolean;
   focusedFeedPin?: FocusedFeedPin;
+  mapFocusPin?: FocusedFeedPin;
 }) {
   const { pinDetail } = params;
   const positionResult = await getCurrentPosition();
@@ -58,6 +59,7 @@ async function resolvePlace(params: {
       lng: pinDetail.longitude,
     },
     focusedFeedPin: params.focusedFeedPin,
+    mapFocusPin: params.mapFocusPin,
   };
 
   return { place, userCoordinate };
@@ -100,6 +102,39 @@ async function resolvePlaceTrackId(params: {
   }
 
   return null;
+}
+
+type PlaceTrackPinItem = Awaited<ReturnType<typeof getPlaceTrackPins>>['data'][number];
+
+/** 해당 장소 곡에서 내가 등록한 PIN을 찾는다. */
+async function findMyPlaceTrackPin(placeTrackId: string | number) {
+  const pageSize = 50;
+  let cursor: string | undefined;
+
+  while (true) {
+    const pins = await getPlaceTrackPins(String(placeTrackId), pageSize, cursor, 'POPULAR');
+    const myPin = pins.data.find((pin) => pin.pinByMe);
+    if (myPin) return myPin;
+    if (!pins.hasNext) break;
+    cursor = pins.nextCursor;
+  }
+
+  return null;
+}
+
+function toFocusedFeedPin(
+  pin: PlaceTrackPinItem,
+  placeTrackId: number,
+  albumImageUrl: string,
+): FocusedFeedPin {
+  return {
+    pinId: pin.pinId,
+    placeTrackId,
+    nickname: pin.writerNickname,
+    avatarUrl: pin.writerProfileImage || undefined,
+    albumImageUrl,
+    introduction: pin.introduction,
+  };
 }
 
 /** pinId로 상세/장소 조회 후 지도 PinListSheet를 연다. */
@@ -164,26 +199,31 @@ export function useOpenPinPlaceOnMap() {
 
       setIsNavigating(true);
       try {
+        const resolvedPlaceTrackId = Number(placeTrackId);
         const trackPins = await getPlaceTrackPins(String(placeTrackId), 1, undefined, 'POPULAR');
-        const representativePin = trackPins.data[0];
-        if (!representativePin) {
+        const popularPin = trackPins.data[0];
+        if (!popularPin) {
           setIsNavigating(false);
           return;
         }
 
-        const pinDetail = await getPinDetail(String(representativePin.pinId));
+        const pinDetail = await getPinDetail(String(popularPin.pinId));
+        const myPin = popularPin.pinByMe ? popularPin : await findMyPlaceTrackPin(placeTrackId);
+        const mapFocusPin = toFocusedFeedPin(
+          popularPin,
+          resolvedPlaceTrackId,
+          pinDetail.albumImageUrl,
+        );
+
         const { place } = await resolvePlace({
           pinDetail,
           fallbackPlaceName,
-          isMine: representativePin.pinByMe,
-          focusedFeedPin: {
-            pinId: representativePin.pinId,
-            placeTrackId: Number(placeTrackId),
-            nickname: representativePin.writerNickname,
-            avatarUrl: representativePin.writerProfileImage || undefined,
-            albumImageUrl: pinDetail.albumImageUrl,
-            introduction: representativePin.introduction,
-          },
+          isMine: Boolean(myPin),
+          mapFocusPin,
+          // 내가 등록한 곡이 있을 때만 바텀시트 CTA 표시
+          focusedFeedPin: myPin
+            ? toFocusedFeedPin(myPin, resolvedPlaceTrackId, pinDetail.albumImageUrl)
+            : undefined,
         });
 
         selectMapPlace(place);

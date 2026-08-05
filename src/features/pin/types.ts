@@ -251,8 +251,10 @@ export type PinSearchPlace = PlaceResult & {
   placeId?: number;
   bookmarkedByMe?: boolean;
   isMine?: boolean;
-  /** 프로필 피드 게시물에서 진입했을 때, 등록 곡 상세 CTA에 쓰는 정보 */
+  /** 등록 곡 상세 보기 CTA (내 등록 곡이 있을 때만) */
   focusedFeedPin?: FocusedFeedPin;
+  /** 지도 핀 말풍선용 (CTA와 별개로 인기 PIN 등을 표시할 때) */
+  mapFocusPin?: FocusedFeedPin;
   source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
   withinAccessRange?: boolean;
   selectionLocation?: PlaceSearchHistoryRequest;
