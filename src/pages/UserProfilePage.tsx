@@ -59,7 +59,7 @@ export default function UserProfilePage() {
             profile={{
               name: member.name,
               introduction: member.introduction,
-              profileImageUrl: member.profileImageObjectKey,
+              profileImageUrl: member.profileImageUrl,
               followerCount: member.followerCount,
               followingCount: member.followingCount,
             }}
