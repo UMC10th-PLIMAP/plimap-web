@@ -2,6 +2,45 @@ export const FLY_TO_DURATION_MS = 450;
 
 const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t);
 
+const WORLD_DIM_PX = 256;
+// bounds 가장자리가 화면에 딱 붙지 않도록 여백을 두는 비율 (85%만 쓴다고 가정하고 계산하면
+// 그만큼 한 단계 덜 확대되어 여유가 생긴다).
+const BOUNDS_FIT_PADDING_RATIO = 0.85;
+
+const latToMercatorRadians = (lat: number) => {
+  const sin = Math.sin((lat * Math.PI) / 180);
+  const radians = Math.log((1 + sin) / (1 - sin)) / 2;
+  return Math.max(Math.min(radians, Math.PI), -Math.PI) / 2;
+};
+
+const zoomForFraction = (pixelDimension: number, fraction: number) =>
+  Math.log(pixelDimension / WORLD_DIM_PX / fraction) / Math.LN2;
+
+/**
+ * 주어진 위경도 bounds가 mapPixelSize 안에 다 들어오는 정수 줌 레벨을 계산한다.
+ * `map.fitBounds()`는 이 프로젝트의 restriction(대한민국 경계 제한) 설정과 함께 쓰면
+ * center를 restriction 중심으로 되돌려버리는 버그가 있어(zoom만 바뀌고 center가
+ * 안 움직임), 대신 이 값으로 직접 flyToLocation을 호출한다.
+ */
+export function getBoundsZoomLevel(
+  bounds: google.maps.LatLngBoundsLiteral,
+  mapPixelSize: { width: number; height: number },
+  maxZoom: number,
+): number {
+  const latFraction =
+    (latToMercatorRadians(bounds.north) - latToMercatorRadians(bounds.south)) / Math.PI;
+
+  const lngDiff = bounds.east - bounds.west;
+  const lngFraction = (lngDiff < 0 ? lngDiff + 360 : lngDiff) / 360;
+
+  const latZoom = zoomForFraction(mapPixelSize.height * BOUNDS_FIT_PADDING_RATIO, latFraction);
+  const lngZoom = zoomForFraction(mapPixelSize.width * BOUNDS_FIT_PADDING_RATIO, lngFraction);
+
+  if (!Number.isFinite(latZoom) || !Number.isFinite(lngZoom)) return maxZoom;
+
+  return Math.max(1, Math.min(Math.floor(Math.min(latZoom, lngZoom)), maxZoom));
+}
+
 /**
  * 지정한 좌표로 패닝하면서 동시에 줌을 부드럽게 애니메이션한다.
  * 반환된 함수를 호출하면 진행 중인 애니메이션을 취소할 수 있다 (연타 시 이전 애니메이션 정리용).
