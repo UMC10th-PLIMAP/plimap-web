@@ -106,7 +106,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onSelectMapPin,
     onPlayPin,
   });
-  useClusterOverlays({ mapInstanceRef, isLoaded, clusters: mapClusters, flyTo, fitToBounds });
+  useClusterOverlays({ mapInstanceRef, isLoaded, clusters: mapClusters, zoom, flyTo, fitToBounds });
   useCoordinateProjection({
     mapInstanceRef,
     isLoaded,
