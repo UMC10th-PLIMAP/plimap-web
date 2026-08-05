@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
+import { FullScreenError } from '@/components/ui/FullScreenError';
 import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
 import type {
@@ -106,9 +107,6 @@ const MapPage: React.FC<MapPageProps> = ({
   const [zoom, setZoom] = useState<number>(savedViewport?.zoom ?? 19);
   const [mapLoadStatus, setMapLoadStatus] = useState<MapLoadStatus>(
     hasApiKey ? 'loading' : 'error',
-  );
-  const [mapLoadError, setMapLoadError] = useState<string | null>(
-    hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
   const [currentLocation, setCurrentLocation] = useState<MapCoordinate | null>(null);
   const [currentLocationError, setCurrentLocationError] = useState<string | null>(null);
@@ -320,7 +318,6 @@ const MapPage: React.FC<MapPageProps> = ({
       .catch((error) => {
         console.error(error);
         setMapLoadStatus('error');
-        setMapLoadError('지도를 불러오지 못했어요. 네트워크 상태를 확인해주세요.');
       });
   }, []);
 
@@ -370,13 +367,11 @@ const MapPage: React.FC<MapPageProps> = ({
   const handleRetryMapLoad = () => {
     document.getElementById('google-maps-script')?.remove();
     setMapLoadStatus('loading');
-    setMapLoadError(null);
 
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
     if (!apiKey) {
       console.error('VITE_GOOGLE_MAPS_API_KEY is missing in environment variables');
       setMapLoadStatus('error');
-      setMapLoadError('지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.');
       return;
     }
 
@@ -443,18 +438,7 @@ const MapPage: React.FC<MapPageProps> = ({
   };
 
   if (mapLoadStatus === 'error') {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-pli-black-100 p-6 text-center">
-        <p className="body-15-r text-grayscale-300">{mapLoadError}</p>
-        <button
-          type="button"
-          onClick={handleRetryMapLoad}
-          className="rounded-full bg-neon px-6 py-3 body-15-sb text-grayscale-1250"
-        >
-          다시 시도
-        </button>
-      </div>
-    );
+    return <FullScreenError variant="map" onAction={handleRetryMapLoad} />;
   }
 
   if (!hasInitialPosition) {

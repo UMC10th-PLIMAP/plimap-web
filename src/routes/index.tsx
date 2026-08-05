@@ -36,6 +36,7 @@ import TermsDetailViewPage from '@/pages/TermsDetailViewPage';
 import RecommendationContentCarouselPreviewPage from '@/pages/RecommendationContentCarouselPreviewPage';
 import HomePage from '@/pages/HomePage';
 import FriendSearchPage from '@/pages/FriendSearchPage';
+import NotFoundPage from '@/pages/NotFoundPage';
 
 export const router = createBrowserRouter([
   {
@@ -219,6 +220,14 @@ export const router = createBrowserRouter([
           },
         ],
       },
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
     ],
+  },
+  {
+    path: '*',
+    element: <Navigate to="/app/not-found" replace />,
   },
 ]);

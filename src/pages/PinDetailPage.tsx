@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { ApiError, isNetworkError } from '@/api/client';
+import { FullScreenError, type FullScreenErrorVariant } from '@/components/ui/FullScreenError';
 import { TopBar } from '@/components/ui/TopBar';
 import { PinDetailSkeleton } from '@/components/skeletons/PinDetailSkeleton';
 
@@ -33,6 +35,17 @@ type PinDetailLocationState = {
   userLongitude?: number;
   placeAccessToken?: string;
 };
+
+function getErrorVariant(error: unknown): FullScreenErrorVariant {
+  if (isNetworkError(error)) return 'network';
+  if (error instanceof ApiError) {
+    if (error.status === 401) return 'session';
+    if (error.status === 403) return 'forbidden';
+    if (error.status === 404) return 'not-found';
+  }
+
+  return 'network';
+}
 
 function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
   return {
@@ -84,6 +97,7 @@ export default function PinDetailPage() {
   // 지도/피드에서 navigate state로 넘긴 토큰만 사용 (스토어 잔여 토큰 혼입 방지)
   const placeAccessToken = locationState?.placeAccessToken;
   const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
+  const [actionError, setActionError] = useState<FullScreenErrorVariant | null>(null);
 
   const userLatitude = hasLocationFromState
     ? locationState.userLatitude
@@ -92,29 +106,21 @@ export default function PinDetailPage() {
     ? locationState.userLongitude
     : currentPositionQuery.data?.longitude;
 
-  const {
-    data: pinDetail,
-    isPending: isDetailPending,
-    isError: isDetailError,
-    refetch: refetchDetail,
-  } = usePlaceTrackDetail({
+  const pinDetailQuery = usePlaceTrackDetail({
     placeTrackId: pinId,
     userLatitude,
     userLongitude,
     placeAccessToken,
   });
-  const {
-    data: pinPages,
-    isPending: isPinsPending,
-    isError: isPinsError,
-    refetch: refetchPins,
-  } = usePlaceTrackPins({
+  const pinPagesQuery = usePlaceTrackPins({
     placeTrackId: pinId,
     pinSortType: sort,
     userLatitude,
     userLongitude,
     placeAccessToken,
   });
+  const { data: pinDetail } = pinDetailQuery;
+  const { data: pinPages } = pinPagesQuery;
 
   const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
   const { mutate: deleteLikedTrack, isPending: isDeletePending } = useDeleteLikedTrack();
@@ -135,9 +141,27 @@ export default function PinDetailPage() {
 
   const isLocationPending = !hasLocationFromState && currentPositionQuery.isPending;
   const isContentPending =
-    !locationErrorMessage && (isLocationPending || isDetailPending || isPinsPending);
-  const isContentError =
-    !locationErrorMessage && !isContentPending && (isDetailError || isPinsError);
+    !locationErrorMessage &&
+    (isLocationPending || pinDetailQuery.isPending || pinPagesQuery.isPending);
+  const queryError = pinDetailQuery.error ?? pinPagesQuery.error;
+  const errorVariant =
+    actionError ??
+    (queryError ? getErrorVariant(queryError) : !isContentPending && !pinDetail ? 'network' : null);
+
+  const handleErrorAction = () => {
+    if (errorVariant === 'network') {
+      void Promise.all([pinDetailQuery.refetch(), pinPagesQuery.refetch()]);
+      setActionError(null);
+      return;
+    }
+
+    if (errorVariant === 'session') {
+      navigate('/app/login', { replace: true });
+      return;
+    }
+
+    navigate(-1);
+  };
 
   useEffect(() => {
     preloadYouTubeIframeApi();
@@ -195,24 +219,16 @@ export default function PinDetailPage() {
     );
   }
 
-  if (isContentError || !pinDetail) {
+  if (errorVariant) {
+    return <FullScreenError variant={errorVariant} onAction={handleErrorAction} />;
+  }
+
+  if (!pinDetail) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <TopBar onBack={() => navigate(-1)} className="pt-[env(safe-area-inset-top)]" />
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
-          <p className="body-15-r text-grayscale-500">곡 정보를 불러오지 못했어요.</p>
-          <button
-            type="button"
-            onClick={() => {
-              void refetchDetail();
-              void refetchPins();
-            }}
-            className="cursor-pointer rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100"
-          >
-            다시 시도
-          </button>
-        </div>
-      </div>
+      <FullScreenError
+        variant="network"
+        onAction={() => void Promise.all([pinDetailQuery.refetch(), pinPagesQuery.refetch()])}
+      />
     );
   }
 
@@ -312,7 +328,16 @@ export default function PinDetailPage() {
         open={reportFeedId !== null}
         onClose={() => setReportFeedId(null)}
         onSubmit={async (reason, detail) => {
-          await reportPin(Number(reportFeedId), reason, detail);
+          try {
+            await reportPin(Number(reportFeedId), reason, detail);
+          } catch (error) {
+            const variant = getErrorVariant(error);
+            if (variant === 'forbidden' || variant === 'session' || variant === 'network') {
+              setReportFeedId(null);
+              setActionError(variant);
+            }
+            throw error;
+          }
         }}
       />
 
