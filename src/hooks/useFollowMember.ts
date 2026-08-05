@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { followMember } from '@/api/member';
+import { followMember, unfollowMember } from '@/api/member';
 import type { MemberProfileResponse } from '@/types/member.type';
 
 export function useFollowMember(memberId: number) {
@@ -8,14 +8,15 @@ export function useFollowMember(memberId: number) {
   const queryKey = ['members', memberId] as const;
 
   return useMutation({
-    mutationFn: () => followMember(memberId),
-    onSuccess: () => {
+    mutationFn: (isFollowing: boolean) =>
+      isFollowing ? unfollowMember(memberId) : followMember(memberId),
+    onSuccess: (_data, isFollowing) => {
       queryClient.setQueryData<MemberProfileResponse>(queryKey, (profile) =>
         profile
           ? {
               ...profile,
-              isFollowing: true,
-              followerCount: profile.followerCount + 1,
+              isFollowing: !isFollowing,
+              followerCount: Math.max(0, profile.followerCount + (isFollowing ? -1 : 1)),
             }
           : profile,
       );

@@ -92,8 +92,8 @@ export default function UserProfilePage() {
               {
                 label: member.isFollowing ? '팔로잉' : '팔로우',
                 onClick: () => {
-                  if (member.isFollowing || followMutation.isPending) return;
-                  followMutation.mutate();
+                  if (followMutation.isPending || !id) return;
+                  followMutation.mutate(member.isFollowing);
                 },
                 className: member.isFollowing
                   ? undefined
