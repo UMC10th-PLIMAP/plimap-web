@@ -11,7 +11,7 @@ import type {
   PatchPinResponse,
   PinSort,
 } from '@/features/pin/types';
-import type { MapPin } from '@/features/map/types';
+import type { MapPin, PinCluster } from '@/features/map/types';
 
 export type PinAvailabilityRequest = {
   latitude: number;
@@ -68,12 +68,45 @@ type MapPinPreviewResponse = {
   clipStartMs: number;
 };
 
+const toMapPin = (pin: MapPinPreviewResponse): MapPin => ({
+  id: `place:${pin.placeId}`,
+  placeId: pin.placeId,
+  lat: pin.latitude,
+  lng: pin.longitude,
+  coverUrl: pin.albumImageUrl ?? undefined,
+  nickname: pin.writerNickname,
+  avatarUrl: pin.writerProfileImage ?? undefined,
+  introduction: pin.introduction,
+  youtubeVideoId: pin.youtubeVideoId,
+  clipStartMs: pin.clipStartMs,
+});
+
 export type MapPinsResponse = {
   pins: MapPin[];
 };
 
 type MapPinsApiResponse = {
   pins: MapPinPreviewResponse[] | null;
+};
+
+export type PinMapViewRequest = {
+  southWestLat: number;
+  southWestLng: number;
+  northEastLat: number;
+  northEastLng: number;
+  zoomLevel: number;
+};
+
+type PinMapViewApiResponse = {
+  zoomLevel: number;
+  clusters: PinCluster[] | null;
+  pins: MapPinPreviewResponse[] | null;
+};
+
+export type PinMapViewResponse = {
+  zoomLevel: number;
+  clusters: PinCluster[] | null;
+  pins: MapPin[] | null;
 };
 
 // 1) PUT /api/v1/pins/{pinId}/likes - PIN 좋아요 등록
@@ -184,7 +217,11 @@ export async function createPin(request: CreatePinRequest): Promise<CreatePinRes
   return data.result;
 }
 
-/** GET /api/v1/pins/map 핀 등록 위치 선택기의 viewport 기반 기존 PIN 조회 */
+/**
+ * GET /api/v1/pins/map 핀 등록 위치 선택기의 viewport 기반 기존 PIN 조회.
+ * 메인 지도 화면의 클러스터&핀 조회(getPinMapView)와 같은 엔드포인트를 쓰지만,
+ * 여기서는 clusters를 무시하고 pins만 사용한다.
+ */
 export async function getMapPins(
   request: MapPinsRequest,
   options?: { signal?: AbortSignal },
@@ -195,15 +232,23 @@ export async function getMapPins(
   });
 
   return {
-    pins: (data.result.pins ?? []).map((pin) => ({
-      id: `place:${pin.placeId}`,
-      placeId: pin.placeId,
-      lat: pin.latitude,
-      lng: pin.longitude,
-      coverUrl: pin.albumImageUrl ?? undefined,
-      nickname: pin.writerNickname,
-      avatarUrl: pin.writerProfileImage ?? undefined,
-      introduction: pin.introduction,
-    })),
+    pins: (data.result.pins ?? []).map(toMapPin),
+  };
+}
+
+/** GET /api/v1/pins/map 지도 뷰포트 기반 클러스터&핀 조회 (줌 레벨에 따라 clusters 또는 pins가 반환됨) */
+export async function getPinMapView(
+  request: PinMapViewRequest,
+  options?: { signal?: AbortSignal },
+): Promise<PinMapViewResponse> {
+  const { data } = await apiClient.get<ApiResponse<PinMapViewApiResponse>>('/api/v1/pins/map', {
+    params: request,
+    signal: options?.signal,
+  });
+
+  return {
+    zoomLevel: data.result.zoomLevel,
+    clusters: data.result.clusters,
+    pins: data.result.pins ? data.result.pins.map(toMapPin) : null,
   };
 }

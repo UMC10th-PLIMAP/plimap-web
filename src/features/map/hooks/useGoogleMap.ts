@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '../types';
-import { flyToLocation, FLY_TO_DURATION_MS } from '../utils/mapCamera';
+import { flyToLocation, getBoundsZoomLevel, FLY_TO_DURATION_MS } from '../utils/mapCamera';
 
 // 지도 줌 하한/상한선 (핀 포커스 줌 레벨과 동일하게 상한 고정)
 const MIN_ZOOM = 6;
@@ -103,8 +103,6 @@ export function useGoogleMap({
     const mapElement = mapRef.current;
     if (!isLoaded || !mapElement) return;
 
-    // A suppressed programmatic pan must never consume the next user-initiated
-    // center update, even when the pan was clamped and emitted no idle event.
     const handleUserInteraction = () => clearCenterChangeSuppression();
     mapElement.addEventListener('pointerdown', handleUserInteraction, true);
     mapElement.addEventListener('wheel', handleUserInteraction, true);
@@ -151,8 +149,6 @@ export function useGoogleMap({
       mapInstanceRef.current = map;
 
       map.addListener('zoom_changed', () => {
-        // panTo does not change zoom, so a zoom event belongs to another
-        // interaction and must not inherit its center-change suppression.
         clearCenterChangeSuppression();
         // flyTo가 매 프레임 setZoom을 호출하는 동안 이 이벤트를 그대로 흘려보내면
         // zoom prop 동기화 effect가 다시 setZoom을 불러 서로 되먹임된다.
@@ -188,9 +184,14 @@ export function useGoogleMap({
           onCenterChangedRef.current?.(center);
         }
         clearCenterChangeSuppression();
-        // flyTo 애니메이션이 자연스럽게 끝나 idle이 뜨면, 타임아웃을 기다리지
-        // 않고 바로 억제를 풀어서 최종 zoom/center가 지체 없이 반영되게 한다.
+        // flyTo/fitBounds 애니메이션이 자연스럽게 끝나 idle이 뜨면, 타임아웃을
+        // 기다리지 않고 바로 억제를 풀어서 최종 zoom/center가 지체 없이 반영되게 한다.
         clearFlyingSuppression();
+        // fitBounds처럼 목표 줌을 미리 알 수 없는 프로그래매틱 이동은 도착 시점에
+        // zoom_changed가 억제돼 React zoom state가 못 따라올 수 있다 - 지도가
+        // 정지(idle)할 때마다 실제 줌으로 명시적으로 동기화해서, 다음 렌더에서
+        // zoom 동기화 effect가 오래된 값으로 지도를 되돌리는 것을 막는다.
+        onZoomChangedRef.current?.(newZoom);
 
         const southWest = bounds.getSouthWest();
         const northEast = bounds.getNorthEast();
@@ -243,6 +244,41 @@ export function useGoogleMap({
     [clearFlyingSuppression],
   );
 
+  const fitToBounds = useCallback(
+    (bounds: google.maps.LatLngBoundsLiteral) => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+
+      // 네이티브 map.fitBounds()는 이 지도의 restriction(대한민국 경계 제한)과
+      // 함께 쓰면 줌만 바뀌고 center는 restriction 중심으로 그대로 남는 버그가
+      // 있어(실측 확인됨), 대신 bounds로 목표 줌을 직접 계산해 flyToLocation으로
+      // 이동한다 - 핀 클릭 때와 동일한, 검증된 애니메이션 경로를 재사용하는 셈.
+      const mapDiv = map.getDiv();
+      const targetZoom = getBoundsZoomLevel(
+        bounds,
+        { width: mapDiv.clientWidth, height: mapDiv.clientHeight },
+        MAX_ZOOM,
+      );
+      const center = {
+        lat: (bounds.north + bounds.south) / 2,
+        lng: (bounds.east + bounds.west) / 2,
+      };
+
+      flyingCancelRef.current?.();
+      clearFlyingSuppression();
+      isFlyingRef.current = true;
+      flyingCancelRef.current = flyToLocation(map, center, targetZoom, () => {
+        onZoomChangedRef.current?.(targetZoom);
+        clearFlyingSuppression();
+      });
+      flyingTimeoutRef.current = window.setTimeout(
+        clearFlyingSuppression,
+        FLY_TO_ZOOM_SUPPRESSION_TIMEOUT_MS,
+      );
+    },
+    [clearFlyingSuppression],
+  );
+
   const panTo = useCallback(
     (coordinate: MapCoordinate, options?: PanToOptions) => {
       const map = mapInstanceRef.current;
@@ -261,9 +297,6 @@ export function useGoogleMap({
       clearCenterChangeSuppression();
       if (options?.notifyCenterChanged === false) {
         suppressNextCenterChangedRef.current = true;
-        // A restricted/no-op pan may emit neither center_changed nor idle.
-        // User interaction clears suppression immediately; this timeout only
-        // bounds the remaining no-event programmatic case.
         centerChangeSuppressionTimeoutRef.current = window.setTimeout(
           clearCenterChangeSuppression,
           CENTER_CHANGE_SUPPRESSION_TIMEOUT_MS,
@@ -274,5 +307,5 @@ export function useGoogleMap({
     [clearCenterChangeSuppression],
   );
 
-  return { mapRef, mapInstanceRef, panTo, flyTo };
+  return { mapRef, mapInstanceRef, panTo, flyTo, fitToBounds };
 }
