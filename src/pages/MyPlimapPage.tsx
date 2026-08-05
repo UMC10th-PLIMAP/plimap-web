@@ -13,7 +13,7 @@ import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 export default function MyPlimapPage() {
   const navigate = useNavigate();
-  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
+  const { openPinPlaceOnMap, openPlaceTrackOnMap } = useOpenPinPlaceOnMap();
   const [tab, setTab] = useState<MyPlimapTab>('liked');
   const { data: myPins } = useInfiniteMyPins();
   const {
@@ -61,11 +61,13 @@ export default function MyPlimapPage() {
                   tags: pin.tags,
                   createdAtLabel: pin.staticCreatedAt,
                 }}
-                onPlaceClick={() => {
+                onClick={() => {
                   void openPinPlaceOnMap({
                     pinId: pin.pinId,
+                    placeTrackId: pin.placeTrackId,
                     fallbackPlaceName: pin.placeName,
                     isMine: true,
+                    showMyRegisteredTrackCta: true,
                   });
                 }}
                 onMoreClick={() => {
@@ -87,7 +89,7 @@ export default function MyPlimapPage() {
                   key={track.placeTrackId}
                   pin={{ ...track, liked: true }}
                   onClick={() => {
-                    // TODO: 맵으로 이동 연결
+                    void openPlaceTrackOnMap({ placeTrackId: track.placeTrackId });
                   }}
                 />
               ))}

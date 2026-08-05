@@ -102,11 +102,31 @@ const MapPage: React.FC<MapPageProps> = ({
     (mapViewData.clusters?.length ?? 0) === 0;
   const mapPins = shouldUseDevMockPins ? DEV_MOCK_MAP_PINS : (mapViewData?.pins ?? EMPTY_MAP_PINS);
   const mapClusters = mapViewData?.clusters ?? EMPTY_MAP_CLUSTERS;
+  // 피드/찜한 노래 진입 시: 말풍선용 핀을 주입·덮어쓰고 선택된 상태로 표시한다.
+  // CTA(focusedFeedPin)와 말풍선(mapFocusPin)을 분리해, 찜한 노래에서는 내 등록 곡이 없어도 인기 PIN 말풍선은 유지한다.
+  const overlayFocusPin = selectedMapPlace?.mapFocusPin ?? selectedMapPlace?.focusedFeedPin;
+  const focusedMapPinId = selectedMapPlace && overlayFocusPin ? selectedMapPlace.id : null;
+  const displayMapPins = useMemo(() => {
+    if (!selectedMapPlace || !overlayFocusPin) return mapPins;
+
+    const focusedPin: MapPin = {
+      id: selectedMapPlace.id,
+      placeId: selectedMapPlace.placeId,
+      lat: selectedMapPlace.coordinates.lat,
+      lng: selectedMapPlace.coordinates.lng,
+      coverUrl: overlayFocusPin.albumImageUrl || undefined,
+      nickname: overlayFocusPin.nickname,
+      avatarUrl: overlayFocusPin.avatarUrl,
+      introduction: overlayFocusPin.introduction,
+    };
+
+    return [...mapPins.filter((pin) => pin.id !== focusedPin.id), focusedPin];
+  }, [mapPins, overlayFocusPin, selectedMapPlace]);
   // 최대 줌에서 화면 중심 근처 핀을 자동으로 포커스 (탭으로 연 시트가 있으면 그게 우선)
-  const autoFocusedPinId = useAutoFocusNearestPin({ mapPins, viewport });
+  const autoFocusedPinId = useAutoFocusNearestPin({ mapPins: displayMapPins, viewport });
   const displayedMapPinId = selectedMapPinId ?? autoFocusedPinId;
   const selectedMapPin = selectedMapPinId
-    ? (mapPins.find((pin) => pin.id === selectedMapPinId) ?? null)
+    ? (displayMapPins.find((pin) => pin.id === selectedMapPinId) ?? null)
     : null;
   // develop 방식: selectedMapPlace prop으로 장소 결과 관리
   const placeResults = useMemo<MapPlace[]>(
@@ -115,6 +135,7 @@ const MapPage: React.FC<MapPageProps> = ({
   );
   const selectedPlaceId = selectedMapPlace?.id ?? null;
   const isPlaceSheetOpen = selectedMapPlace !== null;
+  const viewerSelectedMapPinId = focusedMapPinId ?? (selectedMapPlace ? null : displayedMapPinId);
   const resetPinCreation = usePinCreationStore((state) => state.reset);
   const setPinCreationCurrentLocation = usePinCreationStore((state) => state.setCurrentLocation);
   const setPinCreationPlace = usePinCreationStore((state) => state.setPlace);
@@ -324,9 +345,9 @@ const MapPage: React.FC<MapPageProps> = ({
         zoom={zoom}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
-        mapPins={mapPins}
+        mapPins={displayMapPins}
         mapClusters={mapClusters}
-        selectedMapPinId={selectedMapPlace ? null : displayedMapPinId}
+        selectedMapPinId={viewerSelectedMapPinId}
         centerOnFirstLocation={!selectedMapPlace}
         onZoomChanged={handleZoomChange}
         onCurrentLocationChanged={handleCurrentLocationChanged}

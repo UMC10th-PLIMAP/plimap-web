@@ -96,6 +96,7 @@ export default function MyProfilePage() {
           onPinClick={(pin) => {
             void openPinPlaceOnMap({
               pinId: pin.pinId,
+              placeTrackId: pin.placeTrackId,
               fallbackPlaceName: pin.placeName,
               isMine: true,
               showMyRegisteredTrackCta: true,

@@ -49,7 +49,7 @@ function ProfilePinGridItem({
           <span className="absolute inset-x-2 bottom-2 flex min-w-0 flex-col items-start overflow-hidden text-left">
             <span className="flex min-w-0 max-w-full items-center text-grayscale-30">
               <span className="min-w-0 truncate body-15-m">{pin.placeName}</span>
-              <NextIcon className="size-5 text-grayscale-300" aria-hidden />
+              <NextIcon className="size-5 shrink-0 text-grayscale-300" aria-hidden />
             </span>
             <span className="min-w-0 max-w-full truncate etc-13-r text-grayscale-500">
               {distanceLabel} · {pin.pinCount}개의 핀

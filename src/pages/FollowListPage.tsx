@@ -1,25 +1,21 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
-import { getMyProfile } from '@/api/member';
 import { TopBar } from '@/components/ui/TopBar';
 import { FollowUserRow } from '@/features/profile/components/FollowUserRow';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { useInfiniteFollowList } from '@/features/profile/queries/useFollowList';
 import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
+import { useGoBack } from '@/hooks/useGoBack';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { useMyProfile } from '@/features/home/hooks/useMyProfile';
+import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
 import type { FollowTab } from '@/features/profile/types';
 import type { FollowListItem } from '@/types/member.type';
 
 const FOLLOW_TOGGLE_FAILED_MESSAGE = '요청을 처리하지 못했어요. 다시 시도해주세요.';
-
-const OPTIONS: { value: FollowTab; label: string; path: string }[] = [
-  { value: 'following', label: '팔로잉', path: '/app/my/following' },
-  { value: 'follower', label: '팔로워', path: '/app/my/followers' },
-];
 
 function getTabFromPath(pathname: string): FollowTab {
   return pathname.endsWith('/followers') ? 'follower' : 'following';
@@ -36,17 +32,59 @@ const EMPTY_STATE: Record<FollowTab, { title: string; description: string }> = {
   },
 };
 
+const OTHER_EMPTY_STATE: Record<FollowTab, { title: string; description: string }> = {
+  following: {
+    title: '아직 팔로잉이 없어요.',
+    description: '이 사용자가 팔로우한 사람이 여기에 표시돼요.',
+  },
+  follower: {
+    title: '아직 팔로워가 없어요.',
+    description: '이 사용자를 팔로우한 사람이 여기에 표시돼요.',
+  },
+};
+
 export default function FollowListPage() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { memberId: memberIdParam } = useParams<{ memberId?: string }>();
   const tab = getTabFromPath(pathname);
   const [keyword, setKeyword] = useState('');
 
-  const { data: profile } = useQuery({
-    queryKey: ['me'],
-    queryFn: getMyProfile,
-    staleTime: Infinity,
-  });
+  const parsedMemberId = Number(memberIdParam);
+  const otherMemberId =
+    Number.isInteger(parsedMemberId) && parsedMemberId > 0 ? parsedMemberId : undefined;
+  const hasInvalidMemberId = memberIdParam !== undefined && otherMemberId === undefined;
+  const isOtherMember = otherMemberId !== undefined;
+
+  const { data: myProfile } = useMyProfile();
+  const { data: otherProfile } = useOtherMemberProfile(otherMemberId);
+
+  const targetMemberId = hasInvalidMemberId
+    ? undefined
+    : isOtherMember
+      ? otherMemberId
+      : myProfile?.id;
+  const titleNickname = isOtherMember
+    ? (otherProfile?.nickname ?? '')
+    : (myProfile?.nickname ?? '');
+  const profilePath = isOtherMember ? `/app/users/${otherMemberId}` : '/app/my';
+  const goBack = useGoBack(profilePath);
+
+  const tabOptions = useMemo(
+    () => [
+      {
+        value: 'following' as const,
+        label: '팔로잉',
+        path: isOtherMember ? `/app/users/${otherMemberId}/following` : '/app/my/following',
+      },
+      {
+        value: 'follower' as const,
+        label: '팔로워',
+        path: isOtherMember ? `/app/users/${otherMemberId}/followers` : '/app/my/followers',
+      },
+    ],
+    [isOtherMember, otherMemberId],
+  );
 
   const {
     data: followList,
@@ -54,7 +92,7 @@ export default function FollowListPage() {
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
-  } = useInfiniteFollowList({ memberId: profile?.id, tab });
+  } = useInfiniteFollowList({ memberId: targetMemberId, tab });
 
   const users = followList?.pages.flatMap((page) => page.data) ?? [];
 
@@ -89,20 +127,22 @@ export default function FollowListPage() {
     { enabled: Boolean(hasNextPage) && !isFetchNextPageError, reconnectKey: isFetchingNextPage },
   );
 
+  if (hasInvalidMemberId) {
+    return <Navigate to="/app" replace />;
+  }
+
+  const emptyState = isOtherMember ? OTHER_EMPTY_STATE[tab] : EMPTY_STATE[tab];
+
   return (
     <div className="flex min-h-screen flex-col">
-      <TopBar
-        title={profile?.nickname ?? ''}
-        titleWeight="medium"
-        onBack={() => navigate('/app/my')}
-      />
+      <TopBar title={titleNickname} titleWeight="medium" onBack={goBack} />
 
       <div
         role="tablist"
         aria-label="팔로우 목록"
         className="flex w-full border-b border-pli-black-75"
       >
-        {OPTIONS.map((option) => {
+        {tabOptions.map((option) => {
           const selected = tab === option.value;
 
           return (
@@ -111,7 +151,7 @@ export default function FollowListPage() {
               type="button"
               role="tab"
               aria-selected={selected}
-              onClick={() => navigate(option.path)}
+              onClick={() => navigate(option.path, { replace: true })}
               className={`relative flex h-[45px] flex-1 items-center justify-center body-15-r cursor-pointer ${selected ? 'text-grayscale-300' : 'text-grayscale-800'}`}
             >
               {option.label}
@@ -136,8 +176,8 @@ export default function FollowListPage() {
       </div>
       {users.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-[2px] text-center">
-          <p className="body-17-m text-grayscale-300">{EMPTY_STATE[tab].title}</p>
-          <p className="body-15-m text-grayscale-700">{EMPTY_STATE[tab].description}</p>
+          <p className="body-17-m text-grayscale-300">{emptyState.title}</p>
+          <p className="body-15-m text-grayscale-700">{emptyState.description}</p>
         </div>
       ) : filteredUsers.length === 0 ? (
         <p className="flex flex-1 items-center justify-center body-15-r text-grayscale-600">
@@ -150,6 +190,7 @@ export default function FollowListPage() {
               <FollowUserRow
                 key={user.id}
                 user={user}
+                onClick={(target) => navigate(`/app/users/${target.id}`)}
                 onActionClick={handleActionClick}
                 disabled={pendingMemberIds.has(user.id)}
               />

@@ -1,14 +1,18 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import BackIcon from '@/assets/icons/back.svg?react';
 import MoreIcon from '@/assets/icons/more.svg?react';
 
+import { reportMember } from '@/api/report';
+import { ReportModal } from '@/features/pin/components/ReportModal';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
+import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteOtherMemberFeed } from '@/features/pin/queries/useOtherMemberFeed';
 import { useFollowMember } from '@/hooks/useFollowMember';
+import { useGoBack } from '@/hooks/useGoBack';
 import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
 export default function UserProfilePage() {
@@ -17,6 +21,9 @@ export default function UserProfilePage() {
   const parsedId = Number(memberId);
   const id = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : undefined;
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const goBack = useGoBack('/app/home');
+  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const { data: member } = useOtherMemberProfile(id);
   const {
@@ -24,6 +31,9 @@ export default function UserProfilePage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isPending: isFeedPending,
+    isError: isFeedError,
+    refetch: refetchFeed,
   } = useInfiniteOtherMemberFeed({ memberId: id });
   const followMutation = useFollowMember(id ?? 0);
 
@@ -59,7 +69,7 @@ export default function UserProfilePage() {
         <button
           type="button"
           aria-label="뒤로가기"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="flex size-6 items-center text-grayscale-100 cursor-pointer"
         >
           <BackIcon className="size-6" />
@@ -70,6 +80,10 @@ export default function UserProfilePage() {
         <button
           type="button"
           aria-label="더보기"
+          onClick={() => {
+            if (!id) return;
+            setIsReportOpen(true);
+          }}
           className="flex size-6 items-center justify-end text-grayscale-100 cursor-pointer"
         >
           <MoreIcon className="size-6" />
@@ -85,6 +99,14 @@ export default function UserProfilePage() {
               profileImageUrl: member.profileImageUrl,
               followerCount: member.followerCount,
               followingCount: member.followingCount,
+            }}
+            onFollowingClick={() => {
+              if (!id) return;
+              navigate(`/app/users/${id}/following`);
+            }}
+            onFollowerClick={() => {
+              if (!id) return;
+              navigate(`/app/users/${id}/followers`);
             }}
           />
           <ProfileActions
@@ -111,8 +133,32 @@ export default function UserProfilePage() {
       )}
 
       <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
-      <ProfilePinGrid pins={feedPages?.pages.flatMap((page) => page.data) ?? []} />
+      <ProfilePinGrid
+        pins={feedPages?.pages.flatMap((page) => page.data) ?? []}
+        isPending={isFeedPending}
+        isError={isFeedError}
+        onRetry={() => {
+          void refetchFeed();
+        }}
+        onPinClick={(pin) => {
+          void openPinPlaceOnMap({
+            pinId: pin.pinId,
+            fallbackPlaceName: pin.placeName,
+            isMine: false,
+            showMyRegisteredTrackCta: false,
+          });
+        }}
+      />
       <div ref={loadMoreRef} aria-hidden className="h-px" />
+
+      <ReportModal
+        open={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        onSubmit={async (reason, detail) => {
+          if (!id) return;
+          await reportMember(id, reason, detail);
+        }}
+      />
     </div>
   );
 }
