@@ -36,6 +36,28 @@ export type MapPin = {
   nickname: string;
   avatarUrl?: string;
   introduction: string;
+  youtubeVideoId?: string;
+  clipStartMs?: number;
+};
+
+// 행정구역(REGION1~3) 또는 geohash(GEOHASH) 기준 핀 클러스터
+export type PinClusterLevel = 'REGION1' | 'REGION2' | 'REGION3' | 'GEOHASH';
+
+export type PinClusterBounds = {
+  southWestLat: number;
+  southWestLng: number;
+  northEastLat: number;
+  northEastLng: number;
+};
+
+export type PinCluster = {
+  clusterLevel: PinClusterLevel;
+  regionName: string | null;
+  precision: number | null;
+  latitude: number;
+  longitude: number;
+  placeCount: number;
+  bounds: PinClusterBounds;
 };
 
 // 현재 위치 마커 기본 색상
