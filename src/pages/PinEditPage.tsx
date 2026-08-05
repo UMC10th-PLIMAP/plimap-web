@@ -5,6 +5,7 @@ import LocationIcon from '@/assets/icons/location.svg?react';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { Tag } from '@/components/ui/tag';
 import { TAG_OPTIONS } from '@/features/pin/data/songPreview';
+import { useDeletePin } from '@/features/pin/queries/useDeletePin';
 import { usePatchPin } from '@/features/pin/queries/usePatchPin';
 import { usePinDetail } from '@/features/pin/queries/usePinDetail';
 import { usePlaceDetail } from '@/features/pin/queries/usePlaceBookmark';
@@ -81,6 +82,8 @@ export default function PinEditPage() {
   });
 
   const patchPinMutation = usePatchPin();
+  const deletePinMutation = useDeletePin();
+  const isMutating = patchPinMutation.isPending || deletePinMutation.isPending;
 
   const baselineIntroduction = locationState?.introduction ?? pinDetail?.introduction ?? '';
   const baselineTags = locationState?.tags ?? pinDetail?.tags ?? [];
@@ -127,7 +130,7 @@ export default function PinEditPage() {
   };
 
   const handleSubmit = () => {
-    if (!pinId || patchPinMutation.isPending || !isBaselineReady || !hasChanges) return;
+    if (!pinId || isMutating || !isBaselineReady || !hasChanges) return;
 
     const normalizedIntroduction = introduction.trim();
     if (!normalizedIntroduction) {
@@ -154,6 +157,19 @@ export default function PinEditPage() {
     );
   };
 
+  const handleDelete = () => {
+    if (!pinId || isMutating) return;
+
+    deletePinMutation.mutate(pinId, {
+      onSuccess: () => navigate(-1),
+      onError: (error) => {
+        showToast(
+          error instanceof Error ? error.message : '핀을 삭제하지 못했어요. 다시 시도해 주세요.',
+        );
+      },
+    });
+  };
+
   return (
     <ToastProvider duration={TOAST_DURATION_MS}>
       <div className="relative flex min-h-0 flex-1 bg-pli-black-100">
@@ -178,7 +194,7 @@ export default function PinEditPage() {
                   <button
                     type="button"
                     onClick={() => navigate(-1)}
-                    disabled={patchPinMutation.isPending}
+                    disabled={isMutating}
                     className="cursor-pointer body-17-r text-grayscale-400 disabled:cursor-not-allowed disabled:text-grayscale-700"
                   >
                     취소
@@ -186,12 +202,7 @@ export default function PinEditPage() {
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={
-                      patchPinMutation.isPending ||
-                      !hasChanges ||
-                      !isBaselineReady ||
-                      isPinDetailPending
-                    }
+                    disabled={isMutating || !hasChanges || !isBaselineReady || isPinDetailPending}
                     aria-busy={patchPinMutation.isPending || undefined}
                     className={cn(
                       'cursor-pointer body-17-m disabled:cursor-not-allowed',
@@ -237,7 +248,7 @@ export default function PinEditPage() {
                         setIntroductionDraft(event.target.value.slice(0, INTRO_MAX_LENGTH))
                       }
                       placeholder="이 음악을 들었을 때 나의 기분은?"
-                      disabled={patchPinMutation.isPending}
+                      disabled={isMutating}
                       className="body-15-r h-[88px] w-full resize-none bg-transparent text-grayscale-300 outline-none placeholder:text-grayscale-1100"
                     />
                     <div className="flex h-4 items-center justify-end etc-13-r text-grayscale-500">
@@ -257,7 +268,7 @@ export default function PinEditPage() {
                         <Tag
                           key={tag}
                           variant={isSelected ? 'selected' : 'default'}
-                          disabled={patchPinMutation.isPending}
+                          disabled={isMutating}
                           onClick={() => toggleTag(tag)}
                         >
                           #{tag}
@@ -272,9 +283,20 @@ export default function PinEditPage() {
                   <FeedVisibilityToggle
                     checked={isFeedPublic}
                     onChange={(checked) => setFeedOpenDraft(checked)}
-                    disabled={patchPinMutation.isPending}
+                    disabled={isMutating}
                   />
                 </section>
+
+                <div className="flex justify-center pt-[5px]">
+                  <button
+                    type="button"
+                    disabled={isMutating || !pinId}
+                    onClick={handleDelete}
+                    className="flex h-[53px] w-[180px] cursor-pointer items-center justify-center rounded-[50px] bg-pli-black-75 body-15-m text-red disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    삭제하기
+                  </button>
+                </div>
               </div>
             </div>
           </section>
