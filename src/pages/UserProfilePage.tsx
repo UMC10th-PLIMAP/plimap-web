@@ -9,6 +9,7 @@ import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
 import { useInfiniteOtherMemberFeed } from '@/features/pin/queries/useOtherMemberFeed';
 import { useFollowMember } from '@/hooks/useFollowMember';
+import { useGoBack } from '@/hooks/useGoBack';
 import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
 export default function UserProfilePage() {
@@ -17,6 +18,7 @@ export default function UserProfilePage() {
   const parsedId = Number(memberId);
   const id = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : undefined;
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const goBack = useGoBack('/app/home');
 
   const { data: member } = useOtherMemberProfile(id);
   const {
@@ -59,7 +61,7 @@ export default function UserProfilePage() {
         <button
           type="button"
           aria-label="뒤로가기"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="flex size-6 items-center text-grayscale-100 cursor-pointer"
         >
           <BackIcon className="size-6" />
@@ -85,6 +87,14 @@ export default function UserProfilePage() {
               profileImageUrl: member.profileImageUrl,
               followerCount: member.followerCount,
               followingCount: member.followingCount,
+            }}
+            onFollowingClick={() => {
+              if (!id) return;
+              navigate(`/app/users/${id}/following`);
+            }}
+            onFollowerClick={() => {
+              if (!id) return;
+              navigate(`/app/users/${id}/followers`);
             }}
           />
           <ProfileActions

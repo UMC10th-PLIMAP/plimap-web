@@ -141,6 +141,14 @@ export const router = createBrowserRouter([
             element: <UserProfilePage />,
           },
           {
+            path: 'users/:memberId/following',
+            element: <FollowListPage />,
+          },
+          {
+            path: 'users/:memberId/followers',
+            element: <FollowListPage />,
+          },
+          {
             path: 'my/edit',
             element: <ProfileEditPage />,
           },
