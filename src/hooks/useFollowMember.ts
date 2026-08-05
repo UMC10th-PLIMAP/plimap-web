@@ -5,7 +5,7 @@ import type { MemberProfileResponse } from '@/types/member.type';
 
 export function useFollowMember(memberId: number) {
   const queryClient = useQueryClient();
-  const queryKey = ['members', String(memberId)] as const;
+  const queryKey = ['members', memberId] as const;
 
   return useMutation({
     mutationFn: () => followMember(memberId),

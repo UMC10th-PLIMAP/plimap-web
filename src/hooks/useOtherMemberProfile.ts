@@ -2,12 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 
 import { getOtherMemberProfile } from '@/api/member';
 
-export function useOtherMemberProfile(memberId?: string | number) {
-  const id = memberId != null ? String(memberId) : undefined;
+export function useOtherMemberProfile(memberId?: number) {
+  const isValidId = Number.isInteger(memberId) && (memberId ?? 0) > 0;
 
   return useQuery({
-    queryKey: ['members', id],
-    queryFn: () => getOtherMemberProfile(Number(id)),
-    enabled: Boolean(id),
+    queryKey: ['members', memberId],
+    queryFn: () => getOtherMemberProfile(memberId!),
+    enabled: isValidId,
   });
 }

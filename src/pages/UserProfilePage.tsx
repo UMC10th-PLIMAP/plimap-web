@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import BackIcon from '@/assets/icons/back.svg?react';
@@ -13,13 +14,35 @@ import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 export default function UserProfilePage() {
   const navigate = useNavigate();
   const { memberId } = useParams<{ memberId: string }>();
-  const id = Number(memberId);
+  const parsedId = Number(memberId);
+  const id = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : undefined;
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const { data: member } = useOtherMemberProfile(memberId);
-  const { data: feedPages } = useInfiniteOtherMemberFeed({
-    memberId: Number.isFinite(id) && id > 0 ? id : undefined,
-  });
-  const followMutation = useFollowMember(id);
+  const { data: member } = useOtherMemberProfile(id);
+  const {
+    data: feedPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteOtherMemberFeed({ memberId: id });
+  const followMutation = useFollowMember(id ?? 0);
+
+  useEffect(() => {
+    const loadMoreElement = loadMoreRef.current;
+    if (!loadMoreElement || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { rootMargin: '120px' },
+    );
+
+    observer.observe(loadMoreElement);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -89,6 +112,7 @@ export default function UserProfilePage() {
 
       <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
       <ProfilePinGrid pins={feedPages?.pages.flatMap((page) => page.data) ?? []} />
+      <div ref={loadMoreRef} aria-hidden className="h-px" />
     </div>
   );
 }
