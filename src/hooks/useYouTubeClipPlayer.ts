@@ -60,7 +60,7 @@ function loadYouTubeIframeApi() {
 
   if (youtubeApiPromise) return youtubeApiPromise;
 
-  youtubeApiPromise = new Promise<YouTubeNamespace>((resolve, reject) => {
+  const request = new Promise<YouTubeNamespace>((resolve, reject) => {
     const previousReady = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
       previousReady?.();
@@ -71,13 +71,23 @@ function loadYouTubeIframeApi() {
       reject(new Error('YouTube IFrame API failed to initialize'));
     };
 
-    if (!document.querySelector(`script[src="${YOUTUBE_IFRAME_API_SRC}"]`)) {
-      const script = document.createElement('script');
-      script.src = YOUTUBE_IFRAME_API_SRC;
-      script.async = true;
-      script.onerror = () => reject(new Error('Failed to load YouTube IFrame API'));
-      document.head.appendChild(script);
-    }
+    const script = document.createElement('script');
+    script.src = YOUTUBE_IFRAME_API_SRC;
+    script.async = true;
+    script.dataset.plimapYoutubeApi = 'true';
+    script.onerror = () => {
+      script.remove();
+      reject(new Error('Failed to load YouTube IFrame API'));
+    };
+
+    document.querySelector('script[data-plimap-youtube-api]')?.remove();
+    document.head.appendChild(script);
+  });
+
+  // 실패한 로드를 캐싱하면 이후 재생이 영구히 막히므로, 실패 시 다음 호출이 새로 로드하게 한다.
+  youtubeApiPromise = request.catch((error: unknown) => {
+    youtubeApiPromise = null;
+    throw error;
   });
 
   return youtubeApiPromise;

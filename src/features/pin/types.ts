@@ -250,6 +250,9 @@ export type FocusedFeedPin = {
   avatarUrl?: string;
   albumImageUrl: string;
   introduction: string;
+  /** 말풍선 미리듣기 재생용 */
+  youtubeVideoId?: string;
+  clipStartMs?: number;
 };
 
 export type PinSearchPlace = PlaceResult & {

@@ -70,15 +70,17 @@ type PlaceTrackPinItem = Awaited<ReturnType<typeof getPlaceTrackPins>>['data'][n
 function toFocusedFeedPin(
   pin: PlaceTrackPinItem,
   placeTrackId: number,
-  albumImageUrl: string,
+  pinDetail: PinDetailResponse,
 ): FocusedFeedPin {
   return {
     pinId: pin.pinId,
     placeTrackId,
     nickname: pin.writerNickname,
     avatarUrl: pin.writerProfileImage || undefined,
-    albumImageUrl,
+    albumImageUrl: pinDetail.albumImageUrl,
     introduction: pin.introduction,
+    youtubeVideoId: pinDetail.youtubeVideoId,
+    clipStartMs: pin.clipStartMs,
   };
 }
 
@@ -119,6 +121,8 @@ export function useOpenPinPlaceOnMap() {
             avatarUrl: pinDetail.writerProfileImage || undefined,
             albumImageUrl: pinDetail.albumImageUrl,
             introduction: pinDetail.introduction,
+            youtubeVideoId: pinDetail.youtubeVideoId,
+            clipStartMs: pinDetail.clipStartMs,
           };
         }
 
@@ -149,20 +153,15 @@ export function useOpenPinPlaceOnMap() {
 
         const pinDetail = await getPinDetail(String(popularPin.pinId));
         const myPin = trackPins.data.find((pin) => pin.pinByMe) ?? null;
-        const mapFocusPin = toFocusedFeedPin(
-          popularPin,
-          resolvedPlaceTrackId,
-          pinDetail.albumImageUrl,
-        );
 
         const { place } = await resolvePlace({
           pinDetail,
           fallbackPlaceName,
           isMine: Boolean(myPin),
-          mapFocusPin,
+          mapFocusPin: toFocusedFeedPin(popularPin, resolvedPlaceTrackId, pinDetail),
           // 내가 등록한 곡이 있을 때만 바텀시트 CTA 표시
           focusedFeedPin: myPin
-            ? toFocusedFeedPin(myPin, resolvedPlaceTrackId, pinDetail.albumImageUrl)
+            ? toFocusedFeedPin(myPin, resolvedPlaceTrackId, pinDetail)
             : undefined,
         });
 

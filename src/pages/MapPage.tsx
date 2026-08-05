@@ -119,6 +119,8 @@ const MapPage: React.FC<MapPageProps> = ({
       nickname: overlayFocusPin.nickname,
       avatarUrl: overlayFocusPin.avatarUrl,
       introduction: overlayFocusPin.introduction,
+      youtubeVideoId: overlayFocusPin.youtubeVideoId,
+      clipStartMs: overlayFocusPin.clipStartMs,
     };
 
     return [...mapPins.filter((pin) => pin.id !== focusedPin.id), focusedPin];
@@ -146,7 +148,7 @@ const MapPage: React.FC<MapPageProps> = ({
 
   const handlePlayMapPin = useCallback(
     (pinId: string) => {
-      const pin = mapPins.find((candidate) => candidate.id === pinId);
+      const pin = displayMapPins.find((candidate) => candidate.id === pinId);
       if (!pin?.youtubeVideoId) return;
 
       toggleClipPlayback(pinId, {
@@ -154,13 +156,13 @@ const MapPage: React.FC<MapPageProps> = ({
         clipStartMs: pin.clipStartMs ?? 0,
       });
     },
-    [mapPins, toggleClipPlayback],
+    [displayMapPins, toggleClipPlayback],
   );
 
-  // 핀/장소 선택이 바뀌면 재생 중인 클립을 멈춘다.
+  // 말풍선을 띄우는 핀이 바뀌면(선택·자동 포커스 포함) 재생 중인 클립을 멈춘다.
   useEffect(() => {
     stopClipPlayback();
-  }, [selectedMapPinId, selectedMapPlace?.id, stopClipPlayback]);
+  }, [viewerSelectedMapPinId, stopClipPlayback]);
 
   // --- 구글맵 스크립트 로드 (setState는 전부 프로미스 콜백 안에서만 일어나 effect에서 안전하게 호출 가능) ---
   const startGoogleMapsLoad = useCallback((apiKey: string) => {

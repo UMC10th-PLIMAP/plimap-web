@@ -12,6 +12,7 @@ type UseAudioPreviewOptions = {
 export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOptions) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [canPlay, setCanPlay] = useState(false);
 
   useEffect(() => {
     if (!src) return;
@@ -22,6 +23,11 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
     const handleEnded = () => setIsPlaying(false);
     const handlePause = () => setIsPlaying(false);
     const handlePlay = () => setIsPlaying(true);
+    const handleCanPlay = () => setCanPlay(true);
+    const handleError = () => {
+      setCanPlay(false);
+      setIsPlaying(false);
+    };
     const handleTimeUpdate = () => {
       if (endSec == null) return;
       if (audio.currentTime >= endSec) {
@@ -33,6 +39,8 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('play', handlePlay);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('error', handleError);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audioRef.current = audio;
 
@@ -40,9 +48,13 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('error', handleError);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.pause();
       audioRef.current = null;
+      setCanPlay(false);
+      setIsPlaying(false);
     };
   }, [src, startSec, endSec]);
 
@@ -75,5 +87,5 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
     audio.currentTime = Math.max(0, startSec);
   }, [startSec]);
 
-  return { isPlaying, toggle, stop, canPlay: Boolean(src) };
+  return { isPlaying, toggle, stop, canPlay };
 }
