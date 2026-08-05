@@ -2,33 +2,52 @@ import LocationPinIcon from '@/assets/icons/location.svg?react';
 import MoreIcon from '@/assets/icons/more.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import type { MyAllPin } from '@/features/profile/types';
+import { cn } from '@/lib/utils';
 
 type MyAllPinsCardProps = {
   pin: MyAllPin;
-  onPlaceClick?: () => void;
+  onClick?: () => void;
   onMoreClick?: () => void;
 };
 
-export function MyAllPinsCard({ pin, onPlaceClick, onMoreClick }: MyAllPinsCardProps) {
+export function MyAllPinsCard({ pin, onClick, onMoreClick }: MyAllPinsCardProps) {
   return (
-    <article className="flex flex-col w-full rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3">
+    <article
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.target !== event.currentTarget) return;
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      className={cn(
+        'flex w-full flex-col rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3',
+        onClick && 'cursor-pointer',
+      )}
+    >
       <div className="flex items-center gap-[6px]">
-        <button
-          type="button"
-          onClick={onPlaceClick}
-          className="flex flex-1 items-center gap-1 text-left cursor-pointer"
-        >
+        <div className="flex flex-1 items-center gap-1 text-left">
           <LocationPinIcon className="size-5 text-neon" aria-hidden />
           <span className="flex body-17-m text-grayscale-100">
             {pin.placeName}
             <NextIcon className="size-6 text-grayscale-400" aria-hidden />
           </span>
-        </button>
+        </div>
 
         <button
           type="button"
           aria-label="더보기"
-          onClick={onMoreClick}
+          onClick={(event) => {
+            event.stopPropagation();
+            onMoreClick?.();
+          }}
           className="flex size-6 items-center justify-center cursor-pointer"
         >
           <MoreIcon className="size-6 text-grayscale-100" aria-hidden />

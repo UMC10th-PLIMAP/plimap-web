@@ -244,6 +244,7 @@ export type FocusedFeedPin = {
   nickname: string;
   avatarUrl?: string;
   albumImageUrl: string;
+  introduction: string;
 };
 
 export type PinSearchPlace = PlaceResult & {
