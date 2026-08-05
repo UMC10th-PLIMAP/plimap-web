@@ -39,6 +39,8 @@ export type MemberMeRequest = {
 
 export type MemberMeFeedItem = {
   pinId: number;
+  /** 서버 피드 응답에 포함되면 추가 조회 없이 곡 상세 CTA를 연결한다. */
+  placeTrackId?: number;
   albumImageUrl: string;
   latitude: number;
   longitude: number;
@@ -127,6 +129,8 @@ export type LikeCountResponse = {
 export type GetMyPinsResponse = {
   data: {
     pinId: number;
+    /** 서버 목록 응답에 포함되면 추가 조회 없이 곡 상세 CTA를 연결한다. */
+    placeTrackId?: number;
     albumImageUrl: string;
     trackTitle: string;
     artist: string;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
 import { TopBar } from '@/components/ui/TopBar';
@@ -53,12 +53,17 @@ export default function FollowListPage() {
   const parsedMemberId = Number(memberIdParam);
   const otherMemberId =
     Number.isInteger(parsedMemberId) && parsedMemberId > 0 ? parsedMemberId : undefined;
+  const hasInvalidMemberId = memberIdParam !== undefined && otherMemberId === undefined;
   const isOtherMember = otherMemberId !== undefined;
 
   const { data: myProfile } = useMyProfile();
   const { data: otherProfile } = useOtherMemberProfile(otherMemberId);
 
-  const targetMemberId = isOtherMember ? otherMemberId : myProfile?.id;
+  const targetMemberId = hasInvalidMemberId
+    ? undefined
+    : isOtherMember
+      ? otherMemberId
+      : myProfile?.id;
   const titleNickname = isOtherMember
     ? (otherProfile?.nickname ?? '')
     : (myProfile?.nickname ?? '');
@@ -121,6 +126,10 @@ export default function FollowListPage() {
     },
     { enabled: Boolean(hasNextPage) && !isFetchNextPageError, reconnectKey: isFetchingNextPage },
   );
+
+  if (hasInvalidMemberId) {
+    return <Navigate to="/app" replace />;
+  }
 
   const emptyState = isOtherMember ? OTHER_EMPTY_STATE[tab] : EMPTY_STATE[tab];
 

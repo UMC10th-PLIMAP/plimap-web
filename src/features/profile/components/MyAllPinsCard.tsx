@@ -2,7 +2,6 @@ import LocationPinIcon from '@/assets/icons/location.svg?react';
 import MoreIcon from '@/assets/icons/more.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import type { MyAllPin } from '@/features/profile/types';
-import { cn } from '@/lib/utils';
 
 type MyAllPinsCardProps = {
   pin: MyAllPin;
@@ -12,26 +11,16 @@ type MyAllPinsCardProps = {
 
 export function MyAllPinsCard({ pin, onClick, onMoreClick }: MyAllPinsCardProps) {
   return (
-    <article
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onClick={onClick}
-      onKeyDown={
-        onClick
-          ? (event) => {
-              if (event.target !== event.currentTarget) return;
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                onClick();
-              }
-            }
-          : undefined
-      }
-      className={cn(
-        'flex w-full flex-col rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3',
-        onClick && 'cursor-pointer',
-      )}
-    >
+    <article className="relative flex w-full flex-col rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3">
+      {onClick ? (
+        <button
+          type="button"
+          aria-label={`${pin.placeName}에 등록한 ${pin.trackName} 상세 보기`}
+          onClick={onClick}
+          className="absolute inset-0 rounded-[20px] cursor-pointer"
+        />
+      ) : null}
+
       <div className="flex items-center gap-[6px]">
         <div className="flex flex-1 items-center gap-1 text-left">
           <LocationPinIcon className="size-5 text-neon" aria-hidden />
@@ -44,11 +33,8 @@ export function MyAllPinsCard({ pin, onClick, onMoreClick }: MyAllPinsCardProps)
         <button
           type="button"
           aria-label="더보기"
-          onClick={(event) => {
-            event.stopPropagation();
-            onMoreClick?.();
-          }}
-          className="flex size-6 items-center justify-center cursor-pointer"
+          onClick={onMoreClick}
+          className="relative z-10 flex size-6 items-center justify-center cursor-pointer"
         >
           <MoreIcon className="size-6 text-grayscale-100" aria-hidden />
         </button>

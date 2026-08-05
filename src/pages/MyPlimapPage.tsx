@@ -64,6 +64,7 @@ export default function MyPlimapPage() {
                 onClick={() => {
                   void openPinPlaceOnMap({
                     pinId: pin.pinId,
+                    placeTrackId: pin.placeTrackId,
                     fallbackPlaceName: pin.placeName,
                     isMine: true,
                     showMyRegisteredTrackCta: true,
