@@ -7,6 +7,7 @@ import MoreIcon from '@/assets/icons/more.svg?react';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
+import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteOtherMemberFeed } from '@/features/pin/queries/useOtherMemberFeed';
 import { useFollowMember } from '@/hooks/useFollowMember';
 import { useGoBack } from '@/hooks/useGoBack';
@@ -19,6 +20,7 @@ export default function UserProfilePage() {
   const id = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : undefined;
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const goBack = useGoBack('/app/home');
+  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
 
   const { data: member } = useOtherMemberProfile(id);
   const {
@@ -26,6 +28,9 @@ export default function UserProfilePage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isPending: isFeedPending,
+    isError: isFeedError,
+    refetch: refetchFeed,
   } = useInfiniteOtherMemberFeed({ memberId: id });
   const followMutation = useFollowMember(id ?? 0);
 
@@ -121,7 +126,22 @@ export default function UserProfilePage() {
       )}
 
       <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
-      <ProfilePinGrid pins={feedPages?.pages.flatMap((page) => page.data) ?? []} />
+      <ProfilePinGrid
+        pins={feedPages?.pages.flatMap((page) => page.data) ?? []}
+        isPending={isFeedPending}
+        isError={isFeedError}
+        onRetry={() => {
+          void refetchFeed();
+        }}
+        onPinClick={(pin) => {
+          void openPinPlaceOnMap({
+            pinId: pin.pinId,
+            fallbackPlaceName: pin.placeName,
+            isMine: false,
+            showMyRegisteredTrackCta: false,
+          });
+        }}
+      />
       <div ref={loadMoreRef} aria-hidden className="h-px" />
     </div>
   );
