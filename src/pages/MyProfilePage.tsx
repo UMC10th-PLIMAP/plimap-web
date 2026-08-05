@@ -12,6 +12,7 @@ import { ProfileShareDialog } from '@/features/profile/components/ProfileShareDi
 import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteMemberMe } from '@/features/pin/queries/useMemberMe';
 import { useMyProfile } from '@/features/home/hooks/useMyProfile';
+import { cn } from '@/lib/utils';
 
 const SHARE_TOAST_DURATION_MS = 2_000;
 
@@ -33,6 +34,9 @@ export default function MyProfilePage() {
   const [shareToast, setShareToast] = useState<ShareToast | null>(null);
 
   if (!myProfile) return null;
+
+  const nickname = myProfile.nickname?.trim() ?? '';
+  const canShareProfile = nickname.length > 0;
 
   return (
     <ToastProvider duration={SHARE_TOAST_DURATION_MS}>
@@ -64,9 +68,15 @@ export default function MyProfilePage() {
               },
               {
                 label: <ShareIcon />,
-                onClick: () => setIsShareOpen(true),
+                onClick: () => {
+                  if (!canShareProfile) return;
+                  setIsShareOpen(true);
+                },
                 'aria-label': '프로필 공유',
-                className: 'max-w-9 max-h-9',
+                className: cn(
+                  'max-w-9 max-h-9',
+                  !canShareProfile && 'cursor-not-allowed opacity-40',
+                ),
               },
             ]}
           />
@@ -90,16 +100,18 @@ export default function MyProfilePage() {
           onRegisterPin={() => navigate('/app')}
         />
 
-        <ProfileShareDialog
-          open={isShareOpen}
-          onClose={() => setIsShareOpen(false)}
-          onCopied={() => {
-            setShareToast((current) => ({ attempt: (current?.attempt ?? 0) + 1 }));
-          }}
-          nickname={myProfile.nickname ?? ''}
-          name={myProfile.name}
-          profileImageUrl={myProfile.profileImageUrl}
-        />
+        {canShareProfile ? (
+          <ProfileShareDialog
+            open={isShareOpen}
+            onClose={() => setIsShareOpen(false)}
+            onCopied={() => {
+              setShareToast((current) => ({ attempt: (current?.attempt ?? 0) + 1 }));
+            }}
+            nickname={nickname}
+            name={myProfile.name}
+            profileImageUrl={myProfile.profileImageUrl}
+          />
+        ) : null}
 
         <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+108px)] z-50 flex justify-center">
           {shareToast ? (
