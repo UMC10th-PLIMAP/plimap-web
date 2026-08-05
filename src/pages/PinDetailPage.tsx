@@ -7,10 +7,12 @@ import { reportPin } from '@/api/report';
 import { ReportModal } from '@/features/pin/components/ReportModal';
 import { SongFeedCard } from '@/features/pin/components/SongFeedCard';
 import { useDeleteLikedTrack } from '@/features/pin/queries/useDeleteLikedTrack';
+import { useDeletePin } from '@/features/pin/queries/useDeletePin';
 import { usePlaceTrackDetail } from '@/features/pin/queries/usePlaceTrackDetail';
 import { usePlaceTrackPins } from '@/features/pin/queries/usePlaceTrackPins';
 import { usePutLikedTrack } from '@/features/pin/queries/usePutLikedTrack';
 import type { GetPlaceTrackPinsResponse, PinFeedEntry, PinSort } from '@/features/pin/types';
+import { ConfirmAlertDialog } from '@/features/settings/components/ConfirmAlertDialog';
 import HeartIcon from '@/assets/icons/heart.svg?react';
 import ChangeIcon from '@/assets/icons/change.svg?react';
 import { cn } from '@/lib/utils';
@@ -42,6 +44,7 @@ export default function PinDetailPage() {
   const { pinId } = useParams<{ pinId: string }>();
   const [sort, setSort] = useState<PinSort>('LATEST');
   const [reportFeedId, setReportFeedId] = useState<string | null>(null);
+  const [deletePinId, setDeletePinId] = useState<string | null>(null);
 
   const { data: pinDetail } = usePlaceTrackDetail({
     placeTrackId: pinId,
@@ -53,6 +56,7 @@ export default function PinDetailPage() {
 
   const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
   const { mutate: deleteLikedTrack, isPending: isDeletePending } = useDeleteLikedTrack();
+  const { mutate: deletePin, isPending: isDeletePinPending } = useDeletePin();
   const isLikePending = isPutPending || isDeletePending;
 
   const pins = pinPages?.pages.flatMap((page) => page.data.map(toPinFeedEntry)) ?? [];
@@ -139,6 +143,19 @@ export default function PinDetailPage() {
               }
               navigate(`/app/users/${entry.memberId}`);
             }}
+            onEdit={(entryId) => {
+              navigate(`/app/pins/${entryId}/edit`, {
+                state: {
+                  title: pinDetail?.title,
+                  artist: pinDetail?.artist,
+                  albumImageUrl: pinDetail?.albumImageUrl,
+                  introduction: entry.content,
+                  tags: entry.tags,
+                  feedOpen: true,
+                },
+              });
+            }}
+            onDelete={setDeletePinId}
           />
         ))}
       </div>
@@ -149,6 +166,35 @@ export default function PinDetailPage() {
         onSubmit={async (reason, detail) => {
           await reportPin(Number(reportFeedId), reason, detail);
         }}
+      />
+
+      <ConfirmAlertDialog
+        open={deletePinId !== null}
+        onClose={() => {
+          if (isDeletePinPending) return;
+          setDeletePinId(null);
+        }}
+        title="해당 핀을 삭제하시겠어요?"
+        message="삭제된 핀은 복구할 수 없어요."
+        actions={[
+          {
+            label: '삭제',
+            tone: 'danger',
+            onClick: () => {
+              if (!deletePinId || isDeletePinPending) return;
+              deletePin(deletePinId, {
+                onSuccess: () => setDeletePinId(null),
+              });
+            },
+          },
+          {
+            label: '취소',
+            onClick: () => {
+              if (isDeletePinPending) return;
+              setDeletePinId(null);
+            },
+          },
+        ]}
       />
     </div>
   );

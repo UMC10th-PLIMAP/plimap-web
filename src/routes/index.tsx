@@ -12,11 +12,13 @@ import TermsAgreementPage from '@/pages/TermsAgreementPage';
 import WelcomePage from '@/pages/WelcomePage';
 
 import MyProfilePage from '@/pages/MyProfilePage';
+import ProfileEditPage from '@/pages/ProfileEditPage';
 import MyPlimapPage from '@/pages/MyPlimapPage';
 import MyNotificationsPage from '@/pages/MyNotificationsPage';
 import UserProfilePage from '@/pages/UserProfilePage';
 import PinPlaceSearchPage from '@/pages/PinPlaceSearchPage';
 import PinDetailPage from '@/pages/PinDetailPage';
+import PinEditPage from '@/pages/PinEditPage';
 import SongListPage from '@/pages/SongListPage';
 import SongDetailPage from '@/pages/SongDetailPage';
 import PinRegisterPage from '@/pages/PinRegisterPage';
@@ -119,12 +121,12 @@ export const router = createBrowserRouter([
             element: <WelcomePage />,
           },
           {
-            path: 'pin/search',
-            element: <PinPlaceSearchPage />,
-          },
-          {
             path: 'pins/:pinId',
             element: <PinDetailPage />,
+          },
+          {
+            path: 'pins/:pinId/edit',
+            element: <PinEditPage />,
           },
           {
             path: 'song/list',
@@ -137,6 +139,10 @@ export const router = createBrowserRouter([
           {
             path: 'users/:memberId',
             element: <UserProfilePage />,
+          },
+          {
+            path: 'my/edit',
+            element: <ProfileEditPage />,
           },
           {
             path: 'my/following',
