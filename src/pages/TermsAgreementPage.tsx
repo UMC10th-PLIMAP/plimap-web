@@ -91,7 +91,7 @@ export default function TermsAgreementPage() {
     <div className="flex min-h-screen flex-col">
       <TopBar onBack={() => navigate(-1)} />
 
-      <div className="flex flex-col gap-7 px-4 pt-[44px]">
+      <div className="flex flex-col gap-5 px-4 pt-[44px]">
         <div className="flex flex-col gap-9">
           <h1 className="head-24-sb text-grayscale-100">이용약관 동의</h1>
 
@@ -103,19 +103,16 @@ export default function TermsAgreementPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-[18px]">
-          <p className="etc-13-r text-grayscale-400">PLIMAP 이용약관</p>
-          <div className="flex flex-col gap-4">
-            {TERMS.map((term) => (
-              <TermRow
-                key={term.id}
-                label={term.listLabel}
-                checked={checked[term.id]}
-                onToggle={() => toggleTerm(term.id)}
-                onViewDetail={() => setDetailTermId(term.id)}
-              />
-            ))}
-          </div>
+        <div className="flex flex-col gap-4">
+          {TERMS.map((term) => (
+            <TermRow
+              key={term.id}
+              label={term.listLabel}
+              checked={checked[term.id]}
+              onToggle={() => toggleTerm(term.id)}
+              onViewDetail={() => setDetailTermId(term.id)}
+            />
+          ))}
         </div>
       </div>
 
