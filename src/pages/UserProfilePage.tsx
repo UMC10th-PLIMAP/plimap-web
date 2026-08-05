@@ -6,6 +6,7 @@ import MoreIcon from '@/assets/icons/more.svg?react';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
+import { useInfiniteOtherMemberFeed } from '@/features/pin/queries/useOtherMemberFeed';
 import { useFollowMember } from '@/hooks/useFollowMember';
 import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
@@ -15,6 +16,9 @@ export default function UserProfilePage() {
   const id = Number(memberId);
 
   const { data: member } = useOtherMemberProfile(memberId);
+  const { data: feedPages } = useInfiniteOtherMemberFeed({
+    memberId: Number.isFinite(id) && id > 0 ? id : undefined,
+  });
   const followMutation = useFollowMember(id);
 
   const handleShare = async () => {
@@ -84,7 +88,7 @@ export default function UserProfilePage() {
       )}
 
       <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
-      <ProfilePinGrid pins={[]} />
+      <ProfilePinGrid pins={feedPages?.pages.flatMap((page) => page.data) ?? []} />
     </div>
   );
 }

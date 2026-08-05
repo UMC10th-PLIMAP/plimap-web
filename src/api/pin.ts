@@ -119,8 +119,22 @@ export async function getMyPins(pageSize: number, cursor?: string): Promise<GetM
   return data.result;
 }
 
-// 11) GET /api/v1/feed/members/me - 내 피드 목록 조회
+// 10) GET /api/v1/feed/members/{memberId} - 타인 피드 목록 조회
+export async function getOtherMemberFeed(
+  memberId: number,
+  pageSize?: number,
+  cursor?: string,
+): Promise<MemberMeResponse> {
+  const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(
+    `/api/v1/feed/members/${memberId}`,
+    {
+      params: { pageSize, cursor },
+    },
+  );
+  return data.result;
+}
 
+// 11) GET /api/v1/feed/members/me - 내 피드 목록 조회
 export async function getMemberMe({ pageSize, cursor }: MemberMeRequest) {
   const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(`/api/v1/feed/members/me`, {
     params: { pageSize, cursor },

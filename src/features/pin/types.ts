@@ -41,6 +41,9 @@ export type MemberMeResponse = {
     albumImageUrl: string;
     latitude: number;
     longitude: number;
+    placeName: string;
+    distanceFromUser: number;
+    pinCount: number;
     createdAt: string;
   }[];
   nextCursor: string;
