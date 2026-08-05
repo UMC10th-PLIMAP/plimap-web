@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import BackIcon from '@/assets/icons/back.svg?react';
 import MoreIcon from '@/assets/icons/more.svg?react';
 
+import { reportMember } from '@/api/report';
+import { ReportModal } from '@/features/pin/components/ReportModal';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
@@ -21,6 +23,7 @@ export default function UserProfilePage() {
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const goBack = useGoBack('/app/home');
   const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const { data: member } = useOtherMemberProfile(id);
   const {
@@ -77,6 +80,10 @@ export default function UserProfilePage() {
         <button
           type="button"
           aria-label="더보기"
+          onClick={() => {
+            if (!id) return;
+            setIsReportOpen(true);
+          }}
           className="flex size-6 items-center justify-end text-grayscale-100 cursor-pointer"
         >
           <MoreIcon className="size-6" />
@@ -143,6 +150,15 @@ export default function UserProfilePage() {
         }}
       />
       <div ref={loadMoreRef} aria-hidden className="h-px" />
+
+      <ReportModal
+        open={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        onSubmit={async (reason, detail) => {
+          if (!id) return;
+          await reportMember(id, reason, detail);
+        }}
+      />
     </div>
   );
 }
