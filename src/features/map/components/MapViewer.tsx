@@ -1,8 +1,9 @@
 import { forwardRef, useImperativeHandle } from 'react';
-import { MapCoordinate, MapPlace, MapPin, MapViewport } from '../types';
+import { MapCoordinate, MapPlace, MapPin, MapViewport, PinCluster } from '../types';
 import { useGoogleMap } from '../hooks/useGoogleMap';
 import { useCurrentLocationMarker } from '../hooks/useCurrentLocationMarker';
 import { useMapPinOverlays } from '../hooks/useMapPinOverlays';
+import { useClusterOverlays } from '../hooks/useClusterOverlays';
 import { usePlaceMarkers } from '../hooks/usePlaceMarkers';
 import { useCoordinateProjection } from '../hooks/useCoordinateProjection';
 import type { PinRadiusCenter } from '@/features/pin/components/PinRadiusOverlay';
@@ -15,6 +16,7 @@ type MapViewerProps = {
   placeResults: MapPlace[];
   selectedPlaceId: string | null;
   mapPins: MapPin[];
+  mapClusters?: PinCluster[];
   selectedMapPinId: string | null;
   projectionCoordinate?: MapCoordinate | null;
   projectionRadiusMeters?: number;
@@ -47,6 +49,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     placeResults,
     selectedPlaceId,
     mapPins,
+    mapClusters = [],
     selectedMapPinId,
     projectionCoordinate,
     projectionRadiusMeters,
@@ -64,7 +67,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
   },
   ref,
 ) {
-  const { mapRef, mapInstanceRef, panTo, flyTo } = useGoogleMap({
+  const { mapRef, mapInstanceRef, panTo, flyTo, fitToBounds } = useGoogleMap({
     isLoaded,
     isInteractionDisabled,
     zoom,
@@ -103,6 +106,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onSelectMapPin,
     onPlayPin,
   });
+  useClusterOverlays({ mapInstanceRef, isLoaded, clusters: mapClusters, flyTo, fitToBounds });
   useCoordinateProjection({
     mapInstanceRef,
     isLoaded,

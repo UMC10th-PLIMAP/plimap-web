@@ -4,10 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { SearchLauncher } from '@/components/ui/SearchInput';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
-import type { MapCoordinate, MapPin, MapPlace, MapViewport } from '@/features/map/types';
+import type {
+  MapCoordinate,
+  MapPin,
+  MapPlace,
+  MapViewport,
+  PinCluster,
+} from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
-import { useMapPins } from '@/features/map/queries/useMapPins';
+import { usePinMapView } from '@/features/map/queries/usePinMapView';
 import { useAutoFocusNearestPin } from '@/features/map/hooks/useAutoFocusNearestPin';
 import { DEV_MOCK_MAP_PINS } from '@/features/map/constants/devMockMapPins';
 import { PinListSheet } from '@/features/pin/components/PinListSheet';
@@ -18,10 +24,11 @@ import { usePinCreationStore } from '@/store/pinCreationStore';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 const REGISTRATION_TOAST_DURATION_MS = 2_000;
-// mapPinsData 로딩 중(undefined)에는 매 렌더마다 새 배열 리터럴이 생기면 안 된다 -
+// mapViewData 로딩 중(undefined)에는 매 렌더마다 새 배열 리터럴이 생기면 안 된다 -
 // useAutoFocusNearestPin이 mapPins 참조 변경을 감지해 상태를 갱신하므로, 참조가
 // 계속 바뀌면 무한 렌더 루프(React #301)가 된다.
 const EMPTY_MAP_PINS: MapPin[] = [];
+const EMPTY_MAP_CLUSTERS: PinCluster[] = [];
 
 type RegistrationToast = {
   attempt: number;
@@ -84,11 +91,17 @@ const MapPage: React.FC<MapPageProps> = ({
   const [currentLocationError, setCurrentLocationError] = useState<string | null>(null);
   const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
-  const { data: mapPinsData } = useMapPins(viewport);
-  const mapPins =
-    import.meta.env.DEV && mapPinsData !== undefined && mapPinsData.pins.length === 0
-      ? DEV_MOCK_MAP_PINS
-      : (mapPinsData?.pins ?? EMPTY_MAP_PINS);
+  const { data: mapViewData } = usePinMapView(viewport);
+  // 클러스터가 있는 줌 구간(6~19)에서는 개별 핀이 0개인 게 정상이라, 목데이터로
+  // 대체하면 안 된다 - 핀만 반환되는 구간(clusters가 없음)에서 실제로 핀이 하나도
+  // 없을 때만 로컬 확인용 목데이터를 채운다.
+  const shouldUseDevMockPins =
+    import.meta.env.DEV &&
+    mapViewData !== undefined &&
+    (mapViewData.pins?.length ?? 0) === 0 &&
+    (mapViewData.clusters?.length ?? 0) === 0;
+  const mapPins = shouldUseDevMockPins ? DEV_MOCK_MAP_PINS : (mapViewData?.pins ?? EMPTY_MAP_PINS);
+  const mapClusters = mapViewData?.clusters ?? EMPTY_MAP_CLUSTERS;
   // 최대 줌에서 화면 중심 근처 핀을 자동으로 포커스 (탭으로 연 시트가 있으면 그게 우선)
   const autoFocusedPinId = useAutoFocusNearestPin({ mapPins, viewport });
   const displayedMapPinId = selectedMapPinId ?? autoFocusedPinId;
@@ -312,6 +325,7 @@ const MapPage: React.FC<MapPageProps> = ({
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
         mapPins={mapPins}
+        mapClusters={mapClusters}
         selectedMapPinId={selectedMapPlace ? null : displayedMapPinId}
         centerOnFirstLocation={!selectedMapPlace}
         onZoomChanged={handleZoomChange}
