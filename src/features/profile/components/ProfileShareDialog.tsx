@@ -19,8 +19,11 @@ export function ProfileShareDialog({
   profileImageUrl,
 }: ProfileShareDialogProps) {
   const handleCopyNickname = async () => {
+    const trimmedNickname = nickname.trim();
+    if (!trimmedNickname) return;
+
     try {
-      await navigator.clipboard.writeText(nickname);
+      await navigator.clipboard.writeText(trimmedNickname);
       onClose();
       onCopied();
     } catch {
