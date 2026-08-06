@@ -44,7 +44,7 @@ export function PinCard({ pin, onClick }: PinCardProps) {
           : undefined
       }
       className={cn(
-        'flex w-full items-center justify-between rounded-xl bg-pli-black-85 p-4.5 text-left',
+        'flex w-full items-center justify-between rounded-xl bg-pli-black-85 px-4.5 pt-4 pb-3 text-left',
         onClick && 'cursor-pointer',
       )}
     >
