@@ -3,19 +3,17 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import lottie from 'lottie-web/build/player/lottie_svg';
 
-import { ApiError } from '@/api/client';
 import { completeOnboarding } from '@/api/auth';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import confettiRaw from '@/assets/lottie/welcome-confetti.json?raw';
 import { Button } from '@/components/ui/button';
+import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 import { useOnboardingStore } from '@/store/onboardingStore';
 
 const CONFETTI_PRESERVE_ASPECT_RATIO = 'xMidYMid slice';
 const CONFETTI_FADE_OUT_MS = 1000;
-const ONBOARDING_FAILED_MESSAGE = '온보딩 완료 처리에 실패했어요. 다시 시도해주세요.';
-
 function ConfettiLottie({ data }: { data: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFadingOut, setIsFadingOut] = useState(false);
@@ -59,6 +57,7 @@ export default function WelcomePage() {
   const profileImageFile = useOnboardingStore((state) => state.profileImageFile);
   const profileImageUrl = useOnboardingStore((state) => state.profileImageUrl);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requestError, setRequestError] = useState<unknown>(null);
   const localImageUrl = useMemo(
     () => (profileImageFile ? URL.createObjectURL(profileImageFile) : null),
     [profileImageFile],
@@ -82,10 +81,22 @@ export default function WelcomePage() {
       useOnboardingStore.getState().reset();
       navigate('/app', { replace: true });
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : ONBOARDING_FAILED_MESSAGE);
+      setRequestError(error);
       setIsSubmitting(false);
     }
   };
+
+  if (requestError) {
+    return (
+      <RequestErrorScreen
+        error={requestError}
+        onRetry={() => {
+          setRequestError(null);
+          void handleStart();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="relative flex h-full min-h-screen flex-col overflow-hidden bg-pli-black-100">

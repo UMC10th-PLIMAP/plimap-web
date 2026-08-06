@@ -2,9 +2,9 @@ import { type ChangeEvent, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Cropper, { type Area, type Point } from 'react-easy-crop';
 
-import { ApiError } from '@/api/client';
 import CameraIcon from '@/assets/icons/camera.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
+import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { Button } from '@/components/ui/button';
 import { uploadProfileImage } from '@/api/member';
@@ -16,7 +16,6 @@ type Step = 'select' | 'crop' | 'done';
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const INVALID_FORMAT_MESSAGE =
   '올릴 수 없는 파일 형식이에요. JPG, PNG 또는 WebP 파일로 선택해 주세요.';
-const UPLOAD_FAILED_MESSAGE = '파일 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.';
 const IMAGE_PROCESSING_FAILED_MESSAGE = '이미지 처리에 실패했어요. 다시 시도해 주세요.';
 
 export default function ProfileImageSetupPage() {
@@ -33,6 +32,7 @@ export default function ProfileImageSetupPage() {
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [requestError, setRequestError] = useState<unknown>(null);
 
   const handlePickImage = () => {
     fileInputRef.current?.click();
@@ -105,7 +105,7 @@ export default function ProfileImageSetupPage() {
       new Image().src = imageUrl;
       navigate('/app/onboarding/welcome');
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : UPLOAD_FAILED_MESSAGE);
+      setRequestError(error);
     } finally {
       setIsUploading(false);
     }
@@ -127,6 +127,18 @@ export default function ProfileImageSetupPage() {
       if (croppedImageUrl) URL.revokeObjectURL(croppedImageUrl);
     };
   }, [croppedImageUrl]);
+
+  if (requestError) {
+    return (
+      <RequestErrorScreen
+        error={requestError}
+        onRetry={() => {
+          setRequestError(null);
+          void handleNext();
+        }}
+      />
+    );
+  }
 
   if (step === 'crop' && imageSrc) {
     return (

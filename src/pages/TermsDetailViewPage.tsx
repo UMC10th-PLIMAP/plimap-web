@@ -2,15 +2,13 @@ import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { agreeToTerms } from '@/api/auth';
-import { ApiError } from '@/api/client';
 import CheckIcon from '@/assets/icons/check.svg?react';
+import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { TermsDetailContent } from '@/features/auth/components/TermsDetailContent';
 import { TERMS_BY_ID } from '@/features/auth/terms/content';
 import type { TermId } from '@/features/auth/terms/types';
 import { cn } from '@/lib/utils';
-
-const MARKETING_CONSENT_FAILED_MESSAGE = '설정을 저장하지 못했어요. 잠시 후 다시 시도해주세요.';
 
 const isTermId = (value: string | undefined): value is TermId =>
   !!value && Object.hasOwn(TERMS_BY_ID, value);
@@ -22,6 +20,7 @@ export default function TermsDetailViewPage() {
   // 조회 API가 추가되면 초기값을 서버 값으로 대체할 것.
   const [isMarketingConsentOn, setIsMarketingConsentOn] = useState(false);
   const [isSavingConsent, setIsSavingConsent] = useState(false);
+  const [requestError, setRequestError] = useState<unknown>(null);
 
   if (!isTermId(termId)) {
     return <Navigate to="/app/settings" replace />;
@@ -38,11 +37,23 @@ export default function TermsDetailViewPage() {
       await agreeToTerms([{ id: 'MARKETING', agreed: nextValue }]);
       setIsMarketingConsentOn(nextValue);
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : MARKETING_CONSENT_FAILED_MESSAGE);
+      setRequestError(error);
     } finally {
       setIsSavingConsent(false);
     }
   };
+
+  if (requestError) {
+    return (
+      <RequestErrorScreen
+        error={requestError}
+        onRetry={() => {
+          setRequestError(null);
+          void handleMarketingConsentToggle();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col pt-[env(safe-area-inset-top)]">

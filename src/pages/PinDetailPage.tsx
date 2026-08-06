@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { ApiError, isNetworkError } from '@/api/client';
-import { FullScreenError, type FullScreenErrorVariant } from '@/components/ui/FullScreenError';
+import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { PinDetailSkeleton } from '@/components/skeletons/PinDetailSkeleton';
 
@@ -35,17 +34,6 @@ type PinDetailLocationState = {
   userLongitude?: number;
   placeAccessToken?: string;
 };
-
-function getErrorVariant(error: unknown): FullScreenErrorVariant {
-  if (isNetworkError(error)) return 'network';
-  if (error instanceof ApiError) {
-    if (error.status === 401) return 'session';
-    if (error.status === 403) return 'forbidden';
-    if (error.status === 404) return 'not-found';
-  }
-
-  return 'network';
-}
 
 function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
   return {
@@ -97,7 +85,7 @@ export default function PinDetailPage() {
   // 지도/피드에서 navigate state로 넘긴 토큰만 사용 (스토어 잔여 토큰 혼입 방지)
   const placeAccessToken = locationState?.placeAccessToken;
   const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
-  const [actionError, setActionError] = useState<FullScreenErrorVariant | null>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
 
   const userLatitude = hasLocationFromState
     ? locationState.userLatitude
@@ -143,24 +131,13 @@ export default function PinDetailPage() {
   const isContentPending =
     !locationErrorMessage &&
     (isLocationPending || pinDetailQuery.isPending || pinPagesQuery.isPending);
-  const queryError = pinDetailQuery.error ?? pinPagesQuery.error;
-  const errorVariant =
-    actionError ??
-    (queryError ? getErrorVariant(queryError) : !isContentPending && !pinDetail ? 'network' : null);
+  const queryError =
+    (!pinDetail ? pinDetailQuery.error : null) ?? (!pinPages ? pinPagesQuery.error : null);
+  const requestError = actionError ?? queryError;
 
   const handleErrorAction = () => {
-    if (errorVariant === 'network') {
-      void Promise.all([pinDetailQuery.refetch(), pinPagesQuery.refetch()]);
-      setActionError(null);
-      return;
-    }
-
-    if (errorVariant === 'session') {
-      navigate('/app/login', { replace: true });
-      return;
-    }
-
-    navigate(-1);
+    setActionError(null);
+    void Promise.all([pinDetailQuery.refetch(), pinPagesQuery.refetch()]);
   };
 
   useEffect(() => {
@@ -219,15 +196,15 @@ export default function PinDetailPage() {
     );
   }
 
-  if (errorVariant) {
-    return <FullScreenError variant={errorVariant} onAction={handleErrorAction} />;
+  if (requestError) {
+    return <RequestErrorScreen error={requestError} onRetry={handleErrorAction} />;
   }
 
   if (!pinDetail) {
     return (
-      <FullScreenError
-        variant="network"
-        onAction={() => void Promise.all([pinDetailQuery.refetch(), pinPagesQuery.refetch()])}
+      <RequestErrorScreen
+        error={new Error('Pin detail response is empty')}
+        onRetry={handleErrorAction}
       />
     );
   }
@@ -331,11 +308,8 @@ export default function PinDetailPage() {
           try {
             await reportPin(Number(reportFeedId), reason, detail);
           } catch (error) {
-            const variant = getErrorVariant(error);
-            if (variant === 'forbidden' || variant === 'session' || variant === 'network') {
-              setReportFeedId(null);
-              setActionError(variant);
-            }
+            setReportFeedId(null);
+            setActionError(error);
             throw error;
           }
         }}

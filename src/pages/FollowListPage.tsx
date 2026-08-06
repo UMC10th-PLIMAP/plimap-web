@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 
-import { ApiError } from '@/api/client';
 import { FollowListSkeleton } from '@/components/skeletons/FollowListSkeleton';
+import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { FollowUserRow } from '@/features/profile/components/FollowUserRow';
 import { SearchInput } from '@/components/ui/SearchInput';
@@ -15,8 +15,6 @@ import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
 import type { FollowTab } from '@/features/profile/types';
 import type { FollowListItem } from '@/types/member.type';
-
-const FOLLOW_TOGGLE_FAILED_MESSAGE = '요청을 처리하지 못했어요. 다시 시도해주세요.';
 
 function getTabFromPath(pathname: string): FollowTab {
   return pathname.endsWith('/followers') ? 'follower' : 'following';
@@ -50,6 +48,10 @@ export default function FollowListPage() {
   const { memberId: memberIdParam } = useParams<{ memberId?: string }>();
   const tab = getTabFromPath(pathname);
   const [keyword, setKeyword] = useState('');
+  const [actionError, setActionError] = useState<{
+    error: unknown;
+    target: FollowListItem;
+  } | null>(null);
 
   const parsedMemberId = Number(memberIdParam);
   const otherMemberId =
@@ -58,8 +60,9 @@ export default function FollowListPage() {
   const isOtherMember = otherMemberId !== undefined;
 
   const myProfileQuery = useMyProfile();
-  const myProfile = myProfileQuery.data;
-  const { data: otherProfile } = useOtherMemberProfile(otherMemberId);
+  const otherProfileQuery = useOtherMemberProfile(otherMemberId);
+  const { data: myProfile } = myProfileQuery;
+  const { data: otherProfile } = otherProfileQuery;
 
   const targetMemberId = hasInvalidMemberId
     ? undefined
@@ -88,14 +91,18 @@ export default function FollowListPage() {
     [isOtherMember, otherMemberId],
   );
 
+  const followListQuery = useInfiniteFollowList({ memberId: targetMemberId, tab });
   const {
     data: followList,
+    error: followListError,
+    isError: isFollowListError,
     fetchNextPage,
     hasNextPage,
     isPending,
     isFetchingNextPage,
     isFetchNextPageError,
-  } = useInfiniteFollowList({ memberId: targetMemberId, tab });
+    refetch: refetchFollowList,
+  } = followListQuery;
 
   const users = followList?.pages.flatMap((page) => page.data) ?? [];
   const isTargetProfilePending = !isOtherMember && myProfileQuery.isPending;
@@ -119,7 +126,7 @@ export default function FollowListPage() {
     try {
       await toggleFollow({ memberId: target.id, isFollowing: target.isFollowing });
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : FOLLOW_TOGGLE_FAILED_MESSAGE);
+      setActionError({ error, target });
     } finally {
       setPendingMemberIds((prev) => {
         const next = new Set(prev);
@@ -138,6 +145,35 @@ export default function FollowListPage() {
 
   if (hasInvalidMemberId) {
     return <Navigate to="/app" replace />;
+  }
+
+  const requestError =
+    actionError?.error ??
+    (isFollowListError && !followList ? followListError : null) ??
+    (!myProfile ? myProfileQuery.error : null) ??
+    (!otherProfile ? otherProfileQuery.error : null);
+
+  if (requestError) {
+    return (
+      <RequestErrorScreen
+        error={requestError}
+        onBack={goBack}
+        onRetry={() => {
+          if (actionError) {
+            const { target } = actionError;
+            setActionError(null);
+            void handleActionClick(target);
+            return;
+          }
+
+          void Promise.all([
+            refetchFollowList(),
+            myProfileQuery.refetch(),
+            ...(isOtherMember ? [otherProfileQuery.refetch()] : []),
+          ]);
+        }}
+      />
+    );
   }
 
   const emptyState = isOtherMember ? OTHER_EMPTY_STATE[tab] : EMPTY_STATE[tab];

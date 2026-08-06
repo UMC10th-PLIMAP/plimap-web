@@ -5,7 +5,8 @@ import NotFoundIcon from '@/assets/error/not-found.svg';
 import SessionIcon from '@/assets/error/session.svg';
 import { cn } from '@/lib/utils';
 
-export type FullScreenErrorVariant = 'map' | 'session' | 'not-found' | 'network' | 'forbidden';
+export type FullScreenErrorVariant =
+  'map' | 'session' | 'not-found' | 'network' | 'forbidden' | 'unknown';
 
 type ErrorContent = {
   title: string;
@@ -29,7 +30,7 @@ const ERROR_CONTENT: Record<FullScreenErrorVariant, ErrorContent> = {
   },
   'not-found': {
     title: '페이지를 찾을 수 없어요.',
-    description: '삭제된 PIN이거나 잘못된 접근이에요.',
+    description: '삭제되었거나 잘못된 접근이에요.',
     actionLabel: '이전 화면으로 돌아가기',
     icon: 'not-found',
   },
@@ -41,8 +42,14 @@ const ERROR_CONTENT: Record<FullScreenErrorVariant, ErrorContent> = {
   },
   forbidden: {
     title: '접근 권한이 없어요.',
-    description: '비공개 PIN이거나 본인의 PIN을 신고할 수 없어요.',
+    description: '요청한 페이지 또는 기능에 접근할 수 없어요.',
     actionLabel: '이전 화면으로 돌아가기',
+    icon: 'error',
+  },
+  unknown: {
+    title: '문제가 발생했어요.',
+    description: '일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요.',
+    actionLabel: '다시 시도하기',
     icon: 'error',
   },
 };
@@ -107,12 +114,12 @@ export function FullScreenError({ variant, onAction, className }: FullScreenErro
       role="alert"
       aria-labelledby={titleId}
       className={cn(
-        'flex min-h-0 w-full flex-1 items-center justify-center bg-pli-black-100 px-6 pt-[env(safe-area-inset-top)] text-center',
+        'flex min-h-0 flex-1 items-center justify-center bg-pli-black-100 px-6 pt-[env(safe-area-inset-top)] text-center',
         className,
       )}
     >
-      <div className="flex h-full w-full flex-col items-center justify-center gap-[65px]">
-        <div className="flex h-[152px] shrink-0 flex-col items-center gap-9">
+      <div className="flex flex-col items-center gap-[65px]">
+        <div className="flex flex-col items-center gap-9">
           <ErrorStateIcon icon={content.icon} />
 
           <div className="flex flex-col items-center gap-0.5 break-keep">

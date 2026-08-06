@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { NotificationRow } from '@/features/notification/components/NotificationRow';
 import { NotificationRowSkeleton } from '@/features/notification/components/NotificationRowSkeleton';
@@ -15,8 +16,17 @@ const INITIAL_SKELETON_COUNT = 3;
 export default function MyNotificationsPage() {
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, isError, refetch } =
-    useInfiniteNotifications();
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    isPending,
+    isError,
+    refetch,
+  } = useInfiniteNotifications();
   const followBackMutation = useToggleFollow();
   const notifications = data?.pages.flatMap((page) => page.data) ?? [];
 
@@ -39,6 +49,26 @@ export default function MyNotificationsPage() {
     return () => observer.disconnect();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
+  const requestError = followBackMutation.error ?? (!data && isError ? error : null);
+
+  if (requestError) {
+    return (
+      <RequestErrorScreen
+        error={requestError}
+        onRetry={() => {
+          if (followBackMutation.error && followBackMutation.variables) {
+            const variables = followBackMutation.variables;
+            followBackMutation.reset();
+            followBackMutation.mutate(variables);
+            return;
+          }
+
+          void refetch();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="flex min-h-full flex-col pt-[env(safe-area-inset-top)]">
       <TopBar onBack={() => navigate(-1)} title="내 소식" titleWeight="medium" />
@@ -52,32 +82,10 @@ export default function MyNotificationsPage() {
           </div>
         )}
 
-        {followBackMutation.isError && (
-          <p
-            className="mb-4 rounded-xl bg-pli-black-75 px-4 py-3 body-15-r text-grayscale-300"
-            role="alert"
-          >
-            맞팔로우하지 못했어요. 다시 시도해주세요.
-          </p>
-        )}
-
         {isPending && (
           <span className="sr-only" role="status">
             내 소식을 불러오는 중
           </span>
-        )}
-
-        {isError && (
-          <div className="flex flex-col items-center gap-3 py-10">
-            <p className="body-15-r text-grayscale-500">내 소식을 불러오지 못했어요.</p>
-            <button
-              type="button"
-              onClick={() => void refetch()}
-              className="body-15-m cursor-pointer text-neon-2"
-            >
-              다시 시도
-            </button>
-          </div>
         )}
 
         {!isPending && !isError && notifications.length === 0 && (
@@ -117,6 +125,15 @@ export default function MyNotificationsPage() {
           <span className="sr-only" role="status">
             추가 소식을 불러오는 중
           </span>
+        )}
+        {isFetchNextPageError && (
+          <button
+            type="button"
+            onClick={() => void fetchNextPage()}
+            className="py-4 body-15-m cursor-pointer text-grayscale-300 underline"
+          >
+            더 불러오기 다시 시도
+          </button>
         )}
       </main>
     </div>

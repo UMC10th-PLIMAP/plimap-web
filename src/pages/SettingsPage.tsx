@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { logout } from '@/api/auth';
-import { ApiError } from '@/api/client';
+import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { ConfirmAlertDialog } from '@/features/settings/components/ConfirmAlertDialog';
 import { SettingsRow } from '@/features/settings/components/SettingsRow';
@@ -17,13 +17,12 @@ const TERM_LIST_ITEMS: { id: TermId; label: string }[] = [
   { id: 'MARKETING', label: '마케팅 정보 수신 설정' },
 ];
 
-const LOGOUT_FAILED_MESSAGE = '로그아웃에 실패했어요. 잠시 후 다시 시도해주세요.';
-
 export default function SettingsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [requestError, setRequestError] = useState<unknown>(null);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -35,12 +34,24 @@ export default function SettingsPage() {
       queryClient.removeQueries({ queryKey: memberQueryKeys.all });
       navigate('/app/login', { replace: true });
     } catch (error) {
-      setIsLogoutDialogOpen(true);
-      alert(error instanceof ApiError ? error.message : LOGOUT_FAILED_MESSAGE);
+      setIsLogoutDialogOpen(false);
+      setRequestError(error);
     } finally {
       setIsLoggingOut(false);
     }
   };
+
+  if (requestError) {
+    return (
+      <RequestErrorScreen
+        error={requestError}
+        onRetry={() => {
+          setRequestError(null);
+          setIsLogoutDialogOpen(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col pt-[env(safe-area-inset-top)]">

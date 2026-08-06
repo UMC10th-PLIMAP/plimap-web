@@ -2,10 +2,10 @@ import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Cropper, { type Area, type Point } from 'react-easy-crop';
 
-import { ApiError } from '@/api/client';
 import CameraIcon from '@/assets/icons/camera.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { Button } from '@/components/ui/button';
+import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { ProfileTextAreaField } from '@/features/profile/components/ProfileTextAreaField';
 import { ProfileTextField } from '@/features/profile/components/ProfileTextField';
@@ -27,28 +27,40 @@ const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const INVALID_FORMAT_MESSAGE =
   '올릴 수 없는 파일 형식이에요. JPG, PNG 또는 WebP 파일로 선택해 주세요.';
 const IMAGE_PROCESSING_FAILED_MESSAGE = '이미지 처리에 실패했어요. 다시 시도해 주세요.';
-const PROFILE_UPDATE_FAILED_MESSAGE = '프로필 수정에 실패했어요. 다시 시도해 주세요.';
-const PROFILE_LOAD_FAILED_MESSAGE = '프로필을 불러오지 못했어요.';
 
 export default function ProfileEditPage() {
   const navigate = useNavigate();
+  const [actionError, setActionError] = useState<unknown>(null);
 
-  const { data: profile, isError } = useMyProfile();
+  const {
+    data: profile,
+    error: profileError,
+    refetch,
+  } = useMyProfile();
+
+  if (profileError && !profile) {
+    return <RequestErrorScreen error={profileError} onRetry={() => void refetch()} />;
+  }
+
+  if (actionError) {
+    return <RequestErrorScreen error={actionError} onRetry={() => setActionError(null)} />;
+  }
 
   return (
     <div className="flex h-full min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar title="프로필 편집" titleWeight="medium" onBack={() => navigate(-1)} />
-      {isError && (
-        <p className="mt-8 text-center body-15-r text-grayscale-600">
-          {PROFILE_LOAD_FAILED_MESSAGE}
-        </p>
-      )}
-      {profile && <ProfileEditForm profile={profile} />}
+      {profile && <ProfileEditForm profile={profile} onRequestError={setActionError} />}
     </div>
   );
 }
 
-function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
+function ProfileEditForm({
+  profile,
+  onRequestError,
+}: {
+  profile: MyProfileResponse;
+  onRequestError: (error: unknown) => void;
+}) {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -168,7 +180,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
 
       navigate('/app/my', { replace: true });
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : PROFILE_UPDATE_FAILED_MESSAGE);
+      onRequestError(error);
     }
   };
 
