@@ -6,6 +6,7 @@ import NextIcon from '@/assets/icons/next.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { PinListSheetSkeleton } from '@/components/skeletons/PinListSheetSkeleton';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
@@ -246,6 +247,9 @@ export function PinListSheet({
     longitude: detailLocation?.longitude ?? 0,
     enabled: open && detailLocation !== null,
   });
+  // 지도 핀 탭으로 열렸을 때(place.name이 아직 없음)만 최초 로딩 스켈레톤을 보여준다.
+  // 검색 결과로 열렸을 때는 이미 이름/주소가 있어 부분 데이터를 그대로 보여준다.
+  const isInitialLoading = !place.name && placeDetailQuery.isLoading;
   const resolvedPlace: PlaceInfo = {
     ...place,
     name: placeDetailQuery.data?.placeName ?? place.name,
@@ -318,24 +322,28 @@ export function PinListSheet({
         }
       >
         <BottomSheet.FullPageNav />
-        <PinListContent
-          place={resolvedPlace}
-          pins={pins}
-          sort={sort}
-          onSortChange={setSort}
-          isBookmarked={isBookmarked}
-          bookmarkStatus={bookmarkStatus}
-          detailErrorMessage={detailErrorMessage}
-          isBookmarkPending={bookmarkMutation.isPending}
-          onBookmarkToggle={handleBookmarkToggle}
-          onPinClick={onPinClick}
-          focusedFeedPin={focusedFeedPin}
-          onFocusedTrackClick={
-            focusedPlaceTrackId && onFocusedTrackClick
-              ? () => onFocusedTrackClick(focusedPlaceTrackId)
-              : undefined
-          }
-        />
+        {isInitialLoading ? (
+          <PinListSheetSkeleton />
+        ) : (
+          <PinListContent
+            place={resolvedPlace}
+            pins={pins}
+            sort={sort}
+            onSortChange={setSort}
+            isBookmarked={isBookmarked}
+            bookmarkStatus={bookmarkStatus}
+            detailErrorMessage={detailErrorMessage}
+            isBookmarkPending={bookmarkMutation.isPending}
+            onBookmarkToggle={handleBookmarkToggle}
+            onPinClick={onPinClick}
+            focusedFeedPin={focusedFeedPin}
+            onFocusedTrackClick={
+              focusedPlaceTrackId && onFocusedTrackClick
+                ? () => onFocusedTrackClick(focusedPlaceTrackId)
+                : undefined
+            }
+          />
+        )}
       </BottomSheet>
 
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">

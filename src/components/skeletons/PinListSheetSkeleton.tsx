@@ -7,11 +7,9 @@ export function PinListSheetSkeleton() {
     <div
       role="status"
       aria-label="장소 핀 목록 불러오는 중"
-      className="flex w-full flex-col rounded-t-[20px] bg-pli-black-100 px-4 pt-[10.25px]"
+      className="flex w-full flex-col px-4 mt-[26.75px]"
     >
-      <div className="mx-auto h-1 w-[41px] rounded-full bg-[#8A8A8A]" aria-hidden />
-
-      <div className="mt-7 flex w-full items-center justify-between">
+      <div className="flex w-full items-center justify-between">
         <div className="flex flex-col">
           <Skeleton className="h-[21px] w-12 rounded-[25px]" />
           <Skeleton className="h-8 w-[180px] rounded-sm mt-2" />
