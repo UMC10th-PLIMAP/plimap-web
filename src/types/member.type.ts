@@ -18,6 +18,7 @@ export type MyProfileResponse = {
   profileImageUrl: string | null;
   followerCount: number;
   followingCount: number;
+  pinCount: number;
   onboardingCompletedAt: string | null;
 };
 
@@ -50,6 +51,7 @@ export type MemberProfileResponse = {
   profileImageUrl: string | null;
   followerCount: number;
   followingCount: number;
+  pinCount: number;
   isFollowing: boolean;
 };
 
