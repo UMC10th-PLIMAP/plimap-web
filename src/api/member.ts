@@ -1,4 +1,4 @@
-import { apiClient } from '@/api/client';
+import { apiClient, ApiError } from '@/api/client';
 import type { ApiResponse } from '@/api/types';
 import type {
   FollowListRequest,
@@ -87,6 +87,11 @@ export async function unfollowMember(memberId: number) {
 
 // 10) DELETE /api/v1/members/me - 회원 탈퇴
 export async function withdrawMember() {
-  const { data } = await apiClient.delete<ApiResponse<string>>(`${ENDPOINT}/me`);
+  // 2xx 응답이라도 isSuccess:false(code 없는 논리적 실패 포함)일 수 있어 직접 검사한다 -
+  // client.ts의 응답 인터셉터는 axios가 에러로 취급하는 비-2xx 응답만 ApiError로 변환한다.
+  const { data, status } = await apiClient.delete<ApiResponse<string>>(`${ENDPOINT}/me`);
+  if (!data.isSuccess) {
+    throw new ApiError(data.code, data.message, status);
+  }
   return data.result;
 }
