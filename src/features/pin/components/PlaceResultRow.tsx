@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react';
 
+import LocationIcon from '@/assets/icons/location.svg?react';
 import RecentSearchDeleteIcon from '@/assets/icons/recent-search-delete.svg?react';
 import RecentSearchIcon from '@/assets/icons/recent-search.svg?react';
 import type { PlaceResult } from '@/features/pin/types';
@@ -37,11 +38,13 @@ export function PlaceResultRow({
         )}
         {...props}
       >
-        {isRecentSearch ? (
-          <span className="mt-4 flex size-7 shrink-0 items-center justify-center rounded-full bg-pli-black-75">
+        <span className="mt-4 flex size-7 shrink-0 items-center justify-center rounded-full bg-pli-black-75">
+          {isRecentSearch ? (
             <RecentSearchIcon className="size-5" aria-hidden />
-          </span>
-        ) : null}
+          ) : (
+            <LocationIcon className="size-[18px] text-grayscale-600" aria-hidden />
+          )}
+        </span>
 
         <span className="flex min-w-0 flex-1 flex-col items-start gap-[6px] whitespace-nowrap pb-3 pt-4">
           <span className="flex w-full min-w-0 items-center gap-[6px]">
