@@ -99,6 +99,7 @@ export default function UserProfilePage() {
               profileImageUrl: member.profileImageUrl,
               followerCount: member.followerCount,
               followingCount: member.followingCount,
+              pinCount: member.pinCount,
             }}
             onFollowingClick={() => {
               if (!id) return;

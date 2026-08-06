@@ -3,7 +3,7 @@ import UserIcon from '@/assets/icons/user-placeholder.svg?react';
 
 type ProfileInfoData = Pick<
   MyProfileResponse,
-  'name' | 'introduction' | 'profileImageUrl' | 'followerCount' | 'followingCount'
+  'name' | 'introduction' | 'profileImageUrl' | 'followerCount' | 'followingCount' | 'pinCount'
 >;
 
 type ProfileInfoProps = {
@@ -63,7 +63,7 @@ export function ProfileInfo({ profile, onFollowingClick, onFollowerClick }: Prof
       <div className="mt-4 flex w-full max-w-[236px] h-[46px] items-center justify-between">
         <StatItem label="팔로잉" value={profile.followingCount} onClick={onFollowingClick} />
         <StatItem label="팔로워" value={profile.followerCount} onClick={onFollowerClick} />
-        <StatItem label="게시물" value={0} />
+        <StatItem label="게시물" value={profile.pinCount} />
       </div>
 
       {profile.introduction && (
