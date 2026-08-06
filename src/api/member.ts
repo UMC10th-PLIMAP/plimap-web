@@ -84,3 +84,9 @@ export async function followMember(memberId: number) {
 export async function unfollowMember(memberId: number) {
   await apiClient.delete(`${ENDPOINT}/${memberId}/follow`);
 }
+
+// 10) DELETE /api/v1/members/me - 회원 탈퇴
+export async function withdrawMember() {
+  const { data } = await apiClient.delete<ApiResponse<string>>(`${ENDPOINT}/me`);
+  return data.result;
+}
