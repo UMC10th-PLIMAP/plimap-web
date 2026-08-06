@@ -16,9 +16,15 @@ type WithdrawConfirmDialogProps = {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  isSubmitting?: boolean;
 };
 
-export function WithdrawConfirmDialog({ open, onClose, onConfirm }: WithdrawConfirmDialogProps) {
+export function WithdrawConfirmDialog({
+  open,
+  onClose,
+  onConfirm,
+  isSubmitting = false,
+}: WithdrawConfirmDialogProps) {
   const [agreed, setAgreed] = useState(false);
   const [prevOpen, setPrevOpen] = useState(open);
 
@@ -69,19 +75,20 @@ export function WithdrawConfirmDialog({ open, onClose, onConfirm }: WithdrawConf
         <div className="flex h-12 items-center gap-4">
           <button
             type="button"
-            disabled={!agreed}
+            disabled={!agreed || isSubmitting}
             onClick={onConfirm}
             className={cn(
-              'flex h-full w-[138px] items-center justify-center rounded-lg body-17-m text-white',
-              agreed ? 'bg-red' : 'bg-[#D29FA0]',
+              'flex h-full w-[138px] items-center justify-center rounded-lg body-17-m text-white disabled:cursor-not-allowed',
+              agreed && !isSubmitting ? 'bg-red' : 'bg-[#D29FA0]',
             )}
           >
-            탈퇴하기
+            {isSubmitting ? '탈퇴 중...' : '탈퇴하기'}
           </button>
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={onClose}
-            className="flex h-full w-[138px] items-center justify-center rounded-lg bg-grayscale-700 body-17-m text-white"
+            className="flex h-full w-[138px] items-center justify-center rounded-lg bg-grayscale-700 body-17-m text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             취소
           </button>
