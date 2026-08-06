@@ -34,6 +34,13 @@ export default function UserProfilePage() {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareToast, setShareToast] = useState<ShareToast | null>(null);
+  const [trackedMemberId, setTrackedMemberId] = useState(id);
+
+  if (id !== trackedMemberId) {
+    setTrackedMemberId(id);
+    setIsShareOpen(false);
+    setShareToast(null);
+  }
 
   const { data: member } = useOtherMemberProfile(id);
   const {
