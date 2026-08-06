@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import PlayIcon from '@/assets/icons/play.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
@@ -17,13 +17,14 @@ import {
 } from '@/features/pin/data/songPreview';
 import { useCreatePin } from '@/features/pin/queries/useCreatePin';
 import { useGetPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
-import { useAudioPreview } from '@/hooks/useAudioPreview';
+import { preloadYouTubeIframeApi, useYouTubeClipPlayer } from '@/hooks/useYouTubeClipPlayer';
 import { cn } from '@/lib/utils';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
 const INTRO_MAX_LENGTH = 100;
 const MAX_TAG_COUNT = 4;
 const CREATION_TOAST_DURATION_MS = 2_000;
+const SONG_PREVIEW_PLAY_KEY = 'song-detail-preview';
 
 type CreationToast = {
   attempt: number;
@@ -88,21 +89,39 @@ function SongWaveform({ peaks, trimStartIndex, trimEndIndex }: SongWaveformProps
 
 type SongPreviewSectionProps = {
   waveformPeaks: readonly number[];
-  durationSec: number;
-  previewUrl?: string | null;
+  /** playback-preparations의 durationMs (ms) — 재생 길이로 사용 */
+  durationMs: number;
+  youtubeVideoId?: string | null;
 };
 
-function SongPreviewSection({ waveformPeaks, durationSec, previewUrl }: SongPreviewSectionProps) {
+function SongPreviewSection({
+  waveformPeaks,
+  durationMs,
+  youtubeVideoId,
+}: SongPreviewSectionProps) {
+  const timelineDurationSec = Math.max(durationMs / 1_000, 1);
   const trim = peaksToTrimRange(
     DEFAULT_TRIM_START_INDEX,
     DEFAULT_TRIM_END_INDEX,
     waveformPeaks,
-    durationSec,
+    timelineDurationSec,
   );
-  const { isPlaying, toggle, canPlay } = useAudioPreview({ src: previewUrl });
+  const { playingKey, toggle, stop } = useYouTubeClipPlayer();
+  const isPlaying = playingKey === SONG_PREVIEW_PLAY_KEY;
+  const canPlay = Boolean(youtubeVideoId);
 
-  const trimStartPercent = timeToPercent(trim.start, durationSec);
-  const trimEndPercent = timeToPercent(trim.end, durationSec);
+  useEffect(() => {
+    preloadYouTubeIframeApi();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stop();
+    };
+  }, [stop, youtubeVideoId]);
+
+  const trimStartPercent = timeToPercent(trim.start, timelineDurationSec);
+  const trimEndPercent = timeToPercent(trim.end, timelineDurationSec);
 
   return (
     <div className="flex w-full flex-col">
@@ -115,7 +134,13 @@ function SongPreviewSection({ waveformPeaks, durationSec, previewUrl }: SongPrev
           aria-pressed={isPlaying}
           disabled={!canPlay}
           onClick={() => {
-            void toggle();
+            if (!youtubeVideoId) return;
+            // 일단 durationMs(원곡 길이)만큼 YouTube에서 재생한다.
+            toggle(SONG_PREVIEW_PLAY_KEY, {
+              videoId: youtubeVideoId,
+              clipStartMs: 0,
+              clipDurationMs: durationMs,
+            });
           }}
           className="flex size-7 items-center justify-center rounded-full bg-grayscale-100 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -192,13 +217,14 @@ export default function SongDetailPage() {
   const preparedTrack = playbackPreparationQuery.data;
   const coverUrl = preparedTrack?.albumImageUrl || rectangleBg;
   const waveformPeaks = MOCK_WAVEFORM_PEAKS;
-  const durationSec = Math.max(
-    (preparedTrack?.durationMs ?? MOCK_PREVIEW_DURATION * 1_000) / 1_000,
-    1,
-  );
+  const durationMs = preparedTrack?.durationMs ?? MOCK_PREVIEW_DURATION * 1_000;
   const clipStartMs = Math.round(
-    peaksToTrimRange(DEFAULT_TRIM_START_INDEX, DEFAULT_TRIM_END_INDEX, waveformPeaks, durationSec)
-      .start * 1_000,
+    peaksToTrimRange(
+      DEFAULT_TRIM_START_INDEX,
+      DEFAULT_TRIM_END_INDEX,
+      waveformPeaks,
+      Math.max(durationMs / 1_000, 1),
+    ).start * 1_000,
   );
 
   const showCreationToast = (message: string) => {
@@ -347,10 +373,10 @@ export default function SongDetailPage() {
                 </div>
 
                 <SongPreviewSection
-                  key={preparedTrack?.previewUrl ?? 'preview-loading'}
+                  key={preparedTrack?.youtubeVideoId ?? 'preview-loading'}
                   waveformPeaks={waveformPeaks}
-                  durationSec={durationSec}
-                  previewUrl={preparedTrack?.previewUrl}
+                  durationMs={durationMs}
+                  youtubeVideoId={preparedTrack?.youtubeVideoId}
                 />
               </div>
             </div>

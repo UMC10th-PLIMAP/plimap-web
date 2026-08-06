@@ -11,8 +11,16 @@ type UseAudioPreviewOptions = {
 /** HTMLAudioElement로 previewUrl 미리듣기를 재생/정지한다. */
 export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOptions) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const startSecRef = useRef(startSec);
+  const endSecRef = useRef(endSec);
   const [isPlaying, setIsPlaying] = useState(false);
   const [canPlay, setCanPlay] = useState(false);
+  const [durationSec, setDurationSec] = useState<number | null>(null);
+
+  useEffect(() => {
+    startSecRef.current = startSec;
+    endSecRef.current = endSec;
+  }, [endSec, startSec]);
 
   useEffect(() => {
     if (!src) return;
@@ -24,15 +32,21 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
     const handlePause = () => setIsPlaying(false);
     const handlePlay = () => setIsPlaying(true);
     const handleCanPlay = () => setCanPlay(true);
+    const handleLoadedMetadata = () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        setDurationSec(audio.duration);
+      }
+    };
     const handleError = () => {
       setCanPlay(false);
       setIsPlaying(false);
     };
     const handleTimeUpdate = () => {
-      if (endSec == null) return;
-      if (audio.currentTime >= endSec) {
+      const end = endSecRef.current;
+      if (end == null) return;
+      if (audio.currentTime >= end) {
         audio.pause();
-        audio.currentTime = Math.max(0, startSec);
+        audio.currentTime = Math.max(0, startSecRef.current);
       }
     };
 
@@ -40,6 +54,7 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('error', handleError);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audioRef.current = audio;
@@ -49,14 +64,31 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.pause();
       audioRef.current = null;
       setCanPlay(false);
       setIsPlaying(false);
+      setDurationSec(null);
     };
-  }, [src, startSec, endSec]);
+  }, [src]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const safeStart = Math.max(0, startSec);
+    if (!audio.paused) {
+      audio.currentTime = safeStart;
+      return;
+    }
+
+    if (audio.currentTime < safeStart || (endSec != null && audio.currentTime >= endSec)) {
+      audio.currentTime = safeStart;
+    }
+  }, [endSec, startSec]);
 
   const toggle = useCallback(async () => {
     const audio = audioRef.current;
@@ -67,8 +99,9 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
       return;
     }
 
-    const safeStart = Math.max(0, startSec);
-    if (audio.currentTime < safeStart || (endSec != null && audio.currentTime >= endSec)) {
+    const safeStart = Math.max(0, startSecRef.current);
+    const end = endSecRef.current;
+    if (audio.currentTime < safeStart || (end != null && audio.currentTime >= end)) {
       audio.currentTime = safeStart;
     }
 
@@ -78,14 +111,14 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
       console.error(error);
       setIsPlaying(false);
     }
-  }, [endSec, src, startSec]);
+  }, [src]);
 
   const stop = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
     audio.pause();
-    audio.currentTime = Math.max(0, startSec);
-  }, [startSec]);
+    audio.currentTime = Math.max(0, startSecRef.current);
+  }, []);
 
-  return { isPlaying, toggle, stop, canPlay };
+  return { isPlaying, toggle, stop, canPlay, durationSec };
 }
