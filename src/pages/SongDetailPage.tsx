@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import PlayIcon from '@/assets/icons/play.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
@@ -12,7 +12,9 @@ import {
   MOCK_PREVIEW_DURATION,
   MOCK_WAVEFORM_PEAKS,
   peaksToTrimRange,
+  percentToTime,
   TAG_OPTIONS,
+  timeToPeakIndex,
   timeToPercent,
 } from '@/features/pin/data/songPreview';
 import { useCreatePin } from '@/features/pin/queries/useCreatePin';
@@ -31,44 +33,180 @@ type CreationToast = {
   message: string;
 };
 
+type TrimRangeDrag = {
+  originPercent: number;
+  startPercent: number;
+  endPercent: number;
+};
+
+function percentFromClientX(track: HTMLElement, clientX: number) {
+  const rect = track.getBoundingClientRect();
+  if (rect.width <= 0) return 0;
+  return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+}
+
+function moveFixedTrimRange(
+  drag: TrimRangeDrag,
+  nextPercent: number,
+): { startPercent: number; endPercent: number } {
+  const rangeWidth = drag.endPercent - drag.startPercent;
+  const delta = nextPercent - drag.originPercent;
+  let nextStart = drag.startPercent + delta;
+  let nextEnd = drag.endPercent + delta;
+
+  if (nextStart < 0) {
+    nextStart = 0;
+    nextEnd = rangeWidth;
+  } else if (nextEnd > 100) {
+    nextEnd = 100;
+    nextStart = 100 - rangeWidth;
+  }
+
+  return { startPercent: nextStart, endPercent: nextEnd };
+}
+
+/** 고정 길이 트림 구간을 좌우로만 이동시키는 포인터 드래그 */
+function useFixedTrimDrag(
+  trimStartPercent: number,
+  trimEndPercent: number,
+  onTrimChange: (startPercent: number, endPercent: number) => void,
+  onDragEnd?: () => void,
+) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<TrimRangeDrag | null>(null);
+  const onDragEndRef = useRef(onDragEnd);
+
+  useEffect(() => {
+    onDragEndRef.current = onDragEnd;
+  }, [onDragEnd]);
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    dragRef.current = {
+      originPercent: percentFromClientX(track, event.clientX),
+      startPercent: trimStartPercent,
+      endPercent: trimEndPercent,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    const track = trackRef.current;
+    if (!drag || !track) return;
+
+    const { startPercent, endPercent } = moveFixedTrimRange(
+      drag,
+      percentFromClientX(track, event.clientX),
+    );
+    onTrimChange(startPercent, endPercent);
+  };
+
+  const movedRef = useRef(false);
+
+  const handlePointerDownWithReset = (event: ReactPointerEvent<HTMLDivElement>) => {
+    movedRef.current = false;
+    handlePointerDown(event);
+  };
+
+  const handlePointerMoveWithTrack = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragRef.current) movedRef.current = true;
+    handlePointerMove(event);
+  };
+
+  const endDrag = () => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    if (movedRef.current) onDragEndRef.current?.();
+  };
+
+  return {
+    trackRef,
+    dragBind: {
+      onPointerDown: handlePointerDownWithReset,
+      onPointerMove: handlePointerMoveWithTrack,
+      onPointerUp: endDrag,
+      onPointerCancel: endDrag,
+    },
+  };
+}
+
 type TrimBarProps = {
   trimStartPercent: number;
   trimEndPercent: number;
+  onTrimChange: (startPercent: number, endPercent: number) => void;
+  onDragEnd?: () => void;
 };
 
-function TrimBar({ trimStartPercent, trimEndPercent }: TrimBarProps) {
-  return (
-    <div className="relative h-1.5 w-[244px] rounded-full bg-pli-black-50">
-      <div
-        className="absolute inset-y-0 rounded-full bg-neon"
-        style={{
-          left: `${trimStartPercent}%`,
-          right: `${100 - trimEndPercent}%`,
-        }}
-      />
+// 구간 선택 그래프 — 기본 길이 고정, 네온 막대만 드래그로 위치 이동
+function TrimBar({ trimStartPercent, trimEndPercent, onTrimChange, onDragEnd }: TrimBarProps) {
+  const { trackRef, dragBind } = useFixedTrimDrag(
+    trimStartPercent,
+    trimEndPercent,
+    onTrimChange,
+    onDragEnd,
+  );
 
-      <span
-        aria-hidden
-        className="absolute top-1/2 z-10 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-grayscale-0"
-        style={{ left: `${trimStartPercent}%` }}
-      />
-      <span
-        aria-hidden
-        className="absolute top-1/2 z-10 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-grayscale-0"
-        style={{ left: `${trimEndPercent}%` }}
-      />
+  return (
+    <div className="relative flex h-11 w-[244px] items-center">
+      <div ref={trackRef} className="relative h-1 w-full rounded-full bg-pli-black-50">
+        <div
+          className="absolute top-1/2 z-10 h-5 -translate-y-1/2 cursor-grab touch-none rounded-full active:cursor-grabbing"
+          style={{
+            left: `${trimStartPercent}%`,
+            width: `${Math.max(0, trimEndPercent - trimStartPercent)}%`,
+          }}
+          aria-label="미리듣기 구간 이동"
+          {...dragBind}
+        >
+          <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-neon" />
+          <span
+            aria-hidden
+            className="absolute top-1/2 left-0 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-grayscale-0"
+          />
+          <span
+            aria-hidden
+            className="absolute top-1/2 right-0 size-2 translate-x-1/2 -translate-y-1/2 rounded-full bg-grayscale-0"
+          />
+        </div>
+      </div>
     </div>
   );
 }
+
 type SongWaveformProps = {
   peaks: readonly number[];
   trimStartIndex: number;
   trimEndIndex: number;
+  trimStartPercent: number;
+  trimEndPercent: number;
+  onTrimChange: (startPercent: number, endPercent: number) => void;
+  onDragEnd?: () => void;
 };
 
-function SongWaveform({ peaks, trimStartIndex, trimEndIndex }: SongWaveformProps) {
+function SongWaveform({
+  peaks,
+  trimStartIndex,
+  trimEndIndex,
+  trimStartPercent,
+  trimEndPercent,
+  onTrimChange,
+  onDragEnd,
+}: SongWaveformProps) {
+  const { trackRef, dragBind } = useFixedTrimDrag(
+    trimStartPercent,
+    trimEndPercent,
+    onTrimChange,
+    onDragEnd,
+  );
+
   return (
-    <div className="flex h-[72px] items-center gap-1.5 px-1.5" aria-hidden>
+    <div
+      ref={trackRef}
+      className="relative mx-[6px] mt-1 flex h-[68px] w-[297px] items-center justify-between gap-x-[6px]"
+    >
       {peaks.map((height, index) => {
         const isSelected = index >= trimStartIndex && index <= trimEndIndex;
 
@@ -76,39 +214,62 @@ function SongWaveform({ peaks, trimStartIndex, trimEndIndex }: SongWaveformProps
           <span
             key={index}
             className={cn(
-              'w-[3px] rounded-full',
+              'w-[3px] shrink-0 rounded-full',
               isSelected ? 'bg-gradient-neon' : 'bg-pli-black-50',
             )}
-            style={{ height: `${height * 70}%` }}
+            style={{ height: `${Math.max(14, height * 100)}%` }}
           />
         );
       })}
+
+      {/* 선택된 웨이브 구간만 드래그 */}
+      <div
+        className="absolute inset-y-0 z-10 cursor-grab touch-none active:cursor-grabbing"
+        style={{
+          left: `${trimStartPercent}%`,
+          width: `${Math.max(0, trimEndPercent - trimStartPercent)}%`,
+        }}
+        aria-label="미리듣기 구간 이동"
+        {...dragBind}
+      />
     </div>
   );
 }
 
 type SongPreviewSectionProps = {
   waveformPeaks: readonly number[];
-  /** playback-preparations의 durationMs (ms) — 재생 길이로 사용 */
+  /** playback-preparations의 durationMs (ms) — 타임라인·풀 재생 길이 */
   durationMs: number;
   youtubeVideoId?: string | null;
+  onClipStartChange: (clipStartMs: number) => void;
 };
 
 function SongPreviewSection({
   waveformPeaks,
   durationMs,
   youtubeVideoId,
+  onClipStartChange,
 }: SongPreviewSectionProps) {
   const timelineDurationSec = Math.max(durationMs / 1_000, 1);
-  const trim = peaksToTrimRange(
+  const defaultTrim = peaksToTrimRange(
     DEFAULT_TRIM_START_INDEX,
     DEFAULT_TRIM_END_INDEX,
     waveformPeaks,
     timelineDurationSec,
   );
+  const [trimStartSec, setTrimStartSec] = useState(defaultTrim.start);
+  const [trimEndSec, setTrimEndSec] = useState(defaultTrim.end);
+  const [hasSelectedTrim, setHasSelectedTrim] = useState(false);
+  const trimRangeRef = useRef({ start: defaultTrim.start, end: defaultTrim.end });
+
   const { playingKey, toggle, stop } = useYouTubeClipPlayer();
   const isPlaying = playingKey === SONG_PREVIEW_PLAY_KEY;
   const canPlay = Boolean(youtubeVideoId);
+
+  const trimStartPercent = timeToPercent(trimStartSec, timelineDurationSec);
+  const trimEndPercent = timeToPercent(trimEndSec, timelineDurationSec);
+  const trimStartIndex = timeToPeakIndex(trimStartSec, timelineDurationSec, waveformPeaks.length);
+  const trimEndIndex = timeToPeakIndex(trimEndSec, timelineDurationSec, waveformPeaks.length);
 
   useEffect(() => {
     preloadYouTubeIframeApi();
@@ -120,28 +281,62 @@ function SongPreviewSection({
     };
   }, [stop, youtubeVideoId]);
 
-  const trimStartPercent = timeToPercent(trim.start, timelineDurationSec);
-  const trimEndPercent = timeToPercent(trim.end, timelineDurationSec);
+  const playYoutubeClip = (startSec: number, endSec: number) => {
+    if (!youtubeVideoId) return;
+    toggle(SONG_PREVIEW_PLAY_KEY, {
+      videoId: youtubeVideoId,
+      clipStartMs: Math.round(startSec * 1_000),
+      clipDurationMs: Math.max(1, Math.round((endSec - startSec) * 1_000)),
+    });
+  };
+
+  const handleTrimChange = (startPercent: number, endPercent: number) => {
+    const nextStart = percentToTime(startPercent, timelineDurationSec);
+    const nextEnd = percentToTime(endPercent, timelineDurationSec);
+    trimRangeRef.current = { start: nextStart, end: nextEnd };
+    setTrimStartSec(nextStart);
+    setTrimEndSec(nextEnd);
+    onClipStartChange(Math.round(nextStart * 1_000));
+    stop();
+  };
+
+  const handleTrimDragEnd = () => {
+    setHasSelectedTrim(true);
+    stop();
+    playYoutubeClip(trimRangeRef.current.start, trimRangeRef.current.end);
+  };
+
+  const handlePlayClick = () => {
+    if (!youtubeVideoId) return;
+
+    if (hasSelectedTrim) {
+      playYoutubeClip(trimStartSec, trimEndSec);
+      return;
+    }
+
+    toggle(SONG_PREVIEW_PLAY_KEY, {
+      videoId: youtubeVideoId,
+      clipStartMs: 0,
+      clipDurationMs: durationMs,
+    });
+  };
 
   return (
     <div className="flex w-full flex-col">
       <div className="mx-auto flex h-11 w-[297px] items-center gap-[25px]">
-        <TrimBar trimStartPercent={trimStartPercent} trimEndPercent={trimEndPercent} />
+        <TrimBar
+          trimStartPercent={trimStartPercent}
+          trimEndPercent={trimEndPercent}
+          onTrimChange={handleTrimChange}
+          onDragEnd={handleTrimDragEnd}
+        />
 
         <button
           type="button"
           aria-label={isPlaying ? '일시정지' : '재생'}
           aria-pressed={isPlaying}
           disabled={!canPlay}
-          onClick={() => {
-            if (!youtubeVideoId) return;
-            // 일단 durationMs(원곡 길이)만큼 YouTube에서 재생한다.
-            toggle(SONG_PREVIEW_PLAY_KEY, {
-              videoId: youtubeVideoId,
-              clipStartMs: 0,
-              clipDurationMs: durationMs,
-            });
-          }}
+          onClick={handlePlayClick}
           className="flex size-7 items-center justify-center rounded-full bg-grayscale-100 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPlaying ? (
@@ -157,8 +352,12 @@ function SongPreviewSection({
 
       <SongWaveform
         peaks={waveformPeaks}
-        trimStartIndex={DEFAULT_TRIM_START_INDEX}
-        trimEndIndex={DEFAULT_TRIM_END_INDEX}
+        trimStartIndex={trimStartIndex}
+        trimEndIndex={trimEndIndex}
+        trimStartPercent={trimStartPercent}
+        trimEndPercent={trimEndPercent}
+        onTrimChange={handleTrimChange}
+        onDragEnd={handleTrimDragEnd}
       />
     </div>
   );
@@ -213,19 +412,12 @@ export default function SongDetailPage() {
   const [isFeedPublic, setIsFeedPublic] = useState(true);
   const [isSongSelectOpen, setIsSongSelectOpen] = useState(false);
   const [creationToast, setCreationToast] = useState<CreationToast | null>(null);
+  const [clipStartMs, setClipStartMs] = useState(0);
 
   const preparedTrack = playbackPreparationQuery.data;
   const coverUrl = preparedTrack?.albumImageUrl || rectangleBg;
   const waveformPeaks = MOCK_WAVEFORM_PEAKS;
   const durationMs = preparedTrack?.durationMs ?? MOCK_PREVIEW_DURATION * 1_000;
-  const clipStartMs = Math.round(
-    peaksToTrimRange(
-      DEFAULT_TRIM_START_INDEX,
-      DEFAULT_TRIM_END_INDEX,
-      waveformPeaks,
-      Math.max(durationMs / 1_000, 1),
-    ).start * 1_000,
-  );
 
   const showCreationToast = (message: string) => {
     setCreationToast((currentToast) => ({
@@ -377,6 +569,7 @@ export default function SongDetailPage() {
                   waveformPeaks={waveformPeaks}
                   durationMs={durationMs}
                   youtubeVideoId={preparedTrack?.youtubeVideoId}
+                  onClipStartChange={setClipStartMs}
                 />
               </div>
             </div>

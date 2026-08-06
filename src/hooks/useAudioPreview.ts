@@ -120,5 +120,26 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
     audio.currentTime = Math.max(0, startSecRef.current);
   }, []);
 
-  return { isPlaying, toggle, stop, canPlay, durationSec };
+  const play = useCallback(
+    async (range?: { startSec?: number; endSec?: number }) => {
+      const audio = audioRef.current;
+      if (!audio || !src) return;
+
+      if (range?.startSec != null) startSecRef.current = range.startSec;
+      if (range?.endSec != null) endSecRef.current = range.endSec;
+
+      const safeStart = Math.max(0, startSecRef.current);
+      audio.currentTime = safeStart;
+
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error(error);
+        setIsPlaying(false);
+      }
+    },
+    [src],
+  );
+
+  return { isPlaying, toggle, play, stop, canPlay, durationSec };
 }
