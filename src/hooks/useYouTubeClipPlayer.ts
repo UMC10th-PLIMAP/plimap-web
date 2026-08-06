@@ -8,6 +8,7 @@ type YouTubePlayer = {
   pauseVideo: () => void;
   playVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+  loadVideoById: (args: { videoId: string; startSeconds?: number }) => void;
 };
 
 type YouTubePlayerConstructor = new (
@@ -31,6 +32,7 @@ type YouTubeNamespace = {
     ENDED: number;
     PLAYING: number;
     PAUSED: number;
+    CUED: number;
   };
 };
 
@@ -99,12 +101,16 @@ export function preloadYouTubeIframeApi() {
   });
 }
 
-/** 지도 PIN 말풍선용 YouTube 구간 재생. 화면 밖 플레이어로 오디오만 재생한다. */
+/** 지도 PIN 말풍선용 YouTube 구간 재생. 화면 안 초소형 플레이어로 오디오만 재생한다. */
 export function useYouTubeClipPlayer() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
+  const playerReadyRef = useRef(false);
+  const ytRef = useRef<YouTubeNamespace | null>(null);
   const stopTimerRef = useRef<number | null>(null);
   const activeKeyRef = useRef<string | null>(null);
+  const activeClipDurationRef = useRef(DEFAULT_CLIP_DURATION_MS);
+  const playerReadyPromiseRef = useRef<Promise<YouTubePlayer> | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
 
   const clearStopTimer = useCallback(() => {
@@ -119,19 +125,25 @@ export function useYouTubeClipPlayer() {
     const host = document.createElement('div');
     host.id = 'plimap-youtube-clip-player';
     host.setAttribute('aria-hidden', 'true');
+    // iOS는 화면 밖(-9999px)·완전 투명 플레이어 재생을 막는 경우가 있어
+    // 뷰포트 안에 아주 작게 둔다.
     host.style.position = 'fixed';
-    host.style.width = '1px';
-    host.style.height = '1px';
-    host.style.left = '-9999px';
-    host.style.top = '0';
-    host.style.opacity = '0';
+    host.style.width = '48px';
+    host.style.height = '48px';
+    host.style.right = '0';
+    host.style.bottom = '0';
+    host.style.opacity = '0.01';
+    host.style.overflow = 'hidden';
     host.style.pointerEvents = 'none';
+    host.style.zIndex = '-1';
     document.body.appendChild(host);
     hostRef.current = host;
     return host;
   }, []);
 
   const destroyPlayer = useCallback(() => {
+    playerReadyRef.current = false;
+    playerReadyPromiseRef.current = null;
     playerRef.current?.destroy();
     playerRef.current = null;
     if (hostRef.current) {
@@ -146,72 +158,131 @@ export function useYouTubeClipPlayer() {
     playerRef.current?.pauseVideo();
   }, [clearStopTimer]);
 
+  const scheduleClipStop = useCallback(
+    (key: string, clipDurationMs: number) => {
+      clearStopTimer();
+      stopTimerRef.current = window.setTimeout(() => {
+        if (activeKeyRef.current !== key) return;
+        stop();
+      }, clipDurationMs);
+    },
+    [clearStopTimer, stop],
+  );
+
+  const ensurePlayer = useCallback(async () => {
+    if (playerRef.current && playerReadyRef.current) {
+      return playerRef.current;
+    }
+    if (playerReadyPromiseRef.current) {
+      return playerReadyPromiseRef.current;
+    }
+
+    const readyPromise = (async () => {
+      const YT = await loadYouTubeIframeApi();
+      ytRef.current = YT;
+
+      if (playerRef.current && playerReadyRef.current) {
+        return playerRef.current;
+      }
+
+      destroyPlayer();
+      const host = ensureHost();
+      const mount = document.createElement('div');
+      host.replaceChildren(mount);
+
+      return await new Promise<YouTubePlayer>((resolve, reject) => {
+        try {
+          playerRef.current = new YT.Player(mount, {
+            height: 48,
+            width: 48,
+            playerVars: {
+              autoplay: 0,
+              controls: 0,
+              disablekb: 1,
+              fs: 0,
+              modestbranding: 1,
+              playsinline: 1,
+              rel: 0,
+            },
+            events: {
+              onReady: (event) => {
+                playerReadyRef.current = true;
+                resolve(event.target);
+              },
+              onStateChange: (event) => {
+                const key = activeKeyRef.current;
+                if (!key) return;
+
+                if (event.data === YT.PlayerState.PLAYING) {
+                  setPlayingKey(key);
+                  scheduleClipStop(key, activeClipDurationRef.current);
+                  return;
+                }
+
+                if (event.data === YT.PlayerState.ENDED && activeKeyRef.current === key) {
+                  stop();
+                }
+              },
+              onError: () => {
+                if (activeKeyRef.current) stop();
+              },
+            },
+          });
+        } catch (error) {
+          playerReadyPromiseRef.current = null;
+          reject(error);
+        }
+      });
+    })();
+
+    playerReadyPromiseRef.current = readyPromise.catch((error: unknown) => {
+      playerReadyPromiseRef.current = null;
+      throw error;
+    });
+
+    return playerReadyPromiseRef.current;
+  }, [destroyPlayer, ensureHost, scheduleClipStop, stop]);
+
+  const playClipOnPlayer = useCallback((player: YouTubePlayer, target: ClipTarget) => {
+    const startSec = Math.max(0, target.clipStartMs / 1000);
+    activeClipDurationRef.current = target.clipDurationMs ?? DEFAULT_CLIP_DURATION_MS;
+    player.loadVideoById({
+      videoId: target.videoId,
+      startSeconds: startSec,
+    });
+    player.playVideo();
+  }, []);
+
   const play = useCallback(
     async (key: string, target: ClipTarget) => {
       if (!target.videoId) return;
 
-      if (playingKey === key && activeKeyRef.current === key) {
+      // 같은 키면 토글 정지 (UI상 재생 중이거나 로딩 중이어도)
+      if (activeKeyRef.current === key) {
         stop();
         return;
       }
 
       clearStopTimer();
-      destroyPlayer();
       activeKeyRef.current = key;
-      setPlayingKey(key);
+      setPlayingKey(null);
+
+      // 플레이어가 이미 준비됐으면 클릭 제스처 안에서 바로 playVideo 호출 (모바일 핵심)
+      if (playerRef.current && playerReadyRef.current) {
+        playClipOnPlayer(playerRef.current, target);
+        return;
+      }
 
       try {
-        const YT = await loadYouTubeIframeApi();
+        const player = await ensurePlayer();
         if (activeKeyRef.current !== key) return;
-
-        const host = ensureHost();
-        const mount = document.createElement('div');
-        host.replaceChildren(mount);
-
-        const startSec = Math.max(0, Math.floor(target.clipStartMs / 1000));
-        const clipDurationMs = target.clipDurationMs ?? DEFAULT_CLIP_DURATION_MS;
-
-        playerRef.current = new YT.Player(mount, {
-          height: 1,
-          width: 1,
-          videoId: target.videoId,
-          playerVars: {
-            autoplay: 1,
-            controls: 0,
-            disablekb: 1,
-            fs: 0,
-            modestbranding: 1,
-            playsinline: 1,
-            rel: 0,
-            start: startSec,
-          },
-          events: {
-            onReady: (event) => {
-              if (activeKeyRef.current !== key) return;
-              event.target.seekTo(startSec, true);
-              event.target.playVideo();
-              clearStopTimer();
-              stopTimerRef.current = window.setTimeout(() => {
-                if (activeKeyRef.current !== key) return;
-                stop();
-              }, clipDurationMs);
-            },
-            onStateChange: (event) => {
-              if (event.data === YT.PlayerState.ENDED && activeKeyRef.current === key) {
-                stop();
-              }
-            },
-            onError: () => {
-              if (activeKeyRef.current === key) stop();
-            },
-          },
-        });
+        playClipOnPlayer(player, target);
       } catch (error) {
         console.error(error);
         if (activeKeyRef.current === key) stop();
       }
     },
-    [clearStopTimer, destroyPlayer, ensureHost, playingKey, stop],
+    [clearStopTimer, ensurePlayer, playClipOnPlayer, stop],
   );
 
   const toggle = useCallback(
@@ -220,6 +291,13 @@ export function useYouTubeClipPlayer() {
     },
     [play],
   );
+
+  // 지도/상세 진입 시 API·플레이어를 미리 만들어 첫 클릭 지연을 줄인다.
+  useEffect(() => {
+    void ensurePlayer().catch(() => {
+      // 미리 준비 실패해도 재생 시점에 다시 시도한다.
+    });
+  }, [ensurePlayer]);
 
   useEffect(() => {
     return () => {
