@@ -8,10 +8,8 @@ export const MOCK_WAVEFORM_PEAKS = [
 ] as const;
 
 export const MOCK_PREVIEW_DURATION = 30;
+/** 고정 트림 구간 길이(초). 곡 길이와 무관하게 이 값을 쓴다. */
 export const MIN_TRIM_DURATION = 30;
-/** 최초 진입 시 네온 구간을 맨 왼쪽부터 배치한다. */
-export const DEFAULT_TRIM_START_INDEX = 0;
-export const DEFAULT_TRIM_END_INDEX = 7;
 
 export const TAG_OPTIONS = [
   '감성',
@@ -25,6 +23,13 @@ export const TAG_OPTIONS = [
   '청량',
   '힙함',
 ] as const;
+
+/** 최초 진입 시 맨 왼쪽부터 MIN_TRIM_DURATION 초 구간을 선택한다. */
+export function defaultTrimRange(durationSec: number) {
+  const duration = Math.max(durationSec, 1);
+  const trimDuration = Math.min(MIN_TRIM_DURATION, duration);
+  return { start: 0, end: trimDuration };
+}
 
 export function peaksToTrimRange(
   startIndex: number,

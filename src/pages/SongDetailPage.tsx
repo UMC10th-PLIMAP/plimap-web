@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import PlayIcon from '@/assets/icons/play.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
@@ -7,11 +13,9 @@ import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { Tag } from '@/components/ui/tag';
 import { SongSelectSheet } from '@/features/pin/components/SongSelectSheet';
 import {
-  DEFAULT_TRIM_END_INDEX,
-  DEFAULT_TRIM_START_INDEX,
   MOCK_PREVIEW_DURATION,
   MOCK_WAVEFORM_PEAKS,
-  peaksToTrimRange,
+  defaultTrimRange,
   percentToTime,
   TAG_OPTIONS,
   timeToPeakIndex,
@@ -65,7 +69,7 @@ function moveFixedTrimRange(
   return { startPercent: nextStart, endPercent: nextEnd };
 }
 
-/** 고정 길이 트림 구간을 좌우로만 이동시키는 포인터 드래그 */
+/** 고정 길이 트림 구간을 좌우로만 이동시키는 포인터/키보드 조작 */
 function useFixedTrimDrag(
   trimStartPercent: number,
   trimEndPercent: number,
@@ -75,15 +79,39 @@ function useFixedTrimDrag(
   const trackRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<TrimRangeDrag | null>(null);
   const onDragEndRef = useRef(onDragEnd);
+  const trimStartRef = useRef(trimStartPercent);
+  const trimEndRef = useRef(trimEndPercent);
+  const movedRef = useRef(false);
 
   useEffect(() => {
     onDragEndRef.current = onDragEnd;
   }, [onDragEnd]);
 
+  useEffect(() => {
+    trimStartRef.current = trimStartPercent;
+    trimEndRef.current = trimEndPercent;
+  }, [trimEndPercent, trimStartPercent]);
+
+  const applyShift = (deltaPercent: number) => {
+    const startPercent = trimStartRef.current;
+    const endPercent = trimEndRef.current;
+    const { startPercent: nextStart, endPercent: nextEnd } = moveFixedTrimRange(
+      {
+        originPercent: startPercent,
+        startPercent,
+        endPercent,
+      },
+      startPercent + deltaPercent,
+    );
+    onTrimChange(nextStart, nextEnd);
+    onDragEndRef.current?.();
+  };
+
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     const track = trackRef.current;
     if (!track) return;
 
+    movedRef.current = false;
     dragRef.current = {
       originPercent: percentFromClientX(track, event.clientX),
       startPercent: trimStartPercent,
@@ -97,23 +125,12 @@ function useFixedTrimDrag(
     const track = trackRef.current;
     if (!drag || !track) return;
 
+    movedRef.current = true;
     const { startPercent, endPercent } = moveFixedTrimRange(
       drag,
       percentFromClientX(track, event.clientX),
     );
     onTrimChange(startPercent, endPercent);
-  };
-
-  const movedRef = useRef(false);
-
-  const handlePointerDownWithReset = (event: ReactPointerEvent<HTMLDivElement>) => {
-    movedRef.current = false;
-    handlePointerDown(event);
-  };
-
-  const handlePointerMoveWithTrack = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (dragRef.current) movedRef.current = true;
-    handlePointerMove(event);
   };
 
   const endDrag = () => {
@@ -122,13 +139,50 @@ function useFixedTrimDrag(
     if (movedRef.current) onDragEndRef.current?.();
   };
 
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const step = event.shiftKey ? 5 : 1;
+    const rangeWidth = trimEndRef.current - trimStartRef.current;
+
+    switch (event.key) {
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        event.preventDefault();
+        applyShift(-step);
+        break;
+      case 'ArrowRight':
+      case 'ArrowUp':
+        event.preventDefault();
+        applyShift(step);
+        break;
+      case 'Home':
+        event.preventDefault();
+        onTrimChange(0, rangeWidth);
+        onDragEndRef.current?.();
+        break;
+      case 'End':
+        event.preventDefault();
+        onTrimChange(100 - rangeWidth, 100);
+        onDragEndRef.current?.();
+        break;
+      default:
+        break;
+    }
+  };
+
   return {
     trackRef,
     dragBind: {
-      onPointerDown: handlePointerDownWithReset,
-      onPointerMove: handlePointerMoveWithTrack,
+      role: 'slider' as const,
+      tabIndex: 0,
+      'aria-valuemin': 0,
+      'aria-valuemax': 100,
+      'aria-valuenow': Math.round(trimStartPercent),
+      'aria-valuetext': `${Math.round(trimStartPercent)}% ~ ${Math.round(trimEndPercent)}%`,
+      onPointerDown: handlePointerDown,
+      onPointerMove: handlePointerMove,
       onPointerUp: endDrag,
       onPointerCancel: endDrag,
+      onKeyDown: handleKeyDown,
     },
   };
 }
@@ -251,12 +305,7 @@ function SongPreviewSection({
   onClipStartChange,
 }: SongPreviewSectionProps) {
   const timelineDurationSec = Math.max(durationMs / 1_000, 1);
-  const defaultTrim = peaksToTrimRange(
-    DEFAULT_TRIM_START_INDEX,
-    DEFAULT_TRIM_END_INDEX,
-    waveformPeaks,
-    timelineDurationSec,
-  );
+  const defaultTrim = defaultTrimRange(timelineDurationSec);
   const [trimStartSec, setTrimStartSec] = useState(defaultTrim.start);
   const [trimEndSec, setTrimEndSec] = useState(defaultTrim.end);
   const [hasSelectedTrim, setHasSelectedTrim] = useState(false);

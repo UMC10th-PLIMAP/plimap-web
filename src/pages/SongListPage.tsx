@@ -76,7 +76,7 @@ export default function SongListPage() {
               <li key={track.itunesTrackId}>
                 <SongCard
                   song={track}
-                  disabled={preparingTrackId === track.itunesTrackId}
+                  disabled={preparingTrackId != null}
                   isLoading={preparingTrackId === track.itunesTrackId}
                   onClick={() => {
                     void handleSelectTrack(track);

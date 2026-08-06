@@ -75,17 +75,16 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
     };
   }, [src]);
 
+  // 구간이 바뀌어도 재생 중이면 현재 위치가 새 구간 밖일 때만 seek 한다.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const safeStart = Math.max(0, startSec);
-    if (!audio.paused) {
-      audio.currentTime = safeStart;
-      return;
-    }
+    const isOutsideRange =
+      audio.currentTime < safeStart || (endSec != null && audio.currentTime >= endSec);
 
-    if (audio.currentTime < safeStart || (endSec != null && audio.currentTime >= endSec)) {
+    if (isOutsideRange) {
       audio.currentTime = safeStart;
     }
   }, [endSec, startSec]);
@@ -120,26 +119,21 @@ export function useAudioPreview({ src, startSec = 0, endSec }: UseAudioPreviewOp
     audio.currentTime = Math.max(0, startSecRef.current);
   }, []);
 
-  const play = useCallback(
-    async (range?: { startSec?: number; endSec?: number }) => {
-      const audio = audioRef.current;
-      if (!audio || !src) return;
+  // 구간은 props(startSec/endSec)가 단일 소스. play는 props 기준으로만 재생한다.
+  const play = useCallback(async () => {
+    const audio = audioRef.current;
+    if (!audio || !src) return;
 
-      if (range?.startSec != null) startSecRef.current = range.startSec;
-      if (range?.endSec != null) endSecRef.current = range.endSec;
+    const safeStart = Math.max(0, startSecRef.current);
+    audio.currentTime = safeStart;
 
-      const safeStart = Math.max(0, startSecRef.current);
-      audio.currentTime = safeStart;
-
-      try {
-        await audio.play();
-      } catch (error) {
-        console.error(error);
-        setIsPlaying(false);
-      }
-    },
-    [src],
-  );
+    try {
+      await audio.play();
+    } catch (error) {
+      console.error(error);
+      setIsPlaying(false);
+    }
+  }, [src]);
 
   return { isPlaying, toggle, play, stop, canPlay, durationSec };
 }

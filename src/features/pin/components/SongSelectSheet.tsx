@@ -45,10 +45,8 @@ export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProp
       await fetchPlaybackPreparations(queryClient, track.itunesTrackId);
       onSelect?.(track);
       onClose();
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error && error.message ? error.message : PLAYBACK_ERROR_MESSAGE,
-      );
+    } catch {
+      setErrorMessage(PLAYBACK_ERROR_MESSAGE);
     } finally {
       setPreparingTrackId(null);
     }
@@ -74,7 +72,7 @@ export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProp
             <li key={track.itunesTrackId}>
               <SongCard
                 song={track}
-                disabled={preparingTrackId === track.itunesTrackId}
+                disabled={preparingTrackId != null}
                 isLoading={preparingTrackId === track.itunesTrackId}
                 onClick={() => {
                   void handleSelectTrack(track);
