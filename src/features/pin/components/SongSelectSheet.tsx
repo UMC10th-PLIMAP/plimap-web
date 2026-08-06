@@ -1,10 +1,14 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { SongCard } from '@/features/pin/components/SongCard';
+import { fetchPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
 import { useSearchTracks } from '@/features/pin/queries/useSearchTracks';
 import type { SearchTrack } from '@/features/pin/types';
+
+const PLAYBACK_ERROR_MESSAGE = '이 곡은 현재 재생할 수 없어요. 다른 곡을 선택해 주세요.';
 
 type SongSelectSheetProps = {
   open: boolean;
@@ -13,19 +17,40 @@ type SongSelectSheetProps = {
 };
 
 export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProps) {
+  const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [prevOpen, setPrevOpen] = useState(open);
+  const [preparingTrackId, setPreparingTrackId] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // 스와이프/뒤로가기 등 onClick을 거치지 않는 닫힘까지 포함해 검색어를 리셋한다.
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (!open) {
       setQuery('');
+      setPreparingTrackId(null);
+      setErrorMessage(null);
     }
   }
 
   const { data } = useSearchTracks({ keyword: query });
   const tracks = data?.tracks ?? [];
+
+  const handleSelectTrack = async (track: SearchTrack) => {
+    if (preparingTrackId != null) return;
+
+    setErrorMessage(null);
+    setPreparingTrackId(track.itunesTrackId);
+    try {
+      await fetchPlaybackPreparations(queryClient, track.itunesTrackId);
+      onSelect?.(track);
+      onClose();
+    } catch {
+      setErrorMessage(PLAYBACK_ERROR_MESSAGE);
+    } finally {
+      setPreparingTrackId(null);
+    }
+  };
 
   return (
     <BottomSheet open={open} onClose={onClose} snapPoints={[0.98, 1]} className="bg-pli-black-85 ">
@@ -47,14 +72,20 @@ export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProp
             <li key={track.itunesTrackId}>
               <SongCard
                 song={track}
+                disabled={preparingTrackId != null}
+                isLoading={preparingTrackId === track.itunesTrackId}
                 onClick={() => {
-                  onSelect?.(track);
-                  onClose();
+                  void handleSelectTrack(track);
                 }}
               />
             </li>
           ))}
         </ul>
+        {errorMessage ? (
+          <p className="sticky bottom-0 bg-pli-black-85 py-3 text-center body-15-m text-grayscale-400">
+            {errorMessage}
+          </p>
+        ) : null}
       </BottomSheet.Content>
     </BottomSheet>
   );
