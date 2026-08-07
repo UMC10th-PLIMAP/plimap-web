@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
-import { getMyProfile } from '@/api/member';
 import { TopBar } from '@/components/ui/TopBar';
 import { FollowUserRow } from '@/features/profile/components/FollowUserRow';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { useInfiniteFollowList } from '@/features/profile/queries/useFollowList';
 import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { useMyProfile } from '@/hooks/useMyProfile';
 
 import type { FollowTab } from '@/features/profile/types';
 import type { FollowListItem } from '@/types/member.type';
@@ -42,11 +41,7 @@ export default function FollowListPage() {
   const tab = getTabFromPath(pathname);
   const [keyword, setKeyword] = useState('');
 
-  const { data: profile } = useQuery({
-    queryKey: ['me'],
-    queryFn: getMyProfile,
-    staleTime: Infinity,
-  });
+  const { data: profile } = useMyProfile();
 
   const {
     data: followList,

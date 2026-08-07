@@ -12,7 +12,7 @@ import { ProfileShareDialog } from '@/features/profile/components/ProfileShareDi
 
 import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteMemberMe } from '@/features/pin/queries/useMemberMe';
-import { useMyProfile } from '@/features/home/hooks/useMyProfile';
+import { useMyProfile } from '@/hooks/useMyProfile';
 import { cn } from '@/lib/utils';
 
 const SHARE_TOAST_DURATION_MS = 2_000;

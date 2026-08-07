@@ -9,10 +9,10 @@ import { Chip } from '@/components/ui/chip';
 import { MOCK_FRIEND_PINS, MOCK_HOME_USER } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
-import { useMyProfile } from '@/features/home/hooks/useMyProfile';
 import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
+import { useMyProfile } from '@/hooks/useMyProfile';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
 function HomeLoadingState() {
