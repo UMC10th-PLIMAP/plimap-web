@@ -208,18 +208,29 @@ const MapPage: React.FC<MapPageProps> = ({
     stopClipPlayback();
   }, [viewerSelectedMapPinId, stopClipPlayback]);
 
-  // 목표 좌표 근처에 개별 핀이 도착하면 바로 선택한다. mapPins가 새로 도착할 때마다
-  // 매칭을 시도해야 해서 effect 대신 렌더 중 상태 조정 패턴을 쓴다.
-  if (pendingClusterPinPosition) {
-    const nearestPin = displayMapPins.find(
-      (pin) =>
-        calculateDistanceMeters(pendingClusterPinPosition, { lat: pin.lat, lng: pin.lng }) <=
-        SINGLE_CLUSTER_MATCH_RADIUS_METERS,
-    );
-    if (nearestPin) {
-      setPendingClusterPinPosition(null);
-      onSelectMapPinChange(nearestPin.id);
-    }
+  // 목표 좌표 근처 핀을 찾으면(mapPins가 새로 도착할 때마다 재계산) 부모에게 선택을
+  // 알린다. 부모 콜백은 렌더 중이 아니라 커밋 이후(effect)에 호출하고, 같은 핀을
+  // 중복 호출하지 않도록 ref로 막는다.
+  const pendingClusterNearestPin = pendingClusterPinPosition
+    ? (displayMapPins.find(
+        (pin) =>
+          calculateDistanceMeters(pendingClusterPinPosition, { lat: pin.lat, lng: pin.lng }) <=
+          SINGLE_CLUSTER_MATCH_RADIUS_METERS,
+      ) ?? null)
+    : null;
+  const lastClusterSelectedIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingClusterNearestPin) return;
+    if (lastClusterSelectedIdRef.current === pendingClusterNearestPin.id) return;
+
+    lastClusterSelectedIdRef.current = pendingClusterNearestPin.id;
+    onSelectMapPinChange(pendingClusterNearestPin.id);
+  }, [pendingClusterNearestPin, onSelectMapPinChange]);
+
+  // 부모의 선택이 실제로 반영되면(selectedMapPinId가 갱신되면) 목표 좌표를 정리한다.
+  if (pendingClusterPinPosition && selectedMapPinId === pendingClusterNearestPin?.id) {
+    setPendingClusterPinPosition(null);
   }
 
   // --- 구글맵 스크립트 로드 (setState는 전부 프로미스 콜백 안에서만 일어나 effect에서 안전하게 호출 가능) ---

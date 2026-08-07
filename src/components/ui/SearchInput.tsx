@@ -87,7 +87,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     // 검색어가 남아있으면 지우기만 하고, 이미 비어있을 때만 실제로 뒤로 나간다 -
     // 눌러서 지우고, 한 번 더 눌러야 나가는 2단계 뒤로가기.
     const handleBack = () => {
-      if (currentValue.length > 0) {
+      if (currentValue.trim().length > 0) {
         handleClear();
         return;
       }
@@ -154,49 +154,43 @@ const SearchLauncher = React.forwardRef<HTMLButtonElement, SearchLauncherProps>(
     const showClearButton = hasValue && Boolean(onClear);
 
     return (
-      <button
-        ref={ref}
-        type={type}
+      <div
         data-slot="search-launcher"
         data-variant="map"
-        aria-label={ariaLabel}
-        className={cn(searchInputVariants({ variant: 'map' }), 'text-left', className)}
-        {...props}
+        className={cn(searchInputVariants({ variant: 'map' }), className)}
       >
-        {hasValue ? (
-          <BackIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
-        ) : (
-          <SearchIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
-        )}
-        <span
-          className={cn(
-            'min-w-0 flex-1 truncate',
-            hasValue ? 'body-17-m text-grayscale-300' : 'body-17-r text-grayscale-700',
-          )}
+        <button
+          ref={ref}
+          type={type}
+          aria-label={ariaLabel}
+          className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+          {...props}
         >
-          {hasValue ? value : placeholder}
-        </span>
-        {showClearButton ? (
+          {hasValue ? (
+            <BackIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
+          ) : (
+            <SearchIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
+          )}
           <span
-            role="button"
-            tabIndex={0}
+            className={cn(
+              'min-w-0 flex-1 truncate',
+              hasValue ? 'body-17-m text-grayscale-300' : 'body-17-r text-grayscale-700',
+            )}
+          >
+            {hasValue ? value : placeholder}
+          </span>
+        </button>
+        {showClearButton ? (
+          <button
+            type="button"
             aria-label="검색 결과 지우기"
-            onClick={(event) => {
-              event.stopPropagation();
-              onClear?.();
-            }}
-            onKeyDown={(event) => {
-              if (event.key !== 'Enter' && event.key !== ' ') return;
-              event.preventDefault();
-              event.stopPropagation();
-              onClear?.();
-            }}
+            onClick={() => onClear?.()}
             className="flex size-6 shrink-0 items-center justify-center rounded-full bg-pli-black-50"
           >
             <CloseIcon className="size-4 text-grayscale-400" />
-          </span>
+          </button>
         ) : null}
-      </button>
+      </div>
     );
   },
 );
