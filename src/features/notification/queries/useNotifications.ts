@@ -3,7 +3,8 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 
 import { getOtherMemberProfile, followMember } from '@/api/member';
 import { getNotifications, subscribeToNotifications } from '@/api/notification';
-import type { MemberProfileResponse } from '@/types/member.type';
+import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
+import { updateFollowCaches } from '@/features/profile/queries/updateFollowCaches';
 
 const NOTIFICATIONS_QUERY_KEY = ['notification', 'infinite'] as const;
 
@@ -45,7 +46,7 @@ export function useNotificationSubscription() {
 
 export function useActorProfile(actorId: number, enabled: boolean) {
   return useQuery({
-    queryKey: ['member', 'profile', actorId],
+    queryKey: memberQueryKeys.profile(actorId),
     queryFn: () => getOtherMemberProfile(actorId),
     enabled,
     staleTime: 60_000,
@@ -58,10 +59,8 @@ export function useFollowBackNotification() {
   return useMutation({
     mutationFn: followMember,
     onSuccess: (_, actorId) => {
-      queryClient.setQueryData<MemberProfileResponse>(['member', 'profile', actorId], (profile) =>
-        profile ? { ...profile, isFollowing: true } : profile,
-      );
-      void queryClient.invalidateQueries({ queryKey: ['member', 'profile', actorId] });
+      updateFollowCaches(queryClient, { memberId: actorId, wasFollowing: false });
+      void queryClient.invalidateQueries({ queryKey: memberQueryKeys.profile(actorId) });
     },
   });
 }

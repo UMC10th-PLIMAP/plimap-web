@@ -7,6 +7,7 @@ import { ApiError } from '@/api/client';
 import { TopBar } from '@/components/ui/TopBar';
 import { ConfirmAlertDialog } from '@/features/settings/components/ConfirmAlertDialog';
 import { SettingsRow } from '@/features/settings/components/SettingsRow';
+import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 import type { TermId } from '@/features/auth/terms/types';
 
 const TERM_LIST_ITEMS: { id: TermId; label: string }[] = [
@@ -31,7 +32,7 @@ export default function SettingsPage() {
     try {
       await logout();
       setIsLogoutDialogOpen(false);
-      queryClient.removeQueries({ queryKey: ['me'] });
+      queryClient.removeQueries({ queryKey: memberQueryKeys.all });
       navigate('/app/login', { replace: true });
     } catch (error) {
       setIsLogoutDialogOpen(true);

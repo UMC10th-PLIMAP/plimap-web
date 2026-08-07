@@ -9,6 +9,7 @@ import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import confettiRaw from '@/assets/lottie/welcome-confetti.json?raw';
 import { Button } from '@/components/ui/button';
+import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 import { useOnboardingStore } from '@/store/onboardingStore';
 
 const CONFETTI_PRESERVE_ASPECT_RATIO = 'xMidYMid slice';
@@ -77,7 +78,7 @@ export default function WelcomePage() {
 
     try {
       await completeOnboarding(nickname);
-      await queryClient.invalidateQueries({ queryKey: ['me'] });
+      await queryClient.invalidateQueries({ queryKey: memberQueryKeys.me() });
       useOnboardingStore.getState().reset();
       navigate('/app', { replace: true });
     } catch (error) {

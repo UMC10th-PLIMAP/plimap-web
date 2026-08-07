@@ -1,5 +1,4 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
@@ -10,14 +9,13 @@ import { useMemberSearch } from '@/features/profile/queries/useMemberSearch';
 import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 import { useGoBack } from '@/hooks/useGoBack';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
-import type { MemberSearchItem, MemberSearchResponse } from '@/types/member.type';
+import type { MemberSearchItem } from '@/types/member.type';
 
 const FOLLOW_TOGGLE_FAILED_MESSAGE = '요청을 처리하지 못했어요. 다시 시도해주세요.';
 
 export default function FriendSearchPage() {
   const navigate = useNavigate();
   const goBack = useGoBack('/app/home');
-  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [pendingMemberIds, setPendingMemberIds] = useState<Set<number>>(new Set());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -80,22 +78,6 @@ export default function FriendSearchPage() {
     },
   );
 
-  const updateFollowState = (memberId: number, isFollowing: boolean) => {
-    queryClient.setQueriesData<InfiniteData<MemberSearchResponse>>(
-      { queryKey: ['members', 'search'] },
-      (current) =>
-        current && {
-          ...current,
-          pages: current.pages.map((page) => ({
-            ...page,
-            data: page.data.map((member) =>
-              member.id === memberId ? { ...member, isFollowing } : member,
-            ),
-          })),
-        },
-    );
-  };
-
   const handleToggleFollow = async (member: MemberSearchItem) => {
     setPendingMemberIds((current) => new Set(current).add(member.id));
 
@@ -104,7 +86,6 @@ export default function FriendSearchPage() {
         memberId: member.id,
         isFollowing: member.isFollowing,
       });
-      updateFollowState(member.id, !member.isFollowing);
     } catch (error) {
       alert(error instanceof ApiError ? error.message : FOLLOW_TOGGLE_FAILED_MESSAGE);
     } finally {

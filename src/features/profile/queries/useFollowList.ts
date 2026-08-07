@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { getFollowerList, getFollowingList } from '@/api/member';
+import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 import type { FollowTab } from '@/features/profile/types';
 
 const FETCHER_BY_TAB = {
@@ -20,7 +21,7 @@ export function useInfiniteFollowList({
   pageSize = 10,
 }: UseInfiniteFollowListParams) {
   return useInfiniteQuery({
-    queryKey: ['member', memberId, 'follow-list', tab, { pageSize }],
+    queryKey: memberQueryKeys.followList(memberId, tab, pageSize),
     queryFn: ({ pageParam }) =>
       FETCHER_BY_TAB[tab]({ memberId: memberId as number, pageSize, cursor: pageParam }),
     initialPageParam: undefined as string | undefined,
