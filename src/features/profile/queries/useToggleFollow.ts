@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 
 import { followMember, unfollowMember } from '@/api/member';
-import type { FollowListResponse } from '@/types/member.type';
+import type { FollowListResponse, MyProfileResponse } from '@/types/member.type';
 
 type ToggleFollowParams = {
   memberId: number;
@@ -16,7 +16,9 @@ export function useToggleFollow() {
       isFollowing ? unfollowMember(memberId) : followMember(memberId),
     onSuccess: (_data, { memberId, isFollowing }) => {
       queryClient.setQueriesData<InfiniteData<FollowListResponse>>(
-        { queryKey: ['member'] },
+        {
+          predicate: ({ queryKey }) => queryKey[0] === 'member' && queryKey[2] === 'follow-list',
+        },
         (old) =>
           old && {
             ...old,
@@ -27,6 +29,15 @@ export function useToggleFollow() {
               ),
             })),
           },
+      );
+
+      queryClient.setQueryData<MyProfileResponse>(['me'], (profile) =>
+        profile
+          ? {
+              ...profile,
+              followingCount: Math.max(0, profile.followingCount + (isFollowing ? -1 : 1)),
+            }
+          : profile,
       );
     },
   });

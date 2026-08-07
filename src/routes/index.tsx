@@ -35,6 +35,7 @@ import AccountManagementPage from '@/pages/AccountManagementPage';
 import TermsDetailViewPage from '@/pages/TermsDetailViewPage';
 import RecommendationContentCarouselPreviewPage from '@/pages/RecommendationContentCarouselPreviewPage';
 import HomePage from '@/pages/HomePage';
+import FriendSearchPage from '@/pages/FriendSearchPage';
 
 export const router = createBrowserRouter([
   {
@@ -103,6 +104,10 @@ export const router = createBrowserRouter([
                 handle: { bottomNavItem: 'my' },
               },
             ],
+          },
+          {
+            path: 'friends/search',
+            element: <FriendSearchPage />,
           },
           {
             path: 'onboarding/terms',
