@@ -100,7 +100,7 @@ export default function FriendSearchPage() {
   return (
     <div
       ref={scrollContainerRef}
-      className="flex h-full min-h-0 flex-col overflow-y-auto bg-pli-black-100 scrollbar-hide"
+      className="flex h-full min-h-0 flex-col overflow-y-auto bg-pli-black-100 pt-[env(safe-area-inset-top)] scrollbar-hide"
     >
       <TopBar title="친구 찾기" titleWeight="medium" onBack={goBack} />
 
