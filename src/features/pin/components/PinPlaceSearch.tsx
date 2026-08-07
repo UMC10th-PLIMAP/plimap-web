@@ -165,8 +165,8 @@ export function PinPlaceSearch({
 
     if (!place.searchSource || !currentLocation) {
       const selectedPlace = currentLocation
-        ? { ...place, selectionLocation: currentLocation }
-        : place;
+        ? { ...place, selectionLocation: currentLocation, searchQuery: normalizedQuery }
+        : { ...place, searchQuery: normalizedQuery };
       const constraintError = validatePlace?.(selectedPlace) ?? null;
       if (constraintError) {
         reportConstraintError(constraintError);
@@ -194,6 +194,7 @@ export function PinPlaceSearch({
           const selectedPlace = {
             ...selectedPlaceResult,
             selectionLocation: currentLocation,
+            searchQuery: normalizedQuery,
           };
           const constraintError = validatePlace?.(selectedPlace) ?? null;
           if (constraintError) {
@@ -255,7 +256,7 @@ export function PinPlaceSearch({
           onBack={onBack}
           placeholder={placeholder}
           aria-label="핀 조회 장소 검색"
-          leadingIcon="back"
+          leadingIcon={onBack ? 'back' : 'search'}
         />
       </div>
 

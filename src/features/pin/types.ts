@@ -272,4 +272,6 @@ export type PinSearchPlace = PlaceResult & {
   };
   searchHistoryId?: number;
   searchSource?: PlaceSearchSource;
+  /** 선택 당시 입력창에 있던 검색어. 지도 검색 화면 재진입 시 그대로 복원한다. */
+  searchQuery?: string;
 };

@@ -21,10 +21,11 @@ function SheetPortal({ ...props }: React.ComponentProps<typeof DrawerPrimitive.P
 type SheetContentProps = React.ComponentProps<typeof DrawerPrimitive.Content>;
 
 /** 화면 하단에 고정되는 시트 패널. 기본 레이아웃·스타일을 적용한다. */
-function SheetContent({ className, children, ...props }: SheetContentProps) {
+function SheetContent({ className, children, ref, ...props }: SheetContentProps) {
   return (
     <SheetPortal>
       <DrawerPrimitive.Content
+        ref={ref}
         data-slot="bottom-sheet-content"
         className={cn(
           'fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[402px] flex-col overflow-hidden',
@@ -86,6 +87,18 @@ type BottomSheetProps = {
   snapPoints?: SnapPoint[];
   /** 처음 열릴 때(및 풀페이지에서 뒤로가기 시) 돌아갈 스냅 지점. 생략하면 snapPoints의 첫 값을 쓴다. */
   defaultSnapPoint?: SnapPoint;
+  /**
+   * 이 값이 바뀌면(시트가 열려있는 동안에도) defaultSnapPoint로 스냅을 리셋한다.
+   * 같은 시트가 열린 채로 다른 대상(예: 다른 핀)으로 내용만 바뀌는 경우에 사용한다.
+   */
+  resetKey?: string | number;
+  /** 이 값이 바뀔 때마다 snapPoints의 진짜 첫 값(가장 작은 스냅)으로 축소한다. */
+  collapseToSmallestSignal?: number;
+  /**
+   * 시트 높이(0~1, 화면 높이 대비 비율)가 바뀔 때마다 호출된다 - 스냅에 안착했을 때뿐 아니라
+   * 드래그 중에도 실시간으로 호출되어, 외부 UI(예: 등록하기 버튼)가 시트를 따라 움직이게 할 수 있다.
+   */
+  onActiveSnapChange?: (fraction: number) => void;
   className?: string;
 };
 
@@ -101,19 +114,61 @@ function BottomSheet({
   dismissible = true,
   snapPoints = DEFAULT_SNAP_POINTS,
   defaultSnapPoint,
+  resetKey,
+  collapseToSmallestSignal,
+  onActiveSnapChange,
   className,
 }: BottomSheetProps) {
   const firstSnap = defaultSnapPoint ?? snapPoints[0] ?? null;
+  const smallestSnap = snapPoints[0] ?? null;
   const lastSnap = snapPoints[snapPoints.length - 1];
   const [activeSnap, setActiveSnap] = React.useState<SnapPoint | null>(firstSnap);
   const [prevOpen, setPrevOpen] = React.useState(open);
+  const [prevResetKey, setPrevResetKey] = React.useState(resetKey);
+  const [prevCollapseSignal, setPrevCollapseSignal] = React.useState(collapseToSmallestSignal);
 
-  if (open !== prevOpen) {
+  if (open !== prevOpen || resetKey !== prevResetKey) {
     setPrevOpen(open);
+    setPrevResetKey(resetKey);
     if (open) {
       setActiveSnap(firstSnap);
     }
   }
+
+  if (collapseToSmallestSignal !== prevCollapseSignal) {
+    setPrevCollapseSignal(collapseToSmallestSignal);
+    if (open) {
+      setActiveSnap(smallestSnap);
+    }
+  }
+
+  const onActiveSnapChangeRef = React.useRef(onActiveSnapChange);
+  const snapObserverRef = React.useRef<MutationObserver | null>(null);
+
+  React.useEffect(() => {
+    onActiveSnapChangeRef.current = onActiveSnapChange;
+  }, [onActiveSnapChange]);
+
+  // vaul이 드래그 중 DOM에 직접 반영하는 transform을 실시간 관찰해야 해서 콜백 ref를 쓴다 -
+  // vaul/Radix가 content 노드를 교체해도(예: presence 애니메이션) 항상 최신 노드를 관찰한다.
+  const setSnapObserverTarget = React.useCallback((node: HTMLDivElement | null) => {
+    snapObserverRef.current?.disconnect();
+    snapObserverRef.current = null;
+    if (!node) return;
+
+    const reportFromStyle = () => {
+      const match = /translate3d\(0px,\s*(-?[\d.]+)px/.exec(node.style.transform);
+      if (!match) return;
+      const translateY = Number(match[1]);
+      const viewportHeight = window.innerHeight || 1;
+      onActiveSnapChangeRef.current?.(Math.min(1, Math.max(0, 1 - translateY / viewportHeight)));
+    };
+
+    reportFromStyle();
+    const observer = new MutationObserver(reportFromStyle);
+    observer.observe(node, { attributes: true, attributeFilter: ['style'] });
+    snapObserverRef.current = observer;
+  }, []);
 
   const isFullPage = snapPoints.length > 1 && activeSnap === lastSnap;
 
@@ -130,6 +185,8 @@ function BottomSheet({
       <SheetRoot
         open={open}
         dismissible={dismissible}
+        // Radix Dialog의 기본 modal은 시트 바깥(지도) 클릭을 막으므로 modeless로 연다.
+        modal={false}
         shouldScaleBackground={false}
         snapPoints={snapPoints}
         fadeFromIndex={0}
@@ -142,6 +199,7 @@ function BottomSheet({
         }}
       >
         <SheetContent
+          ref={setSnapObserverTarget}
           data-full-page={isFullPage ? '' : undefined}
           className={cn(
             'h-full max-h-full transition-[border-radius,background-color] duration-200',
@@ -185,13 +243,17 @@ function BottomSheetContent({ className, ...props }: SectionProps) {
 
 type FullPageNavProps = React.ComponentProps<typeof TopBar>;
 
-/** 풀페이지 모드에서만 표시되는 상단 네비. 뒤로(접기)·닫기 버튼을 제공한다. */
-function BottomSheetFullPageNav(props: FullPageNavProps) {
+/**
+ * 풀페이지 모드에서만 표시되는 상단 네비. 뒤로·닫기 버튼을 제공한다.
+ * onBack을 명시적으로 넘기면(예: 검색으로 들어온 흐름에서 검색 화면으로 돌아가기)
+ * 그걸 쓰고, 없으면 기본값인 접기(collapse)로 돌아간다.
+ */
+function BottomSheetFullPageNav({ onBack, ...props }: FullPageNavProps) {
   const { isFullPage, collapse, onClose } = useBottomSheet();
 
   if (!isFullPage) return null;
 
-  return <TopBar {...props} onBack={collapse} onClose={onClose} />;
+  return <TopBar {...props} onBack={onBack ?? collapse} onClose={onClose} />;
 }
 
 BottomSheet.Header = BottomSheetHeader;

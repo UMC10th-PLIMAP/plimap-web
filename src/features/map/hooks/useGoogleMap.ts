@@ -30,6 +30,8 @@ type UseGoogleMapParams = {
   onViewportChanged?: (viewport: MapViewport) => void;
   /** 핀 등 오버레이가 아닌, 지도의 빈 영역을 클릭했을 때만 호출된다. */
   onMapClick?: () => void;
+  /** 사용자가 지도를 드래그(패닝)하기 시작했을 때 호출된다. */
+  onMapDragStart?: () => void;
 };
 
 type PanToOptions = {
@@ -46,6 +48,7 @@ export function useGoogleMap({
   onCenterChanged,
   onViewportChanged,
   onMapClick,
+  onMapDragStart,
 }: UseGoogleMapParams) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -53,6 +56,7 @@ export function useGoogleMap({
   const onZoomChangedRef = useRef(onZoomChanged);
   const onViewportChangedRef = useRef(onViewportChanged);
   const onMapClickRef = useRef(onMapClick);
+  const onMapDragStartRef = useRef(onMapDragStart);
   const initialCenterRef = useRef(initialCenter);
   const suppressNextCenterChangedRef = useRef(false);
   const centerChangeSuppressionTimeoutRef = useRef<number | null>(null);
@@ -91,6 +95,10 @@ export function useGoogleMap({
   useEffect(() => {
     onMapClickRef.current = onMapClick;
   }, [onMapClick]);
+
+  useEffect(() => {
+    onMapDragStartRef.current = onMapDragStart;
+  }, [onMapDragStart]);
 
   useEffect(() => {
     mapInstanceRef.current?.setOptions({
@@ -162,6 +170,7 @@ export function useGoogleMap({
       map.addListener('dragstart', () => {
         clearCenterChangeSuppression();
         clearFlyingSuppression();
+        onMapDragStartRef.current?.();
       });
 
       // 핀 오버레이는 overlayMouseTarget 페인에서 클릭을 자체 처리하므로,
