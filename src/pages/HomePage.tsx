@@ -262,7 +262,8 @@ export default function HomePage() {
                 getItemKey={(place) => place.placeId}
                 itemsPerPage={2}
                 showPagination
-                itemClassName="aspect-square min-w-0 flex-1 self-start"
+                pageClassName="grid grid-cols-2"
+                itemClassName="aspect-square self-start"
                 renderItem={(place) => <HotPlaceCard place={place} />}
               />
             )}
