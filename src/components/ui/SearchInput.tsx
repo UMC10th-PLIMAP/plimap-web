@@ -44,6 +44,8 @@ type SearchInputProps = Omit<React.ComponentProps<'input'>, 'type' | 'size'> &
 type SearchLauncherProps = Omit<React.ComponentProps<'button'>, 'children'> & {
   value?: string;
   placeholder?: string;
+  /** 선택된 값(value)이 있을 때 X 버튼을 보여주고, 눌리면 이 콜백을 호출한다. */
+  onClear?: () => void;
 };
 
 const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
@@ -82,8 +84,13 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
       onClear?.();
     };
 
+    // 검색어가 남아있으면 지우기만 하고, 이미 비어있을 때만 실제로 뒤로 나간다 -
+    // 눌러서 지우고, 한 번 더 눌러야 나가는 2단계 뒤로가기.
     const handleBack = () => {
-      handleClear();
+      if (currentValue.length > 0) {
+        handleClear();
+        return;
+      }
       onBack?.();
     };
 
@@ -137,12 +144,14 @@ const SearchLauncher = React.forwardRef<HTMLButtonElement, SearchLauncherProps>(
       value,
       placeholder = '장소를 검색하세요',
       type = 'button',
+      onClear,
       'aria-label': ariaLabel,
       ...props
     },
     ref,
   ) => {
     const hasValue = Boolean(value?.trim());
+    const showClearButton = hasValue && Boolean(onClear);
 
     return (
       <button
@@ -154,7 +163,11 @@ const SearchLauncher = React.forwardRef<HTMLButtonElement, SearchLauncherProps>(
         className={cn(searchInputVariants({ variant: 'map' }), 'text-left', className)}
         {...props}
       >
-        <SearchIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
+        {hasValue ? (
+          <BackIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
+        ) : (
+          <SearchIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
+        )}
         <span
           className={cn(
             'min-w-0 flex-1 truncate',
@@ -163,6 +176,26 @@ const SearchLauncher = React.forwardRef<HTMLButtonElement, SearchLauncherProps>(
         >
           {hasValue ? value : placeholder}
         </span>
+        {showClearButton ? (
+          <span
+            role="button"
+            tabIndex={0}
+            aria-label="검색 결과 지우기"
+            onClick={(event) => {
+              event.stopPropagation();
+              onClear?.();
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              event.stopPropagation();
+              onClear?.();
+            }}
+            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-pli-black-50"
+          >
+            <CloseIcon className="size-4 text-grayscale-400" />
+          </span>
+        ) : null}
       </button>
     );
   },
