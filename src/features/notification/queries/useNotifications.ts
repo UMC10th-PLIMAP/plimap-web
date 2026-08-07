@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { getOtherMemberProfile, followMember } from '@/api/member';
+import { getOtherMemberProfile } from '@/api/member';
 import { getNotifications, subscribeToNotifications } from '@/api/notification';
 import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
-import { updateFollowCaches } from '@/features/profile/queries/updateFollowCaches';
 
 const NOTIFICATIONS_QUERY_KEY = ['notification', 'infinite'] as const;
 
@@ -50,17 +49,5 @@ export function useActorProfile(actorId: number, enabled: boolean) {
     queryFn: () => getOtherMemberProfile(actorId),
     enabled,
     staleTime: 60_000,
-  });
-}
-
-export function useFollowBackNotification() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: followMember,
-    onSuccess: (_, actorId) => {
-      updateFollowCaches(queryClient, { memberId: actorId, wasFollowing: false });
-      void queryClient.invalidateQueries({ queryKey: memberQueryKeys.profile(actorId) });
-    },
   });
 }

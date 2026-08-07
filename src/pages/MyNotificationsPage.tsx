@@ -5,10 +5,10 @@ import { TopBar } from '@/components/ui/TopBar';
 import { NotificationRow } from '@/features/notification/components/NotificationRow';
 import { NotificationRowSkeleton } from '@/features/notification/components/NotificationRowSkeleton';
 import {
-  useFollowBackNotification,
   useInfiniteNotifications,
   useNotificationSubscription,
 } from '@/features/notification/queries/useNotifications';
+import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 
 const INITIAL_SKELETON_COUNT = 3;
 
@@ -17,7 +17,7 @@ export default function MyNotificationsPage() {
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, isError, refetch } =
     useInfiniteNotifications();
-  const followBackMutation = useFollowBackNotification();
+  const followBackMutation = useToggleFollow();
   const notifications = data?.pages.flatMap((page) => page.data) ?? [];
 
   const isNotificationStreamDisconnected = useNotificationSubscription();
@@ -101,9 +101,11 @@ export default function MyNotificationsPage() {
               notification={notification}
               isFollowPending={
                 followBackMutation.isPending &&
-                followBackMutation.variables === notification.actorId
+                followBackMutation.variables?.memberId === notification.actorId
               }
-              onFollowBack={(actorId) => followBackMutation.mutate(actorId)}
+              onFollowBack={(actorId) =>
+                followBackMutation.mutate({ memberId: actorId, isFollowing: false })
+              }
               onOpenPin={(pinId) => navigate(`/app/pins/${pinId}`)}
             />
           ))}

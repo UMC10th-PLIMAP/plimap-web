@@ -19,6 +19,7 @@ export default function FriendSearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [pendingMemberIds, setPendingMemberIds] = useState<Set<number>>(new Set());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const pendingScrollTopRef = useRef<number | null>(null);
   const keyword = searchParams.get('q') ?? '';
   const trimmedKeyword = keyword.trim();
   const scrollStorageKey = `friend-search-scroll:${trimmedKeyword.toLowerCase()}`;
@@ -36,21 +37,64 @@ export default function FriendSearchPage() {
 
     const savedScrollTop = Number(sessionStorage.getItem(scrollStorageKey));
     const scrollTop = Number.isFinite(savedScrollTop) ? savedScrollTop : 0;
+    pendingScrollTopRef.current = scrollTop;
     container.scrollTop = scrollTop;
+    if (container.scrollTop === scrollTop) {
+      pendingScrollTopRef.current = null;
+    }
 
     let finalRestoreFrame = 0;
     const restoreFrame = requestAnimationFrame(() => {
       finalRestoreFrame = requestAnimationFrame(() => {
-        container.scrollTop = scrollTop;
+        const pendingScrollTop = pendingScrollTopRef.current;
+        if (pendingScrollTop === null) return;
+
+        container.scrollTop = pendingScrollTop;
+        if (container.scrollTop === pendingScrollTop) {
+          pendingScrollTopRef.current = null;
+        }
       });
     });
 
     return () => {
       cancelAnimationFrame(restoreFrame);
       cancelAnimationFrame(finalRestoreFrame);
-      sessionStorage.setItem(scrollStorageKey, String(container.scrollTop));
+      sessionStorage.setItem(
+        scrollStorageKey,
+        String(pendingScrollTopRef.current ?? container.scrollTop),
+      );
     };
   }, [scrollStorageKey]);
+
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || pendingScrollTopRef.current === null) return;
+
+    let finalRestoreFrame = 0;
+    const restoreFrame = requestAnimationFrame(() => {
+      finalRestoreFrame = requestAnimationFrame(() => {
+        const pendingScrollTop = pendingScrollTopRef.current;
+        if (pendingScrollTop === null) return;
+
+        container.scrollTop = pendingScrollTop;
+        const reachedSavedPosition = container.scrollTop === pendingScrollTop;
+        const reachedFinalPage = searchQuery.isSuccess && !searchQuery.hasNextPage;
+        if (reachedSavedPosition || reachedFinalPage) {
+          pendingScrollTopRef.current = null;
+        }
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(restoreFrame);
+      cancelAnimationFrame(finalRestoreFrame);
+    };
+  }, [
+    members.length,
+    searchQuery.data?.pages.length,
+    searchQuery.hasNextPage,
+    searchQuery.isSuccess,
+  ]);
 
   const updateKeyword = (nextKeyword: string) => {
     const nextParams = new URLSearchParams(searchParams);
