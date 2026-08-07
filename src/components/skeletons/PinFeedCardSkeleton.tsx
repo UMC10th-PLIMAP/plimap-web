@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/Skeleton';
 
-export function SongFeedCardSkeleton() {
+export function PinFeedCardSkeleton() {
   return (
     <article className="rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3">
       <header className="flex items-center gap-2.5">

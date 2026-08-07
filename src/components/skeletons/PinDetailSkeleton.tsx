@@ -1,8 +1,8 @@
 import BackIcon from '@/assets/icons/back.svg?react';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { SongFeedCardSkeleton } from './SongFeedCardSkeleton';
+import { PinFeedCardSkeleton } from './PinFeedCardSkeleton';
 
-export function SongDetailSkeleton() {
+export function PinDetailSkeleton() {
   return (
     <div
       role="status"
@@ -29,7 +29,7 @@ export function SongDetailSkeleton() {
 
       <div className="flex flex-col gap-2 mx-[11px] mt-4">
         {Array.from({ length: 2 }).map((_, index) => (
-          <SongFeedCardSkeleton key={index} />
+          <PinFeedCardSkeleton key={index} />
         ))}
       </div>
     </div>

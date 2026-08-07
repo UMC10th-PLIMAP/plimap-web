@@ -8,7 +8,7 @@ import LikeIcon from '@/assets/icons/like.svg?react';
 import SoundWaveIcon from '@/assets/icons/soundwaves.svg?react';
 import PlayIcon from '@/assets/icons/play.svg?react';
 
-type SongFeedCardProps = {
+type PinFeedCardProps = {
   entry: PinFeedEntry;
   onPlay?: (entryId: string) => void;
   onReport?: (entryId: string) => void;
@@ -17,14 +17,14 @@ type SongFeedCardProps = {
   onNicknameClick?: (entry: PinFeedEntry) => void;
 };
 
-export function SongFeedCard({
+export function PinFeedCard({
   entry,
   onPlay,
   onReport,
   onEdit,
   onDelete,
   onNicknameClick,
-}: SongFeedCardProps) {
+}: PinFeedCardProps) {
   const { mutate: putPinLike, isPending: isPutPending } = usePutPinLike();
   const { mutate: deletePinLike, isPending: isDeletePending } = useDeletePinLike();
   const isLikePending = isPutPending || isDeletePending;
@@ -88,7 +88,7 @@ export function SongFeedCard({
 
           {isMoreOpen && (
             <div className="absolute right-0 top-full z-10 mt-1">
-              <SongFeedCardMore
+              <PinFeedCardMore
                 isMine={Boolean(entry.isMine)}
                 onReport={() => {
                   setIsMoreOpen(false);
@@ -152,19 +152,19 @@ export function SongFeedCard({
   );
 }
 
-type SongFeedCardMoreProps = {
+type PinFeedCardMoreProps = {
   isMine?: boolean;
   onReport?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
 };
 
-export function SongFeedCardMore({
+export function PinFeedCardMore({
   isMine = false,
   onReport,
   onEdit,
   onDelete,
-}: SongFeedCardMoreProps) {
+}: PinFeedCardMoreProps) {
   return (
     <article
       className="min-w-[92px] rounded-lg bg-pli-black-75 px-5 py-4"
