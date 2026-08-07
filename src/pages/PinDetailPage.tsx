@@ -30,7 +30,7 @@ function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
     id: String(pin.pinId),
     memberId: pin.memberId,
     nickname: pin.writerNickname,
-    avatarUrl: pin.writerProfileImage,
+    avatarUrl: pin.writerProfileImage ?? undefined,
     createdAtLabel: pin.staticCreatedAt,
     content: pin.introduction,
     tags: pin.tags,

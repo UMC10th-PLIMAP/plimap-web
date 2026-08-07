@@ -33,14 +33,7 @@ function formatCreatedAt(createdAt: string) {
 }
 
 function ProfileImage({ notification }: { notification: Notification }) {
-  const imageSource = notification.actorProfileImageObjectKey;
-  if (
-    !imageSource ||
-    (!imageSource.startsWith('http://') &&
-      !imageSource.startsWith('https://') &&
-      !imageSource.startsWith('data:') &&
-      !imageSource.startsWith('/'))
-  ) {
+  if (!notification.actorProfileImageUrl) {
     return (
       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-pli-black-50 text-grayscale-600">
         <UserPlaceholderIcon className="size-7" aria-hidden />
@@ -50,7 +43,7 @@ function ProfileImage({ notification }: { notification: Notification }) {
 
   return (
     <img
-      src={imageSource}
+      src={notification.actorProfileImageUrl}
       alt={`${notification.actorNickname} 프로필`}
       className="size-10 shrink-0 rounded-full object-cover"
     />

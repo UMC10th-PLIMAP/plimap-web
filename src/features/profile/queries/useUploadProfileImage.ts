@@ -8,10 +8,10 @@ export function useUploadProfileImage() {
 
   return useMutation({
     mutationFn: uploadProfileImage,
-    onSuccess: (data) => {
+    onSuccess: ({ imageUrl }) => {
       queryClient.setQueryData<MyProfileResponse>(
         ['me'],
-        (old) => old && { ...old, profileImageUrl: data.imageUrl },
+        (old) => old && { ...old, profileImageUrl: imageUrl },
       );
     },
   });

@@ -5,7 +5,7 @@ export type Notification = {
   type: NotificationType;
   actorId: number;
   actorNickname: string;
-  actorProfileImageObjectKey: string | null;
+  actorProfileImageUrl: string | null;
   pinId: number | null;
   read: boolean;
   createdAt: string;
