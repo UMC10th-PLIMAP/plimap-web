@@ -9,6 +9,8 @@ export type MapPinMarkerProps = {
   avatarUrl?: string;
   introduction?: string;
   onPlay?: () => void;
+  /** 말풍선(MapPinMessageBox) 노출 여부. isSelected와 별개로, 줌 21 범위에서만 켠다. */
+  showMessageBubble?: boolean;
 };
 
 export function MapPinMarker({
@@ -19,10 +21,11 @@ export function MapPinMarker({
   avatarUrl,
   introduction,
   onPlay,
+  showMessageBubble = false,
 }: MapPinMarkerProps) {
   return (
     <div className="relative cursor-pointer select-none" style={{ width: 51, height: 57 }}>
-      {isSelected && nickname && introduction ? (
+      {showMessageBubble && nickname && introduction ? (
         <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2">
           <MapPinMessageBox
             nickname={nickname}

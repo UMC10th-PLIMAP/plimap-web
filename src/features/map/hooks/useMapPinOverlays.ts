@@ -8,14 +8,17 @@ import {
   type MapPinOverlayEntry,
 } from '../utils/mapPinMarker';
 
-// 핀 클릭 시 포커스할 줌 레벨
+// 핀 클릭 시 포커스할 줌 레벨. 말풍선도 이 줌 범위에서만 노출한다.
 const PIN_FOCUS_ZOOM = 21;
+// flyTo 도중 소수점 줌과 정확히 21을 구분하기 위한 오차 허용치.
+const ZOOM_EQUALITY_EPSILON = 0.01;
 
 type UseMapPinOverlaysParams = {
   mapInstanceRef: RefObject<google.maps.Map | null>;
   isLoaded: boolean;
   mapPins: MapPin[];
   selectedMapPinId: string | null;
+  zoom: number;
   playingMapPinId?: string | null;
   flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
   onSelectMapPin?: (pinId: string) => void;
@@ -28,6 +31,7 @@ export function useMapPinOverlays({
   isLoaded,
   mapPins,
   selectedMapPinId,
+  zoom,
   playingMapPinId = null,
   flyTo,
   onSelectMapPin,
@@ -39,6 +43,10 @@ export function useMapPinOverlays({
   const selectedMapPinIdRef = useRef(selectedMapPinId);
   const playingMapPinIdRef = useRef(playingMapPinId);
   const flyToRef = useRef(flyTo);
+  // 마커 재생성 이펙트가 zoom에 매 프레임 반응하면 깜빡이므로 최신 값은 ref로 읽는다.
+  const isAtPinFocusZoomRef = useRef(Math.abs(zoom - PIN_FOCUS_ZOOM) <= ZOOM_EQUALITY_EPSILON);
+  // 선택 상태 갱신 이펙트는 줌 21 문턱을 넘었는지(불리언)만 의존성으로 쓴다.
+  const isAtPinFocusZoom = Math.abs(zoom - PIN_FOCUS_ZOOM) <= ZOOM_EQUALITY_EPSILON;
 
   useEffect(() => {
     onSelectMapPinRef.current = onSelectMapPin;
@@ -59,6 +67,10 @@ export function useMapPinOverlays({
   useEffect(() => {
     flyToRef.current = flyTo;
   }, [flyTo]);
+
+  useEffect(() => {
+    isAtPinFocusZoomRef.current = isAtPinFocusZoom;
+  }, [isAtPinFocusZoom]);
 
   // --- 지도 핀(OverlayView) 렌더링 ---
   useEffect(() => {
@@ -84,6 +96,7 @@ export function useMapPinOverlays({
           pin.id === selectedId,
           () => onPlayPinRef.current?.(pin.id),
           pin.id === playingId,
+          pin.id === selectedId && isAtPinFocusZoomRef.current,
         ),
       });
       entry.overlay.setMap(map);
@@ -111,9 +124,10 @@ export function useMapPinOverlays({
           isSelected,
           () => onPlayPinRef.current?.(pin.id),
           id === playingMapPinId,
+          isSelected && isAtPinFocusZoom,
         ),
       );
       entry.overlay.setZIndex(isSelected ? 200 : 100);
     });
-  }, [selectedMapPinId, playingMapPinId, mapPins]);
+  }, [selectedMapPinId, playingMapPinId, mapPins, isAtPinFocusZoom]);
 }

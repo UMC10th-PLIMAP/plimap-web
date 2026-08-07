@@ -15,6 +15,7 @@ export const toMapPinMarkerProps = (
   isSelected = false,
   onPlay?: () => void,
   isPlaying = false,
+  showMessageBubble = false,
 ): MapPinMarkerProps => ({
   coverUrl: pin.coverUrl,
   isSelected,
@@ -23,6 +24,7 @@ export const toMapPinMarkerProps = (
   avatarUrl: pin.avatarUrl,
   introduction: pin.introduction,
   onPlay,
+  showMessageBubble,
 });
 
 export const renderMapPinMarker = (mount: HTMLElement, props: MapPinMarkerProps) => {

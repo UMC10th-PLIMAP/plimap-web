@@ -39,6 +39,21 @@ const isDegenerateBounds = (bounds: PinCluster['bounds']) =>
   Math.abs(bounds.southWestLat - bounds.northEastLat) < DEGENERATE_BOUNDS_EPSILON &&
   Math.abs(bounds.southWestLng - bounds.northEastLng) < DEGENERATE_BOUNDS_EPSILON;
 
+// 클러스터 "내용"이 같은지 판단하는 키 - 같으면 기존 오버레이를 재사용해 깜빡임을 막는다.
+const clusterKey = (cluster: PinCluster) =>
+  [
+    cluster.clusterLevel,
+    cluster.regionName ?? '',
+    cluster.precision ?? '',
+    cluster.latitude,
+    cluster.longitude,
+    cluster.placeCount,
+    cluster.bounds.southWestLat,
+    cluster.bounds.southWestLng,
+    cluster.bounds.northEastLat,
+    cluster.bounds.northEastLng,
+  ].join(':');
+
 type UseClusterOverlaysParams = {
   mapInstanceRef: RefObject<google.maps.Map | null>;
   isLoaded: boolean;
@@ -46,6 +61,8 @@ type UseClusterOverlaysParams = {
   zoom: number;
   flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
   fitToBounds: (bounds: google.maps.LatLngBoundsLiteral) => void;
+  /** 장소 1개짜리 클러스터를 눌러 줌 21 이동을 마쳤을 때 호출된다(그 좌표를 넘겨줌). */
+  onSingleClusterArrive?: (position: MapCoordinate) => void;
 };
 
 /**
@@ -60,15 +77,24 @@ export function useClusterOverlays({
   zoom,
   flyTo,
   fitToBounds,
+  onSingleClusterArrive,
 }: UseClusterOverlaysParams) {
-  const clusterOverlaysRef = useRef<ClusterOverlayEntry[]>([]);
-  const singlePlacePinOverlaysRef = useRef<MapPinOverlayEntry[]>([]);
+  const clusterOverlaysRef = useRef<{ key: string; entry: ClusterOverlayEntry }[]>([]);
+  const singlePlacePinOverlaysRef = useRef<{ key: string; entry: MapPinOverlayEntry }[]>([]);
   const flyToRef = useRef(flyTo);
   const fitToBoundsRef = useRef(fitToBounds);
+  const onSingleClusterArriveRef = useRef(onSingleClusterArrive);
+  // 소수점 zoom을 그대로 의존성에 넣으면 줌 애니메이션 프레임마다 다시 그려 깜빡이므로,
+  // 14 문턱을 넘었는지 여부(불리언)만 의존성으로 쓴다.
+  const showSinglePlaceAsPin = zoom >= SINGLE_PLACE_PIN_MIN_ZOOM;
 
   useEffect(() => {
     flyToRef.current = flyTo;
   }, [flyTo]);
+
+  useEffect(() => {
+    onSingleClusterArriveRef.current = onSingleClusterArrive;
+  }, [onSingleClusterArrive]);
 
   useEffect(() => {
     fitToBoundsRef.current = fitToBounds;
@@ -78,15 +104,43 @@ export function useClusterOverlays({
     const map = mapInstanceRef.current;
     if (!isLoaded || !map) return;
 
-    const clusterEntries: ClusterOverlayEntry[] = [];
-    const singlePlacePinEntries: MapPinOverlayEntry[] = [];
+    // 키가 같은 클러스터는 지웠다 새로 그리지 않고 기존 오버레이를 재사용한다.
+    const prevClusterByKey = new Map(
+      clusterOverlaysRef.current.map(({ key, entry }) => [key, entry]),
+    );
+    const prevPinByKey = new Map(
+      singlePlacePinOverlaysRef.current.map(({ key, entry }) => [key, entry]),
+    );
+
+    const nextClusterEntries: { key: string; entry: ClusterOverlayEntry }[] = [];
+    const nextPinEntries: { key: string; entry: MapPinOverlayEntry }[] = [];
 
     clusters.forEach((cluster) => {
+      const key = clusterKey(cluster);
       const position = { lat: cluster.latitude, lng: cluster.longitude };
+      const isPinMode = cluster.placeCount === 1 && showSinglePlaceAsPin;
+
+      if (isPinMode) {
+        const existing = prevPinByKey.get(key);
+        if (existing) {
+          prevPinByKey.delete(key);
+          nextPinEntries.push({ key, entry: existing });
+          return;
+        }
+      } else {
+        const existing = prevClusterByKey.get(key);
+        if (existing) {
+          prevClusterByKey.delete(key);
+          nextClusterEntries.push({ key, entry: existing });
+          return;
+        }
+      }
 
       const onClick = () => {
         if (cluster.placeCount === 1) {
-          flyToRef.current(position, SINGLE_PLACE_ZOOM);
+          flyToRef.current(position, SINGLE_PLACE_ZOOM, () => {
+            onSingleClusterArriveRef.current?.(position);
+          });
           return;
         }
 
@@ -103,26 +157,33 @@ export function useClusterOverlays({
         });
       };
 
-      if (cluster.placeCount === 1 && zoom >= SINGLE_PLACE_PIN_MIN_ZOOM) {
+      if (isPinMode) {
         const entry = createMapPinOverlay({ position, onClick });
         entry.overlay.setMap(map);
-        singlePlacePinEntries.push(entry);
+        nextPinEntries.push({ key, entry });
         return;
       }
 
       const entry = createClusterOverlay({ position, placeCount: cluster.placeCount, onClick });
       entry.overlay.setMap(map);
-      clusterEntries.push(entry);
+      nextClusterEntries.push({ key, entry });
     });
 
-    clusterOverlaysRef.current = clusterEntries;
-    singlePlacePinOverlaysRef.current = singlePlacePinEntries;
+    // 이번엔 안 쓰인(더 이상 없는) 이전 오버레이만 정리한다.
+    prevClusterByKey.forEach((entry) => disposeClusterOverlay(entry));
+    prevPinByKey.forEach((entry) => disposeMapPinOverlay(entry));
 
+    clusterOverlaysRef.current = nextClusterEntries;
+    singlePlacePinOverlaysRef.current = nextPinEntries;
+  }, [isLoaded, clusters, showSinglePlaceAsPin, mapInstanceRef]);
+
+  // 언마운트될 때만 정리한다 - 위 이펙트는 재실행마다 자체적으로 diff해서 정리한다.
+  useEffect(() => {
     return () => {
-      clusterOverlaysRef.current.forEach(disposeClusterOverlay);
+      clusterOverlaysRef.current.forEach(({ entry }) => disposeClusterOverlay(entry));
       clusterOverlaysRef.current = [];
-      singlePlacePinOverlaysRef.current.forEach(disposeMapPinOverlay);
+      singlePlacePinOverlaysRef.current.forEach(({ entry }) => disposeMapPinOverlay(entry));
       singlePlacePinOverlaysRef.current = [];
     };
-  }, [isLoaded, clusters, zoom, mapInstanceRef]);
+  }, []);
 }

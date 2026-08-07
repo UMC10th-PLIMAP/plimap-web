@@ -33,6 +33,10 @@ type MapViewerProps = {
   playingMapPinId?: string | null;
   /** 핀이 아닌 지도의 빈 영역을 클릭했을 때 호출된다. */
   onMapClick?: () => void;
+  /** 사용자가 지도를 드래그(패닝)하기 시작했을 때 호출된다. */
+  onMapDragStart?: () => void;
+  /** 장소가 1개뿐인 클러스터를 눌러 줌 21로 이동을 마쳤을 때 호출된다. */
+  onSingleClusterArrive?: (position: MapCoordinate) => void;
 };
 
 export type MapViewerHandle = {
@@ -66,6 +70,8 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onPlayPin,
     playingMapPinId = null,
     onMapClick,
+    onMapDragStart,
+    onSingleClusterArrive,
   },
   ref,
 ) {
@@ -78,6 +84,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onCenterChanged,
     onViewportChanged,
     onMapClick,
+    onMapDragStart,
   });
 
   const { recenterToCurrentLocation } = useCurrentLocationMarker({
@@ -104,12 +111,21 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     isLoaded,
     mapPins,
     selectedMapPinId,
+    zoom,
     playingMapPinId,
     flyTo,
     onSelectMapPin,
     onPlayPin,
   });
-  useClusterOverlays({ mapInstanceRef, isLoaded, clusters: mapClusters, zoom, flyTo, fitToBounds });
+  useClusterOverlays({
+    mapInstanceRef,
+    isLoaded,
+    clusters: mapClusters,
+    zoom,
+    flyTo,
+    fitToBounds,
+    onSingleClusterArrive,
+  });
   useCoordinateProjection({
     mapInstanceRef,
     isLoaded,
