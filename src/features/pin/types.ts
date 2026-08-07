@@ -107,7 +107,7 @@ export type GetPlaceTrackPinsResponse = {
     memberId: number;
     pinId: number;
     writerNickname: string;
-    writerProfileImage: string;
+    writerProfileImage: string | null;
     introduction: string;
     tags: string[];
     clipStartMs: number;
@@ -150,7 +150,7 @@ export type PinDetailResponse = {
   latitude: number;
   longitude: number;
   writerNickname: string;
-  writerProfileImage: string;
+  writerProfileImage: string | null;
   introduction: string;
   albumImageUrl: string;
   youtubeVideoId: string;

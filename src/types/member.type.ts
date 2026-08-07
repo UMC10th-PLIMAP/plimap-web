@@ -6,7 +6,6 @@ export type NicknameCheckResponse =
   | { nickname: string; available: false; reason: NicknameCheckReason };
 
 export type ProfileImageUploadResponse = {
-  objectKey: string;
   imageUrl: string;
 };
 
@@ -64,9 +63,9 @@ export type UpdateMyProfileRequest = {
 export type UpdateMyProfileResponse = {
   id: number;
   nickname: string;
-  name: string;
-  introduction: string;
-  profileImageObjectKey: string;
+  name: string | null;
+  introduction: string | null;
+  profileImageUrl: string | null;
   updatedAt: string;
 };
 
