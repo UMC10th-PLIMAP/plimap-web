@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SettingsIcon from '@/assets/icons/settings.svg?react';
 import ShareIcon from '@/assets/icons/share.svg?react';
 
+import { ProfileSkeleton } from '@/components/skeletons/ProfileSkeleton';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
@@ -33,7 +34,9 @@ export default function MyProfilePage() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareToast, setShareToast] = useState<ShareToast | null>(null);
 
-  if (!myProfile) return null;
+  // 실제로는 AuthGuard에서 캐시가 저장되기 때문에 myProfile이 undefined인 경우가 거의 없음
+  // 하지만 혹시 모르니 skeleton을 띄워줌
+  if (!myProfile) return <ProfileSkeleton />;
 
   const nickname = myProfile.nickname?.trim() ?? '';
   const canShareProfile = nickname.length > 0;

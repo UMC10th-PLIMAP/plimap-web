@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import BackIcon from '@/assets/icons/back.svg?react';
 import MoreIcon from '@/assets/icons/more.svg?react';
 
+import { ProfileSkeleton } from '@/components/skeletons/ProfileSkeleton';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
@@ -24,6 +25,9 @@ export default function UserProfilePage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isPending: isFeedPending,
+    isError: isFeedError,
+    refetch: refetchFeed,
   } = useInfiniteOtherMemberFeed({ memberId: id });
   const followMutation = useFollowMember(id ?? 0);
 
@@ -76,42 +80,54 @@ export default function UserProfilePage() {
         </button>
       </header>
 
-      {member && (
-        <div className="mt-[3px] flex flex-col">
-          <ProfileInfo
-            profile={{
-              name: member.name,
-              introduction: member.introduction,
-              profileImageUrl: member.profileImageUrl,
-              followerCount: member.followerCount,
-              followingCount: member.followingCount,
+      {member ? (
+        <>
+          <div className="mt-[3px] flex flex-col">
+            <ProfileInfo
+              profile={{
+                name: member.name,
+                introduction: member.introduction,
+                profileImageUrl: member.profileImageUrl,
+                followerCount: member.followerCount,
+                followingCount: member.followingCount,
+              }}
+            />
+            <ProfileActions
+              actions={[
+                {
+                  label: member.isFollowing ? '팔로잉' : '팔로우',
+                  onClick: () => {
+                    if (followMutation.isPending || !id) return;
+                    followMutation.mutate(member.isFollowing);
+                  },
+                  className: member.isFollowing
+                    ? undefined
+                    : 'bg-neon-2 text-grayscale-1200 body-15-m',
+                },
+                {
+                  label: '프로필 공유',
+                  onClick: () => {
+                    void handleShare();
+                  },
+                },
+              ]}
+            />
+          </div>
+
+          <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
+          <ProfilePinGrid
+            pins={feedPages?.pages.flatMap((page) => page.data) ?? []}
+            isPending={isFeedPending}
+            isError={isFeedError}
+            onRetry={() => {
+              void refetchFeed();
             }}
           />
-          <ProfileActions
-            actions={[
-              {
-                label: member.isFollowing ? '팔로잉' : '팔로우',
-                onClick: () => {
-                  if (followMutation.isPending || !id) return;
-                  followMutation.mutate(member.isFollowing);
-                },
-                className: member.isFollowing
-                  ? undefined
-                  : 'bg-neon-2 text-grayscale-1200 body-15-m',
-              },
-              {
-                label: '프로필 공유',
-                onClick: () => {
-                  void handleShare();
-                },
-              },
-            ]}
-          />
-        </div>
+        </>
+      ) : (
+        <ProfileSkeleton />
       )}
 
-      <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
-      <ProfilePinGrid pins={feedPages?.pages.flatMap((page) => page.data) ?? []} />
       <div ref={loadMoreRef} aria-hidden className="h-px" />
     </div>
   );
