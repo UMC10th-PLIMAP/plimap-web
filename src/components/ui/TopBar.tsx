@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import BackIcon from '@/assets/icons/back.svg?react';
 import CloseIcon from '@/assets/icons/close.svg?react';
 
@@ -14,6 +16,8 @@ type TopBarProps = {
   titleWeight?: TopBarTitleWeight;
   onBack?: () => void;
   onClose?: () => void;
+  /** 닫기 버튼 왼쪽에 추가로 넣을 액션(예: 북마크 버튼). */
+  trailing?: ReactNode;
   className?: string;
 };
 
@@ -22,6 +26,7 @@ export function TopBar({
   titleWeight = 'regular',
   onBack,
   onClose,
+  trailing,
   className,
 }: TopBarProps) {
   return (
@@ -43,7 +48,8 @@ export function TopBar({
           가운데(1fr) 칸으로 auto-placement 되어 왼쪽으로 밀리지 않는다. */}
       <p className={`${TITLE_CLASS_BY_WEIGHT[titleWeight]} truncate text-center`}>{title}</p>
 
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-3">
+        {trailing}
         {onClose && (
           <button
             type="button"
