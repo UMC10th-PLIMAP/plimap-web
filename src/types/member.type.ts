@@ -42,6 +42,27 @@ export type FollowListResponse = {
   hasNext: boolean;
   pageSize: number;
 };
+
+export type MemberSearchRequest = {
+  keyword: string;
+  pageSize?: number;
+  cursor?: string;
+};
+
+export type MemberSearchItem = {
+  id: number;
+  nickname: string;
+  name: string | null;
+  profileImageUrl: string | null;
+  isFollowing: boolean;
+};
+
+export type MemberSearchResponse = {
+  data: MemberSearchItem[];
+  nextCursor: string | null;
+  hasNext: boolean;
+  pageSize: number;
+};
 export type MemberProfileResponse = {
   id: number;
   nickname: string;

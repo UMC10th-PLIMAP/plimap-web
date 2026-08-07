@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { uploadProfileImage } from '@/api/member';
+import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 import type { MyProfileResponse } from '@/types/member.type';
 
 export function useUploadProfileImage() {
@@ -10,7 +11,7 @@ export function useUploadProfileImage() {
     mutationFn: uploadProfileImage,
     onSuccess: ({ imageUrl }) => {
       queryClient.setQueryData<MyProfileResponse>(
-        ['me'],
+        memberQueryKeys.me(),
         (old) => old && { ...old, profileImageUrl: imageUrl },
       );
     },

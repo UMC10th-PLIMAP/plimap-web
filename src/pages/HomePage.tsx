@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BellIcon from '@/assets/home/bell.svg?react';
@@ -121,6 +122,7 @@ function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps
 }
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const [hotPlaceFilter, setHotPlaceFilter] = useState<'nearby' | 'popular'>('nearby');
   const myProfileQuery = useMyProfile();
   const currentPositionQuery = useCurrentPosition();
@@ -197,6 +199,7 @@ export default function HomePage() {
 
         <button
           type="button"
+          onClick={() => navigate('/app/friends/search')}
           className="mx-4 flex h-[86px] items-center justify-between rounded-xl bg-pli-black-85 px-[18px] text-left"
         >
           <span className="flex min-w-0 items-center gap-4">

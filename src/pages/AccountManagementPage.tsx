@@ -7,6 +7,7 @@ import { TopBar } from '@/components/ui/TopBar';
 import { SettingsRow } from '@/features/settings/components/SettingsRow';
 import { WithdrawConfirmDialog } from '@/features/settings/components/WithdrawConfirmDialog';
 import { useWithdrawMember } from '@/features/settings/queries/useWithdrawMember';
+import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 
 const WITHDRAW_FAILED_MESSAGE = '탈퇴 처리에 실패했어요. 잠시 후 다시 시도해주세요.';
 
@@ -22,7 +23,7 @@ export default function AccountManagementPage() {
     withdrawMutation.mutate(undefined, {
       onSuccess: () => {
         setIsWithdrawDialogOpen(false);
-        queryClient.removeQueries({ queryKey: ['me'] });
+        queryClient.removeQueries({ queryKey: memberQueryKeys.all });
         navigate('/app/login', { replace: true });
       },
       onError: (error) => {

@@ -13,7 +13,7 @@ import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
 import { ProfileShareDialog } from '@/features/profile/components/ProfileShareDialog';
 import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteOtherMemberFeed } from '@/features/pin/queries/useOtherMemberFeed';
-import { useFollowMember } from '@/hooks/useFollowMember';
+import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 import { useGoBack } from '@/hooks/useGoBack';
 import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
@@ -52,7 +52,7 @@ export default function UserProfilePage() {
     isError: isFeedError,
     refetch: refetchFeed,
   } = useInfiniteOtherMemberFeed({ memberId: id });
-  const followMutation = useFollowMember(id ?? 0);
+  const followMutation = useToggleFollow();
 
   const nickname = member?.nickname?.trim() ?? '';
   const canShareProfile = nickname.length > 0;
@@ -128,7 +128,7 @@ export default function UserProfilePage() {
                   label: member.isFollowing ? '팔로잉' : '팔로우',
                   onClick: () => {
                     if (followMutation.isPending || !id) return;
-                    followMutation.mutate(member.isFollowing);
+                    followMutation.mutate({ memberId: id, isFollowing: member.isFollowing });
                   },
                   className: member.isFollowing
                     ? undefined

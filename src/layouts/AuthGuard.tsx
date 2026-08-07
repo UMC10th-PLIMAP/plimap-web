@@ -4,6 +4,7 @@ import { Navigate, Outlet, useOutletContext } from 'react-router-dom';
 
 import { isUnauthorizedError } from '@/api/client';
 import { getMyProfile } from '@/api/member';
+import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 import type { AppOutletContext } from '@/layouts/RootLayout';
 
 const SESSION_CHECK_FAILED_MESSAGE = '로그인 상태를 확인하지 못했어요. 다시 로그인해 주세요.';
@@ -11,7 +12,7 @@ const SESSION_CHECK_FAILED_MESSAGE = '로그인 상태를 확인하지 못했어
 const AuthGuard = () => {
   const context = useOutletContext<AppOutletContext>();
   const { status, error } = useQuery({
-    queryKey: ['me'],
+    queryKey: memberQueryKeys.me(),
     queryFn: getMyProfile,
     retry: (failureCount, err) => !isUnauthorizedError(err) && failureCount < 2,
     staleTime: Infinity,

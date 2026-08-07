@@ -3,6 +3,8 @@ import type { ApiResponse } from '@/api/types';
 import type {
   FollowListRequest,
   FollowListResponse,
+  MemberSearchRequest,
+  MemberSearchResponse,
   MemberProfileResponse,
   MyProfileResponse,
   NicknameCheckResponse,
@@ -93,5 +95,13 @@ export async function withdrawMember() {
   if (!data.isSuccess) {
     throw new ApiError(data.code, data.message, status);
   }
+  return data.result;
+}
+
+// 11) GET /api/v1/members/search - 닉네임으로 회원 검색
+export async function searchMembersByNickname({ keyword, pageSize, cursor }: MemberSearchRequest) {
+  const { data } = await apiClient.get<ApiResponse<MemberSearchResponse>>(`${ENDPOINT}/search`, {
+    params: { keyword, pageSize, cursor },
+  });
   return data.result;
 }

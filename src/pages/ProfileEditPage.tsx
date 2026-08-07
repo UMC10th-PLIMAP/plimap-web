@@ -12,6 +12,7 @@ import { TopBar } from '@/components/ui/TopBar';
 import { ProfileTextAreaField } from '@/features/profile/components/ProfileTextAreaField';
 import { ProfileTextField } from '@/features/profile/components/ProfileTextField';
 import { useProfileEditForm } from '@/features/profile/hooks/useProfileEditForm';
+import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 import { useUpdateMyProfile } from '@/features/profile/queries/useUpdateMyProfile';
 import { useUploadProfileImage } from '@/features/profile/queries/useUploadProfileImage';
 import { getCroppedImageBlob } from '@/features/profile/utils/cropImage';
@@ -33,7 +34,7 @@ export default function ProfileEditPage() {
   const navigate = useNavigate();
 
   const { data: profile, isError } = useQuery({
-    queryKey: ['me'],
+    queryKey: memberQueryKeys.me(),
     queryFn: getMyProfile,
     staleTime: Infinity,
   });
