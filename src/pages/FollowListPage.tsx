@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
+import { FollowListSkeleton } from '@/components/skeletons/FollowListSkeleton';
 import { TopBar } from '@/components/ui/TopBar';
 import { FollowUserRow } from '@/features/profile/components/FollowUserRow';
 import { SearchInput } from '@/components/ui/SearchInput';
@@ -90,6 +91,7 @@ export default function FollowListPage() {
     data: followList,
     fetchNextPage,
     hasNextPage,
+    isPending,
     isFetchingNextPage,
     isFetchNextPageError,
   } = useInfiniteFollowList({ memberId: targetMemberId, tab });
@@ -174,7 +176,9 @@ export default function FollowListPage() {
           onClear={() => setKeyword('')}
         />
       </div>
-      {users.length === 0 ? (
+      {isPending ? (
+        <FollowListSkeleton />
+      ) : users.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-[2px] text-center">
           <p className="body-17-m text-grayscale-300">{emptyState.title}</p>
           <p className="body-15-m text-grayscale-700">{emptyState.description}</p>
@@ -196,6 +200,7 @@ export default function FollowListPage() {
               />
             ))}
           </ul>
+          {isFetchingNextPage ? <FollowListSkeleton count={1} /> : null}
           {isFetchNextPageError ? (
             <div className="flex flex-col items-center gap-2 py-4">
               <p className="body-15-m text-grayscale-500">더 불러오지 못했어요</p>

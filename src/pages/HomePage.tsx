@@ -6,6 +6,7 @@ import BellIcon from '@/assets/home/bell.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
+import { HomeSkeleton } from '@/components/skeletons/HomeSkeleton';
 import { Chip } from '@/components/ui/chip';
 import { MOCK_FRIEND_PINS, MOCK_HOME_USER } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
@@ -15,18 +16,6 @@ import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
-
-function HomeLoadingState() {
-  return (
-    <main
-      className="flex min-h-full shrink-0 items-center justify-center bg-pli-black-100"
-      role="status"
-      aria-label="홈 화면 불러오는 중"
-    >
-      <span className="size-8 animate-spin rounded-full border-2 border-grayscale-700 border-t-neon-2" />
-    </main>
-  );
-}
 
 function HomeErrorState({ onRetry }: { onRetry: () => void }) {
   return (
@@ -138,9 +127,13 @@ export default function HomePage() {
   });
   const toggleBookmarkMutation = useTogglePlaceBookmark();
   const savedPlaces = savedPlacesQuery.data?.items ?? [];
+  const isHomePending =
+    myProfileQuery.isPending ||
+    currentPositionQuery.isPending ||
+    (!currentPositionQuery.isError && (popularPlacesQuery.isPending || savedPlacesQuery.isPending));
 
-  if (myProfileQuery.isPending) {
-    return <HomeLoadingState />;
+  if (isHomePending) {
+    return <HomeSkeleton />;
   }
 
   if (!myProfileQuery.data) {

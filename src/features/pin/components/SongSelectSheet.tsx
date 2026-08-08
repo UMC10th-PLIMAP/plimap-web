@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SearchInput } from '@/components/ui/SearchInput';
+import { SongSelectSkeleton } from '@/components/skeletons/SongSelectSkeleton';
 import { SongCard } from '@/features/pin/components/SongCard';
 import { fetchPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
 import { useSearchTracks } from '@/features/pin/queries/useSearchTracks';
@@ -33,8 +34,11 @@ export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProp
     }
   }
 
-  const { data } = useSearchTracks({ keyword: query });
-  const tracks = data?.tracks ?? [];
+  const searchQuery = useSearchTracks({ keyword: query });
+  const hasSearchQuery = query.trim().length > 0;
+  const isSearchPending = hasSearchQuery && (searchQuery.isDebouncing || searchQuery.isPending);
+  const tracks =
+    hasSearchQuery && !searchQuery.isDebouncing ? (searchQuery.data?.tracks ?? []) : [];
 
   const handleSelectTrack = async (track: SearchTrack) => {
     if (preparingTrackId != null) return;
@@ -66,21 +70,25 @@ export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProp
         />
       </BottomSheet.Header>
 
-      <BottomSheet.Content className="px-4 pt-5.5">
-        <ul>
-          {tracks.map((track) => (
-            <li key={track.itunesTrackId}>
-              <SongCard
-                song={track}
-                disabled={preparingTrackId != null}
-                isLoading={preparingTrackId === track.itunesTrackId}
-                onClick={() => {
-                  void handleSelectTrack(track);
-                }}
-              />
-            </li>
-          ))}
-        </ul>
+      <BottomSheet.Content className="px-3 pt-5.5">
+        {isSearchPending ? (
+          <SongSelectSkeleton />
+        ) : (
+          <ul>
+            {tracks.map((track) => (
+              <li key={track.itunesTrackId}>
+                <SongCard
+                  song={track}
+                  disabled={preparingTrackId != null}
+                  isLoading={preparingTrackId === track.itunesTrackId}
+                  onClick={() => {
+                    void handleSelectTrack(track);
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
         {errorMessage ? (
           <p className="sticky bottom-0 bg-pli-black-85 py-3 text-center body-15-m text-grayscale-400">
             {errorMessage}
