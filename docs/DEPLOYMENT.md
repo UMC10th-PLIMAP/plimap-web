@@ -51,7 +51,7 @@ Browser
 2. `Deploy Prod`가 정확한 `main` commit을 이미지로 빌드해 Artifact Registry에 push합니다.
 3. 이미지 digest를 확인하고 Cloud Run에 0% candidate revision으로 배포합니다.
 4. Ready 상태와 digest가 일치하면 candidate를 100%로 승격합니다.
-5. DNS/TLS 전환 후에는 `PROD_PUBLIC_SMOKE_ENABLED=true`로 바꾸어 공개 루트와 예약 경로를 검증합니다.
+5. DNS/TLS 전환 후에는 `PROD_PUBLIC_SMOKE_ENABLED=true`로 바꾸고 GitHub Actions의 `Deploy Prod`를 `workflow_dispatch`로 수동 재실행해 공개 루트와 예약 경로를 검증합니다.
 6. 승격 후 검증에 실패하면 직전 100% revision으로 되돌립니다.
 
 Cloud Run은 request-based billing, 1 vCPU, 512 MiB, concurrency 80, timeout 60초, min 0, max 2를 사용합니다. Ingress는 `internal-and-cloud-load-balancing`으로 제한하고 기본 `run.app` URL은 비활성화합니다.

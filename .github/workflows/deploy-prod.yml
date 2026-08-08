@@ -148,14 +148,14 @@ jobs:
               --format=json |
               jq -r '[.status.traffic[]? | select(.percent == 100)][0].revisionName // empty'
           )"
-          revision_suffix="${GITHUB_SHA::12}-${GITHUB_RUN_ATTEMPT}"
+          revision_suffix="${GITHUB_SHA::12}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           candidate_revision="${CLOUD_RUN_SERVICE}-${revision_suffix}"
           traffic_promoted=false
 
-          rollback_on_error() {
+          rollback_on_exit() {
             status=$?
-            trap - ERR
-            if [[ "$traffic_promoted" == true && -n "$previous_revision" ]]; then
+            trap - EXIT
+            if [[ "$status" -ne 0 && "$traffic_promoted" == true && -n "$previous_revision" ]]; then
               echo "Deployment verification failed. Restoring ${previous_revision}." >&2
               gcloud run services update-traffic "$CLOUD_RUN_SERVICE" \
                 --project="$PROJECT_ID" \
@@ -165,7 +165,7 @@ jobs:
             fi
             exit "$status"
           }
-          trap rollback_on_error ERR
+          trap rollback_on_exit EXIT
 
           gcloud run deploy "$CLOUD_RUN_SERVICE" \
             --project="$PROJECT_ID" \
