@@ -28,7 +28,10 @@ import { cn } from '@/lib/utils';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
 const INTRO_MAX_LENGTH = 100;
+const MIN_TAG_COUNT = 1;
 const MAX_TAG_COUNT = 4;
+const MIN_TAG_ERROR_MESSAGE = '태그를 최소 1개 선택해 주세요.';
+const MAX_TAG_ERROR_MESSAGE = '태그는 최대 4개까지 선택 가능해요.';
 const CREATION_TOAST_DURATION_MS = 2_000;
 const SONG_PREVIEW_PLAY_KEY = 'song-detail-preview';
 
@@ -458,6 +461,7 @@ export default function SongDetailPage() {
 
   const [introduction, setIntroduction] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [hasTagLimitError, setHasTagLimitError] = useState(false);
   const [isFeedPublic, setIsFeedPublic] = useState(true);
   const [isSongSelectOpen, setIsSongSelectOpen] = useState(false);
   const [creationToast, setCreationToast] = useState<CreationToast | null>(null);
@@ -467,6 +471,12 @@ export default function SongDetailPage() {
   const coverUrl = preparedTrack?.albumImageUrl || rectangleBg;
   const waveformPeaks = MOCK_WAVEFORM_PEAKS;
   const durationMs = preparedTrack?.durationMs ?? MOCK_PREVIEW_DURATION * 1_000;
+  const hasRequiredTags = selectedTags.length >= MIN_TAG_COUNT;
+  const tagErrorMessage = hasRequiredTags
+    ? hasTagLimitError
+      ? MAX_TAG_ERROR_MESSAGE
+      : null
+    : MIN_TAG_ERROR_MESSAGE;
 
   const showCreationToast = (message: string) => {
     setCreationToast((currentToast) => ({
@@ -491,6 +501,11 @@ export default function SongDetailPage() {
     const normalizedIntroduction = introduction.trim();
     if (!normalizedIntroduction) {
       showCreationToast('소개를 입력해 주세요.');
+      return;
+    }
+
+    if (!hasRequiredTags) {
+      showCreationToast(MIN_TAG_ERROR_MESSAGE);
       return;
     }
 
@@ -520,17 +535,19 @@ export default function SongDetailPage() {
   };
 
   const toggleTag = (tag: string) => {
-    setSelectedTags((prev) => {
-      if (prev.includes(tag)) {
-        return prev.filter((item) => item !== tag);
-      }
+    if (selectedTags.includes(tag)) {
+      setSelectedTags((currentTags) => currentTags.filter((item) => item !== tag));
+      setHasTagLimitError(false);
+      return;
+    }
 
-      if (prev.length >= MAX_TAG_COUNT) {
-        return prev;
-      }
+    if (selectedTags.length >= MAX_TAG_COUNT) {
+      setHasTagLimitError(true);
+      return;
+    }
 
-      return [...prev, tag];
-    });
+    setSelectedTags((currentTags) => [...currentTags, tag]);
+    setHasTagLimitError(false);
   };
 
   if (!place || !currentLocation) {
@@ -570,7 +587,8 @@ export default function SongDetailPage() {
                   disabled={
                     createPinMutation.isPending ||
                     playbackPreparationQuery.isPending ||
-                    playbackPreparationQuery.isFetching
+                    playbackPreparationQuery.isFetching ||
+                    !hasRequiredTags
                   }
                   aria-busy={
                     createPinMutation.isPending || playbackPreparationQuery.isFetching || undefined
@@ -644,10 +662,22 @@ export default function SongDetailPage() {
           </section>
 
           <section className="px-4 pt-6">
-            <h3 className="body-15-r text-grayscale-300">
-              태그 <span className="etc-13-r text-grayscale-700">(최대 4개)</span>
-            </h3>
-            <div className="grid grid-cols-5 justify-items-center gap-x-2 gap-y-3 pt-3">
+            <div className="flex items-center gap-2">
+              <h3 className="flex items-center gap-1 body-15-r text-grayscale-300">
+                태그 <span className="etc-13-r text-grayscale-700">(최소 1개)</span>
+              </h3>
+              {tagErrorMessage ? (
+                <p id="song-tag-error" aria-live="polite" className="etc-13-r text-red">
+                  {tagErrorMessage}
+                </p>
+              ) : null}
+            </div>
+            <div
+              role="group"
+              aria-label="태그 선택"
+              aria-describedby={tagErrorMessage ? 'song-tag-error' : undefined}
+              className="grid grid-cols-5 justify-items-center gap-x-2 gap-y-3 pt-3"
+            >
               {TAG_OPTIONS.map((tag) => {
                 const isSelected = selectedTags.includes(tag);
 
