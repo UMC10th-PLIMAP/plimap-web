@@ -1,4 +1,4 @@
-import pinIconUrl from '@/assets/icons/pin.svg?url';
+import PinIcon from '@/assets/icons/pin.svg?react';
 import { MapPinMessageBox } from '@/features/map/components/MapPinMessageBox';
 
 export type MapPinMarkerProps = {
@@ -41,11 +41,10 @@ export function MapPinMarker({
         className="relative size-full transition-transform duration-150"
         style={{ transform: isSelected ? 'scale(1.2)' : undefined }}
       >
-        <img
-          src={pinIconUrl}
-          alt="핀 아이콘"
-          draggable={false}
-          className="pointer-events-none block size-full object-contain"
+        <PinIcon
+          role="img"
+          aria-label="핀 아이콘"
+          className="pointer-events-none block size-full overflow-visible"
         />
 
         <div
