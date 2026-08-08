@@ -4,7 +4,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -140,7 +139,7 @@ function Carousel({
     [handleKeyDown, onKeyDownCapture],
   );
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!api || selectedIndex === undefined) return;
 
     const lastIndex = api.scrollSnapList().length - 1;

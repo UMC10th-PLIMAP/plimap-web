@@ -263,7 +263,6 @@ export default function HomePage() {
                 showPagination
                 pageClassName="grid grid-cols-2"
                 itemClassName="aspect-square self-start"
-                initializeAtCurrentPage
                 currentPage={hotPlacePages[hotPlaceFilter]}
                 onPageChange={(page) =>
                   setHotPlacePages((pages) => ({ ...pages, [hotPlaceFilter]: page }))

@@ -17,7 +17,6 @@ type RecommendationContentCarouselProps<T> = {
   itemsPerPage?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
-  initializeAtCurrentPage?: boolean;
 };
 
 export function RecommendationContentCarousel<T>({
@@ -33,7 +32,6 @@ export function RecommendationContentCarousel<T>({
   itemsPerPage = 1,
   currentPage,
   onPageChange,
-  initializeAtCurrentPage = false,
 }: RecommendationContentCarouselProps<T>) {
   const pageSize = Math.max(1, Math.floor(itemsPerPage));
   const pageCount = Math.ceil(items.length / pageSize);
@@ -47,6 +45,12 @@ export function RecommendationContentCarousel<T>({
     Math.max(pageCount - 1, 0),
   );
   const [initialPage] = useState(activePage);
+  const initialTrackStyle =
+    initialPage > 0
+      ? {
+          transform: `translate3d(calc(-${initialPage * 100}% - ${initialPage * 0.75}rem), 0, 0)`,
+        }
+      : undefined;
 
   if (currentPage === undefined && uncontrolledPage !== activePage) {
     setUncontrolledPage(activePage);
@@ -93,16 +97,7 @@ export function RecommendationContentCarousel<T>({
           aria-label={ariaLabel}
           className="w-full min-w-0"
         >
-          <CarouselContent
-            className="ml-0 gap-3 touch-pan-y"
-            style={
-              initializeAtCurrentPage && initialPage > 0
-                ? {
-                    transform: `translate3d(calc(-${initialPage * 100}% - ${initialPage * 0.75}rem), 0, 0)`,
-                  }
-                : undefined
-            }
-          >
+          <CarouselContent className="ml-0 gap-3 touch-pan-y" style={initialTrackStyle}>
             {pages.map((page, pageIndex) => (
               <CarouselItem key={pageIndex} className="basis-full pl-0">
                 <div className={cn('flex w-full min-w-0 gap-3', pageClassName)}>
