@@ -103,6 +103,40 @@ export const router = createBrowserRouter([
                   },
                 ],
               },
+              {
+                path: 'pin/register/place',
+                element: <PinRegisterEntryPage />,
+                handle: { mapPresentation: 'covered' },
+              },
+              {
+                path: 'pin/register',
+                element: <PinRegistrationLayout />,
+                handle: { mapPresentation: 'covered' },
+                children: [
+                  {
+                    index: true,
+                    element: <PinRegisterPage />,
+                  },
+                  {
+                    path: 'search',
+                    element: <PinRegisterSearchPage />,
+                  },
+                  {
+                    path: 'confirm',
+                    element: <PinLocationConfirmPage />,
+                  },
+                ],
+              },
+              {
+                path: 'song/list',
+                element: <SongListPage />,
+                handle: { mapPresentation: 'covered' },
+              },
+              {
+                path: 'song/detail/:songId',
+                element: <SongDetailPage />,
+                handle: { mapPresentation: 'covered' },
+              },
             ],
           },
           {
@@ -132,14 +166,6 @@ export const router = createBrowserRouter([
           {
             path: 'pins/:pinId/edit',
             element: <PinEditPage />,
-          },
-          {
-            path: 'song/list',
-            element: <SongListPage />,
-          },
-          {
-            path: 'song/detail/:songId',
-            element: <SongDetailPage />,
           },
           {
             path: 'users/:memberId',
@@ -172,28 +198,6 @@ export const router = createBrowserRouter([
           {
             path: 'my/notifications',
             element: <MyNotificationsPage />,
-          },
-          {
-            path: 'pin/register/place',
-            element: <PinRegisterEntryPage />,
-          },
-          {
-            path: 'pin/register',
-            element: <PinRegistrationLayout />,
-            children: [
-              {
-                index: true,
-                element: <PinRegisterPage />,
-              },
-              {
-                path: 'search',
-                element: <PinRegisterSearchPage />,
-              },
-              {
-                path: 'confirm',
-                element: <PinLocationConfirmPage />,
-              },
-            ],
           },
           {
             path: 'settings',

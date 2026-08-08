@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
@@ -48,6 +48,10 @@ type MapPageProps = {
   onClearMapPlace?: () => void;
   selectedMapPinId: string | null;
   onSelectMapPinChange: (pinId: string | null) => void;
+  isCovered: boolean;
+  savedViewport: MapViewport | null;
+  onSaveViewport: (viewport: MapViewport) => void;
+  onCurrentLocationChange: (coordinate: MapCoordinate) => void;
 };
 
 function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
@@ -83,12 +87,16 @@ const MapPage: React.FC<MapPageProps> = ({
   onClearMapPlace,
   selectedMapPinId,
   onSelectMapPinChange,
+  isCovered,
+  savedViewport,
+  onSaveViewport,
+  onCurrentLocationChange,
 }) => {
   const navigate = useNavigate();
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
-  const [zoom, setZoom] = useState<number>(15);
+  const [zoom, setZoom] = useState<number>(savedViewport?.zoom ?? 15);
   const [mapLoadStatus, setMapLoadStatus] = useState<MapLoadStatus>(
     hasApiKey ? 'loading' : 'error',
   );
@@ -188,7 +196,29 @@ const MapPage: React.FC<MapPageProps> = ({
   const setPinCreationPlace = usePinCreationStore((state) => state.setPlace);
 
   const mapViewerRef = useRef<MapViewerHandle>(null);
-  const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
+  const wasCoveredRef = useRef(isCovered);
+  const {
+    playingKey,
+    toggle: toggleClipPlayback,
+    stop: stopClipPlayback,
+  } = useYouTubeClipPlayer({
+    enabled: !isCovered,
+  });
+
+  useLayoutEffect(() => {
+    const wasCovered = wasCoveredRef.current;
+    wasCoveredRef.current = isCovered;
+
+    if (!wasCovered && isCovered) {
+      const liveViewport = mapViewerRef.current?.captureViewport();
+      if (liveViewport) onSaveViewport(liveViewport);
+      return;
+    }
+
+    if (!wasCovered || isCovered || !savedViewport || mapLoadStatus !== 'ready') return;
+
+    mapViewerRef.current?.restoreViewport(savedViewport);
+  }, [isCovered, mapLoadStatus, onSaveViewport, savedViewport]);
 
   const handlePlayMapPin = useCallback(
     (pinId: string) => {
@@ -207,6 +237,10 @@ const MapPage: React.FC<MapPageProps> = ({
   useEffect(() => {
     stopClipPlayback();
   }, [viewerSelectedMapPinId, stopClipPlayback]);
+
+  useEffect(() => {
+    if (isCovered) stopClipPlayback();
+  }, [isCovered, stopClipPlayback]);
 
   // 목표 좌표 근처 핀을 찾으면(mapPins가 새로 도착할 때마다 재계산) 부모에게 선택을
   // 알린다. 부모 콜백은 렌더 중이 아니라 커밋 이후(effect)에 호출하고, 같은 핀을
@@ -295,6 +329,12 @@ const MapPage: React.FC<MapPageProps> = ({
   const handleCurrentLocationChanged = (coordinate: MapCoordinate) => {
     setCurrentLocation(coordinate);
     setCurrentLocationError(null);
+    onCurrentLocationChange(coordinate);
+  };
+
+  const handleViewportChanged = (nextViewport: MapViewport) => {
+    setViewport(nextViewport);
+    if (!isCovered) onSaveViewport(nextViewport);
   };
 
   // 지도 빈 영역 탭/드래그 시작: 시트를 닫지 않고 가장 작은 스냅으로만 축소한다.
@@ -463,17 +503,19 @@ const MapPage: React.FC<MapPageProps> = ({
       <MapViewer
         ref={mapViewerRef}
         isLoaded={mapLoadStatus === 'ready'}
+        isLocationTrackingDisabled={isCovered}
         zoom={zoom}
+        initialCenter={savedViewport?.center}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
         mapPins={displayMapPins}
         mapClusters={mapClusters}
         selectedMapPinId={viewerSelectedMapPinId}
-        centerOnFirstLocation={!selectedMapPlace}
+        centerOnFirstLocation={!selectedMapPlace && !savedViewport}
         onZoomChanged={handleZoomChange}
         onCurrentLocationChanged={handleCurrentLocationChanged}
         onCurrentLocationError={setCurrentLocationError}
-        onViewportChanged={setViewport}
+        onViewportChanged={handleViewportChanged}
         onSelectMapPin={onSelectMapPinChange}
         onPlayPin={handlePlayMapPin}
         playingMapPinId={playingKey}

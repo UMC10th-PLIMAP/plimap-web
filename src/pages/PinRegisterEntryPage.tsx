@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 
 import LocationIcon from '@/assets/icons/location.svg?react';
 import MapSelectionIcon from '@/assets/icons/map-selection.svg?react';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { PinPlaceSearch } from '@/features/pin/components/PinPlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
+import type { MapOutletContext } from '@/layouts/MapLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
 const MAX_REGISTRATION_DISTANCE_METERS = 500;
@@ -18,11 +19,19 @@ type ValidationToast = {
 
 export default function PinRegisterEntryPage() {
   const navigate = useNavigate();
+  const { currentLocation: mainMapCurrentLocation } = useOutletContext<MapOutletContext>();
   const reset = usePinCreationStore((state) => state.reset);
   const setCandidateCoordinate = usePinCreationStore((state) => state.setCandidateCoordinate);
   const setPlace = usePinCreationStore((state) => state.setPlace);
   const setCurrentLocation = usePinCreationStore((state) => state.setCurrentLocation);
   const currentLocation = usePinCreationStore((state) => state.currentLocation);
+  const availableCurrentLocation = currentLocation ?? mainMapCurrentLocation;
+  const currentLocationOverride = availableCurrentLocation
+    ? {
+        latitude: availableCurrentLocation.lat,
+        longitude: availableCurrentLocation.lng,
+      }
+    : undefined;
   const [validationToast, setValidationToast] = useState<ValidationToast | null>(null);
 
   const handleBack = () => {
@@ -31,7 +40,7 @@ export default function PinRegisterEntryPage() {
   };
 
   const handleMapSelection = () => {
-    const startingCoordinate = currentLocation;
+    const startingCoordinate = availableCurrentLocation;
     reset();
     if (startingCoordinate) {
       setCurrentLocation(startingCoordinate);
@@ -43,11 +52,12 @@ export default function PinRegisterEntryPage() {
   const handlePlaceSelect = (place: PinSearchPlace) => {
     if (place.placeId === undefined) return;
 
-    if (!currentLocation) {
+    if (!availableCurrentLocation) {
       handleValidationError('현재 위치를 확인하고 있어요. 잠시 후 다시 시도해 주세요.');
       return;
     }
 
+    setCurrentLocation(availableCurrentLocation);
     setPlace({
       placeId: place.placeId,
       placeName: place.placeName,
@@ -80,7 +90,8 @@ export default function PinRegisterEntryPage() {
               : null
           }
           onValidationError={handleValidationError}
-          onCurrentLocationChanged={setCurrentLocation}
+          onCurrentLocationChanged={currentLocationOverride ? undefined : setCurrentLocation}
+          currentLocationOverride={currentLocationOverride}
           onPlaceSelect={handlePlaceSelect}
           headerContent={
             <nav

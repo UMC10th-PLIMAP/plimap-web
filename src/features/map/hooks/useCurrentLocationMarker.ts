@@ -31,6 +31,7 @@ type UseCurrentLocationMarkerParams = {
   onCurrentLocationChanged?: (coordinate: MapCoordinate) => void;
   onCurrentLocationError?: (message: string) => void;
   centerOnFirstLocation?: boolean;
+  isTrackingEnabled?: boolean;
 };
 
 /** 현재 위치 마커(방향 쐐기 포함)를 실시간으로 추적/렌더링하고, 재중심 이동 함수를 제공한다. */
@@ -41,6 +42,7 @@ export function useCurrentLocationMarker({
   onCurrentLocationChanged,
   onCurrentLocationError,
   centerOnFirstLocation = true,
+  isTrackingEnabled = true,
 }: UseCurrentLocationMarkerParams) {
   const overlayRef = useRef<CurrentLocationOverlayHandle | null>(null);
   const positionRef = useRef<MapCoordinate | null>(null);
@@ -50,6 +52,7 @@ export function useCurrentLocationMarker({
   const onCurrentLocationChangedRef = useRef(onCurrentLocationChanged);
   const onCurrentLocationErrorRef = useRef(onCurrentLocationError);
   const centerOnFirstLocationRef = useRef(centerOnFirstLocation);
+  const isTrackingEnabledRef = useRef(isTrackingEnabled);
 
   useEffect(() => {
     onCenterChangedRef.current = onCenterChanged;
@@ -67,6 +70,10 @@ export function useCurrentLocationMarker({
     centerOnFirstLocationRef.current = centerOnFirstLocation;
   }, [centerOnFirstLocation]);
 
+  useEffect(() => {
+    isTrackingEnabledRef.current = isTrackingEnabled;
+  }, [isTrackingEnabled]);
+
   // --- 기기 방향 이벤트 처리 (방향 쐐기 회전) ---
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
     const heading = getCompassHeading(event);
@@ -77,11 +84,17 @@ export function useCurrentLocationMarker({
   // --- 나침반 리스너 등록 (iOS는 사용자 제스처 안에서 권한 요청 후에만 이벤트가 발생함) ---
   const compassRegisteredRef = useRef(false);
 
+  const disableCompass = useCallback(() => {
+    window.removeEventListener('deviceorientationabsolute', handleOrientation);
+    window.removeEventListener('deviceorientation', handleOrientation);
+    compassRegisteredRef.current = false;
+  }, [handleOrientation]);
+
   const enableCompassIfNeeded = useCallback(() => {
-    if (compassRegisteredRef.current) return;
+    if (!isTrackingEnabledRef.current || compassRegisteredRef.current) return;
 
     const register = () => {
-      if (compassRegisteredRef.current) return;
+      if (!isTrackingEnabledRef.current || compassRegisteredRef.current) return;
       compassRegisteredRef.current = true;
       window.addEventListener('deviceorientationabsolute', handleOrientation);
       window.addEventListener('deviceorientation', handleOrientation);
@@ -107,16 +120,33 @@ export function useCurrentLocationMarker({
   }, [handleOrientation]);
 
   useEffect(() => {
-    return () => {
-      window.removeEventListener('deviceorientationabsolute', handleOrientation);
-      window.removeEventListener('deviceorientation', handleOrientation);
-    };
-  }, [handleOrientation]);
+    if (!isTrackingEnabled) {
+      disableCompass();
+      return;
+    }
+    if (overlayRef.current) enableCompassIfNeeded();
+  }, [disableCompass, enableCompassIfNeeded, isTrackingEnabled]);
+
+  useEffect(() => disableCompass, [disableCompass]);
+
+  const disposeLocationState = useCallback(() => {
+    overlayRef.current?.setMap(null);
+    overlayRef.current = null;
+    positionRef.current = null;
+    bestAccuracyRef.current = Infinity;
+    lastAcceptedAtRef.current = 0;
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) disposeLocationState();
+  }, [disposeLocationState, isLoaded]);
+
+  useEffect(() => disposeLocationState, [disposeLocationState]);
 
   // --- 브라우저 위치 조회 및 내 위치 마커 생성 (실시간 트래킹) ---
   useEffect(() => {
     const mapsApi = window.google?.maps;
-    if (!isLoaded || !mapsApi || !navigator.geolocation) return;
+    if (!isLoaded || !isTrackingEnabled || !mapsApi || !navigator.geolocation) return;
 
     let ignore = false;
 
@@ -174,16 +204,8 @@ export function useCurrentLocationMarker({
     return () => {
       ignore = true;
       navigator.geolocation.clearWatch(watchId);
-
-      // 이펙트가 unmount 없이 재실행될 때(예: isLoaded가 껐다 켜지는 경우) 다음
-      // 실행이 이전 오버레이/위치/정확도를 이어받지 않도록 완전히 초기화한다.
-      overlayRef.current?.setMap(null);
-      overlayRef.current = null;
-      positionRef.current = null;
-      bestAccuracyRef.current = Infinity;
-      lastAcceptedAtRef.current = 0;
     };
-  }, [isLoaded, enableCompassIfNeeded, mapInstanceRef]);
+  }, [isLoaded, isTrackingEnabled, enableCompassIfNeeded, mapInstanceRef]);
 
   // --- "현재 위치" 버튼에서 호출할 재중심 이동 ---
   const recenterToCurrentLocation = useCallback(() => {
