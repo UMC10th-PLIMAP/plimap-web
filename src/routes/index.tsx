@@ -76,32 +76,32 @@ export const router = createBrowserRouter([
         element: <AuthGuard />,
         children: [
           {
-            element: <BottomNavLayout />,
+            element: <MapLayout />,
+            handle: { bottomNavItem: 'plimap' },
             children: [
               {
-                path: 'home',
-                element: <HomePage />,
-                handle: { bottomNavItem: 'home' },
-              },
-              {
-                element: <MapLayout />,
-                handle: { bottomNavItem: 'plimap' },
+                element: <BottomNavLayout />,
                 children: [
                   {
                     index: true,
                     element: null,
                   },
                   {
+                    path: 'home',
+                    element: <HomePage />,
+                    handle: { bottomNavItem: 'home', mapPresentation: 'covered' },
+                  },
+                  {
                     path: 'pin/search',
                     element: <PinPlaceSearchPage />,
-                    handle: { mapOverlay: true },
+                    handle: { mapPresentation: 'overlay' },
+                  },
+                  {
+                    path: 'my',
+                    element: <MyProfilePage />,
+                    handle: { bottomNavItem: 'my', mapPresentation: 'covered' },
                   },
                 ],
-              },
-              {
-                path: 'my',
-                element: <MyProfilePage />,
-                handle: { bottomNavItem: 'my' },
               },
             ],
           },
