@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Outlet, useLocation, useMatch } from 'react-router-dom';
+import { Outlet, useLocation, useMatch, useOutletContext } from 'react-router-dom';
 
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
 import { useMapPins } from '@/features/map/queries/useMapPins';
@@ -7,6 +7,7 @@ import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '@/features
 import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceMeters';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import type { PinRadiusCenter } from '@/features/pin/components/PinRadiusOverlay';
+import type { MapOutletContext } from '@/layouts/MapLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
 const PIN_REGISTRATION_RADIUS_METERS = 500;
@@ -14,6 +15,7 @@ const PIN_REGISTRATION_RADIUS_METERS = 500;
 export type PinRegistrationMapStatus = 'loading' | 'ready' | 'error';
 
 export type PinRegistrationOutletContext = {
+  mainMapCurrentLocation: MapCoordinate | null;
   mapStatus: PinRegistrationMapStatus;
   zoom: number;
   radiusCenter: PinRadiusCenter | null;
@@ -23,6 +25,7 @@ export type PinRegistrationOutletContext = {
 };
 
 export default function PinRegistrationLayout() {
+  const { currentLocation: mainMapCurrentLocation } = useOutletContext<MapOutletContext>();
   const location = useLocation();
   const mapViewerRef = useRef<MapViewerHandle>(null);
   const candidateCoordinate = usePinCreationStore((state) => state.candidateCoordinate);
@@ -41,13 +44,25 @@ export default function PinRegistrationLayout() {
   const [radiusCenter, setRadiusCenter] = useState<PinRadiusCenter | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isMapInteractionDisabled, setMapInteractionDisabled] = useState(false);
-  const mapPinsQuery = useMapPins(viewport);
 
+  const isEntryStage = useMatch('/app/pin/register/place') !== null;
   const isSelectionStage = useMatch('/app/pin/register') !== null;
   const isConfirmStage = useMatch('/app/pin/register/confirm') !== null;
+  const mapPinsQuery = useMapPins(isEntryStage ? null : viewport);
   const isMapInteractionLocked = isMapInteractionDisabled || isConfirmStage;
+  const stageTargetCoordinate = isConfirmStage
+    ? place?.coordinates
+    : isSelectionStage
+      ? candidateCoordinate
+      : isEntryStage
+        ? (currentLocation ?? mainMapCurrentLocation)
+        : null;
   const initialCenter =
-    candidateCoordinate ?? place?.coordinates ?? currentLocation ?? DEFAULT_CENTER;
+    candidateCoordinate ??
+    place?.coordinates ??
+    currentLocation ??
+    mainMapCurrentLocation ??
+    DEFAULT_CENTER;
   const isOutsideAllowedRadius =
     currentLocation !== null &&
     candidateCoordinate !== null &&
@@ -72,21 +87,13 @@ export default function PinRegistrationLayout() {
   }, [mapLoadAttempt]);
 
   useEffect(() => {
-    if (mapStatus !== 'ready') return;
+    if (mapStatus !== 'ready' || !stageTargetCoordinate) return;
 
-    const stageKey = `${mapStatus}:${location.pathname}`;
+    const stageKey = location.pathname;
     if (lastPannedStageRef.current === stageKey) return;
     lastPannedStageRef.current = stageKey;
-
-    const targetCoordinate = isConfirmStage
-      ? place?.coordinates
-      : isSelectionStage
-        ? candidateCoordinate
-        : null;
-    if (targetCoordinate) {
-      mapViewerRef.current?.panTo(targetCoordinate, { notifyCenterChanged: false });
-    }
-  }, [candidateCoordinate, isConfirmStage, isSelectionStage, location.pathname, mapStatus, place]);
+    mapViewerRef.current?.panTo(stageTargetCoordinate, { notifyCenterChanged: false });
+  }, [location.pathname, mapStatus, stageTargetCoordinate]);
 
   const handleRetryMapLoad = () => {
     document.getElementById('google-maps-script')?.remove();
@@ -100,15 +107,12 @@ export default function PinRegistrationLayout() {
     if (isSelectionStage && !candidateCoordinate) setCandidateCoordinate(coordinate);
   };
 
-  const handleViewportChanged = (nextViewport: MapViewport) => {
-    setViewport(nextViewport);
-  };
-
   const handleCenterChanged = (coordinate: MapCoordinate) => {
     if (isSelectionStage && currentLocation) setCandidateCoordinate(coordinate);
   };
 
   const outletContext = {
+    mainMapCurrentLocation,
     mapStatus,
     zoom,
     radiusCenter,
@@ -122,7 +126,8 @@ export default function PinRegistrationLayout() {
       <MapViewer
         ref={mapViewerRef}
         isLoaded={mapStatus === 'ready'}
-        isInteractionDisabled={isMapInteractionLocked}
+        isInteractionDisabled={isEntryStage || isMapInteractionLocked}
+        isLocationTrackingDisabled={isEntryStage}
         zoom={zoom}
         initialCenter={initialCenter}
         centerOnFirstLocation={!candidateCoordinate}
@@ -136,7 +141,7 @@ export default function PinRegistrationLayout() {
         onCurrentLocationChanged={handleCurrentLocationChanged}
         onCurrentLocationError={setLocationError}
         onCenterChanged={handleCenterChanged}
-        onViewportChanged={handleViewportChanged}
+        onViewportChanged={setViewport}
         onProjectionChanged={setRadiusCenter}
       />
 

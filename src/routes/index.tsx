@@ -104,15 +104,14 @@ export const router = createBrowserRouter([
                 ],
               },
               {
-                path: 'pin/register/place',
-                element: <PinRegisterEntryPage />,
-                handle: { mapPresentation: 'covered' },
-              },
-              {
                 path: 'pin/register',
                 element: <PinRegistrationLayout />,
                 handle: { mapPresentation: 'covered' },
                 children: [
+                  {
+                    path: 'place',
+                    element: <PinRegisterEntryPage />,
+                  },
                   {
                     index: true,
                     element: <PinRegisterPage />,

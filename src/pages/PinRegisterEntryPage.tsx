@@ -6,7 +6,7 @@ import MapSelectionIcon from '@/assets/icons/map-selection.svg?react';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { PinPlaceSearch } from '@/features/pin/components/PinPlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
-import type { MapOutletContext } from '@/layouts/MapLayout';
+import type { PinRegistrationOutletContext } from '@/layouts/PinRegistrationLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
 const MAX_REGISTRATION_DISTANCE_METERS = 500;
@@ -19,7 +19,7 @@ type ValidationToast = {
 
 export default function PinRegisterEntryPage() {
   const navigate = useNavigate();
-  const { currentLocation: mainMapCurrentLocation } = useOutletContext<MapOutletContext>();
+  const { mainMapCurrentLocation } = useOutletContext<PinRegistrationOutletContext>();
   const reset = usePinCreationStore((state) => state.reset);
   const setCandidateCoordinate = usePinCreationStore((state) => state.setCandidateCoordinate);
   const setPlace = usePinCreationStore((state) => state.setPlace);
@@ -79,7 +79,7 @@ export default function PinRegisterEntryPage() {
 
   return (
     <ToastProvider duration={VALIDATION_TOAST_DURATION_MS}>
-      <div className="relative h-full">
+      <div className="pointer-events-auto relative h-full">
         <PinPlaceSearch
           autoFocus={false}
           placeholder="내가 등록할 장소는?"
