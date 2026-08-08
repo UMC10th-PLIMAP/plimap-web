@@ -39,11 +39,11 @@ export function RecommendationContentCarousel<T>({
     items.slice(index * pageSize, (index + 1) * pageSize),
   );
   const [uncontrolledPage, setUncontrolledPage] = useState(0);
-  const lastPageRef = useRef(0);
   const activePage = Math.min(
     Math.max(currentPage ?? uncontrolledPage, 0),
     Math.max(pageCount - 1, 0),
   );
+  const lastPageRef = useRef(activePage);
   const [initialPage] = useState(activePage);
   const initialTrackStyle =
     initialPage > 0

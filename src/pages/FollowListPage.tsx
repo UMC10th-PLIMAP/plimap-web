@@ -57,7 +57,8 @@ export default function FollowListPage() {
   const hasInvalidMemberId = memberIdParam !== undefined && otherMemberId === undefined;
   const isOtherMember = otherMemberId !== undefined;
 
-  const { data: myProfile } = useMyProfile();
+  const myProfileQuery = useMyProfile();
+  const myProfile = myProfileQuery.data;
   const { data: otherProfile } = useOtherMemberProfile(otherMemberId);
 
   const targetMemberId = hasInvalidMemberId
@@ -97,6 +98,12 @@ export default function FollowListPage() {
   } = useInfiniteFollowList({ memberId: targetMemberId, tab });
 
   const users = followList?.pages.flatMap((page) => page.data) ?? [];
+  const isTargetProfilePending = !isOtherMember && myProfileQuery.isPending;
+  const isTargetProfileError =
+    !isOtherMember &&
+    (myProfileQuery.isError || (!myProfileQuery.isPending && targetMemberId === undefined));
+  const isInitialListPending =
+    isTargetProfilePending || (targetMemberId !== undefined && isPending);
 
   const trimmedKeyword = keyword.trim();
   const filteredUsers = trimmedKeyword
@@ -176,7 +183,18 @@ export default function FollowListPage() {
           onClear={() => setKeyword('')}
         />
       </div>
-      {isPending ? (
+      {isTargetProfileError ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+          <p className="body-15-r text-grayscale-500">팔로우 목록을 불러오지 못했어요.</p>
+          <button
+            type="button"
+            onClick={() => void myProfileQuery.refetch()}
+            className="rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100"
+          >
+            다시 시도
+          </button>
+        </div>
+      ) : isInitialListPending ? (
         <FollowListSkeleton />
       ) : users.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-[2px] text-center">
