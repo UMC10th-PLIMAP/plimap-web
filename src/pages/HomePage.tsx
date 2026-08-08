@@ -6,7 +6,7 @@ import BellIcon from '@/assets/home/bell.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
-import { HomeSkeleton } from '@/components/skeletons/HomeSkeleton';
+import { HomeHotPlaceCarouselSkeleton, HomeSkeleton } from '@/components/skeletons/HomeSkeleton';
 import { Chip } from '@/components/ui/chip';
 import { MOCK_FRIEND_PINS, MOCK_HOME_USER } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
@@ -130,7 +130,7 @@ export default function HomePage() {
   const isHomePending =
     myProfileQuery.isPending ||
     currentPositionQuery.isPending ||
-    (!currentPositionQuery.isError && (popularPlacesQuery.isPending || savedPlacesQuery.isPending));
+    (!currentPositionQuery.isError && savedPlacesQuery.isPending);
 
   if (isHomePending) {
     return <HomeSkeleton />;
@@ -233,12 +233,8 @@ export default function HomePage() {
                 위치 정보를 확인할 수 없어요.
               </p>
             ) : popularPlacesQuery.isPending ? (
-              <div
-                role="status"
-                aria-label="인기 장소 불러오는 중"
-                className="flex h-[171px] items-center justify-center"
-              >
-                <span className="size-6 animate-spin rounded-full border-2 border-grayscale-700 border-t-neon-2" />
+              <div role="status" aria-label="인기 장소 불러오는 중">
+                <HomeHotPlaceCarouselSkeleton />
               </div>
             ) : popularPlacesQuery.isError ? (
               <div className="flex flex-col items-center gap-3 py-6 text-center">

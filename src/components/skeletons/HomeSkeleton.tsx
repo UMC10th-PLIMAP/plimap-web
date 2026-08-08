@@ -17,6 +17,19 @@ function PaginationSkeleton() {
   );
 }
 
+export function HomeHotPlaceCarouselSkeleton() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3">
+        {Array.from({ length: HOT_PLACE_SKELETON_COUNT }, (_, index) => (
+          <Skeleton key={index} className="aspect-square w-full rounded-xl" />
+        ))}
+      </div>
+      <PaginationSkeleton />
+    </div>
+  );
+}
+
 export function HomeSkeleton() {
   return (
     <main
@@ -65,13 +78,8 @@ export function HomeSkeleton() {
             <Skeleton className="h-[41px] w-[101px] rounded-full" />
             <Skeleton className="h-[41px] w-[101px] rounded-full" />
           </div>
-          <div className="flex flex-col gap-4 px-[19px]">
-            <div className="grid grid-cols-2 gap-3">
-              {Array.from({ length: HOT_PLACE_SKELETON_COUNT }, (_, index) => (
-                <Skeleton key={index} className="aspect-square w-full rounded-xl" />
-              ))}
-            </div>
-            <PaginationSkeleton />
+          <div className="px-[19px]">
+            <HomeHotPlaceCarouselSkeleton />
           </div>
         </section>
 
