@@ -6,6 +6,7 @@ import BellIcon from '@/assets/home/bell.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
+import { HomeHotPlaceCarouselSkeleton, HomeSkeleton } from '@/components/skeletons/HomeSkeleton';
 import { Chip } from '@/components/ui/chip';
 import { MOCK_FRIEND_PINS, MOCK_HOME_USER } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
@@ -16,17 +17,7 @@ import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/querie
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
-function HomeLoadingState() {
-  return (
-    <main
-      className="flex min-h-full shrink-0 items-center justify-center bg-pli-black-100"
-      role="status"
-      aria-label="홈 화면 불러오는 중"
-    >
-      <span className="size-8 animate-spin rounded-full border-2 border-grayscale-700 border-t-neon-2" />
-    </main>
-  );
-}
+type HotPlaceFilter = 'nearby' | 'popular';
 
 function HomeErrorState({ onRetry }: { onRetry: () => void }) {
   return (
@@ -123,7 +114,11 @@ function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [hotPlaceFilter, setHotPlaceFilter] = useState<'nearby' | 'popular'>('nearby');
+  const [hotPlaceFilter, setHotPlaceFilter] = useState<HotPlaceFilter>('nearby');
+  const [hotPlacePages, setHotPlacePages] = useState<Record<HotPlaceFilter, number>>({
+    nearby: 0,
+    popular: 0,
+  });
   const myProfileQuery = useMyProfile();
   const currentPositionQuery = useCurrentPosition();
   const popularPlacesQuery = usePopularPlaces({
@@ -138,9 +133,13 @@ export default function HomePage() {
   });
   const toggleBookmarkMutation = useTogglePlaceBookmark();
   const savedPlaces = savedPlacesQuery.data?.items ?? [];
+  const isHomePending =
+    myProfileQuery.isPending ||
+    currentPositionQuery.isPending ||
+    (!currentPositionQuery.isError && savedPlacesQuery.isPending);
 
-  if (myProfileQuery.isPending) {
-    return <HomeLoadingState />;
+  if (isHomePending) {
+    return <HomeSkeleton />;
   }
 
   if (!myProfileQuery.data) {
@@ -240,12 +239,8 @@ export default function HomePage() {
                 위치 정보를 확인할 수 없어요.
               </p>
             ) : popularPlacesQuery.isPending ? (
-              <div
-                role="status"
-                aria-label="인기 장소 불러오는 중"
-                className="flex h-[171px] items-center justify-center"
-              >
-                <span className="size-6 animate-spin rounded-full border-2 border-grayscale-700 border-t-neon-2" />
+              <div role="status" aria-label="인기 장소 불러오는 중">
+                <HomeHotPlaceCarouselSkeleton />
               </div>
             ) : popularPlacesQuery.isError ? (
               <div className="flex flex-col items-center gap-3 py-6 text-center">
@@ -260,6 +255,7 @@ export default function HomePage() {
               </div>
             ) : (
               <RecommendationContentCarousel
+                key={hotPlaceFilter}
                 ariaLabel="내 주변 인기 장소"
                 items={popularPlaces}
                 getItemKey={(place) => place.placeId}
@@ -267,6 +263,10 @@ export default function HomePage() {
                 showPagination
                 pageClassName="grid grid-cols-2"
                 itemClassName="aspect-square self-start"
+                currentPage={hotPlacePages[hotPlaceFilter]}
+                onPageChange={(page) =>
+                  setHotPlacePages((pages) => ({ ...pages, [hotPlaceFilter]: page }))
+                }
                 renderItem={(place) => <HotPlaceCard place={place} />}
               />
             )}
