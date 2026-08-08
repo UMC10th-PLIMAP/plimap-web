@@ -46,7 +46,8 @@ export default function PinRegistrationLayout() {
   const isSelectionStage = useMatch('/app/pin/register') !== null;
   const isConfirmStage = useMatch('/app/pin/register/confirm') !== null;
   const isMapInteractionLocked = isMapInteractionDisabled || isConfirmStage;
-  const initialCenter = candidateCoordinate ?? place?.coordinates ?? DEFAULT_CENTER;
+  const initialCenter =
+    candidateCoordinate ?? place?.coordinates ?? currentLocation ?? DEFAULT_CENTER;
   const isOutsideAllowedRadius =
     currentLocation !== null &&
     candidateCoordinate !== null &&
@@ -96,6 +97,7 @@ export default function PinRegistrationLayout() {
   const handleCurrentLocationChanged = (coordinate: MapCoordinate) => {
     setLocationError(null);
     setCurrentLocation(coordinate);
+    if (isSelectionStage && !candidateCoordinate) setCandidateCoordinate(coordinate);
   };
 
   const handleViewportChanged = (nextViewport: MapViewport) => {
@@ -103,7 +105,7 @@ export default function PinRegistrationLayout() {
   };
 
   const handleCenterChanged = (coordinate: MapCoordinate) => {
-    if (isSelectionStage) setCandidateCoordinate(coordinate);
+    if (isSelectionStage && currentLocation) setCandidateCoordinate(coordinate);
   };
 
   const outletContext = {

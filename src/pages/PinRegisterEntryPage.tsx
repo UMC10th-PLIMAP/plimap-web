@@ -19,6 +19,7 @@ type ValidationToast = {
 export default function PinRegisterEntryPage() {
   const navigate = useNavigate();
   const reset = usePinCreationStore((state) => state.reset);
+  const setCandidateCoordinate = usePinCreationStore((state) => state.setCandidateCoordinate);
   const setPlace = usePinCreationStore((state) => state.setPlace);
   const setCurrentLocation = usePinCreationStore((state) => state.setCurrentLocation);
   const currentLocation = usePinCreationStore((state) => state.currentLocation);
@@ -30,7 +31,12 @@ export default function PinRegisterEntryPage() {
   };
 
   const handleMapSelection = () => {
+    const startingCoordinate = currentLocation;
     reset();
+    if (startingCoordinate) {
+      setCurrentLocation(startingCoordinate);
+      setCandidateCoordinate(startingCoordinate);
+    }
     navigate('/app/pin/register');
   };
 
