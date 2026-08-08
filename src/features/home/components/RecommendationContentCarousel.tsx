@@ -17,6 +17,7 @@ type RecommendationContentCarouselProps<T> = {
   itemsPerPage?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
+  initializeAtCurrentPage?: boolean;
 };
 
 export function RecommendationContentCarousel<T>({
@@ -32,6 +33,7 @@ export function RecommendationContentCarousel<T>({
   itemsPerPage = 1,
   currentPage,
   onPageChange,
+  initializeAtCurrentPage = false,
 }: RecommendationContentCarouselProps<T>) {
   const pageSize = Math.max(1, Math.floor(itemsPerPage));
   const pageCount = Math.ceil(items.length / pageSize);
@@ -44,6 +46,7 @@ export function RecommendationContentCarousel<T>({
     Math.max(currentPage ?? uncontrolledPage, 0),
     Math.max(pageCount - 1, 0),
   );
+  const [initialPage] = useState(activePage);
 
   if (currentPage === undefined && uncontrolledPage !== activePage) {
     setUncontrolledPage(activePage);
@@ -58,14 +61,15 @@ export function RecommendationContentCarousel<T>({
       const nextPage = Math.min(Math.max(page, 0), pageCount - 1);
       const pageChanged = lastPageRef.current !== nextPage;
       const needsUncontrolledSync = currentPage === undefined && uncontrolledPage !== nextPage;
+      const needsControlledSync = currentPage !== undefined && currentPage !== nextPage;
 
-      if (!pageChanged && !needsUncontrolledSync) return;
+      if (!pageChanged && !needsUncontrolledSync && !needsControlledSync) return;
 
       lastPageRef.current = nextPage;
       if (needsUncontrolledSync) {
         setUncontrolledPage(nextPage);
       }
-      if (pageChanged) onPageChange?.(nextPage);
+      if (pageChanged || needsControlledSync) onPageChange?.(nextPage);
     },
     [currentPage, onPageChange, pageCount, uncontrolledPage],
   );
@@ -89,7 +93,16 @@ export function RecommendationContentCarousel<T>({
           aria-label={ariaLabel}
           className="w-full min-w-0"
         >
-          <CarouselContent className="ml-0 gap-3 touch-pan-y">
+          <CarouselContent
+            className="ml-0 gap-3 touch-pan-y"
+            style={
+              initializeAtCurrentPage && initialPage > 0
+                ? {
+                    transform: `translate3d(calc(-${initialPage * 100}% - ${initialPage * 0.75}rem), 0, 0)`,
+                  }
+                : undefined
+            }
+          >
             {pages.map((page, pageIndex) => (
               <CarouselItem key={pageIndex} className="basis-full pl-0">
                 <div className={cn('flex w-full min-w-0 gap-3', pageClassName)}>

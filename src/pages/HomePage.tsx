@@ -17,6 +17,8 @@ import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/querie
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
+type HotPlaceFilter = 'nearby' | 'popular';
+
 function HomeErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <main className="flex min-h-full shrink-0 flex-col items-center justify-center gap-4 bg-pli-black-100 px-6 text-center">
@@ -112,7 +114,11 @@ function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [hotPlaceFilter, setHotPlaceFilter] = useState<'nearby' | 'popular'>('nearby');
+  const [hotPlaceFilter, setHotPlaceFilter] = useState<HotPlaceFilter>('nearby');
+  const [hotPlacePages, setHotPlacePages] = useState<Record<HotPlaceFilter, number>>({
+    nearby: 0,
+    popular: 0,
+  });
   const myProfileQuery = useMyProfile();
   const currentPositionQuery = useCurrentPosition();
   const popularPlacesQuery = usePopularPlaces({
@@ -249,6 +255,7 @@ export default function HomePage() {
               </div>
             ) : (
               <RecommendationContentCarousel
+                key={hotPlaceFilter}
                 ariaLabel="내 주변 인기 장소"
                 items={popularPlaces}
                 getItemKey={(place) => place.placeId}
@@ -256,6 +263,11 @@ export default function HomePage() {
                 showPagination
                 pageClassName="grid grid-cols-2"
                 itemClassName="aspect-square self-start"
+                initializeAtCurrentPage
+                currentPage={hotPlacePages[hotPlaceFilter]}
+                onPageChange={(page) =>
+                  setHotPlacePages((pages) => ({ ...pages, [hotPlaceFilter]: page }))
+                }
                 renderItem={(place) => <HotPlaceCard place={place} />}
               />
             )}
