@@ -42,7 +42,7 @@ export function HomeSkeleton() {
         className="absolute inset-x-0 top-0 h-[calc(env(safe-area-inset-top)+331px)] bg-pli-black-85"
       />
 
-      <div className="relative flex flex-col gap-[30px] pt-[calc(env(safe-area-inset-top)+2px)]">
+      <div className="relative flex flex-col gap-10 pt-[calc(env(safe-area-inset-top)+2px)]">
         <section>
           <header className="flex h-14 items-center justify-between px-4">
             <PlimapLogo aria-label="PLIMAP" className="h-[30px] w-auto" />
@@ -70,10 +70,8 @@ export function HomeSkeleton() {
           </div>
         </section>
 
-        <Skeleton className="mx-4 h-[86px] rounded-xl" />
-
         <section className="flex flex-col gap-4">
-          <Skeleton className="ml-4 h-7 w-[217px] rounded-sm" />
+          <Skeleton className="mx-4 h-7 w-[217px] rounded-sm" />
           <div className="flex gap-4 px-[19px]">
             <Skeleton className="h-[41px] w-[101px] rounded-full" />
             <Skeleton className="h-[41px] w-[101px] rounded-full" />
