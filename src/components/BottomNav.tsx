@@ -33,7 +33,7 @@ export function BottomNav({ activeId, onTabChange, children }: BottomNavProps) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-[402px] flex-col items-center gap-5 px-4 pb-[calc(env(safe-area-inset-bottom)+24px)]">
       {children ? (
-        <div className="pointer-events-auto flex w-full justify-end pr-[15px]">{children}</div>
+        <div className="pointer-events-none flex w-full justify-end pr-[15px]">{children}</div>
       ) : null}
       <nav
         aria-label="하단 내비게이션"

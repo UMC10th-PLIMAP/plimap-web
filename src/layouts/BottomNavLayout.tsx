@@ -37,7 +37,7 @@ export default function BottomNavLayout() {
                 resetPinCreation();
                 navigate('/app/pin/register/place');
               }}
-              className="flex size-16 items-center justify-center rounded-full bg-gradient-neon text-grayscale-1200 shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
+              className="pointer-events-auto flex size-16 items-center justify-center rounded-full bg-gradient-neon text-grayscale-1200 shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
             >
               <PlusIcon className="size-7" />
             </button>

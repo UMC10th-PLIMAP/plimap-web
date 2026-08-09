@@ -14,9 +14,9 @@ export const createCurrentLocationOverlay = (
   container.style.pointerEvents = 'none';
   container.innerHTML = `
     <svg width="48" height="48" viewBox="-24 -24 48 48">
+      <circle class="current-location-pulse" cx="0" cy="0" r="9" fill="${color}" />
       <path class="heading-wedge" d="M -6,-16 L 0,-23 L 6,-16 Z" fill="${color}"
         stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round" transform="rotate(0)" />
-      <circle cx="0" cy="0" r="20" fill="${color}" fill-opacity="0.25" />
       <circle cx="0" cy="0" r="12" fill="#ffffff" />
       <circle cx="0" cy="0" r="9" fill="${color}" />
     </svg>

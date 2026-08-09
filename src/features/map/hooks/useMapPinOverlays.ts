@@ -80,7 +80,17 @@ export function useMapPinOverlays({
     const selectedId = selectedMapPinIdRef.current;
     const playingId = playingMapPinIdRef.current;
 
-    mapPinOverlaysRef.current = mapPins.map((pin) => {
+    const prevById = new Map(mapPinOverlaysRef.current.map(({ id, entry }) => [id, entry]));
+    const nextEntries: { id: string; entry: MapPinOverlayEntry }[] = [];
+
+    mapPins.forEach((pin) => {
+      const existing = prevById.get(pin.id);
+      if (existing) {
+        prevById.delete(pin.id);
+        nextEntries.push({ id: pin.id, entry: existing });
+        return;
+      }
+
       const entry = createMapPinOverlay({
         position: { lat: pin.lat, lng: pin.lng },
         zIndex: pin.id === selectedId ? 200 : 100,
@@ -100,15 +110,20 @@ export function useMapPinOverlays({
         ),
       });
       entry.overlay.setMap(map);
-
-      return { id: pin.id, entry };
+      nextEntries.push({ id: pin.id, entry });
     });
 
+    prevById.forEach((entry) => disposeMapPinOverlay(entry));
+    mapPinOverlaysRef.current = nextEntries;
+  }, [isLoaded, mapPins, mapInstanceRef]);
+
+  // 언마운트될 때만 정리한다 - 위 이펙트는 재실행마다 자체적으로 diff해서 정리한다.
+  useEffect(() => {
     return () => {
       mapPinOverlaysRef.current.forEach(({ entry }) => disposeMapPinOverlay(entry));
       mapPinOverlaysRef.current = [];
     };
-  }, [isLoaded, mapPins, mapInstanceRef]);
+  }, []);
 
   // --- 선택된 지도 핀 강조 / 재생 상태 ---
   useEffect(() => {
