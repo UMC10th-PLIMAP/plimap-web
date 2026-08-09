@@ -57,7 +57,7 @@ export function MyAllPinsCard({ pin, onClick, onMoreClick }: MyAllPinsCardProps)
       {pin.content ? <p className="pt-[13px] body-15-r text-grayscale-300">{pin.content}</p> : null}
 
       {pin.tags.length > 0 ? (
-        <div className="pt-1 flex flex-wrap">
+        <div className="pt-1 flex flex-wrap gap-2">
           {pin.tags.map((tag) => (
             <span key={tag} className="body-15-m text-grayscale-700">
               #{tag}
