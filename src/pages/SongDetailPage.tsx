@@ -469,11 +469,11 @@ export default function SongDetailPage() {
   const waveformPeaks = MOCK_WAVEFORM_PEAKS;
   const durationMs = preparedTrack?.durationMs ?? MOCK_PREVIEW_DURATION * 1_000;
   const hasRequiredTags = selectedTags.length >= MIN_TAG_COUNT;
-  const tagErrorMessage = hasRequiredTags
-    ? hasTagLimitError
+  const tagErrorMessage = !hasRequiredTags
+    ? MIN_TAG_ERROR_MESSAGE
+    : hasTagLimitError
       ? MAX_TAG_ERROR_MESSAGE
-      : null
-    : MIN_TAG_ERROR_MESSAGE;
+      : null;
 
   const showCreationToast = (message: string) => {
     setCreationToast((currentToast) => ({
@@ -545,6 +545,9 @@ export default function SongDetailPage() {
 
     setSelectedTags((currentTags) => [...currentTags, tag]);
     setHasTagLimitError(false);
+    setCreationToast((currentToast) =>
+      currentToast?.message === MIN_TAG_ERROR_MESSAGE ? null : currentToast,
+    );
   };
 
   if (!place || !currentLocation) {
