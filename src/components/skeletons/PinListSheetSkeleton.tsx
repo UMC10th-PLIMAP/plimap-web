@@ -1,8 +1,12 @@
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
+import CloseIcon from '@/assets/icons/close.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useBottomSheet } from '@/components/ui/BottomSheet';
 
 export function PinListSheetSkeleton() {
+  const { isFullPage } = useBottomSheet();
+
   return (
     <div
       role="status"
@@ -19,9 +23,17 @@ export function PinListSheetSkeleton() {
             <Skeleton className="h-3 w-18 rounded-sm" />
           </div>
         </div>
-        <div className="flex size-11 items-center justify-center rounded-full bg-pli-black-75">
-          <BookmarkIcon className="size-7 text-grayscale-200" aria-hidden />
-        </div>
+        {/* 풀페이지 상태에선 아이콘 숨김 */}
+        {!isFullPage ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pli-black-75">
+              <BookmarkIcon className="size-7 text-grayscale-200" aria-hidden />
+            </div>
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pli-black-75">
+              <CloseIcon className="size-6 text-grayscale-200" aria-hidden />
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-6 h-10 bg-pli-black-75 rounded-xl  py-1 px-[4.5px]">
