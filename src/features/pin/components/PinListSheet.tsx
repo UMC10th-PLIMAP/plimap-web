@@ -269,7 +269,7 @@ function PinListContent({
         ) : null}
       </BottomSheet.Header>
 
-      <BottomSheet.Content className={cn('mt-5 px-4', !hasPins && 'flex flex-col')}>
+      <BottomSheet.Content className={cn('mt-5 px-4 scrollbar-hide', !hasPins && 'flex flex-col')}>
         {hasPins ? (
           <ul className="flex flex-col gap-4">
             {pins.map((pin) => (

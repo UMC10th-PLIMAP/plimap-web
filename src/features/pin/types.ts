@@ -290,4 +290,9 @@ export type PinSearchPlace = PlaceResult & {
   searchSource?: PlaceSearchSource;
   /** 선택 당시 입력창에 있던 검색어. 지도 검색 화면 재진입 시 그대로 복원한다. */
   searchQuery?: string;
+  /**
+   * 찜한 노래/내 모든 핀 등에서 지도로 진입했을 때
+   * 상단 검색창 대신 ‘뒤로가기’를 표시한다.
+   */
+  showMapBackButton?: boolean;
 };
