@@ -86,6 +86,12 @@ function findFocusedPlaceTrackId(focusedFeedPin?: FocusedFeedPin) {
   return String(focusedFeedPin.placeTrackId);
 }
 
+const PLACE_NAME_MAX_LENGTH = 14;
+
+function truncatePlaceName(name: string) {
+  return name.length > PLACE_NAME_MAX_LENGTH ? `${name.slice(0, PLACE_NAME_MAX_LENGTH)}...` : name;
+}
+
 type PinListContentProps = {
   place: PlaceInfo;
   pins: Pin[];
@@ -151,12 +157,13 @@ function PinListContent({
                 </span>
               </div>
 
-              <div className="min-w-0">
+              <div className="w-full min-w-0">
                 <BottomSheet.Title className="block truncate head-24-sb text-grayscale-100">
-                  {place.name ||
-                    (detailErrorMessage
+                  {place.name
+                    ? truncatePlaceName(place.name)
+                    : detailErrorMessage
                       ? '장소 정보를 불러올 수 없어요'
-                      : '장소 정보를 불러오고 있어요')}
+                      : '장소 정보를 불러오고 있어요'}
                 </BottomSheet.Title>
                 {detailErrorMessage ? (
                   <p role="alert" className="body-15-r text-red">
@@ -317,12 +324,13 @@ export function PinListSheet({
     : place.id;
   const parsedPlaceId = place.placeId ?? Number(normalizedPlaceId);
   const placeId = Number.isSafeInteger(parsedPlaceId) && parsedPlaceId > 0 ? parsedPlaceId : null;
-  const queryLatitude = detailLocation?.latitude ?? 0;
-  const queryLongitude = detailLocation?.longitude ?? 0;
+  // GPS 소수점 흔들림으로 쿼리 키가 매번 바뀌어 로딩이 반복되지 않도록 11m 단위로 반올림.
+  const queryLatitude = detailLocation ? Number(detailLocation.latitude.toFixed(4)) : 0;
+  const queryLongitude = detailLocation ? Number(detailLocation.longitude.toFixed(4)) : 0;
   const placeDetailQuery = usePlaceDetail({
     placeId,
-    latitude: detailLocation?.latitude ?? 0,
-    longitude: detailLocation?.longitude ?? 0,
+    latitude: queryLatitude,
+    longitude: queryLongitude,
     enabled: open && detailLocation !== null,
   });
   const resolvedPlace: PlaceInfo = {

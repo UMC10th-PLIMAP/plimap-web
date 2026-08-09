@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { bookmarkPlace, deletePlaceBookmark, getPlaceBookmarks, getPlaceDetail } from '@/api/place';
 import type { PlaceDetailResponse } from '@/types/place.type';
@@ -52,6 +52,8 @@ export function usePlaceDetail({
     },
     enabled: enabled && placeId !== null,
     staleTime: 60_000,
+    // 쿼리 키가 바뀌어도 새 응답 오기 전까진 이전 데이터를 유지해 로딩 깜빡임을 막는다.
+    placeholderData: keepPreviousData,
   });
 }
 

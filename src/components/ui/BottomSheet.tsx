@@ -150,6 +150,7 @@ function BottomSheet({
 
   const onActiveSnapChangeRef = React.useRef(onActiveSnapChange);
   const snapObserverRef = React.useRef<MutationObserver | null>(null);
+  const snapReportRafRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     onActiveSnapChangeRef.current = onActiveSnapChange;
@@ -160,6 +161,10 @@ function BottomSheet({
   const setSnapObserverTarget = React.useCallback((node: HTMLDivElement | null) => {
     snapObserverRef.current?.disconnect();
     snapObserverRef.current = null;
+    if (snapReportRafRef.current !== null) {
+      cancelAnimationFrame(snapReportRafRef.current);
+      snapReportRafRef.current = null;
+    }
     if (!node) return;
 
     const reportFromStyle = () => {
@@ -171,7 +176,16 @@ function BottomSheet({
     };
 
     reportFromStyle();
-    const observer = new MutationObserver(reportFromStyle);
+    // 드래그 중엔 스타일 변경이 화면 주사율보다 잦을 수 있어, 매번 리액트 상태를
+    // 갱신하면 프레임당 여러 번 리렌더돼 버벅임/떨림으로 보인다 - 프레임당 최대
+    // 한 번만 반영한다.
+    const observer = new MutationObserver(() => {
+      if (snapReportRafRef.current !== null) return;
+      snapReportRafRef.current = requestAnimationFrame(() => {
+        snapReportRafRef.current = null;
+        reportFromStyle();
+      });
+    });
     observer.observe(node, { attributes: true, attributeFilter: ['style'] });
     snapObserverRef.current = observer;
   }, []);
