@@ -103,6 +103,13 @@ const MapPage: React.FC<MapPageProps> = ({
   const [sheetCollapseSignal, setSheetCollapseSignal] = useState(0);
   // 등록하기 버튼을 바텀시트 상단에 붙이기 위해 시트의 현재 활성 스냅(0~1)을 추적한다.
   const [activeSheetSnap, setActiveSheetSnap] = useState<number>(PIN_LIST_SHEET_MID_SNAP);
+  // 버튼 위치도 스냅 추적과 같은 기준(window.innerHeight)의 픽셀값으로 계산한다.
+  const [viewportInnerHeight, setViewportInnerHeight] = useState(() => window.innerHeight);
+  useEffect(() => {
+    const handleResize = () => setViewportInnerHeight(window.innerHeight);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   // 등록하기 버튼 활성화 여부(500m 이내·본인 핀 아님) 판단용, 서버에서 해결된 장소 정보.
   const [resolvedActivePlace, setResolvedActivePlace] = useState<ResolvedPlaceSummary | null>(null);
   // 클러스터 응답엔 placeId가 없어 그 자리에서 시트를 못 여니, 목표 좌표를 잡아두고
@@ -387,9 +394,7 @@ const MapPage: React.FC<MapPageProps> = ({
         <ToastProvider duration={REGISTRATION_TOAST_DURATION_MS}>
           <div
             className="pointer-events-none fixed inset-x-0 z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4"
-            // 스냅 추적(activeSheetSnap)은 window.innerHeight 기준이라, 모바일에서 vh 대신
-            // 실제 보이는 높이를 따라가는 dvh를 써야 버튼이 시트 상단에서 어긋나지 않는다.
-            style={{ bottom: `calc(${activeSheetSnap * 100}dvh + 16px)` }}
+            style={{ bottom: `${activeSheetSnap * viewportInnerHeight + 16}px` }}
           >
             <Button
               type="button"
