@@ -40,7 +40,8 @@ export function useMapPinOverlays({
   onPlayPin,
   isBookmarkHighlightOn = false,
 }: UseMapPinOverlaysParams) {
-  const mapPinOverlaysRef = useRef<{ id: string; entry: MapPinOverlayEntry }[]>([]);
+  const mapPinOverlaysRef = useRef<Map<string, MapPinOverlayEntry>>(new Map());
+  const mapPinsByIdRef = useRef<Map<string, MapPin>>(new Map());
   const onSelectMapPinRef = useRef(onSelectMapPin);
   const onPlayPinRef = useRef(onPlayPin);
   const selectedMapPinIdRef = useRef(selectedMapPinId);
@@ -51,6 +52,10 @@ export function useMapPinOverlays({
   const isAtPinFocusZoomRef = useRef(Math.abs(zoom - PIN_FOCUS_ZOOM) <= ZOOM_EQUALITY_EPSILON);
   // 선택 상태 갱신 이펙트는 줌 21 문턱을 넘었는지(불리언)만 의존성으로 쓴다.
   const isAtPinFocusZoom = Math.abs(zoom - PIN_FOCUS_ZOOM) <= ZOOM_EQUALITY_EPSILON;
+
+  useEffect(() => {
+    mapPinsByIdRef.current = new Map(mapPins.map((pin) => [pin.id, pin]));
+  }, [mapPins]);
 
   useEffect(() => {
     onSelectMapPinRef.current = onSelectMapPin;
@@ -83,67 +88,64 @@ export function useMapPinOverlays({
   // --- 지도 핀(OverlayView) 렌더링 ---
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!isLoaded || !map) return;
+    if (!isLoaded || !map) {
+      mapPinOverlaysRef.current.forEach(disposeMapPinOverlay);
+      mapPinOverlaysRef.current.clear();
+      return;
+    }
 
-    const selectedId = selectedMapPinIdRef.current;
-    const playingId = playingMapPinIdRef.current;
-
-    const prevById = new Map(mapPinOverlaysRef.current.map(({ id, entry }) => [id, entry]));
-    const nextEntries: { id: string; entry: MapPinOverlayEntry }[] = [];
-
-    const handlePinClick = (pin: MapPin) => () => {
-      // 카메라 이동이 다 끝난 뒤에 바텀시트를 열어서, 지도 애니메이션과
-      // 시트 마운트가 동시에 일어나 화면이 안 뜨는 것처럼 보이지 않게 한다.
-      flyToRef.current({ lat: pin.lat, lng: pin.lng }, PIN_FOCUS_ZOOM, () => {
-        onSelectMapPinRef.current?.(pin.id);
-      });
-    };
+    const previousEntries = new Map(mapPinOverlaysRef.current);
+    const nextEntries = new Map<string, MapPinOverlayEntry>();
 
     mapPins.forEach((pin) => {
-      const existing = prevById.get(pin.id);
-      if (existing) {
-        prevById.delete(pin.id);
-        // 같은 id라도 좌표가 바뀔 수 있으니(예: 서버 좌표 보정) 위치와 클릭
-        // 핸들러(클로저로 좌표를 캡처)를 최신 pin 기준으로 갱신한다.
-        existing.overlay.setPosition({ lat: pin.lat, lng: pin.lng });
-        existing.overlay.setOnClick(handlePinClick(pin));
-        nextEntries.push({ id: pin.id, entry: existing });
+      const existingEntry = previousEntries.get(pin.id);
+      if (existingEntry) {
+        previousEntries.delete(pin.id);
+        existingEntry.overlay.setPosition({ lat: pin.lat, lng: pin.lng });
+        nextEntries.set(pin.id, existingEntry);
         return;
       }
 
       const entry = createMapPinOverlay({
         position: { lat: pin.lat, lng: pin.lng },
-        zIndex: pin.id === selectedId ? 200 : 100,
-        onClick: handlePinClick(pin),
+        zIndex: pin.id === selectedMapPinIdRef.current ? 200 : 100,
+        onClick: () => {
+          const latestPin = mapPinsByIdRef.current.get(pin.id);
+          if (!latestPin) return;
+
+          // 탭 피드백과 시트를 즉시 반영하고, 카메라 이동은 독립적으로 진행한다.
+          onSelectMapPinRef.current?.(pin.id);
+          flyToRef.current({ lat: latestPin.lat, lng: latestPin.lng }, PIN_FOCUS_ZOOM);
+        },
         ...toMapPinMarkerProps(
           pin,
-          pin.id === selectedId,
+          pin.id === selectedMapPinIdRef.current,
           () => onPlayPinRef.current?.(pin.id),
-          pin.id === playingId,
-          pin.id === selectedId && isAtPinFocusZoomRef.current,
+          pin.id === playingMapPinIdRef.current,
+          pin.id === selectedMapPinIdRef.current && isAtPinFocusZoomRef.current,
           isBookmarkHighlightOnRef.current && pin.hasBookmarkedPlace,
         ),
       });
       entry.overlay.setMap(map);
-      nextEntries.push({ id: pin.id, entry });
+      nextEntries.set(pin.id, entry);
     });
 
-    prevById.forEach((entry) => disposeMapPinOverlay(entry));
+    previousEntries.forEach(disposeMapPinOverlay);
     mapPinOverlaysRef.current = nextEntries;
   }, [isLoaded, mapPins, mapInstanceRef]);
 
-  // 언마운트될 때만 정리한다 - 위 이펙트는 재실행마다 자체적으로 diff해서 정리한다.
-  useEffect(() => {
-    return () => {
-      mapPinOverlaysRef.current.forEach(({ entry }) => disposeMapPinOverlay(entry));
-      mapPinOverlaysRef.current = [];
-    };
-  }, []);
+  useEffect(
+    () => () => {
+      mapPinOverlaysRef.current.forEach(disposeMapPinOverlay);
+      mapPinOverlaysRef.current.clear();
+    },
+    [],
+  );
 
   // --- 선택된 지도 핀 강조 / 재생 상태 ---
   useEffect(() => {
-    mapPinOverlaysRef.current.forEach(({ id, entry }) => {
-      const pin = mapPins.find((candidate) => candidate.id === id);
+    mapPinOverlaysRef.current.forEach((entry, id) => {
+      const pin = mapPinsByIdRef.current.get(id);
       if (!pin) return;
 
       const isSelected = id === selectedMapPinId;

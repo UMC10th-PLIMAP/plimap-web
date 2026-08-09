@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from 'react';
+import { forwardRef, useImperativeHandle, type RefObject } from 'react';
 import { MapCoordinate, MapPlace, MapPin, MapViewport, PinCluster } from '../types';
 import { useGoogleMap } from '../hooks/useGoogleMap';
 import { useCurrentLocationMarker } from '../hooks/useCurrentLocationMarker';
@@ -6,7 +6,6 @@ import { useMapPinOverlays } from '../hooks/useMapPinOverlays';
 import { useClusterOverlays } from '../hooks/useClusterOverlays';
 import { usePlaceMarkers } from '../hooks/usePlaceMarkers';
 import { useCoordinateProjection } from '../hooks/useCoordinateProjection';
-import type { PinRadiusCenter } from '@/features/pin/components/PinRadiusOverlay';
 
 type MapViewerProps = {
   isLoaded: boolean;
@@ -21,13 +20,13 @@ type MapViewerProps = {
   selectedMapPinId: string | null;
   projectionCoordinate?: MapCoordinate | null;
   projectionRadiusMeters?: number;
+  projectionTargetRef?: RefObject<HTMLElement | null>;
   centerOnFirstLocation?: boolean;
   onZoomChanged?: (newZoom: number) => void;
   onCenterChanged?: (center: MapCoordinate) => void;
   onCurrentLocationChanged?: (coordinate: MapCoordinate) => void;
   onCurrentLocationError?: (message: string) => void;
   onViewportChanged?: (viewport: MapViewport) => void;
-  onProjectionChanged?: (center: PinRadiusCenter | null) => void;
   onSelectPlace?: (placeId: string) => void;
   onSelectMapPin?: (pinId: string) => void;
   onPlayPin?: (pinId: string) => void;
@@ -43,8 +42,8 @@ type MapViewerProps = {
 };
 
 export type MapViewerHandle = {
-  /** 지도를 현재 위치 마커로 이동시킨다. 위치를 아직 못 받았으면 아무 동작도 하지 않는다. */
-  recenterToCurrentLocation: () => void;
+  /** 지도를 현재 위치 마커로 이동시킨다. 위치가 준비되지 않았으면 false를 반환한다. */
+  recenterToCurrentLocation: () => boolean;
   panTo: (coordinate: MapCoordinate, options?: { notifyCenterChanged?: boolean }) => void;
   flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
   restoreViewport: (viewport: MapViewport) => void;
@@ -65,13 +64,13 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     selectedMapPinId,
     projectionCoordinate,
     projectionRadiusMeters,
+    projectionTargetRef,
     centerOnFirstLocation = true,
     onZoomChanged,
     onCenterChanged,
     onCurrentLocationChanged,
     onCurrentLocationError,
     onViewportChanged,
-    onProjectionChanged,
     onSelectPlace,
     onSelectMapPin,
     onPlayPin,
@@ -146,7 +145,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     isLoaded,
     coordinate: projectionCoordinate,
     radiusMeters: projectionRadiusMeters,
-    onProjected: onProjectionChanged,
+    targetElementRef: projectionTargetRef,
   });
 
   return (

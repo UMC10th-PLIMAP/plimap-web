@@ -66,13 +66,14 @@ export function flyToLocation(
     const t = Math.min((now - startTime) / FLY_TO_DURATION_MS, 1);
     const eased = easeOutQuad(t);
 
-    // panTo의 자체 애니메이션(타이밍이 다름)에 맡기지 않고, 줌과 같은 루프에서
-    // center도 같이 보간해서 두 움직임이 어긋나지 않게 한다.
-    map.setCenter({
-      lat: startLat + (position.lat - startLat) * eased,
-      lng: startLng + (position.lng - startLng) * eased,
+    // center와 zoom을 한 번의 카메라 갱신으로 적용해 지도 렌더 파이프라인을 중복 호출하지 않는다.
+    map.moveCamera({
+      center: {
+        lat: startLat + (position.lat - startLat) * eased,
+        lng: startLng + (position.lng - startLng) * eased,
+      },
+      zoom: startZoom + (targetZoom - startZoom) * eased,
     });
-    map.setZoom(startZoom + (targetZoom - startZoom) * eased);
 
     if (t < 1) {
       frameId = requestAnimationFrame(step);

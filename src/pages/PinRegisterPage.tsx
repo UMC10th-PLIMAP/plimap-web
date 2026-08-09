@@ -21,7 +21,7 @@ export default function PinRegisterPage() {
   const {
     mapStatus,
     zoom,
-    radiusCenter,
+    radiusElementRef,
     locationError,
     isOutsideAllowedRadius,
     setMapInteractionDisabled,
@@ -162,11 +162,11 @@ export default function PinRegisterPage() {
       <PinRadiusOverlay
         zoom={zoom}
         centerLatitude={currentLocation?.lat ?? candidateCoordinate?.lat ?? 0}
-        radiusCenter={radiusCenter ?? undefined}
+        radiusElementRef={radiusElementRef}
         feedbackMessage={feedbackMessage}
         isCompleting={isCompleting}
         isCompleteDisabled={mapStatus !== 'ready' || isOutsideAllowedRadius}
-        showRadius={Boolean(currentLocation && radiusCenter)}
+        showRadius={Boolean(currentLocation)}
         onCancel={handleCancel}
         onComplete={() => void handleComplete()}
       />

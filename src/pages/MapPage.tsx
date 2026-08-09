@@ -18,11 +18,7 @@ import { usePinMapView } from '@/features/map/queries/usePinMapView';
 import { useAutoFocusNearestPin } from '@/features/map/hooks/useAutoFocusNearestPin';
 import { PIN_FOCUS_ZOOM } from '@/features/map/hooks/useMapPinOverlays';
 import { DEV_MOCK_MAP_PINS } from '@/features/map/constants/devMockMapPins';
-import {
-  PinListSheet,
-  PIN_LIST_SHEET_MID_SNAP,
-  type ResolvedPlaceSummary,
-} from '@/features/pin/components/PinListSheet';
+import { PinListSheet, type ResolvedPlaceSummary } from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
@@ -143,17 +139,10 @@ const MapPage: React.FC<MapPageProps> = ({
   const [viewport, setViewport] = useState<MapViewport | null>(null);
   // 지도 빈 곳을 탭하면 시트를 닫지 않고 가장 작은 스냅으로만 축소한다 - 값은 의미 없이 신호로만 쓴다.
   const [sheetCollapseSignal, setSheetCollapseSignal] = useState(0);
-  // 등록하기 버튼을 바텀시트 상단에 붙이기 위해 시트의 현재 활성 스냅(0~1)을 추적한다.
-  const [activeSheetSnap, setActiveSheetSnap] = useState<number>(PIN_LIST_SHEET_MID_SNAP);
   // 북마크 버튼을 누르면, 지도 위 핀/클러스터 중 북마크된 것만 색으로 구분해 보여준다.
   const [isBookmarkHighlightOn, setIsBookmarkHighlightOn] = useState(false);
-  // 버튼 위치도 스냅 추적과 같은 기준(window.innerHeight)의 픽셀값으로 계산한다.
-  const [viewportInnerHeight, setViewportInnerHeight] = useState(() => window.innerHeight);
-  useEffect(() => {
-    const handleResize = () => setViewportInnerHeight(window.innerHeight);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // 드래그 프레임을 React 상태로 올리지 않고 바텀시트가 이 요소의 CSS 변수를 직접 갱신한다.
+  const registerButtonContainerRef = useRef<HTMLDivElement>(null);
   // 등록하기 버튼 활성화 여부(500m 이내·본인 핀 아님) 판단용, 서버에서 해결된 장소 정보.
   const [resolvedActivePlace, setResolvedActivePlace] = useState<ResolvedPlaceSummary | null>(null);
   // 클러스터 응답엔 placeId가 없어 그 자리에서 시트를 못 여니, 목표 좌표를 잡아두고
@@ -401,6 +390,18 @@ const MapPage: React.FC<MapPageProps> = ({
     if (!isCovered) onSaveViewport(nextViewport);
   };
 
+  const handleRecenterToCurrentLocation = () => {
+    const didRecenter = mapViewerRef.current?.recenterToCurrentLocation() ?? false;
+    if (didRecenter) return;
+
+    setRegistrationToast((currentToast) => ({
+      attempt: (currentToast?.attempt ?? 0) + 1,
+      message:
+        currentLocationError ??
+        '현재 위치를 확인하고 있어요. 위치 권한을 확인한 뒤 다시 시도해 주세요.',
+    }));
+  };
+
   // 지도 빈 영역 탭/드래그 시작: 시트를 닫지 않고 가장 작은 스냅으로만 축소한다.
   const handleMapClick = () => {
     setSheetCollapseSignal((signal) => signal + 1);
@@ -511,7 +512,8 @@ const MapPage: React.FC<MapPageProps> = ({
             <button
               type="button"
               aria-label="현재 위치로 이동"
-              onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
+              aria-busy={!currentLocation && !currentLocationError ? true : undefined}
+              onClick={handleRecenterToCurrentLocation}
               className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
             >
               <FocusIcon className="size-7" />
@@ -520,11 +522,14 @@ const MapPage: React.FC<MapPageProps> = ({
         ) : null}
       </div>
 
-      {isRegisterButtonVisible ? (
-        <ToastProvider duration={REGISTRATION_TOAST_DURATION_MS}>
+      <ToastProvider duration={REGISTRATION_TOAST_DURATION_MS}>
+        {isRegisterButtonVisible ? (
           <div
+            ref={registerButtonContainerRef}
             className="pointer-events-none fixed inset-x-0 z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4"
-            style={{ bottom: `${activeSheetSnap * viewportInnerHeight + 16}px` }}
+            style={{
+              bottom: 'calc(var(--bottom-sheet-visible-height, 340px) + 16px)',
+            }}
           >
             <Button
               type="button"
@@ -537,22 +542,19 @@ const MapPage: React.FC<MapPageProps> = ({
               등록하기
             </Button>
           </div>
+        ) : null}
 
-          <ToastPortal>
-            <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
-              {registrationToast ? (
-                <Toast
-                  key={`${registrationToast.message}:${registrationToast.attempt}`}
-                  defaultOpen
-                >
-                  {registrationToast.message}
-                </Toast>
-              ) : null}
-              <ToastViewport />
-            </div>
-          </ToastPortal>
-        </ToastProvider>
-      ) : null}
+        <ToastPortal>
+          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
+            {registrationToast ? (
+              <Toast key={`${registrationToast.message}:${registrationToast.attempt}`} defaultOpen>
+                {registrationToast.message}
+              </Toast>
+            ) : null}
+            <ToastViewport />
+          </div>
+        </ToastPortal>
+      </ToastProvider>
 
       {selectedMapPlace ? (
         <PinListSheet
@@ -603,7 +605,7 @@ const MapPage: React.FC<MapPageProps> = ({
           }}
           resetKey={selectedMapPlace.id}
           collapseToSmallestSignal={sheetCollapseSignal}
-          onActiveSnapChange={setActiveSheetSnap}
+          floatingActionRef={registerButtonContainerRef}
           onResolvedPlaceChange={setResolvedActivePlace}
           // 검색으로 들어온 장소만 "<"를 누르면 검색 화면으로 돌아간다(피드 진입은 기본 접기).
           onFullPageBack={
@@ -623,7 +625,7 @@ const MapPage: React.FC<MapPageProps> = ({
           allowTrackDetailAccess={false}
           resetKey={selectedMapPin.id}
           collapseToSmallestSignal={sheetCollapseSignal}
-          onActiveSnapChange={setActiveSheetSnap}
+          floatingActionRef={registerButtonContainerRef}
           onResolvedPlaceChange={setResolvedActivePlace}
           detailLocation={
             currentLocation

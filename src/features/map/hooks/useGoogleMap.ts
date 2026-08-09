@@ -98,6 +98,12 @@ export function useGoogleMap({
     }
   }, []);
 
+  const cancelCameraFlight = useCallback(() => {
+    flyingCancelRef.current?.();
+    flyingCancelRef.current = null;
+    clearFlyingSuppression();
+  }, [clearFlyingSuppression]);
+
   useEffect(() => {
     onCenterChangedRef.current = onCenterChanged;
   }, [onCenterChanged]);
@@ -129,7 +135,10 @@ export function useGoogleMap({
     const mapElement = mapRef.current;
     if (!isLoaded || !mapElement) return;
 
-    const handleUserInteraction = () => clearCenterChangeSuppression();
+    const handleUserInteraction = () => {
+      clearCenterChangeSuppression();
+      cancelCameraFlight();
+    };
     mapElement.addEventListener('pointerdown', handleUserInteraction, true);
     mapElement.addEventListener('wheel', handleUserInteraction, true);
     mapElement.addEventListener('keydown', handleUserInteraction, true);
@@ -139,7 +148,7 @@ export function useGoogleMap({
       mapElement.removeEventListener('wheel', handleUserInteraction, true);
       mapElement.removeEventListener('keydown', handleUserInteraction, true);
     };
-  }, [clearCenterChangeSuppression, isLoaded]);
+  }, [cancelCameraFlight, clearCenterChangeSuppression, isLoaded]);
 
   useEffect(() => {
     const mapsApi = window.google?.maps;
@@ -174,20 +183,9 @@ export function useGoogleMap({
       });
       mapInstanceRef.current = map;
 
-      map.addListener('zoom_changed', () => {
-        clearCenterChangeSuppression();
-        // flyTo가 매 프레임 setZoom을 호출하는 동안 이 이벤트를 그대로 흘려보내면
-        // zoom prop 동기화 effect가 다시 setZoom을 불러 서로 되먹임된다.
-        if (isFlyingRef.current) return;
-        const newZoom = map.getZoom();
-        if (newZoom !== undefined) {
-          onZoomChangedRef.current?.(newZoom);
-        }
-      });
-
       map.addListener('dragstart', () => {
         clearCenterChangeSuppression();
-        clearFlyingSuppression();
+        cancelCameraFlight();
         onMapDragStartRef.current?.();
       });
 
@@ -220,23 +218,24 @@ export function useGoogleMap({
     } else if (!isFlyingRef.current && mapInstanceRef.current.getZoom() !== zoom) {
       mapInstanceRef.current.setZoom(zoom);
     }
-  }, [clearCenterChangeSuppression, clearFlyingSuppression, isInteractionDisabled, isLoaded, zoom]);
+  }, [
+    cancelCameraFlight,
+    clearCenterChangeSuppression,
+    clearFlyingSuppression,
+    isInteractionDisabled,
+    isLoaded,
+    zoom,
+  ]);
 
   useEffect(() => clearCenterChangeSuppression, [clearCenterChangeSuppression]);
-  useEffect(() => {
-    return () => {
-      flyingCancelRef.current?.();
-      clearFlyingSuppression();
-    };
-  }, [clearFlyingSuppression]);
+  useEffect(() => cancelCameraFlight, [cancelCameraFlight]);
 
   const flyTo = useCallback(
     (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => {
       const map = mapInstanceRef.current;
       if (!map) return;
 
-      flyingCancelRef.current?.();
-      clearFlyingSuppression();
+      cancelCameraFlight();
       isFlyingRef.current = true;
       flyingCancelRef.current = flyToLocation(map, position, targetZoom, () => {
         // 마지막 프레임의 zoom_changed는 비동기라, 값이 직전 프레임과 겹치면
@@ -244,6 +243,7 @@ export function useGoogleMap({
         // targetZoom과 어긋난 채로 남아, 나중에 zoom 동기화 effect가 지도를
         // 그 오래된 값으로 되돌려버릴 수 있다. 이벤트에 의존하지 않고 도착
         // 시점에 직접 동기화한다.
+        flyingCancelRef.current = null;
         onZoomChangedRef.current?.(targetZoom);
         clearFlyingSuppression();
         onArrive?.();
@@ -254,7 +254,7 @@ export function useGoogleMap({
         FLY_TO_ZOOM_SUPPRESSION_TIMEOUT_MS,
       );
     },
-    [clearFlyingSuppression],
+    [cancelCameraFlight, clearFlyingSuppression],
   );
 
   const fitToBounds = useCallback(
@@ -277,10 +277,10 @@ export function useGoogleMap({
         lng: (bounds.east + bounds.west) / 2,
       };
 
-      flyingCancelRef.current?.();
-      clearFlyingSuppression();
+      cancelCameraFlight();
       isFlyingRef.current = true;
       flyingCancelRef.current = flyToLocation(map, center, targetZoom, () => {
+        flyingCancelRef.current = null;
         onZoomChangedRef.current?.(targetZoom);
         clearFlyingSuppression();
       });
@@ -289,7 +289,7 @@ export function useGoogleMap({
         FLY_TO_ZOOM_SUPPRESSION_TIMEOUT_MS,
       );
     },
-    [clearFlyingSuppression],
+    [cancelCameraFlight, clearFlyingSuppression],
   );
 
   const panTo = useCallback(

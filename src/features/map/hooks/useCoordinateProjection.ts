@@ -1,14 +1,13 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
 import type { MapCoordinate } from '@/features/map/types';
-import type { PinRadiusCenter } from '@/features/pin/components/PinRadiusOverlay';
 
 type UseCoordinateProjectionParams = {
   mapInstanceRef: RefObject<google.maps.Map | null>;
   isLoaded: boolean;
   coordinate?: MapCoordinate | null;
   radiusMeters?: number;
-  onProjected?: (center: PinRadiusCenter | null) => void;
+  targetElementRef?: RefObject<HTMLElement | null>;
 };
 
 const EARTH_RADIUS_METERS = 6_378_137;
@@ -24,11 +23,10 @@ export function useCoordinateProjection({
   isLoaded,
   coordinate,
   radiusMeters,
-  onProjected,
+  targetElementRef,
 }: UseCoordinateProjectionParams) {
   const coordinateRef = useRef(coordinate);
   const radiusMetersRef = useRef(radiusMeters);
-  const onProjectedRef = useRef(onProjected);
   const overlayRef = useRef<google.maps.OverlayView | null>(null);
 
   useEffect(() => {
@@ -42,13 +40,17 @@ export function useCoordinateProjection({
   }, [radiusMeters]);
 
   useEffect(() => {
-    onProjectedRef.current = onProjected;
-  }, [onProjected]);
-
-  useEffect(() => {
     const mapsApi = window.google?.maps;
     const map = mapInstanceRef.current;
-    if (!isLoaded || !mapsApi || !map || !onProjectedRef.current) return;
+    if (!isLoaded || !mapsApi || !map || !targetElementRef) return;
+    const projectionTargetRef = targetElementRef;
+
+    const clearProjectionStyle = () => {
+      const targetElement = projectionTargetRef.current;
+      targetElement?.style.removeProperty('--pin-radius-center-x');
+      targetElement?.style.removeProperty('--pin-radius-center-y');
+      targetElement?.style.removeProperty('--pin-radius-diameter');
+    };
 
     class ProjectionOverlay extends mapsApi.OverlayView {
       onAdd() {
@@ -57,23 +59,21 @@ export function useCoordinateProjection({
 
       draw() {
         const target = coordinateRef.current;
+        const targetElement = projectionTargetRef.current;
         const projection = this.getProjection();
-        if (!target || !projection) {
-          onProjectedRef.current?.(null);
-          return;
-        }
+        if (!target || !targetElement || !projection) return;
 
         const centerPoint = projection.fromLatLngToContainerPixel(
           new mapsApi.LatLng(target.lat, target.lng),
         );
-        if (!centerPoint) {
-          onProjectedRef.current?.(null);
-          return;
-        }
+        if (!centerPoint) return;
+
+        targetElement.style.setProperty('--pin-radius-center-x', `${centerPoint.x}px`);
+        targetElement.style.setProperty('--pin-radius-center-y', `${centerPoint.y}px`);
 
         const targetRadiusMeters = radiusMetersRef.current;
         if (!targetRadiusMeters || targetRadiusMeters <= 0) {
-          onProjectedRef.current?.({ x: centerPoint.x, y: centerPoint.y });
+          targetElement.style.removeProperty('--pin-radius-diameter');
           return;
         }
 
@@ -83,17 +83,20 @@ export function useCoordinateProjection({
             target.lng + getLongitudeOffset(target.lat, targetRadiusMeters),
           ),
         );
-        onProjectedRef.current?.({
-          x: centerPoint.x,
-          y: centerPoint.y,
-          radiusPixels: radiusEdgePoint
-            ? Math.hypot(radiusEdgePoint.x - centerPoint.x, radiusEdgePoint.y - centerPoint.y)
-            : undefined,
-        });
+        if (!radiusEdgePoint) {
+          targetElement.style.removeProperty('--pin-radius-diameter');
+          return;
+        }
+
+        const radiusPixels = Math.hypot(
+          radiusEdgePoint.x - centerPoint.x,
+          radiusEdgePoint.y - centerPoint.y,
+        );
+        targetElement.style.setProperty('--pin-radius-diameter', `${radiusPixels * 2}px`);
       }
 
       onRemove() {
-        onProjectedRef.current?.(null);
+        clearProjectionStyle();
       }
     }
 
@@ -105,5 +108,5 @@ export function useCoordinateProjection({
       overlay.setMap(null);
       overlayRef.current = null;
     };
-  }, [isLoaded, mapInstanceRef]);
+  }, [isLoaded, mapInstanceRef, targetElementRef]);
 }

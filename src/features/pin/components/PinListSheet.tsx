@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type RefObject } from 'react';
 
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
@@ -55,22 +55,21 @@ type PinListSheetProps = {
   resetKey?: string | number;
   /** 이 값이 바뀔 때마다 가장 작은 스냅으로 축소한다(지도 빈 곳 탭 시 사용). */
   collapseToSmallestSignal?: number;
-  /** 현재 활성 스냅(0~1)이 바뀔 때마다 호출된다. */
-  onActiveSnapChange?: (snap: number) => void;
+  /** 시트 상단을 따라 움직일 외부 플로팅 액션. */
+  floatingActionRef?: RefObject<HTMLElement | null>;
   /** 서버에서 해결된 장소 정보(등록 가능 거리·본인 핀 여부 포함)가 바뀔 때마다 호출된다. */
   onResolvedPlaceChange?: (summary: ResolvedPlaceSummary | null) => void;
   /** 풀페이지에서 뒤로가기를 눌렀을 때 호출. 생략하면 기본 스냅으로 접는다. */
   onFullPageBack?: () => void;
 };
 
-// 화면 전체 높이 874 기준 Figma 스냅. 헤더(제목·주소·등록자·거리)까지만 보이는 높이.
-const PIN_LIST_SHEET_COLLAPSED_SNAP = 180 / 874;
-// MapPage 등 시트 바깥에서 기본 높이를 알아야 하는 곳에서 재사용한다.
-export const PIN_LIST_SHEET_MID_SNAP = 340 / 874;
+// 콘텐츠가 요구하는 고정 높이. 특정 Figma 아트보드 높이에 따라 축소되지 않게 px 스냅을 쓴다.
+const PIN_LIST_SHEET_COLLAPSED_SNAP = '180px';
+const PIN_LIST_SHEET_MID_SNAP = '340px';
 // 프로필 피드 진입: MY·장소정보·등록곡 CTA·정렬 탭까지 보이는 높이 (Figma FD-01-04)
-const PIN_LIST_SHEET_FEED_MID_SNAP = 300 / 874;
+const PIN_LIST_SHEET_FEED_MID_SNAP = '300px';
 
-function buildSnapPoints(collapsedSnap: number, midSnap: number) {
+function buildSnapPoints(collapsedSnap: string, midSnap: string) {
   return [collapsedSnap, midSnap, 1];
 }
 
@@ -334,7 +333,7 @@ export function PinListSheet({
   allowTrackDetailAccess = false,
   resetKey,
   collapseToSmallestSignal,
-  onActiveSnapChange,
+  floatingActionRef,
   onResolvedPlaceChange,
   onFullPageBack,
 }: PinListSheetProps) {
@@ -471,13 +470,6 @@ export function PinListSheet({
     () => buildSnapPoints(PIN_LIST_SHEET_COLLAPSED_SNAP, midSnap),
     [midSnap],
   );
-  const handleActiveSnapChange = useCallback(
-    (snap: number | string) => {
-      onActiveSnapChange?.(typeof snap === 'number' ? snap : midSnap);
-    },
-    [onActiveSnapChange, midSnap],
-  );
-
   const bookmarkTrailingButton = (
     <button
       type="button"
@@ -505,7 +497,7 @@ export function PinListSheet({
         defaultSnapPoint={midSnap}
         resetKey={resetKey}
         collapseToSmallestSignal={collapseToSmallestSignal}
-        onActiveSnapChange={handleActiveSnapChange}
+        trackingElementRef={floatingActionRef}
       >
         <BottomSheet.FullPageNav onBack={onFullPageBack} trailing={bookmarkTrailingButton} />
 
