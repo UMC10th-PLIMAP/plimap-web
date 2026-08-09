@@ -13,10 +13,12 @@ import { usePlaceTrackPins } from '@/features/pin/queries/usePlaceTrackPins';
 import { usePutLikedTrack } from '@/features/pin/queries/usePutLikedTrack';
 import type { GetPlaceTrackPinsResponse, PinFeedEntry, PinSort } from '@/features/pin/types';
 import { ConfirmAlertDialog } from '@/features/settings/components/ConfirmAlertDialog';
+import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
 import HeartIcon from '@/assets/icons/heart.svg?react';
 import ChangeIcon from '@/assets/icons/change.svg?react';
 import { cn } from '@/lib/utils';
+import { getGeolocationErrorMessage, type GeolocationFailureReason } from '@/utils/geolocation';
 
 const SORT_LABEL: Record<PinSort, string> = {
   LATEST: '최신순',
@@ -41,20 +43,41 @@ function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
   };
 }
 
+function toGeolocationFailureReason(error: Error): GeolocationFailureReason {
+  const reason = error.message;
+  if (
+    reason === 'PERMISSION_DENIED' ||
+    reason === 'POSITION_UNAVAILABLE' ||
+    reason === 'TIMEOUT' ||
+    reason === 'UNSUPPORTED'
+  ) {
+    return reason;
+  }
+  return 'POSITION_UNAVAILABLE';
+}
+
 export default function PinDetailPage() {
   const navigate = useNavigate();
   const { pinId } = useParams<{ pinId: string }>();
   const [sort, setSort] = useState<PinSort>('LATEST');
   const [reportFeedId, setReportFeedId] = useState<string | null>(null);
   const [deletePinId, setDeletePinId] = useState<string | null>(null);
+  const currentPositionQuery = useCurrentPosition();
   const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
+
+  const userLatitude = currentPositionQuery.data?.latitude;
+  const userLongitude = currentPositionQuery.data?.longitude;
 
   const { data: pinDetail } = usePlaceTrackDetail({
     placeTrackId: pinId,
+    userLatitude,
+    userLongitude,
   });
   const { data: pinPages } = usePlaceTrackPins({
     placeTrackId: pinId,
     pinSortType: sort,
+    userLatitude,
+    userLongitude,
   });
 
   const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
@@ -63,6 +86,15 @@ export default function PinDetailPage() {
   const isLikePending = isPutPending || isDeletePending;
 
   const pins = pinPages?.pages.flatMap((page) => page.data.map(toPinFeedEntry)) ?? [];
+  const locationErrorMessage = currentPositionQuery.isError
+    ? getGeolocationErrorMessage(
+        toGeolocationFailureReason(
+          currentPositionQuery.error instanceof Error
+            ? currentPositionQuery.error
+            : new Error('POSITION_UNAVAILABLE'),
+        ),
+      )
+    : null;
 
   useEffect(() => {
     preloadYouTubeIframeApi();
@@ -91,6 +123,25 @@ export default function PinDetailPage() {
     }
     putLikedTrack(placeTrackId);
   };
+
+  if (locationErrorMessage) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <TopBar onBack={() => navigate(-1)} className="pt-[env(safe-area-inset-top)]" />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+          <p className="body-15-r text-grayscale-500">{locationErrorMessage}</p>
+          <button
+            type="button"
+            onClick={() => void currentPositionQuery.refetch()}
+            disabled={currentPositionQuery.isFetching}
+            className="cursor-pointer rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100 disabled:opacity-50"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-hide">
