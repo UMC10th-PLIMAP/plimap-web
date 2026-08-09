@@ -17,11 +17,15 @@ type OpenPinPlaceOptions = {
   showMyRegisteredTrackCta?: boolean;
   /** 친구 피드 장소 접근 토큰 발급 (팔로잉한 친구 핀 진입 시) */
   requestFeedPlaceAccess?: boolean;
+  /** 지도 상단을 검색창 대신 뒤로가기로 표시 (내 PLIMAP 등) */
+  showMapBackButton?: boolean;
 };
 
 type OpenPlaceTrackOptions = {
   placeTrackId: number | string;
   fallbackPlaceName?: string;
+  /** 지도 상단을 검색창 대신 뒤로가기로 표시 (내 PLIMAP 등) */
+  showMapBackButton?: boolean;
 };
 
 export type OpenPlaceTrackResult = { ok: true } | { ok: false; message: string };
@@ -105,6 +109,7 @@ export function useOpenPinPlaceOnMap() {
       isMine = false,
       showMyRegisteredTrackCta = false,
       requestFeedPlaceAccess = false,
+      showMapBackButton = false,
     }: OpenPinPlaceOptions) => {
       if (isNavigating) return;
 
@@ -120,6 +125,7 @@ export function useOpenPinPlaceOnMap() {
           // 내/친구 피드 → 지도 진입이므로 곡 상세 열람 허용
           allowTrackDetailAccess: true,
         });
+        place.showMapBackButton = showMapBackButton;
 
         // resolvePlace 최종 isMine( pinnedByMe 반영 ) 기준으로 토큰 발급
         if (requestFeedPlaceAccess && !place.isMine && place.placeId != null) {
@@ -169,6 +175,7 @@ export function useOpenPinPlaceOnMap() {
     async ({
       placeTrackId,
       fallbackPlaceName = '',
+      showMapBackButton = false,
     }: OpenPlaceTrackOptions): Promise<OpenPlaceTrackResult> => {
       if (isNavigating) {
         return { ok: false, message: '이미 지도를 여는 중이에요. 잠시만 기다려 주세요.' };
@@ -213,6 +220,7 @@ export function useOpenPinPlaceOnMap() {
           // 찜한 곡(내 PLIMAP) → 지도 진입이므로 곡 상세 열람 허용
           allowTrackDetailAccess: true,
         });
+        place.showMapBackButton = showMapBackButton;
 
         selectMapPlace(place);
         navigate('/app');

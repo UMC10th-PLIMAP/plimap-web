@@ -440,42 +440,57 @@ const MapPage: React.FC<MapPageProps> = ({
 
   return (
     <div className="relative h-full w-full">
-      {/* 상단 장소 검색 바 + 북마크/현재 위치 버튼 */}
+      {/* 상단 장소 검색 바(또는 뒤로가기) + 북마크/현재 위치 버튼 */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col">
         <div className="pointer-events-auto shrink-0 px-[15px] pt-[calc(env(safe-area-inset-top)+16px)]">
-          <SearchLauncher
-            className="map-search-hero"
-            value={selectedMapPlace?.placeName}
-            placeholder="장소를 검색하세요"
-            onClick={() => {
-              // 선택된 장소가 검색어로 찾은 것이면 그 검색어를 그대로 복원해 검색
-              // 결과 화면으로, 최근 검색에서 바로 고른 것이면 검색어 없이 최근
-              // 검색 목록으로 들어간다.
-              navigate('/app/pin/search', {
-                state: { fromMap: true, initialQuery: selectedMapPlace?.searchQuery ?? '' },
-              });
-            }}
-            onClear={() => onClearMapPlace?.()}
-          />
+          {selectedMapPlace?.showMapBackButton ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClearMapPlace?.();
+                navigate(-1);
+              }}
+              className="cursor-pointer body-15-m text-grayscale-100"
+            >
+              뒤로가기
+            </button>
+          ) : (
+            <SearchLauncher
+              className="map-search-hero"
+              value={selectedMapPlace?.placeName}
+              placeholder="장소를 검색하세요"
+              onClick={() => {
+                // 선택된 장소가 검색어로 찾은 것이면 그 검색어를 그대로 복원해 검색
+                // 결과 화면으로, 최근 검색에서 바로 고른 것이면 검색어 없이 최근
+                // 검색 목록으로 들어간다.
+                navigate('/app/pin/search', {
+                  state: { fromMap: true, initialQuery: selectedMapPlace?.searchQuery ?? '' },
+                });
+              }}
+              onClear={() => onClearMapPlace?.()}
+            />
+          )}
         </div>
 
-        <div className="flex flex-col items-end gap-3 p-4">
-          <button
-            type="button"
-            aria-label="북마크"
-            className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
-          >
-            <BookmarkIcon className="size-7" />
-          </button>
-          <button
-            type="button"
-            aria-label="현재 위치로 이동"
-            onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
-            className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
-          >
-            <FocusIcon className="size-7" />
-          </button>
-        </div>
+        {!selectedMapPlace?.showMapBackButton ? (
+          <div className="flex flex-col items-end gap-3 p-4">
+            <button
+              type="button"
+              aria-label="북마크"
+              className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
+            >
+              <BookmarkIcon className="size-7" />
+            </button>
+            <button
+              type="button"
+              aria-label="현재 위치로 이동"
+              onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
+              className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
+            >
+              <FocusIcon className="size-7" />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {isRegisterButtonVisible ? (

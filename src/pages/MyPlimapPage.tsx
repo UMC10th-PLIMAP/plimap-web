@@ -85,6 +85,7 @@ export default function MyPlimapPage() {
                       fallbackPlaceName: pin.placeName,
                       isMine: true,
                       showMyRegisteredTrackCta: true,
+                      showMapBackButton: true,
                     });
                   }}
                   onMoreClick={() => {
@@ -107,11 +108,12 @@ export default function MyPlimapPage() {
                     pin={{ ...track, liked: true }}
                     onClick={() => {
                       if (isNavigating) return;
-                      void openPlaceTrackOnMap({ placeTrackId: track.placeTrackId }).then(
-                        (result) => {
-                          if (!result.ok) showFeedbackToast(result.message);
-                        },
-                      );
+                      void openPlaceTrackOnMap({
+                        placeTrackId: track.placeTrackId,
+                        showMapBackButton: true,
+                      }).then((result) => {
+                        if (!result.ok) showFeedbackToast(result.message);
+                      });
                     }}
                   />
                 ))}
