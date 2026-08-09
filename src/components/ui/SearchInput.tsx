@@ -10,8 +10,7 @@ const searchInputVariants = cva('flex w-full items-center rounded-[50px] transit
   variants: {
     variant: {
       map: 'h-[60px] gap-2.5 bg-pli-black-100 px-5 py-2.5 backdrop-blur-[1.95px]',
-      friend:
-        'h-[60px] gap-2 bg-pli-black-75 px-4 py-2 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-neon-2',
+      friend: 'h-[60px] gap-2 bg-pli-black-75 px-4 py-2',
       song: 'h-10 gap-2 bg-pli-black-75 px-4 body-15-r',
     },
   },
@@ -21,7 +20,7 @@ const searchInputVariants = cva('flex w-full items-center rounded-[50px] transit
 });
 
 const searchInputFieldVariants = cva(
-  'flex-1 outline-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-ms-clear]:hidden',
+  'min-w-0 flex-1 outline-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-ms-clear]:hidden',
   {
     variants: {
       variant: {
@@ -128,9 +127,14 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
             type="button"
             onClick={handleClear}
             aria-label="검색어 지우기"
-            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-pli-black-50"
+            className={cn(
+              'flex size-6 shrink-0 items-center justify-center',
+              variant !== 'friend' && 'rounded-full bg-pli-black-50',
+            )}
           >
-            <CloseIcon className="size-4 text-grayscale-400" />
+            <CloseIcon
+              className={cn('text-grayscale-400', variant === 'friend' ? 'size-6' : 'size-4')}
+            />
           </button>
         ) : null}
       </div>
