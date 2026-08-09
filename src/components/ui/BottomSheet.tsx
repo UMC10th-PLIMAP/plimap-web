@@ -202,7 +202,8 @@ function BottomSheet({
           ref={setSnapObserverTarget}
           data-full-page={isFullPage ? '' : undefined}
           className={cn(
-            'h-full max-h-full transition-[border-radius,background-color] duration-200',
+            // h-full은 모바일 주소창 노출 시 "큰" 뷰포트 기준이라 하단이 잘려 보인다 - dvh로 교체.
+            'h-dvh max-h-dvh transition-[border-radius,background-color] duration-200',
             isFullPage
               ? 'rounded-none bg-pli-black-100 pt-[env(safe-area-inset-top)]'
               : 'rounded-t-2xl',
