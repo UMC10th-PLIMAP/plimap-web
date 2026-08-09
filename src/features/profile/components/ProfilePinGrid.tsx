@@ -1,6 +1,9 @@
+import { useState } from 'react';
+
 import EmptyPinsImage from '@/assets/images/empty-pins.png';
 import NextIcon from '@/assets/icons/next.svg?react';
 import type { MemberMeFeedItem } from '@/features/pin/types';
+import { cn } from '@/lib/utils';
 
 type ProfilePinGridProps = {
   pins: MemberMeFeedItem[];
@@ -24,10 +27,14 @@ function formatDistanceMeters(distance: number) {
 
 function ProfilePinGridItem({
   pin,
-  onPinClick,
+  isSelected,
+  onSelect,
+  onOpen,
 }: {
   pin: MemberMeFeedItem;
-  onPinClick?: (pin: MemberMeFeedItem) => void;
+  isSelected: boolean;
+  onSelect: () => void;
+  onOpen: () => void;
 }) {
   const distanceLabel = formatDistanceMeters(pin.distanceFromUser);
 
@@ -35,14 +42,24 @@ function ProfilePinGridItem({
     <li className="aspect-square">
       <button
         type="button"
-        onClick={() => onPinClick?.(pin)}
-        className="group relative size-full overflow-hidden rounded-[4.5px] text-left cursor-pointer"
+        onClick={() => {
+          if (isSelected) {
+            onOpen();
+            return;
+          }
+          onSelect();
+        }}
+        className="relative size-full overflow-hidden rounded-[4.5px] text-left cursor-pointer"
         aria-label={`${pin.placeName}, ${distanceLabel}, ${pin.pinCount}개의 핀`}
+        aria-pressed={isSelected}
       >
         <img src={pin.albumImageUrl} alt="" className="size-full object-cover" />
 
         <span
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          className={cn(
+            'pointer-events-none absolute inset-0 transition-opacity',
+            isSelected ? 'opacity-100' : 'opacity-0',
+          )}
           aria-hidden
         >
           <span className="absolute inset-0 bg-gradient-to-b from-transparent from-[33%] to-pli-black-100 to-[92%]" />
@@ -69,6 +86,8 @@ export function ProfilePinGrid({
   onPinClick,
   onRegisterPin,
 }: ProfilePinGridProps) {
+  const [selectedPinId, setSelectedPinId] = useState<number | null>(null);
+
   if (isPending) {
     return (
       <div className="flex flex-col items-center justify-center px-[69px] pt-7.5">
@@ -120,7 +139,13 @@ export function ProfilePinGrid({
   return (
     <ul className="grid grid-cols-3 gap-1 px-[17px]">
       {pins.map((pin) => (
-        <ProfilePinGridItem key={pin.pinId} pin={pin} onPinClick={onPinClick} />
+        <ProfilePinGridItem
+          key={pin.pinId}
+          pin={pin}
+          isSelected={selectedPinId === pin.pinId}
+          onSelect={() => setSelectedPinId(pin.pinId)}
+          onOpen={() => onPinClick?.(pin)}
+        />
       ))}
     </ul>
   );
