@@ -30,8 +30,10 @@ export default function UserProfilePage() {
   const parsedId = Number(memberId);
   const id = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : undefined;
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   const goBack = useGoBack('/app/home');
   const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareToast, setShareToast] = useState<ShareToast | null>(null);
@@ -39,6 +41,8 @@ export default function UserProfilePage() {
 
   if (id !== trackedMemberId) {
     setTrackedMemberId(id);
+    setIsMoreOpen(false);
+    setIsReportOpen(false);
     setIsShareOpen(false);
     setShareToast(null);
   }
@@ -80,6 +84,19 @@ export default function UserProfilePage() {
     return () => observer.disconnect();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
+  useEffect(() => {
+    if (!isMoreOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!moreMenuRef.current?.contains(event.target as Node)) {
+        setIsMoreOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMoreOpen]);
+
   return (
     <ToastProvider duration={SHARE_TOAST_DURATION_MS}>
       <div className="relative flex flex-col pb-[env(safe-area-inset-bottom)]">
@@ -95,17 +112,32 @@ export default function UserProfilePage() {
           <h1 className="text-center head-24-sb text-grayscale-100 truncate">
             {member?.nickname ?? ''}
           </h1>
-          <button
-            type="button"
-            aria-label="더보기"
-            onClick={() => {
-              if (!id) return;
-              setIsReportOpen(true);
-            }}
-            className="flex size-6 items-center justify-end text-grayscale-100 cursor-pointer"
-          >
-            <MoreIcon className="size-6" />
-          </button>
+          <div ref={moreMenuRef} className="relative flex justify-end">
+            <button
+              type="button"
+              aria-label="더보기"
+              aria-expanded={isMoreOpen}
+              onClick={() => setIsMoreOpen((prev) => !prev)}
+              className="flex size-6 items-center justify-end text-grayscale-100 cursor-pointer"
+            >
+              <MoreIcon className="size-6" />
+            </button>
+
+            {isMoreOpen ? (
+              <div className="absolute right-0 top-full z-20 mt-1 min-w-[92px] rounded-lg bg-pli-black-75 px-5 py-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMoreOpen(false);
+                    setIsReportOpen(true);
+                  }}
+                  className="body-15-m text-red cursor-pointer"
+                >
+                  신고하기
+                </button>
+              </div>
+            ) : null}
+          </div>
         </header>
 
         {member ? (
