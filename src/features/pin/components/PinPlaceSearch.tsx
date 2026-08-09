@@ -301,7 +301,7 @@ export function PinPlaceSearch({
         ) : isLoadingPlaceList ? (
           <ul role="status" aria-label="장소 목록을 불러오는 중">
             {Array.from({ length: PLACE_SEARCH_SKELETON_COUNT }).map((_, index) => (
-              <li key={index}>
+              <li key={index} className="mx-2">
                 <PlaceSearchSkeleton
                   variant={isShowingRecentPlaces ? 'recent-search' : 'search-result'}
                 />

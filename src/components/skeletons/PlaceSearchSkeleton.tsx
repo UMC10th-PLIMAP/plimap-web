@@ -10,7 +10,7 @@ export function PlaceSearchSkeleton({ variant = 'search-result' }: PlaceSearchSk
   const isRecentSearch = variant === 'recent-search';
 
   return (
-    <div className="mx-2 flex w-full items-start gap-4 px-4 py-2">
+    <div className="flex w-full items-start gap-4 px-4 py-2">
       <div className="mt-4 flex size-7 shrink-0 items-center justify-center rounded-full bg-pli-black-75">
         {isRecentSearch ? (
           <RecentSearchIcon className="size-5" aria-hidden />
@@ -24,7 +24,7 @@ export function PlaceSearchSkeleton({ variant = 'search-result' }: PlaceSearchSk
           <Skeleton className="h-4 w-6 rounded-sm" />
         </div>
         <div className="flex h-[21px] items-center">
-          <Skeleton className="h-4 w-[252px] rounded-sm" />
+          <Skeleton className="h-4 w-[252px] max-w-full rounded-sm" />
         </div>
         <div className="flex h-[21px] items-center gap-1">
           <Skeleton className="h-4 w-30 rounded-sm" />
