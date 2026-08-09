@@ -221,10 +221,9 @@ const MapPage: React.FC<MapPageProps> = ({
   const selectedPlaceId = selectedMapPlace && !isFeedMapEntry ? selectedMapPlace.id : null;
   const isPlaceSheetOpen = selectedMapPlace !== null && isUiActive;
   const viewerSelectedMapPinId = focusedMapPinId ?? (selectedMapPlace ? null : displayedMapPinId);
-  // 검색 장소든 핀 클릭이든, 피드 진입(찜한 곡 등)이 아닐 때는 등록하기 버튼을 보여준다.
+  // 검색 장소든 핀 클릭이든, 피드 진입이 아닐 때만 등록하기 버튼을 보여준다.
   const isRegisterButtonVisible =
-    isUiActive &&
-    ((isPlaceSheetOpen && !selectedMapPlace?.focusedFeedPin) || selectedMapPin !== null);
+    isUiActive && ((isPlaceSheetOpen && !isFeedMapEntry) || selectedMapPin !== null);
   // 아직 장소 정보가 안 왔거나(로딩 중), 500m 밖이거나, 본인 핀이면 등록할 수 없다.
   const isRegisterButtonDisabled =
     !resolvedActivePlace || resolvedActivePlace.isMine || !resolvedActivePlace.withinAccessRange;
@@ -571,7 +570,7 @@ const MapPage: React.FC<MapPageProps> = ({
           onResolvedPlaceChange={setResolvedActivePlace}
           // 검색으로 들어온 장소만 "<"를 누르면 검색 화면으로 돌아간다(피드 진입은 기본 접기).
           onFullPageBack={
-            selectedMapPlace.focusedFeedPin
+            isFeedMapEntry
               ? undefined
               : () =>
                   navigate('/app/pin/search', {

@@ -131,10 +131,11 @@ export function useOpenPinPlaceOnMap() {
           place.placeAccessToken = access.placeAccessToken;
         }
 
-        const resolvedPlaceTrackId =
-          placeTrackId != null && Number.isFinite(Number(placeTrackId))
-            ? Number(placeTrackId)
-            : undefined;
+        const resolvedPlaceTrackId = (() => {
+          if (placeTrackId == null) return undefined;
+          const parsed = Number(placeTrackId);
+          return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+        })();
 
         // 피드 진입 시 지도 핀 말풍선(MapPinMessageBox)용 데이터
         place.mapFocusPin = {

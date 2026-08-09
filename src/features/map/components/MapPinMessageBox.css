@@ -82,6 +82,7 @@
     #c8f940 12.857%,
     #fcff98 100%
   ); /* Neon/Linear — gc-play과 동일 */
+
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M2.75 9.93782V14.0618M6.45 6.84482V17.1548M10.15 3.23682V20.7628M13.85 7.13182V16.8678M17.55 9.56582V14.4338M21.25 10.9688V13.0308' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
     center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M2.75 9.93782V14.0618M6.45 6.84482V17.1548M10.15 3.23682V20.7628M13.85 7.13182V16.8678M17.55 9.56582V14.4338M21.25 10.9688V13.0308' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
