@@ -11,6 +11,7 @@ import type { PinRadiusCenter } from '@/features/pin/components/PinRadiusOverlay
 type MapViewerProps = {
   isLoaded: boolean;
   isInteractionDisabled?: boolean;
+  isLocationTrackingDisabled?: boolean;
   zoom: number;
   initialCenter?: MapCoordinate;
   placeResults: MapPlace[];
@@ -43,12 +44,15 @@ export type MapViewerHandle = {
   /** 지도를 현재 위치 마커로 이동시킨다. 위치를 아직 못 받았으면 아무 동작도 하지 않는다. */
   recenterToCurrentLocation: () => void;
   panTo: (coordinate: MapCoordinate, options?: { notifyCenterChanged?: boolean }) => void;
+  restoreViewport: (viewport: MapViewport) => void;
+  captureViewport: () => MapViewport | null;
 };
 
 export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function MapViewer(
   {
     isLoaded,
     isInteractionDisabled = false,
+    isLocationTrackingDisabled = false,
     zoom,
     initialCenter,
     placeResults,
@@ -75,17 +79,18 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
   },
   ref,
 ) {
-  const { mapRef, mapInstanceRef, panTo, flyTo, fitToBounds } = useGoogleMap({
-    isLoaded,
-    isInteractionDisabled,
-    zoom,
-    initialCenter,
-    onZoomChanged,
-    onCenterChanged,
-    onViewportChanged,
-    onMapClick,
-    onMapDragStart,
-  });
+  const { mapRef, mapInstanceRef, panTo, restoreViewport, captureViewport, flyTo, fitToBounds } =
+    useGoogleMap({
+      isLoaded,
+      isInteractionDisabled,
+      zoom,
+      initialCenter,
+      onZoomChanged,
+      onCenterChanged,
+      onViewportChanged,
+      onMapClick,
+      onMapDragStart,
+    });
 
   const { recenterToCurrentLocation } = useCurrentLocationMarker({
     mapInstanceRef,
@@ -94,6 +99,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onCurrentLocationChanged,
     onCurrentLocationError,
     centerOnFirstLocation,
+    isTrackingEnabled: !isLocationTrackingDisabled,
   });
 
   useImperativeHandle(
@@ -101,8 +107,10 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     () => ({
       recenterToCurrentLocation,
       panTo,
+      restoreViewport,
+      captureViewport,
     }),
-    [panTo, recenterToCurrentLocation],
+    [captureViewport, panTo, recenterToCurrentLocation, restoreViewport],
   );
 
   usePlaceMarkers({ mapInstanceRef, isLoaded, placeResults, selectedPlaceId, onSelectPlace });

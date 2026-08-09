@@ -49,6 +49,10 @@ type ClipTarget = {
   clipDurationMs?: number;
 };
 
+type UseYouTubeClipPlayerOptions = {
+  enabled?: boolean;
+};
+
 let youtubeApiPromise: Promise<YouTubeNamespace> | null = null;
 
 function loadYouTubeIframeApi() {
@@ -102,7 +106,8 @@ export function preloadYouTubeIframeApi() {
 }
 
 /** 지도 PIN 말풍선용 YouTube 구간 재생. 화면 안 초소형 플레이어로 오디오만 재생한다. */
-export function useYouTubeClipPlayer() {
+export function useYouTubeClipPlayer({ enabled = true }: UseYouTubeClipPlayerOptions = {}) {
+  const enabledRef = useRef(enabled);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const playerReadyRef = useRef(false);
@@ -112,6 +117,10 @@ export function useYouTubeClipPlayer() {
   const activeClipDurationRef = useRef(DEFAULT_CLIP_DURATION_MS);
   const playerReadyPromiseRef = useRef<Promise<YouTubePlayer> | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
 
   const clearStopTimer = useCallback(() => {
     if (stopTimerRef.current == null) return;
@@ -144,8 +153,9 @@ export function useYouTubeClipPlayer() {
   const destroyPlayer = useCallback(() => {
     playerReadyRef.current = false;
     playerReadyPromiseRef.current = null;
-    playerRef.current?.destroy();
+    const player = playerRef.current;
     playerRef.current = null;
+    player?.destroy();
     if (hostRef.current) {
       hostRef.current.replaceChildren();
     }
@@ -179,6 +189,7 @@ export function useYouTubeClipPlayer() {
 
     const readyPromise = (async () => {
       const YT = await loadYouTubeIframeApi();
+      if (!enabledRef.current) throw new Error('YouTube clip player is disabled');
       ytRef.current = YT;
 
       if (playerRef.current && playerReadyRef.current) {
@@ -206,6 +217,11 @@ export function useYouTubeClipPlayer() {
             },
             events: {
               onReady: (event) => {
+                if (!enabledRef.current) {
+                  if (playerRef.current === event.target) destroyPlayer();
+                  reject(new Error('YouTube clip player is disabled'));
+                  return;
+                }
                 playerReadyRef.current = true;
                 resolve(event.target);
               },
@@ -255,7 +271,7 @@ export function useYouTubeClipPlayer() {
 
   const play = useCallback(
     async (key: string, target: ClipTarget) => {
-      if (!target.videoId) return;
+      if (!enabledRef.current || !target.videoId) return;
 
       // 같은 키면 토글 정지 (UI상 재생 중이거나 로딩 중이어도)
       if (activeKeyRef.current === key) {
@@ -278,7 +294,7 @@ export function useYouTubeClipPlayer() {
         if (activeKeyRef.current !== key) return;
         playClipOnPlayer(player, target);
       } catch (error) {
-        console.error(error);
+        if (enabledRef.current) console.error(error);
         if (activeKeyRef.current === key) stop();
       }
     },
@@ -294,10 +310,19 @@ export function useYouTubeClipPlayer() {
 
   // 지도/상세 진입 시 API·플레이어를 미리 만들어 첫 클릭 지연을 줄인다.
   useEffect(() => {
+    if (!enabled) {
+      clearStopTimer();
+      activeKeyRef.current = null;
+      destroyPlayer();
+      hostRef.current?.remove();
+      hostRef.current = null;
+      return;
+    }
+
     void ensurePlayer().catch(() => {
       // 미리 준비 실패해도 재생 시점에 다시 시도한다.
     });
-  }, [ensurePlayer]);
+  }, [clearStopTimer, destroyPlayer, enabled, ensurePlayer]);
 
   useEffect(() => {
     return () => {
