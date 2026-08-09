@@ -66,11 +66,26 @@ export async function getPlaceTracks(
 }
 
 // 6) GET /api/v1/place-tracks/{placeTrackId} - 장소 노래 상세 조회
-export async function getPlaceTrackDetail(
-  placeTrackId: string,
-): Promise<GetPlaceTrackDetailResponse> {
+export type GetPlaceTrackDetailRequest = {
+  placeTrackId: string;
+  userLatitude: number;
+  userLongitude: number;
+  /** 친구 피드 등에서 발급받은 장소 접근 토큰 (선택) */
+  placeAccessToken?: string;
+};
+
+export async function getPlaceTrackDetail({
+  placeTrackId,
+  userLatitude,
+  userLongitude,
+  placeAccessToken,
+}: GetPlaceTrackDetailRequest): Promise<GetPlaceTrackDetailResponse> {
   const { data } = await apiClient.get<ApiResponse<GetPlaceTrackDetailResponse>>(
     `/api/v1/place-tracks/${placeTrackId}`,
+    {
+      params: { userLatitude, userLongitude },
+      headers: placeAccessToken ? { 'Place-Access-Token': placeAccessToken } : undefined,
+    },
   );
   return data.result;
 }

@@ -66,6 +66,8 @@ export type GetPlaceTracksResponse = {
     pinCount: number;
     likeCount?: number;
     isLiked: boolean;
+    /** 내가 이 장소·곡에 핀을 등록했는지 */
+    pinByMe?: boolean;
   })[];
   page: number;
   size: number;
@@ -173,6 +175,11 @@ export type PatchPinResponse = {
   clipStartMs?: number;
 };
 
+export type postFeedPlaceAccessResponse = {
+  placeAccessToken: string;
+  placeId: number;
+};
+
 // --------------------------------------------------
 export type PinSort = 'POPULAR' | 'LATEST';
 
@@ -194,6 +201,8 @@ export type Pin = Omit<LikedTrack, 'likeCount'> & {
   likeCount?: number;
   pinCount?: number;
   liked?: boolean;
+  /** 내가 이 장소·곡에 핀을 등록했는지 */
+  pinByMe?: boolean;
   pinId?: string;
 };
 

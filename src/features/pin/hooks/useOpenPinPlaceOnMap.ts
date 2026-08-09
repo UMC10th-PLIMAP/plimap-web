@@ -144,7 +144,18 @@ export function useOpenPinPlaceOnMap() {
       setIsNavigating(true);
       try {
         const resolvedPlaceTrackId = Number(placeTrackId);
-        const trackPins = await getPlaceTrackPins(String(placeTrackId), 50, undefined, 'POPULAR');
+        const positionResult = await getCurrentPosition();
+        if (!positionResult.ok) {
+          setIsNavigating(false);
+          return;
+        }
+        const trackPins = await getPlaceTrackPins({
+          placeTrackId: String(placeTrackId),
+          pageSize: 50,
+          pinSortType: 'POPULAR',
+          userLatitude: positionResult.coordinate.lat,
+          userLongitude: positionResult.coordinate.lng,
+        });
         const popularPin = trackPins.data[0];
         if (!popularPin) {
           setIsNavigating(false);

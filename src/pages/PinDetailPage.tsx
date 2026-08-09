@@ -17,6 +17,8 @@ import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTub
 import HeartIcon from '@/assets/icons/heart.svg?react';
 import ChangeIcon from '@/assets/icons/change.svg?react';
 import { cn } from '@/lib/utils';
+import { getCurrentPosition } from '@/utils/geolocation';
+import type { MapCoordinate } from '@/features/map/types';
 
 const SORT_LABEL: Record<PinSort, string> = {
   LATEST: '최신순',
@@ -47,14 +49,30 @@ export default function PinDetailPage() {
   const [sort, setSort] = useState<PinSort>('LATEST');
   const [reportFeedId, setReportFeedId] = useState<string | null>(null);
   const [deletePinId, setDeletePinId] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<MapCoordinate | null>(null);
   const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
+
+  useEffect(() => {
+    let cancelled = false;
+    void getCurrentPosition().then((result) => {
+      if (cancelled || !result.ok) return;
+      setUserLocation(result.coordinate);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const { data: pinDetail } = usePlaceTrackDetail({
     placeTrackId: pinId,
+    userLatitude: userLocation?.lat,
+    userLongitude: userLocation?.lng,
   });
   const { data: pinPages } = usePlaceTrackPins({
     placeTrackId: pinId,
     pinSortType: sort,
+    userLatitude: userLocation?.lat,
+    userLongitude: userLocation?.lng,
   });
 
   const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
