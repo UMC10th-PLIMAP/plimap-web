@@ -131,20 +131,27 @@ export function useOpenPinPlaceOnMap() {
           place.placeAccessToken = access.placeAccessToken;
         }
 
-        const resolvedPlaceTrackId =
-          showMyRegisteredTrackCta && placeTrackId != null ? Number(placeTrackId) : null;
+        const resolvedPlaceTrackId = (() => {
+          if (placeTrackId == null) return undefined;
+          const parsed = Number(placeTrackId);
+          return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+        })();
 
-        if (resolvedPlaceTrackId != null) {
-          place.focusedFeedPin = {
-            pinId: resolvedPinId,
-            placeTrackId: resolvedPlaceTrackId,
-            nickname: pinDetail.writerNickname,
-            avatarUrl: pinDetail.writerProfileImage || undefined,
-            albumImageUrl: pinDetail.albumImageUrl,
-            introduction: pinDetail.introduction,
-            youtubeVideoId: pinDetail.youtubeVideoId,
-            clipStartMs: pinDetail.clipStartMs,
-          };
+        // 피드 진입 시 지도 핀 말풍선(MapPinMessageBox)용 데이터
+        place.mapFocusPin = {
+          pinId: resolvedPinId,
+          placeTrackId: resolvedPlaceTrackId,
+          nickname: pinDetail.writerNickname,
+          avatarUrl: pinDetail.writerProfileImage || undefined,
+          albumImageUrl: pinDetail.albumImageUrl,
+          introduction: pinDetail.introduction,
+          youtubeVideoId: pinDetail.youtubeVideoId,
+          clipStartMs: pinDetail.clipStartMs,
+        };
+
+        // 내 등록 곡 상세 CTA는 placeTrackId가 있을 때만
+        if (showMyRegisteredTrackCta && resolvedPlaceTrackId != null) {
+          place.focusedFeedPin = place.mapFocusPin;
         }
 
         selectMapPlace(place);

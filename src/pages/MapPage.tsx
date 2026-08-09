@@ -16,6 +16,7 @@ import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceM
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
 import { usePinMapView } from '@/features/map/queries/usePinMapView';
 import { useAutoFocusNearestPin } from '@/features/map/hooks/useAutoFocusNearestPin';
+import { PIN_FOCUS_ZOOM } from '@/features/map/hooks/useMapPinOverlays';
 import { DEV_MOCK_MAP_PINS } from '@/features/map/constants/devMockMapPins';
 import {
   PinListSheet,
@@ -211,17 +212,18 @@ const MapPage: React.FC<MapPageProps> = ({
     ? (displayMapPins.find((pin) => pin.id === selectedMapPinId) ?? null)
     : null;
   // develop 방식: selectedMapPlace prop으로 장소 결과 관리
+  // 피드 진입(말풍선)일 때는 장소 검색 InfoWindow(흰 카드)를 띄우지 않는다.
+  const isFeedMapEntry = Boolean(selectedMapPlace?.mapFocusPin ?? selectedMapPlace?.focusedFeedPin);
   const placeResults = useMemo<MapPlace[]>(
-    () => (selectedMapPlace ? [selectedMapPlace] : []),
-    [selectedMapPlace],
+    () => (selectedMapPlace && !isFeedMapEntry ? [selectedMapPlace] : []),
+    [isFeedMapEntry, selectedMapPlace],
   );
-  const selectedPlaceId = selectedMapPlace?.id ?? null;
+  const selectedPlaceId = selectedMapPlace && !isFeedMapEntry ? selectedMapPlace.id : null;
   const isPlaceSheetOpen = selectedMapPlace !== null && isUiActive;
   const viewerSelectedMapPinId = focusedMapPinId ?? (selectedMapPlace ? null : displayedMapPinId);
-  // 검색 장소든 핀 클릭이든, 피드 진입(찜한 곡 등)이 아닐 때는 등록하기 버튼을 보여준다.
+  // 검색 장소든 핀 클릭이든, 피드 진입이 아닐 때만 등록하기 버튼을 보여준다.
   const isRegisterButtonVisible =
-    isUiActive &&
-    ((isPlaceSheetOpen && !selectedMapPlace?.focusedFeedPin) || selectedMapPin !== null);
+    isUiActive && ((isPlaceSheetOpen && !isFeedMapEntry) || selectedMapPin !== null);
   // 아직 장소 정보가 안 왔거나(로딩 중), 500m 밖이거나, 본인 핀이면 등록할 수 없다.
   const isRegisterButtonDisabled =
     !resolvedActivePlace || resolvedActivePlace.isMine || !resolvedActivePlace.withinAccessRange;
@@ -326,12 +328,19 @@ const MapPage: React.FC<MapPageProps> = ({
   }, [mapLoadStatus]);
 
   // 선택된 장소가 있으면 해당 위도·경도로 지도를 이동한다.
-  // 현재 위치 최초 센터링보다 우선한다.
+  // 피드 말풍선(mapFocusPin/focusedFeedPin)이 있으면 줌 21까지 올려 말풍선이 보이게 한다.
   useEffect(() => {
     if (mapLoadStatus !== 'ready' || !selectedMapPlace) return;
 
     const coordinate = selectedMapPlace.coordinates;
+    const shouldShowFeedBubble = Boolean(
+      selectedMapPlace.mapFocusPin ?? selectedMapPlace.focusedFeedPin,
+    );
     const frameId = window.requestAnimationFrame(() => {
+      if (shouldShowFeedBubble) {
+        mapViewerRef.current?.flyTo(coordinate, PIN_FOCUS_ZOOM);
+        return;
+      }
       mapViewerRef.current?.panTo(coordinate);
     });
 
@@ -561,7 +570,7 @@ const MapPage: React.FC<MapPageProps> = ({
           onResolvedPlaceChange={setResolvedActivePlace}
           // 검색으로 들어온 장소만 "<"를 누르면 검색 화면으로 돌아간다(피드 진입은 기본 접기).
           onFullPageBack={
-            selectedMapPlace.focusedFeedPin
+            isFeedMapEntry
               ? undefined
               : () =>
                   navigate('/app/pin/search', {
