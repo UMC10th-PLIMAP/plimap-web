@@ -28,7 +28,8 @@ function SheetContent({ className, children, ref, ...props }: SheetContentProps)
         ref={ref}
         data-slot="bottom-sheet-content"
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[402px] flex-col overflow-hidden',
+          // MapLayout의 covered 페이지(z-60) 안에서도 body 포털 시트가 항상 위에 보이게 한다.
+          'fixed inset-x-0 bottom-0 z-[80] mx-auto flex w-full max-w-[402px] flex-col overflow-hidden',
           'rounded-t-[20px] bg-pli-black-100 pb-[env(safe-area-inset-bottom)] outline-none',
           className,
         )}

@@ -260,10 +260,7 @@ function SongWaveform({
   );
 
   return (
-    <div
-      ref={trackRef}
-      className="relative mx-[6px] mt-1 flex h-[68px] w-[297px] items-center justify-between gap-x-[6px]"
-    >
+    <div ref={trackRef} className="relative mt-1 flex h-[68px] w-full items-center justify-between">
       {peaks.map((height, index) => {
         const isSelected = index >= trimStartIndex && index <= trimEndIndex;
 
