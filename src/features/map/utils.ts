@@ -21,6 +21,7 @@ export const loadGoogleMapsScript = (apiKey: string) => {
     };
     const handleError = () => {
       delete mapsWindow[GOOGLE_MAPS_READY_CALLBACK];
+      document.getElementById('google-maps-script')?.remove();
       googleMapsLoadPromise = null;
       reject(new Error('Google Maps Script load error'));
     };
