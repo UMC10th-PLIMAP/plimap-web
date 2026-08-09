@@ -6,7 +6,7 @@ export function PinDetailSkeleton() {
   return (
     <div
       role="status"
-      aria-label="곡 상세 불러오는 중"
+      aria-label="핀 상세 불러오는 중"
       className="flex min-h-full flex-col bg-pli-black-100"
     >
       <div className="flex flex-col items-center px-4">
