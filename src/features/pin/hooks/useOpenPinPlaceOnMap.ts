@@ -2,9 +2,10 @@ import { useCallback, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 
 import { getPlaceDetail } from '@/api/place';
-import { getPinDetail, getPlaceTrackPins } from '@/api/pin';
+import { getPinDetail, getPlaceTrackPins, postFeedPlaceAccessRequest } from '@/api/pin';
 import type { FocusedFeedPin, PinDetailResponse, PinSearchPlace } from '@/features/pin/types';
 import type { AppOutletContext } from '@/layouts/RootLayout';
+import { useFeedPlaceAccessStore } from '@/store/feedPlaceAccessStore';
 import { getCurrentPosition, getGeolocationErrorMessage } from '@/utils/geolocation';
 
 type OpenPinPlaceOptions = {
@@ -14,6 +15,8 @@ type OpenPinPlaceOptions = {
   isMine?: boolean;
   /** 프로필 피드 등에서 진입 시 ‘등록한 곡 상세 보기’ CTA 표시 */
   showMyRegisteredTrackCta?: boolean;
+  /** 친구 피드 장소 접근 토큰 발급 (팔로잉한 친구 핀 진입 시) */
+  requestFeedPlaceAccess?: boolean;
 };
 
 type OpenPlaceTrackOptions = {
@@ -29,6 +32,7 @@ async function resolvePlace(params: {
   isMine: boolean;
   focusedFeedPin?: FocusedFeedPin;
   mapFocusPin?: FocusedFeedPin;
+  allowTrackDetailAccess?: boolean;
 }) {
   const { pinDetail } = params;
   const positionResult = await getCurrentPosition();
@@ -52,6 +56,7 @@ async function resolvePlace(params: {
     creatorName: pinDetail.writerNickname,
     bookmarkedByMe: placeDetail.bookmarkedByMe,
     isMine: params.isMine || placeDetail.pinnedByMe,
+    allowTrackDetailAccess: params.allowTrackDetailAccess,
     selectionLocation: {
       latitude: userCoordinate.lat,
       longitude: userCoordinate.lng,
@@ -99,6 +104,7 @@ export function useOpenPinPlaceOnMap() {
       fallbackPlaceName = '',
       isMine = false,
       showMyRegisteredTrackCta = false,
+      requestFeedPlaceAccess = false,
     }: OpenPinPlaceOptions) => {
       if (isNavigating) return;
 
@@ -106,10 +112,18 @@ export function useOpenPinPlaceOnMap() {
       try {
         const resolvedPinId = Number(pinId);
         const pinDetail = await getPinDetail(String(pinId));
+
+        if (requestFeedPlaceAccess && !isMine) {
+          const access = await postFeedPlaceAccessRequest(String(pinDetail.placeId));
+          useFeedPlaceAccessStore.getState().setToken(access.placeId, access.placeAccessToken);
+        }
+
         const { place } = await resolvePlace({
           pinDetail,
           fallbackPlaceName,
           isMine,
+          // 내/친구 피드 → 지도 진입이므로 곡 상세 열람 허용
+          allowTrackDetailAccess: true,
         });
 
         const resolvedPlaceTrackId =
@@ -184,6 +198,8 @@ export function useOpenPinPlaceOnMap() {
           focusedFeedPin: myPin
             ? toFocusedFeedPin(myPin, resolvedPlaceTrackId, pinDetail)
             : undefined,
+          // 찜한 곡(내 PLIMAP) → 지도 진입이므로 곡 상세 열람 허용
+          allowTrackDetailAccess: true,
         });
 
         selectMapPlace(place);

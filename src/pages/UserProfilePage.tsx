@@ -160,6 +160,8 @@ export default function UserProfilePage() {
               fallbackPlaceName: pin.placeName,
               isMine: false,
               showMyRegisteredTrackCta: false,
+              // 팔로잉한 친구 피드 핀이면 장소 접근 토큰 발급
+              requestFeedPlaceAccess: Boolean(member?.isFollowing),
             });
           }}
         />
