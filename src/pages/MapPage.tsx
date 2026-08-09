@@ -387,7 +387,9 @@ const MapPage: React.FC<MapPageProps> = ({
         <ToastProvider duration={REGISTRATION_TOAST_DURATION_MS}>
           <div
             className="pointer-events-none fixed inset-x-0 z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4"
-            style={{ bottom: `calc(${activeSheetSnap * 100}vh + 16px)` }}
+            // 스냅 추적(activeSheetSnap)은 window.innerHeight 기준이라, 모바일에서 vh 대신
+            // 실제 보이는 높이를 따라가는 dvh를 써야 버튼이 시트 상단에서 어긋나지 않는다.
+            style={{ bottom: `calc(${activeSheetSnap * 100}dvh + 16px)` }}
           >
             <Button
               type="button"
