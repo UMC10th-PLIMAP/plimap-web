@@ -60,13 +60,11 @@ export default function TermsAgreementPage() {
   if (detailTermId) {
     const term = TERMS_BY_ID[detailTermId];
     return (
-      <div className="flex min-h-screen flex-col">
-        <div className="pt-[44px]">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-hide pt-[44px]">
           <TermsDetailContent term={term} />
         </div>
-        {/* 고정 CTA에 가려지지 않도록 스크롤 영역 하단에 여백 확보 */}
-        <div aria-hidden className="h-[116px]" />
-        <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-[10px] pb-[52px]">
+        <div className="flex shrink-0 justify-center px-[10px] pt-[38px] pb-[52px]">
           <Button
             key="confirm"
             type="button"
