@@ -1,21 +1,21 @@
-import BackIcon from '@/assets/icons/back.svg?react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { TopBar } from '@/components/ui/TopBar';
 import { PinFeedCardSkeleton } from './PinFeedCardSkeleton';
 
-export function PinDetailSkeleton() {
+type PinDetailSkeletonProps = {
+  onBack?: () => void;
+};
+
+export function PinDetailSkeleton({ onBack }: PinDetailSkeletonProps) {
   return (
     <div
       role="status"
       aria-label="핀 상세 불러오는 중"
       className="flex min-h-full flex-col bg-pli-black-100"
     >
-      <div className="flex flex-col items-center px-4">
-        <div className="grid h-15 w-full grid-cols-[28px_1fr_28px] items-center">
-          <div className="flex size-7 items-center justify-center text-grayscale-100">
-            <BackIcon aria-hidden />
-          </div>
-        </div>
+      <TopBar onBack={onBack} />
 
+      <div className="flex flex-col items-center px-4">
         <Skeleton className="size-[112px] rounded-lg" />
         <Skeleton className="mt-3 h-7 w-[183px] rounded-sm" />
         <Skeleton className="mt-[11px] h-4 w-[64px] rounded-sm" />

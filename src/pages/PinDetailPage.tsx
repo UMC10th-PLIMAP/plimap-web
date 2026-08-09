@@ -74,7 +74,7 @@ export default function PinDetailPage() {
   };
 
   if (isPinDetailPending || isPinPagesPending) {
-    return <PinDetailSkeleton />;
+    return <PinDetailSkeleton onBack={() => navigate(-1)} />;
   }
 
   return (
