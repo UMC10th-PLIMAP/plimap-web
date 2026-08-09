@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
+import { PinDetailSkeleton } from '@/components/skeletons/PinDetailSkeleton';
 
 import { reportPin } from '@/api/report';
 import { ReportModal } from '@/features/pin/components/ReportModal';
-import { SongFeedCard } from '@/features/pin/components/SongFeedCard';
+import { PinFeedCard } from '@/features/pin/components/PinFeedCard';
 import { useDeleteLikedTrack } from '@/features/pin/queries/useDeleteLikedTrack';
 import { useDeletePin } from '@/features/pin/queries/useDeletePin';
 import { usePlaceTrackDetail } from '@/features/pin/queries/usePlaceTrackDetail';
@@ -189,9 +190,7 @@ export default function PinDetailPage() {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <TopBar onBack={() => navigate(-1)} className="pt-[env(safe-area-inset-top)]" />
-        <div className="flex flex-1 items-center justify-center px-4">
-          <p className="body-15-r text-grayscale-500">곡 정보를 불러오는 중이에요.</p>
-        </div>
+        <PinDetailSkeleton />
       </div>
     );
   }
@@ -277,7 +276,7 @@ export default function PinDetailPage() {
 
       <div className="flex flex-col gap-4 px-[11px] pt-[17.5px] pb-[env(safe-area-inset-bottom)]">
         {pins.map((entry) => (
-          <SongFeedCard
+          <PinFeedCard
             key={entry.id}
             entry={entry}
             isPlaying={playingKey === entry.id}

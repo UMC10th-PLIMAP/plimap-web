@@ -1,9 +1,7 @@
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import Cropper, { type Area, type Point } from 'react-easy-crop';
 
-import { getMyProfile } from '@/api/member';
 import { ApiError } from '@/api/client';
 import CameraIcon from '@/assets/icons/camera.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
@@ -12,13 +10,13 @@ import { TopBar } from '@/components/ui/TopBar';
 import { ProfileTextAreaField } from '@/features/profile/components/ProfileTextAreaField';
 import { ProfileTextField } from '@/features/profile/components/ProfileTextField';
 import { useProfileEditForm } from '@/features/profile/hooks/useProfileEditForm';
-import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 import { useUpdateMyProfile } from '@/features/profile/queries/useUpdateMyProfile';
 import { useUploadProfileImage } from '@/features/profile/queries/useUploadProfileImage';
 import { getCroppedImageBlob } from '@/features/profile/utils/cropImage';
 import { INTRODUCTION_MAX_LENGTH } from '@/features/profile/utils/validateIntroduction';
 import { NAME_MAX_LENGTH } from '@/features/profile/utils/validateName';
 import { NICKNAME_MAX_LENGTH } from '@/features/profile/utils/validateNickname';
+import { useMyProfile } from '@/hooks/useMyProfile';
 import type { MyProfileResponse } from '@/types/member.type';
 
 type ImageStep = 'idle' | 'crop';
@@ -33,11 +31,7 @@ const PROFILE_LOAD_FAILED_MESSAGE = '프로필을 불러오지 못했어요.';
 export default function ProfileEditPage() {
   const navigate = useNavigate();
 
-  const { data: profile, isError } = useQuery({
-    queryKey: memberQueryKeys.me(),
-    queryFn: getMyProfile,
-    staleTime: Infinity,
-  });
+  const { data: profile, isError } = useMyProfile();
 
   return (
     <div className="flex h-full min-h-screen flex-col">

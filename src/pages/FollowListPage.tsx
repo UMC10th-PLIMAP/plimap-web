@@ -10,7 +10,7 @@ import { useInfiniteFollowList } from '@/features/profile/queries/useFollowList'
 import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 import { useGoBack } from '@/hooks/useGoBack';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
-import { useMyProfile } from '@/features/home/hooks/useMyProfile';
+import { useMyProfile } from '@/hooks/useMyProfile';
 import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
 import type { FollowTab } from '@/features/profile/types';

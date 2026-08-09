@@ -1,13 +1,13 @@
 import { Skeleton } from '@/components/ui/Skeleton';
 
-export function SongFeedCardSkeleton() {
+export function PinFeedCardSkeleton() {
   return (
     <article className="rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3">
       <header className="flex items-center gap-2.5">
         <Skeleton className="size-7 rounded-full" />
         <div className="flex flex-1 items-center gap-1.5">
           <Skeleton className="h-[21px] w-25 rounded-sm" />
-          <Skeleton className="h-[21px] w-9 rounded-sm" />
+          <Skeleton className="h-[21px] w-13 rounded-sm" />
         </div>
         <Skeleton className="size-6 rounded-sm" />
       </header>

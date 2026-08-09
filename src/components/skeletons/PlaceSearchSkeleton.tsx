@@ -1,23 +1,34 @@
 import { Skeleton } from '@/components/ui/Skeleton';
 import LocationIcon from '@/assets/icons/location.svg?react';
+import RecentSearchIcon from '@/assets/icons/recent-search.svg?react';
 
-export function PlaceSearchSkeleton() {
+export type PlaceSearchSkeletonProps = {
+  variant?: 'search-result' | 'recent-search';
+};
+
+export function PlaceSearchSkeleton({ variant = 'search-result' }: PlaceSearchSkeletonProps) {
+  const isRecentSearch = variant === 'recent-search';
+
   return (
-    <div className="w-[342px] h-25 pt-4 pb-3 flex gap-4 mx-6">
-      <div className="flex w-8 h-7 items-center justify-center rounded-full bg-pli-black-50">
-        <LocationIcon className="h-[15px] w-4 text-grayscale-600" />
+    <div className="flex w-full items-start gap-4 px-4 py-2">
+      <div className="mt-4 flex size-7 shrink-0 items-center justify-center rounded-full bg-pli-black-75">
+        {isRecentSearch ? (
+          <RecentSearchIcon className="size-5" aria-hidden />
+        ) : (
+          <LocationIcon className="size-[18px] text-grayscale-600" aria-hidden />
+        )}
       </div>
-      <div className="w-full flex flex-col">
-        <div className="flex items-center gap-1.5 py-1">
-          <Skeleton className="w-25 h-4 rounded-sm" />
-          <Skeleton className="w-6 h-4 rounded-sm" />
+      <div className="flex min-w-0 flex-1 flex-col gap-[6px] pb-3 pt-4">
+        <div className="flex h-6 items-center gap-1.5">
+          <Skeleton className="h-4 w-25 rounded-sm" />
+          <Skeleton className="h-4 w-16 rounded-sm" />
         </div>
-        <div className="py-[2.5px]">
-          <Skeleton className="w-[252px] h-4 rounded-sm " />
+        <div className="flex h-[21px] items-center">
+          <Skeleton className="h-4 w-[252px] max-w-full rounded-sm" />
         </div>
-        <div className="flex items-center gap-1 pt-[6px]">
-          <Skeleton className="w-30 h-4 rounded-sm" />
-          <Skeleton className="w-13 h-4 rounded-sm" />
+        <div className="flex h-[21px] items-center gap-1">
+          <Skeleton className="h-4 w-30 rounded-sm" />
+          <Skeleton className="h-4 w-18 rounded-sm" />
         </div>
       </div>
     </div>

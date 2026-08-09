@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import EmptyPinsImage from '@/assets/images/empty-pins.png';
 import NextIcon from '@/assets/icons/next.svg?react';
+import { ProfilePinGridSkeleton } from '@/components/skeletons/ProfilePinGridSkeleton';
 import type { MemberMeFeedItem } from '@/features/pin/types';
 import { cn } from '@/lib/utils';
 
@@ -89,11 +90,7 @@ export function ProfilePinGrid({
   const [selectedPinId, setSelectedPinId] = useState<number | null>(null);
 
   if (isPending) {
-    return (
-      <div className="flex flex-col items-center justify-center px-[69px] pt-7.5">
-        <p className="body-15-r text-grayscale-500">핀을 불러오는 중이에요.</p>
-      </div>
-    );
+    return <ProfilePinGridSkeleton />;
   }
 
   if (isError) {

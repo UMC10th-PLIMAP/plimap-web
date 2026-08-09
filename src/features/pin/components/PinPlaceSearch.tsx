@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'r
 
 import { isApiRequestCanceled } from '@/api/client';
 import { SearchInput } from '@/components/ui/SearchInput';
+import { PlaceSearchSkeleton } from '@/components/skeletons/PlaceSearchSkeleton';
 import { PlaceResultRow } from '@/features/pin/components/PlaceResultRow';
 import {
   useDeleteRecentSearchPlace,
@@ -14,6 +15,8 @@ import type { MapCoordinate } from '@/features/map/types';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { useAutoFocusAfterViewTransition } from '@/hooks/useAutoFocusAfterViewTransition';
 import type { PlaceSearchHistoryRequest } from '@/types/place.type';
+
+const PLACE_SEARCH_SKELETON_COUNT = 5;
 
 export type PinPlaceSearchProps = {
   initialQuery?: string;
@@ -197,6 +200,9 @@ export function PinPlaceSearch({
   };
 
   const isWaitingForLocation = normalizedQuery.length > 0 && !currentLocation && !locationError;
+  // 검색 결과와 최근 검색 목록이 같은 자리에 렌더링되므로 두 로딩 상태를 함께 본다.
+  const isLoadingPlaceList =
+    isSearching || (isShowingRecentPlaces && recentSearchQuery.isPending && !locationError);
   const hasNoResults =
     normalizedQuery.length > 0 &&
     !isSearching &&
@@ -271,6 +277,16 @@ export function PinPlaceSearch({
               </li>
             ))}
           </ul>
+        ) : isLoadingPlaceList ? (
+          <ul role="status" aria-label="장소 목록을 불러오는 중">
+            {Array.from({ length: PLACE_SEARCH_SKELETON_COUNT }).map((_, index) => (
+              <li key={index} className="mx-2">
+                <PlaceSearchSkeleton
+                  variant={isShowingRecentPlaces ? 'recent-search' : 'search-result'}
+                />
+              </li>
+            ))}
+          </ul>
         ) : null}
 
         {hasNoResults ? (
@@ -285,21 +301,9 @@ export function PinPlaceSearch({
           </p>
         ) : null}
 
-        {isSearching ? (
-          <p className="m-auto whitespace-nowrap body-15-r text-grayscale-600">
-            장소를 검색하고 있어요.
-          </p>
-        ) : null}
-
         {isSelectingPlace ? (
           <p className="m-auto whitespace-nowrap body-15-r text-grayscale-600">
             장소를 선택하고 있어요.
-          </p>
-        ) : null}
-
-        {isShowingRecentPlaces && recentSearchQuery.isPending && !locationError ? (
-          <p className="m-auto px-6 text-center body-15-r text-grayscale-600">
-            최근 검색 장소를 불러오고 있어요.
           </p>
         ) : null}
 
