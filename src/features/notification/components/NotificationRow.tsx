@@ -1,0 +1,109 @@
+import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
+import { useActorProfile } from '@/features/notification/queries/useNotifications';
+import type { Notification } from '@/features/notification/types';
+import { cn } from '@/lib/utils';
+
+const NOTIFICATION_MESSAGE: Record<Notification['type'], string> = {
+  FOLLOW: '님이 나를 팔로우하기 시작했어요.',
+  PIN_CREATED: '님이 새로운 PIN을 등록했어요.',
+  PIN_LIKED: '님이 내 PIN을 좋아해요.',
+};
+
+type NotificationRowProps = {
+  notification: Notification;
+  isFollowPending: boolean;
+  onFollowBack: (actorId: number) => void;
+  onOpenPin: (pinId: number) => void;
+};
+
+function formatCreatedAt(createdAt: string) {
+  const createdAtTimestamp = Date.parse(createdAt);
+  if (Number.isNaN(createdAtTimestamp)) return null;
+
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - createdAtTimestamp) / 1_000));
+
+  if (elapsedSeconds < 60) return '방금';
+  if (elapsedSeconds < 3_600) return `${Math.floor(elapsedSeconds / 60)}분전`;
+  if (elapsedSeconds < 86_400) return `${Math.floor(elapsedSeconds / 3_600)}시간전`;
+  if (elapsedSeconds < 604_800) return `${Math.floor(elapsedSeconds / 86_400)}일전`;
+
+  return new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric' }).format(
+    new Date(createdAtTimestamp),
+  );
+}
+
+function ProfileImage({ notification }: { notification: Notification }) {
+  if (!notification.actorProfileImageUrl) {
+    return (
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-pli-black-50 text-grayscale-600">
+        <UserPlaceholderIcon className="size-7" aria-hidden />
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={notification.actorProfileImageUrl}
+      alt={`${notification.actorNickname} 프로필`}
+      className="size-10 shrink-0 rounded-full object-cover"
+    />
+  );
+}
+
+export function NotificationRow({
+  notification,
+  isFollowPending,
+  onFollowBack,
+  onOpenPin,
+}: NotificationRowProps) {
+  const isFollowNotification = notification.type === 'FOLLOW';
+  const actorProfile = useActorProfile(notification.actorId, isFollowNotification);
+  const isFollowing = actorProfile.data?.isFollowing ?? false;
+  const canOpenPin = notification.pinId !== null && !isFollowNotification;
+  const createdAtLabel = formatCreatedAt(notification.createdAt);
+  const notificationContent = (
+    <>
+      <span className="font-semibold text-grayscale-100">{notification.actorNickname}</span>
+      {NOTIFICATION_MESSAGE[notification.type]}{' '}
+      {createdAtLabel && <span className="etc-12-r text-grayscale-600">{createdAtLabel}</span>}
+    </>
+  );
+
+  return (
+    <li className="flex items-center gap-2.5">
+      <ProfileImage notification={notification} />
+
+      {canOpenPin ? (
+        <button
+          type="button"
+          onClick={() => notification.pinId !== null && onOpenPin(notification.pinId)}
+          className="body-15-r min-w-0 flex-1 cursor-pointer text-left text-grayscale-200"
+        >
+          {notificationContent}
+        </button>
+      ) : (
+        <div className="body-15-r min-w-0 flex-1 text-left text-grayscale-200">
+          {notificationContent}
+        </div>
+      )}
+
+      {isFollowNotification && (
+        <button
+          type="button"
+          disabled={isFollowing || actorProfile.isPending || isFollowPending}
+          onClick={() => onFollowBack(notification.actorId)}
+          className={cn(
+            'etc-13-sb flex h-8 w-[102px] shrink-0 items-center justify-center rounded-lg transition-colors',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-2',
+            isFollowing
+              ? 'cursor-default bg-pli-black-50 text-grayscale-100'
+              : 'cursor-pointer bg-neon-2 text-grayscale-1200 hover:bg-neon',
+            (actorProfile.isPending || isFollowPending) && 'cursor-wait opacity-60',
+          )}
+        >
+          {isFollowing ? '팔로잉' : '맞팔로우'}
+        </button>
+      )}
+    </li>
+  );
+}

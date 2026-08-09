@@ -1,0 +1,201 @@
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+
+import BackIcon from '@/assets/icons/back.svg?react';
+import MoreIcon from '@/assets/icons/more.svg?react';
+
+import { reportMember } from '@/api/report';
+import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { ReportModal } from '@/features/pin/components/ReportModal';
+import { ProfileActions } from '@/features/profile/components/ProfileActions';
+import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
+import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
+import { ProfileShareDialog } from '@/features/profile/components/ProfileShareDialog';
+import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
+import { useInfiniteOtherMemberFeed } from '@/features/pin/queries/useOtherMemberFeed';
+import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
+import { useGoBack } from '@/hooks/useGoBack';
+import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
+
+const SHARE_TOAST_DURATION_MS = 2_000;
+
+type ShareToast = {
+  attempt: number;
+};
+
+export default function UserProfilePage() {
+  const navigate = useNavigate();
+  const { memberId } = useParams<{ memberId: string }>();
+  const parsedId = Number(memberId);
+  const id = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : undefined;
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const goBack = useGoBack('/app/home');
+  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareToast, setShareToast] = useState<ShareToast | null>(null);
+  const [trackedMemberId, setTrackedMemberId] = useState(id);
+
+  if (id !== trackedMemberId) {
+    setTrackedMemberId(id);
+    setIsShareOpen(false);
+    setShareToast(null);
+  }
+
+  const { data: member } = useOtherMemberProfile(id);
+  const {
+    data: feedPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending: isFeedPending,
+    isError: isFeedError,
+    refetch: refetchFeed,
+  } = useInfiniteOtherMemberFeed({ memberId: id });
+  const followMutation = useToggleFollow();
+
+  const nickname = member?.nickname?.trim() ?? '';
+  const canShareProfile = nickname.length > 0;
+
+  useEffect(() => {
+    const loadMoreElement = loadMoreRef.current;
+    if (!loadMoreElement || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { rootMargin: '120px' },
+    );
+
+    observer.observe(loadMoreElement);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  return (
+    <ToastProvider duration={SHARE_TOAST_DURATION_MS}>
+      <div className="relative flex flex-col pb-[env(safe-area-inset-bottom)]">
+        <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
+          <button
+            type="button"
+            aria-label="뒤로가기"
+            onClick={goBack}
+            className="flex size-6 items-center text-grayscale-100 cursor-pointer"
+          >
+            <BackIcon className="size-6" />
+          </button>
+          <h1 className="text-center head-24-sb text-grayscale-100 truncate">
+            {member?.nickname ?? ''}
+          </h1>
+          <button
+            type="button"
+            aria-label="더보기"
+            onClick={() => {
+              if (!id) return;
+              setIsReportOpen(true);
+            }}
+            className="flex size-6 items-center justify-end text-grayscale-100 cursor-pointer"
+          >
+            <MoreIcon className="size-6" />
+          </button>
+        </header>
+
+        {member && (
+          <div className="mt-[3px] flex flex-col">
+            <ProfileInfo
+              profile={{
+                name: member.name,
+                introduction: member.introduction,
+                profileImageUrl: member.profileImageUrl,
+                followerCount: member.followerCount,
+                followingCount: member.followingCount,
+                pinCount: member.pinCount,
+              }}
+              onFollowingClick={() => {
+                if (!id) return;
+                navigate(`/app/users/${id}/following`);
+              }}
+              onFollowerClick={() => {
+                if (!id) return;
+                navigate(`/app/users/${id}/followers`);
+              }}
+            />
+            <ProfileActions
+              actions={[
+                {
+                  label: member.isFollowing ? '팔로잉' : '팔로우',
+                  onClick: () => {
+                    if (followMutation.isPending || !id) return;
+                    followMutation.mutate({ memberId: id, isFollowing: member.isFollowing });
+                  },
+                  className: member.isFollowing
+                    ? undefined
+                    : 'bg-neon-2 text-grayscale-1200 body-15-m',
+                },
+                {
+                  label: '프로필 공유',
+                  onClick: () => {
+                    if (!canShareProfile) return;
+                    setIsShareOpen(true);
+                  },
+                },
+              ]}
+            />
+          </div>
+        )}
+
+        <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
+        <ProfilePinGrid
+          pins={feedPages?.pages.flatMap((page) => page.data) ?? []}
+          isPending={isFeedPending}
+          isError={isFeedError}
+          onRetry={() => {
+            void refetchFeed();
+          }}
+          onPinClick={(pin) => {
+            void openPinPlaceOnMap({
+              pinId: pin.pinId,
+              fallbackPlaceName: pin.placeName,
+              isMine: false,
+              showMyRegisteredTrackCta: false,
+            });
+          }}
+        />
+        <div ref={loadMoreRef} aria-hidden className="h-px" />
+
+        {canShareProfile ? (
+          <ProfileShareDialog
+            open={isShareOpen}
+            onClose={() => setIsShareOpen(false)}
+            onCopied={() => {
+              setShareToast((current) => ({ attempt: (current?.attempt ?? 0) + 1 }));
+            }}
+            nickname={nickname}
+            name={member?.name}
+            profileImageUrl={member?.profileImageUrl}
+          />
+        ) : null}
+
+        <ReportModal
+          open={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          onSubmit={async (reason, detail) => {
+            if (!id) return;
+            await reportMember(id, reason, detail);
+          }}
+        />
+
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+24px)] z-50 flex justify-center">
+          {shareToast ? (
+            <Toast key={shareToast.attempt} defaultOpen>
+              닉네임이 복사되었어요!
+            </Toast>
+          ) : null}
+          <ToastViewport />
+        </div>
+      </div>
+    </ToastProvider>
+  );
+}

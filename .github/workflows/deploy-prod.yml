@@ -1,0 +1,282 @@
+name: Deploy Prod
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  PROJECT_ID: ${{ vars.PROD_GCP_PROJECT_ID }}
+  REGION: ${{ vars.PROD_GCP_REGION }}
+  ARTIFACT_REPOSITORY: ${{ vars.PROD_ARTIFACT_REPOSITORY }}
+  CLOUD_RUN_SERVICE: ${{ vars.PROD_CLOUD_RUN_SERVICE }}
+  RUNTIME_SERVICE_ACCOUNT: ${{ vars.PROD_RUNTIME_SERVICE_ACCOUNT }}
+  PUBLIC_BASE_URL: ${{ vars.PROD_PUBLIC_BASE_URL }}
+  PUBLIC_SMOKE_ENABLED: ${{ vars.PROD_PUBLIC_SMOKE_ENABLED }}
+
+jobs:
+  deploy:
+    name: Deploy frontend Prod
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://plimap.kr
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Validate production configuration
+        shell: bash
+        env:
+          WIF_PROVIDER: ${{ vars.PROD_GCP_WIF_PROVIDER }}
+          DEPLOYER_SERVICE_ACCOUNT: ${{ vars.PROD_GCP_DEPLOYER_SERVICE_ACCOUNT }}
+          PROD_VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.PROD_VITE_GOOGLE_MAPS_API_KEY }}
+          PROD_VITE_GOOGLE_MAPS_MAP_ID: ${{ secrets.PROD_VITE_GOOGLE_MAPS_MAP_ID }}
+          PROD_VITE_KAKAO_REST_API_KEY: ${{ secrets.PROD_VITE_KAKAO_REST_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          required_vars=(
+            PROJECT_ID
+            REGION
+            ARTIFACT_REPOSITORY
+            CLOUD_RUN_SERVICE
+            RUNTIME_SERVICE_ACCOUNT
+            PUBLIC_BASE_URL
+            PUBLIC_SMOKE_ENABLED
+            WIF_PROVIDER
+            DEPLOYER_SERVICE_ACCOUNT
+            PROD_VITE_GOOGLE_MAPS_API_KEY
+            PROD_VITE_GOOGLE_MAPS_MAP_ID
+            PROD_VITE_KAKAO_REST_API_KEY
+          )
+
+          for name in "${required_vars[@]}"; do
+            if [[ -z "${!name}" ]]; then
+              echo "${name} must be configured for the production deployment." >&2
+              exit 1
+            fi
+          done
+
+          if [[ "$GITHUB_REF" != "refs/heads/main" || ! "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Production deployments must use a valid main branch commit." >&2
+            exit 1
+          fi
+
+          if [[ "$PROJECT_ID" != "plimap" || "$REGION" != "asia-northeast3" ||
+                "$ARTIFACT_REPOSITORY" != "plimap-docker" ||
+                "$CLOUD_RUN_SERVICE" != "plimap-web-prod" ||
+                "$PUBLIC_BASE_URL" != "https://plimap.kr" ||
+                ! "$RUNTIME_SERVICE_ACCOUNT" =~ ^plimap-web-prod@plimap\.iam\.gserviceaccount\.com$ ||
+                ! "$PUBLIC_SMOKE_ENABLED" =~ ^(true|false)$ ]]; then
+            echo "Production deployment metadata differs from the approved infrastructure." >&2
+            exit 1
+          fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ vars.PROD_GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.PROD_GCP_DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          version: '576.0.0'
+
+      - name: Configure Artifact Registry authentication
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push immutable frontend image
+        shell: bash
+        env:
+          PROD_VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.PROD_VITE_GOOGLE_MAPS_API_KEY }}
+          PROD_VITE_GOOGLE_MAPS_MAP_ID: ${{ secrets.PROD_VITE_GOOGLE_MAPS_MAP_ID }}
+          PROD_VITE_KAKAO_REST_API_KEY: ${{ secrets.PROD_VITE_KAKAO_REST_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          image="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/plimap-web:${GITHUB_SHA}"
+          docker build --pull \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --build-arg "VITE_API_BASE_URL=${PUBLIC_BASE_URL}" \
+            --build-arg "VITE_GOOGLE_MAPS_API_KEY=${PROD_VITE_GOOGLE_MAPS_API_KEY}" \
+            --build-arg "VITE_GOOGLE_MAPS_MAP_ID=${PROD_VITE_GOOGLE_MAPS_MAP_ID}" \
+            --build-arg "VITE_KAKAO_REST_API_KEY=${PROD_VITE_KAKAO_REST_API_KEY}" \
+            --tag "$image" \
+            .
+          docker push "$image"
+
+          digest="$(
+            gcloud artifacts docker images describe "$image" \
+              --project="$PROJECT_ID" \
+              --format='value(image_summary.digest)'
+          )"
+          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Could not resolve an immutable image digest for $image" >&2
+            exit 1
+          fi
+
+          echo "DEPLOY_IMAGE=${image%:*}@${digest}" >> "$GITHUB_ENV"
+          echo "DEPLOY_DIGEST=${digest}" >> "$GITHUB_ENV"
+
+      - name: Deploy candidate and promote
+        shell: bash
+        run: |
+          set -eEuo pipefail
+
+          previous_revision="$(
+            gcloud run services describe "$CLOUD_RUN_SERVICE" \
+              --project="$PROJECT_ID" \
+              --region="$REGION" \
+              --format=json |
+              jq -r '[.status.traffic[]? | select(.percent == 100)][0].revisionName // empty'
+          )"
+          revision_suffix="${GITHUB_SHA::12}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          candidate_revision="${CLOUD_RUN_SERVICE}-${revision_suffix}"
+          traffic_promoted=false
+
+          rollback_on_exit() {
+            status=$?
+            trap - EXIT
+            if [[ "$status" -ne 0 && "$traffic_promoted" == true && -n "$previous_revision" ]]; then
+              echo "Deployment verification failed. Restoring ${previous_revision}." >&2
+              gcloud run services update-traffic "$CLOUD_RUN_SERVICE" \
+                --project="$PROJECT_ID" \
+                --region="$REGION" \
+                --to-revisions="${previous_revision}=100" \
+                --quiet || true
+            fi
+            exit "$status"
+          }
+          trap rollback_on_exit EXIT
+
+          gcloud run deploy "$CLOUD_RUN_SERVICE" \
+            --project="$PROJECT_ID" \
+            --region="$REGION" \
+            --image="$DEPLOY_IMAGE" \
+            --revision-suffix="$revision_suffix" \
+            --no-traffic \
+            --service-account="$RUNTIME_SERVICE_ACCOUNT" \
+            --execution-environment=gen2 \
+            --port=8080 \
+            --cpu=1 \
+            --memory=512Mi \
+            --concurrency=80 \
+            --timeout=60 \
+            --min=0 \
+            --max=2 \
+            --ingress=internal-and-cloud-load-balancing \
+            --no-default-url \
+            --cpu-throttling \
+            --no-cpu-boost \
+            --labels="commit-sha=${GITHUB_SHA}" \
+            --quiet
+
+          revision_json="$(
+            gcloud run revisions describe "$candidate_revision" \
+              --project="$PROJECT_ID" \
+              --region="$REGION" \
+              --format=json
+          )"
+          ready="$(jq -r '[.status.conditions[] | select(.type == "Ready")][0].status // empty' <<< "$revision_json")"
+          actual_image="$(jq -r '.status.imageDigest // empty' <<< "$revision_json")"
+          if [[ "$ready" != "True" ||
+                ( "$actual_image" != "$DEPLOY_DIGEST" && "$actual_image" != *@"$DEPLOY_DIGEST" ) ]]; then
+            echo "Candidate revision did not become ready with the approved image digest." >&2
+            exit 1
+          fi
+
+          gcloud run services update-traffic "$CLOUD_RUN_SERVICE" \
+            --project="$PROJECT_ID" \
+            --region="$REGION" \
+            --to-revisions="${candidate_revision}=100" \
+            --quiet
+          traffic_promoted=true
+
+          service_json="$(
+            gcloud run services describe "$CLOUD_RUN_SERVICE" \
+              --project="$PROJECT_ID" \
+              --region="$REGION" \
+              --format=json
+          )"
+          serving_revision="$(
+            jq -r '[.status.traffic[]? | select(.percent == 100)][0].revisionName // empty' \
+              <<< "$service_json"
+          )"
+          ingress="$(jq -r '.metadata.annotations["run.googleapis.com/ingress"] // empty' <<< "$service_json")"
+          default_url_disabled="$(
+            jq -r '.metadata.annotations["run.googleapis.com/default-url-disabled"] // empty' \
+              <<< "$service_json"
+          )"
+          if [[ "$serving_revision" != "$candidate_revision" ||
+                "$ingress" != "internal-and-cloud-load-balancing" ||
+                "$default_url_disabled" != "true" ]]; then
+            echo "Cloud Run service state differs from the approved production state." >&2
+            exit 1
+          fi
+
+          if [[ "$PUBLIC_SMOKE_ENABLED" == true ]]; then
+            public_ready=false
+            for attempt in $(seq 1 30); do
+              if curl --fail --silent --show-error \
+                --connect-timeout 5 --max-time 15 \
+                --output /dev/null \
+                "${PUBLIC_BASE_URL}/?deploy=${GITHUB_SHA}-${attempt}"
+              then
+                public_ready=true
+                break
+              fi
+              sleep 2
+            done
+            if [[ "$public_ready" != true ]]; then
+              echo "The production frontend did not become publicly reachable." >&2
+              exit 1
+            fi
+
+            for blocked_path in /actuator/health /swagger-ui/index.html /v3/api-docs; do
+              code="$(
+                curl --silent --show-error \
+                  --connect-timeout 5 --max-time 15 \
+                  --output /dev/null --write-out '%{http_code}' \
+                  "${PUBLIC_BASE_URL}${blocked_path}"
+              )"
+              if [[ "$code" != 404 ]]; then
+                echo "Reserved backend path must return 404: ${blocked_path} returned ${code}" >&2
+                exit 1
+              fi
+            done
+          fi
+
+          echo "CANDIDATE_REVISION=$candidate_revision" >> "$GITHUB_ENV"
+
+      - name: Write deployment summary
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          {
+            echo '## Frontend Prod Deployment'
+            echo
+            echo '| Item | Result |'
+            echo '| --- | --- |'
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Image | \`${DEPLOY_IMAGE:-not-built}\` |"
+            echo "| Revision | \`${CANDIDATE_REVISION:-not-deployed}\` |"
+            echo "| Public smoke | \`${PUBLIC_SMOKE_ENABLED}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

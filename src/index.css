@@ -1,0 +1,368 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+@import 'tailwindcss';
+
+@theme {
+  /* Primary */
+  --color-neon: #c8f940;
+  --color-neon-2: #f7fe90;
+  --color-neon-gradient-from: #fcff98;
+  --background-image-gradient-neon: linear-gradient(
+    180deg,
+    var(--color-neon) 0%,
+    var(--color-neon-gradient-from) 100%
+  );
+  --color-green: #14bd83;
+  --color-red: #ec4547;
+  --color-kakao: #fee500;
+  --color-kakao-text: #000000d9;
+
+  /* Tag colors */
+  --color-tag-stroke: #6d794d;
+  --color-tag-fill: #c8f94014;
+
+  /* PLI_black colors */
+  --color-pli-black-100: #0c0d0f;
+  --color-pli-black-85: #18181c;
+  --color-pli-black-75: #242429;
+  --color-pli-black-50: #323238;
+  --color-pli-black-25: #4a4a52;
+  --color-pli-black-10: #757582;
+
+  /* Grayscale colors */
+  --color-grayscale-1300: #0f0f0f;
+  --color-grayscale-1250: #191919;
+  --color-grayscale-1200: #222222;
+  --color-grayscale-1100: #333333;
+  --color-grayscale-1000: #444444;
+  --color-grayscale-900: #555555;
+  --color-grayscale-800: #666666;
+  --color-grayscale-700: #777777;
+  --color-grayscale-600: #888888;
+  --color-grayscale-500: #999999;
+  --color-grayscale-400: #bbbbbb;
+  --color-grayscale-300: #cccccc;
+  --color-grayscale-200: #dddddd;
+  --color-grayscale-100: #efefef;
+  --color-grayscale-30: #f6f6f6;
+  --color-grayscale-0: #fdfdfd;
+
+  /* 폰트 설정 */
+  --font-sans: Pretendard, 'Pretendard Variable', system-ui, sans-serif;
+
+  /* 폰트 두께 설정 */
+  --font-weight-semibold: 600;
+  --font-weight-medium: 500;
+  --font-weight-regular: 400;
+
+  /* 폰트 크기 설정 */
+  --font-size-28: 28px;
+  --font-size-24: 24px;
+  --font-size-20: 20px;
+  --font-size-17: 17px;
+  --font-size-18: 18px;
+  --font-size-15: 15px;
+  --font-size-13: 13px;
+  --font-size-12: 12px;
+
+  /* 폰트 라인 높이 설정 */
+  --line-height-tight: 140%;
+}
+
+/* Head utility */
+@utility head-28-m {
+  font-size: var(--font-size-28);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-medium);
+}
+
+@utility head-24-sb {
+  font-size: var(--font-size-24);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+@utility head-20-sb {
+  font-size: var(--font-size-20);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+@utility head-20-m {
+  font-size: var(--font-size-20);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-medium);
+}
+
+@utility head-18-sb {
+  font-size: var(--font-size-18);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Body utility */
+@utility body-24-m {
+  font-size: var(--font-size-24);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-medium);
+}
+
+@utility body-18-r {
+  font-size: var(--font-size-18);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-regular);
+}
+
+@utility body-17-m {
+  font-size: var(--font-size-17);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-medium);
+}
+
+@utility body-17-r {
+  font-size: var(--font-size-17);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-regular);
+}
+
+@utility body-15-sb {
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+@utility body-15-m {
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-medium);
+}
+
+@utility body-15-r {
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-regular);
+}
+
+/* Etc utility */
+@utility etc-13-sb {
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+@utility etc-13-r {
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-regular);
+}
+
+@utility etc-12-r {
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-regular);
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply h-dvh min-h-dvh bg-[#000000];
+  }
+
+  @media (min-width: 500px) {
+    html,
+    body,
+    #root {
+      @apply bg-white;
+    }
+  }
+
+  body {
+    @apply text-grayscale-30 font-sans antialiased;
+  }
+}
+
+.map-search-hero {
+  view-transition-name: plimap-search-bar;
+  contain: layout;
+}
+
+@keyframes map-search-circle-reveal {
+  from {
+    clip-path: circle(0 at 50% var(--map-search-reveal-y));
+  }
+
+  to {
+    clip-path: circle(150vmax at 50% var(--map-search-reveal-y));
+  }
+}
+
+@keyframes map-search-circle-conceal {
+  from {
+    clip-path: circle(150vmax at 50% var(--map-search-reveal-y));
+  }
+
+  to {
+    clip-path: circle(0 at 50% var(--map-search-reveal-y));
+  }
+}
+
+.map-search-overlay {
+  --map-search-reveal-y: calc(env(safe-area-inset-top) + 46px);
+  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both map-search-circle-reveal;
+  contain: paint;
+  will-change: clip-path;
+}
+
+.map-search-overlay-closing {
+  --map-search-reveal-y: calc(env(safe-area-inset-top) + 46px);
+  animation: 320ms cubic-bezier(0.4, 0, 1, 1) both map-search-circle-conceal;
+  contain: paint;
+  will-change: clip-path;
+}
+
+@keyframes plimap-page-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pin-registration-stage-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pin-registration-stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pin-register-selection-stage,
+.pin-register-search-stage,
+.pin-register-confirm-stage {
+  view-transition-name: pin-registration-stage;
+  contain: layout;
+}
+
+@keyframes toast-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes toast-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-group(pin-registration-stage) {
+  z-index: 90;
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(pin-registration-stage) {
+  animation: 160ms ease-in both pin-registration-stage-out;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(pin-registration-stage) {
+  animation: 240ms 40ms cubic-bezier(0.22, 1, 0.36, 1) both pin-registration-stage-in;
+  mix-blend-mode: normal;
+}
+
+@supports not (view-transition-name: pin-registration-stage) {
+  .pin-register-selection-stage,
+  .pin-register-search-stage,
+  .pin-register-confirm-stage {
+    animation: 220ms ease-out both plimap-page-fade-in;
+  }
+}
+
+::view-transition-new(root) {
+  animation: none;
+}
+
+html:has([data-page='pin-place-search'])::view-transition-new(root) {
+  animation: 220ms 60ms ease-out both plimap-page-fade-in;
+}
+
+::view-transition-group(plimap-search-bar) {
+  z-index: 100;
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(plimap-search-bar),
+::view-transition-new(plimap-search-bar) {
+  overflow: clip;
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-search-hero {
+    view-transition-name: none;
+  }
+
+  .map-search-overlay {
+    animation-duration: 1ms !important;
+  }
+
+  .map-search-overlay-closing {
+    animation-duration: 1ms !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(plimap-search-bar),
+  ::view-transition-group(pin-registration-stage),
+  ::view-transition-old(pin-registration-stage),
+  ::view-transition-new(pin-registration-stage) {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+.toast-root[data-state='open'] {
+  animation: toast-fade-in 200ms ease-out;
+}
+
+.toast-root[data-state='closed'] {
+  animation: toast-fade-out 200ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-root[data-state='open'],
+  .toast-root[data-state='closed'] {
+    animation: none;
+  }
+}
