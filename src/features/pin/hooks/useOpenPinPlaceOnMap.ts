@@ -113,16 +113,6 @@ export function useOpenPinPlaceOnMap() {
         const resolvedPinId = Number(pinId);
         const pinDetail = await getPinDetail(String(pinId));
 
-        let placeAccessToken: string | undefined;
-        if (requestFeedPlaceAccess && !isMine) {
-          const access = await postFeedPlaceAccessRequest(String(pinDetail.placeId));
-          useFeedPlaceAccessStore.getState().setToken(pinDetail.placeId, access.placeAccessToken);
-          if (access.placeId !== pinDetail.placeId) {
-            useFeedPlaceAccessStore.getState().setToken(access.placeId, access.placeAccessToken);
-          }
-          placeAccessToken = access.placeAccessToken;
-        }
-
         const { place } = await resolvePlace({
           pinDetail,
           fallbackPlaceName,
@@ -130,7 +120,16 @@ export function useOpenPinPlaceOnMap() {
           // 내/친구 피드 → 지도 진입이므로 곡 상세 열람 허용
           allowTrackDetailAccess: true,
         });
-        place.placeAccessToken = placeAccessToken;
+
+        // resolvePlace 최종 isMine( pinnedByMe 반영 ) 기준으로 토큰 발급
+        if (requestFeedPlaceAccess && !place.isMine && place.placeId != null) {
+          const access = await postFeedPlaceAccessRequest(String(place.placeId));
+          useFeedPlaceAccessStore.getState().setToken(place.placeId, access.placeAccessToken);
+          if (access.placeId !== place.placeId) {
+            useFeedPlaceAccessStore.getState().setToken(access.placeId, access.placeAccessToken);
+          }
+          place.placeAccessToken = access.placeAccessToken;
+        }
 
         const resolvedPlaceTrackId =
           showMyRegisteredTrackCta && placeTrackId != null ? Number(placeTrackId) : null;

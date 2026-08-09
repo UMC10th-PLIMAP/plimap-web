@@ -474,12 +474,16 @@ const MapPage: React.FC<MapPageProps> = ({
           place={toPlaceInfo(selectedMapPlace)}
           focusedFeedPin={selectedMapPlace.focusedFeedPin}
           allowTrackDetailAccess={Boolean(selectedMapPlace.allowTrackDetailAccess)}
-          detailLocation={
-            selectedMapPlace.selectionLocation ??
-            (currentLocation
-              ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
-              : null)
-          }
+          detailLocation={{
+            latitude:
+              selectedMapPlace.selectionLocation?.latitude ??
+              currentLocation?.lat ??
+              selectedMapPlace.coordinates.lat,
+            longitude:
+              selectedMapPlace.selectionLocation?.longitude ??
+              currentLocation?.lng ??
+              selectedMapPlace.coordinates.lng,
+          }}
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
             const latitude =
@@ -539,11 +543,10 @@ const MapPage: React.FC<MapPageProps> = ({
           collapseToSmallestSignal={sheetCollapseSignal}
           onActiveSnapChange={setActiveSheetSnap}
           onResolvedPlaceChange={setResolvedActivePlace}
-          detailLocation={
-            currentLocation
-              ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
-              : null
-          }
+          detailLocation={{
+            latitude: currentLocation?.lat ?? selectedMapPin.lat,
+            longitude: currentLocation?.lng ?? selectedMapPin.lng,
+          }}
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
             const latitude = currentLocation?.lat ?? selectedMapPin.lat;
