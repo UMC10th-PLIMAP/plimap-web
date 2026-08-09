@@ -113,9 +113,14 @@ export function useOpenPinPlaceOnMap() {
         const resolvedPinId = Number(pinId);
         const pinDetail = await getPinDetail(String(pinId));
 
+        let placeAccessToken: string | undefined;
         if (requestFeedPlaceAccess && !isMine) {
           const access = await postFeedPlaceAccessRequest(String(pinDetail.placeId));
-          useFeedPlaceAccessStore.getState().setToken(access.placeId, access.placeAccessToken);
+          useFeedPlaceAccessStore.getState().setToken(pinDetail.placeId, access.placeAccessToken);
+          if (access.placeId !== pinDetail.placeId) {
+            useFeedPlaceAccessStore.getState().setToken(access.placeId, access.placeAccessToken);
+          }
+          placeAccessToken = access.placeAccessToken;
         }
 
         const { place } = await resolvePlace({
@@ -125,6 +130,7 @@ export function useOpenPinPlaceOnMap() {
           // 내/친구 피드 → 지도 진입이므로 곡 상세 열람 허용
           allowTrackDetailAccess: true,
         });
+        place.placeAccessToken = placeAccessToken;
 
         const resolvedPlaceTrackId =
           showMyRegisteredTrackCta && placeTrackId != null ? Number(placeTrackId) : null;
