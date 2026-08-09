@@ -277,6 +277,8 @@ export type PinSearchPlace = PlaceResult & {
    * false/미설정이면 곡 목록만 보이고 상세 조회는 불가.
    */
   allowTrackDetailAccess?: boolean;
+  /** 친구 피드 진입 시 발급받은 장소 접근 토큰 (해당 장소 곡 상세에만 사용) */
+  placeAccessToken?: string;
   source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
   withinAccessRange?: boolean;
   selectionLocation?: PlaceSearchHistoryRequest;

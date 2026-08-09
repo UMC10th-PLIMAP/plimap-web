@@ -510,27 +510,51 @@ const MapPage: React.FC<MapPageProps> = ({
           place={toPlaceInfo(selectedMapPlace)}
           focusedFeedPin={selectedMapPlace.focusedFeedPin}
           allowTrackDetailAccess={Boolean(selectedMapPlace.allowTrackDetailAccess)}
-          detailLocation={
-            selectedMapPlace.selectionLocation ??
-            (currentLocation
-              ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
-              : null)
-          }
+          detailLocation={{
+            latitude:
+              selectedMapPlace.selectionLocation?.latitude ??
+              currentLocation?.lat ??
+              selectedMapPlace.coordinates.lat,
+            longitude:
+              selectedMapPlace.selectionLocation?.longitude ??
+              currentLocation?.lng ??
+              selectedMapPlace.coordinates.lng,
+          }}
           detailLocationError={currentLocationError}
-          onPinClick={(pin) =>
+          onPinClick={(pin) => {
+            const latitude =
+              currentLocation?.lat ??
+              selectedMapPlace.selectionLocation?.latitude ??
+              selectedMapPlace.coordinates.lat;
+            const longitude =
+              currentLocation?.lng ??
+              selectedMapPlace.selectionLocation?.longitude ??
+              selectedMapPlace.coordinates.lng;
             navigate(`/app/pins/${pin.placeTrackId}`, {
-              state: currentLocation
-                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
-                : undefined,
-            })
-          }
-          onFocusedTrackClick={(placeTrackId) =>
+              state: {
+                userLatitude: latitude,
+                userLongitude: longitude,
+                placeAccessToken: selectedMapPlace.placeAccessToken,
+              },
+            });
+          }}
+          onFocusedTrackClick={(placeTrackId) => {
+            const latitude =
+              currentLocation?.lat ??
+              selectedMapPlace.selectionLocation?.latitude ??
+              selectedMapPlace.coordinates.lat;
+            const longitude =
+              currentLocation?.lng ??
+              selectedMapPlace.selectionLocation?.longitude ??
+              selectedMapPlace.coordinates.lng;
             navigate(`/app/pins/${placeTrackId}`, {
-              state: currentLocation
-                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
-                : undefined,
-            })
-          }
+              state: {
+                userLatitude: latitude,
+                userLongitude: longitude,
+                placeAccessToken: selectedMapPlace.placeAccessToken,
+              },
+            });
+          }}
           resetKey={selectedMapPlace.id}
           collapseToSmallestSignal={sheetCollapseSignal}
           onActiveSnapChange={setActiveSheetSnap}
@@ -555,19 +579,18 @@ const MapPage: React.FC<MapPageProps> = ({
           collapseToSmallestSignal={sheetCollapseSignal}
           onActiveSnapChange={setActiveSheetSnap}
           onResolvedPlaceChange={setResolvedActivePlace}
-          detailLocation={
-            currentLocation
-              ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
-              : null
-          }
+          detailLocation={{
+            latitude: currentLocation?.lat ?? selectedMapPin.lat,
+            longitude: currentLocation?.lng ?? selectedMapPin.lng,
+          }}
           detailLocationError={currentLocationError}
-          onPinClick={(pin) =>
+          onPinClick={(pin) => {
+            const latitude = currentLocation?.lat ?? selectedMapPin.lat;
+            const longitude = currentLocation?.lng ?? selectedMapPin.lng;
             navigate(`/app/pins/${pin.placeTrackId}`, {
-              state: currentLocation
-                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
-                : undefined,
-            })
-          }
+              state: { userLatitude: latitude, userLongitude: longitude },
+            });
+          }}
         />
       ) : null}
 
