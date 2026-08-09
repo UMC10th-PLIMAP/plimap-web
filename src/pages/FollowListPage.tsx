@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 
 import { FollowListSkeleton } from '@/components/skeletons/FollowListSkeleton';
+import { ApiError } from '@/api/client';
 import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
+import { useToast } from '@/hooks/useToast';
 import { TopBar } from '@/components/ui/TopBar';
 import { FollowUserRow } from '@/features/profile/components/FollowUserRow';
 import { SearchInput } from '@/components/ui/SearchInput';
@@ -15,6 +17,8 @@ import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
 import type { FollowTab } from '@/features/profile/types';
 import type { FollowListItem } from '@/types/member.type';
+
+const FOLLOW_TOGGLE_FAILED_MESSAGE = '요청을 처리하지 못했어요. 다시 시도해주세요.';
 
 function getTabFromPath(pathname: string): FollowTab {
   return pathname.endsWith('/followers') ? 'follower' : 'following';
@@ -44,15 +48,11 @@ const OTHER_EMPTY_STATE: Record<FollowTab, { title: string; description: string 
 
 export default function FollowListPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { pathname } = useLocation();
   const { memberId: memberIdParam } = useParams<{ memberId?: string }>();
   const tab = getTabFromPath(pathname);
   const [keyword, setKeyword] = useState('');
-  const [actionError, setActionError] = useState<{
-    error: unknown;
-    target: FollowListItem;
-  } | null>(null);
-
   const parsedMemberId = Number(memberIdParam);
   const otherMemberId =
     Number.isInteger(parsedMemberId) && parsedMemberId > 0 ? parsedMemberId : undefined;
@@ -126,7 +126,7 @@ export default function FollowListPage() {
     try {
       await toggleFollow({ memberId: target.id, isFollowing: target.isFollowing });
     } catch (error) {
-      setActionError({ error, target });
+      toast.error(error instanceof ApiError ? error.message : FOLLOW_TOGGLE_FAILED_MESSAGE);
     } finally {
       setPendingMemberIds((prev) => {
         const next = new Set(prev);
@@ -148,7 +148,6 @@ export default function FollowListPage() {
   }
 
   const requestError =
-    actionError?.error ??
     (isFollowListError && !followList ? followListError : null) ??
     (!myProfile ? myProfileQuery.error : null) ??
     (!otherProfile ? otherProfileQuery.error : null);
@@ -159,13 +158,6 @@ export default function FollowListPage() {
         error={requestError}
         onBack={goBack}
         onRetry={() => {
-          if (actionError) {
-            const { target } = actionError;
-            setActionError(null);
-            void handleActionClick(target);
-            return;
-          }
-
           void Promise.all([
             refetchFollowList(),
             myProfileQuery.refetch(),

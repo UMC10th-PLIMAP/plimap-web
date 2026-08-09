@@ -5,8 +5,9 @@ import BackIcon from '@/assets/icons/back.svg?react';
 import MoreIcon from '@/assets/icons/more.svg?react';
 
 import { ProfileSkeleton } from '@/components/skeletons/ProfileSkeleton';
+import { ApiError } from '@/api/client';
 import { reportMember } from '@/api/report';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { useToast } from '@/hooks/useToast';
 import { ReportModal } from '@/features/pin/components/ReportModal';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
@@ -19,14 +20,12 @@ import { getFollowActionLabel } from '@/features/profile/utils/getFollowActionLa
 import { useGoBack } from '@/hooks/useGoBack';
 import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
-const SHARE_TOAST_DURATION_MS = 2_000;
-
-type ShareToast = {
-  attempt: number;
-};
+const FOLLOW_TOGGLE_FAILED_MESSAGE = '요청을 처리하지 못했어요. 다시 시도해 주세요.';
+const REPORT_FAILED_MESSAGE = '신고를 접수하지 못했어요. 다시 시도해 주세요.';
 
 export default function UserProfilePage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { memberId } = useParams<{ memberId: string }>();
   const parsedId = Number(memberId);
   const id = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : undefined;
@@ -37,7 +36,6 @@ export default function UserProfilePage() {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
-  const [shareToast, setShareToast] = useState<ShareToast | null>(null);
   const [trackedMemberId, setTrackedMemberId] = useState(id);
 
   if (id !== trackedMemberId) {
@@ -45,7 +43,6 @@ export default function UserProfilePage() {
     setIsMoreOpen(false);
     setIsReportOpen(false);
     setIsShareOpen(false);
-    setShareToast(null);
   }
 
   const {
@@ -99,7 +96,7 @@ export default function UserProfilePage() {
   }, [isMoreOpen]);
 
   return (
-    <ToastProvider duration={SHARE_TOAST_DURATION_MS}>
+    <>
       <div className="relative flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
           <button
@@ -168,7 +165,18 @@ export default function UserProfilePage() {
                     label: getFollowActionLabel(member),
                     onClick: () => {
                       if (followMutation.isPending || !id) return;
-                      followMutation.mutate({ memberId: id, isFollowing: member.isFollowing });
+                      followMutation.mutate(
+                        { memberId: id, isFollowing: member.isFollowing },
+                        {
+                          onError: (error) => {
+                            toast.error(
+                              error instanceof ApiError
+                                ? error.message
+                                : FOLLOW_TOGGLE_FAILED_MESSAGE,
+                            );
+                          },
+                        },
+                      );
                     },
                     className: member.isFollowing
                       ? undefined
@@ -233,7 +241,7 @@ export default function UserProfilePage() {
             open={isShareOpen}
             onClose={() => setIsShareOpen(false)}
             onCopied={() => {
-              setShareToast((current) => ({ attempt: (current?.attempt ?? 0) + 1 }));
+              toast.success('닉네임이 복사되었어요!');
             }}
             nickname={nickname}
             name={member?.name}
@@ -246,19 +254,15 @@ export default function UserProfilePage() {
           onClose={() => setIsReportOpen(false)}
           onSubmit={async (reason, detail) => {
             if (!id) return;
-            await reportMember(id, reason, detail);
+            try {
+              await reportMember(id, reason, detail);
+            } catch (error) {
+              toast.error(error instanceof ApiError ? error.message : REPORT_FAILED_MESSAGE);
+              throw error;
+            }
           }}
         />
-
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+24px)] z-50 flex justify-center">
-          {shareToast ? (
-            <Toast key={shareToast.attempt} defaultOpen>
-              닉네임이 복사되었어요!
-            </Toast>
-          ) : null}
-          <ToastViewport />
-        </div>
       </div>
-    </ToastProvider>
+    </>
   );
 }

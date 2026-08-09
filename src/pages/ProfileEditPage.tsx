@@ -2,8 +2,10 @@ import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Cropper, { type Area, type Point } from 'react-easy-crop';
 
+import { ApiError } from '@/api/client';
 import CameraIcon from '@/assets/icons/camera.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
 import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
@@ -27,10 +29,10 @@ const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const INVALID_FORMAT_MESSAGE =
   '올릴 수 없는 파일 형식이에요. JPG, PNG 또는 WebP 파일로 선택해 주세요.';
 const IMAGE_PROCESSING_FAILED_MESSAGE = '이미지 처리에 실패했어요. 다시 시도해 주세요.';
+const PROFILE_UPDATE_FAILED_MESSAGE = '프로필 수정에 실패했어요. 다시 시도해 주세요.';
 
 export default function ProfileEditPage() {
   const navigate = useNavigate();
-  const [actionError, setActionError] = useState<unknown>(null);
 
   const {
     data: profile,
@@ -42,26 +44,17 @@ export default function ProfileEditPage() {
     return <RequestErrorScreen error={profileError} onRetry={() => void refetch()} />;
   }
 
-  if (actionError) {
-    return <RequestErrorScreen error={actionError} onRetry={() => setActionError(null)} />;
-  }
-
   return (
     <div className="flex h-full min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar title="프로필 편집" titleWeight="medium" onBack={() => navigate(-1)} />
-      {profile && <ProfileEditForm profile={profile} onRequestError={setActionError} />}
+      {profile && <ProfileEditForm profile={profile} />}
     </div>
   );
 }
 
-function ProfileEditForm({
-  profile,
-  onRequestError,
-}: {
-  profile: MyProfileResponse;
-  onRequestError: (error: unknown) => void;
-}) {
+function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [imageStep, setImageStep] = useState<ImageStep>('idle');
@@ -103,7 +96,7 @@ function ProfileEditForm({
     if (!file) return;
 
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      alert(INVALID_FORMAT_MESSAGE);
+      toast.error(INVALID_FORMAT_MESSAGE);
       return;
     }
 
@@ -140,7 +133,7 @@ function ProfileEditForm({
       setImageStep('idle');
     } catch (error) {
       console.error('크롭 실패:', error);
-      alert(IMAGE_PROCESSING_FAILED_MESSAGE);
+      toast.error(IMAGE_PROCESSING_FAILED_MESSAGE);
     } finally {
       setIsCropProcessing(false);
     }
@@ -180,7 +173,7 @@ function ProfileEditForm({
 
       navigate('/app/my', { replace: true });
     } catch (error) {
-      onRequestError(error);
+      toast.error(error instanceof ApiError ? error.message : PROFILE_UPDATE_FAILED_MESSAGE);
     }
   };
 

@@ -4,7 +4,7 @@ import SettingsIcon from '@/assets/icons/settings.svg?react';
 import ShareIcon from '@/assets/icons/share.svg?react';
 
 import { ProfileSkeleton } from '@/components/skeletons/ProfileSkeleton';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { useToast } from '@/hooks/useToast';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
@@ -15,17 +15,15 @@ import { useInfiniteMemberMe } from '@/features/pin/queries/useMemberMe';
 import { useMyProfile } from '@/hooks/useMyProfile';
 import { cn } from '@/lib/utils';
 
-const SHARE_TOAST_DURATION_MS = 2_000;
 const MY_PROFILE_STALE_TIME = 60 * 1000;
-
-type ShareToast = {
-  attempt: number;
-};
 
 export default function MyProfilePage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { data: myProfile } = useMyProfile({ staleTime: MY_PROFILE_STALE_TIME });
-  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
+  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap({
+    errorToastPlacement: 'above-navigation',
+  });
   const {
     data: memberMePages,
     isPending: isMemberMePending,
@@ -33,7 +31,6 @@ export default function MyProfilePage() {
     refetch: refetchMemberMe,
   } = useInfiniteMemberMe();
   const [isShareOpen, setIsShareOpen] = useState(false);
-  const [shareToast, setShareToast] = useState<ShareToast | null>(null);
 
   // 실제로는 AuthGuard에서 캐시가 저장되기 때문에 myProfile이 undefined인 경우가 거의 없음
   // 하지만 혹시 모르니 skeleton을 띄워줌
@@ -43,7 +40,7 @@ export default function MyProfilePage() {
   const canShareProfile = nickname.length > 0;
 
   return (
-    <ToastProvider duration={SHARE_TOAST_DURATION_MS}>
+    <>
       <div className="relative flex flex-col pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+108px)]">
         <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
           <div />
@@ -114,23 +111,14 @@ export default function MyProfilePage() {
             open={isShareOpen}
             onClose={() => setIsShareOpen(false)}
             onCopied={() => {
-              setShareToast((current) => ({ attempt: (current?.attempt ?? 0) + 1 }));
+              toast.success('닉네임이 복사되었어요!', { placement: 'above-navigation' });
             }}
             nickname={nickname}
             name={myProfile.name}
             profileImageUrl={myProfile.profileImageUrl}
           />
         ) : null}
-
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+108px)] z-50 flex justify-center">
-          {shareToast ? (
-            <Toast key={shareToast.attempt} defaultOpen>
-              닉네임이 복사되었어요!
-            </Toast>
-          ) : null}
-          <ToastViewport />
-        </div>
       </div>
-    </ToastProvider>
+    </>
   );
 }

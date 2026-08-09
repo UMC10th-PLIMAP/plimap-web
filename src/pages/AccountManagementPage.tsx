@@ -2,18 +2,21 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
+import { ApiError } from '@/api/client';
+import { useToast } from '@/hooks/useToast';
 import { TopBar } from '@/components/ui/TopBar';
 import { SettingsRow } from '@/features/settings/components/SettingsRow';
 import { WithdrawConfirmDialog } from '@/features/settings/components/WithdrawConfirmDialog';
 import { useWithdrawMember } from '@/features/settings/queries/useWithdrawMember';
 import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 
+const WITHDRAW_FAILED_MESSAGE = '탈퇴 처리에 실패했어요. 잠시 후 다시 시도해주세요.';
+
 export default function AccountManagementPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const queryClient = useQueryClient();
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
-  const [requestError, setRequestError] = useState<unknown>(null);
   const withdrawMutation = useWithdrawMember();
 
   const handleWithdraw = () => {
@@ -26,23 +29,10 @@ export default function AccountManagementPage() {
         navigate('/app/login', { replace: true });
       },
       onError: (error) => {
-        setIsWithdrawDialogOpen(false);
-        setRequestError(error);
+        toast.error(error instanceof ApiError ? error.message : WITHDRAW_FAILED_MESSAGE);
       },
     });
   };
-
-  if (requestError) {
-    return (
-      <RequestErrorScreen
-        error={requestError}
-        onRetry={() => {
-          setRequestError(null);
-          setIsWithdrawDialogOpen(true);
-        }}
-      />
-    );
-  }
 
   return (
     <div className="flex min-h-screen flex-col pt-[env(safe-area-inset-top)]">

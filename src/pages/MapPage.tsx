@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
 import { FullScreenError } from '@/components/ui/FullScreenError';
-import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
 import type {
   MapCoordinate,
@@ -29,7 +29,6 @@ import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTub
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
-const REGISTRATION_TOAST_DURATION_MS = 2_000;
 // mapViewData 로딩 중(undefined)에는 매 렌더마다 새 배열 리터럴이 생기면 안 된다 -
 // useAutoFocusNearestPin이 mapPins 참조 변경을 감지해 상태를 갱신하므로, 참조가
 // 계속 바뀌면 무한 렌더 루프(React #301)가 된다.
@@ -38,15 +37,9 @@ const EMPTY_MAP_CLUSTERS: PinCluster[] = [];
 // 장소 1개짜리 클러스터를 눌러 줌 21로 이동한 뒤, 근처 몇 m 안 개별 핀을 같은 장소로 본다.
 const SINGLE_CLUSTER_MATCH_RADIUS_METERS = 15;
 
-type RegistrationToast = {
-  attempt: number;
-  message: string;
-};
-
 type MapNavigationState = {
   mapFocusCoordinate?: MapCoordinate;
 };
-
 type MapPageProps = {
   selectedMapPlace: PinSearchPlace | null;
   onClearMapPlace?: () => void;
@@ -99,6 +92,7 @@ const MapPage: React.FC<MapPageProps> = ({
   onCurrentLocationChange,
 }) => {
   const navigate = useNavigate();
+  const toast = useToast();
   const location = useLocation();
   const mapFocusCoordinate = (location.state as MapNavigationState | null)?.mapFocusCoordinate;
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
@@ -142,7 +136,6 @@ const MapPage: React.FC<MapPageProps> = ({
       lng: initialPositionQuery.data.longitude,
     });
   }, [initialPositionQuery.data, onCurrentLocationChange]);
-  const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
   // 지도 빈 곳을 탭하면 시트를 닫지 않고 가장 작은 스냅으로만 축소한다 - 값은 의미 없이 신호로만 쓴다.
   const [sheetCollapseSignal, setSheetCollapseSignal] = useState(0);
@@ -398,12 +391,10 @@ const MapPage: React.FC<MapPageProps> = ({
     const didRecenter = mapViewerRef.current?.recenterToCurrentLocation() ?? false;
     if (didRecenter) return;
 
-    setRegistrationToast((currentToast) => ({
-      attempt: (currentToast?.attempt ?? 0) + 1,
-      message:
-        currentLocationError ??
+    toast.error(
+      currentLocationError ??
         '현재 위치를 확인하고 있어요. 위치 권한을 확인한 뒤 다시 시도해 주세요.',
-    }));
+    );
   };
 
   // 지도 빈 영역 탭/드래그 시작: 시트를 닫지 않고 가장 작은 스냅으로만 축소한다.
@@ -416,10 +407,7 @@ const MapPage: React.FC<MapPageProps> = ({
     if (!resolvedActivePlace) return;
 
     if (!currentLocation) {
-      setRegistrationToast((currentToast) => ({
-        attempt: (currentToast?.attempt ?? 0) + 1,
-        message: '현재 위치를 확인하고 있어요. 위치 권한을 확인한 뒤 다시 시도해 주세요.',
-      }));
+      toast.error('현재 위치를 확인하고 있어요.\n위치 권한을 확인한 뒤 다시 시도해 주세요.');
       return;
     }
 
@@ -515,8 +503,8 @@ const MapPage: React.FC<MapPageProps> = ({
         ) : null}
       </div>
 
-      <ToastProvider duration={REGISTRATION_TOAST_DURATION_MS}>
-        {isRegisterButtonVisible ? (
+      {isRegisterButtonVisible ? (
+        <>
           <div
             ref={registerButtonContainerRef}
             className="pointer-events-none fixed inset-x-0 z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4"
@@ -535,19 +523,8 @@ const MapPage: React.FC<MapPageProps> = ({
               등록하기
             </Button>
           </div>
-        ) : null}
-
-        <ToastPortal>
-          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
-            {registrationToast ? (
-              <Toast key={`${registrationToast.message}:${registrationToast.attempt}`} defaultOpen>
-                {registrationToast.message}
-              </Toast>
-            ) : null}
-            <ToastViewport />
-          </div>
-        </ToastPortal>
-      </ToastProvider>
+        </>
+      ) : null}
 
       {selectedMapPlace ? (
         <PinListSheet

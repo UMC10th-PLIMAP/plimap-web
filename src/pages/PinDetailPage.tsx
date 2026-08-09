@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { PinDetailSkeleton } from '@/components/skeletons/PinDetailSkeleton';
+import { useToast } from '@/hooks/useToast';
 
 import { reportPin } from '@/api/report';
 import { ReportModal } from '@/features/pin/components/ReportModal';
@@ -26,6 +27,10 @@ const SORT_LABEL: Record<PinSort, string> = {
   LATEST: '최신순',
   POPULAR: '인기순',
 };
+
+const LIKE_FAILED_MESSAGE = '좋아요를 변경하지 못했어요. 다시 시도해 주세요.';
+const DELETE_FAILED_MESSAGE = '핀을 삭제하지 못했어요. 다시 시도해 주세요.';
+const REPORT_FAILED_MESSAGE = '신고를 접수하지 못했어요. 다시 시도해 주세요.';
 
 type PlaceTrackPin = GetPlaceTrackPinsResponse['data'][number];
 
@@ -66,6 +71,7 @@ function toGeolocationFailureReason(error: Error): GeolocationFailureReason {
 
 export default function PinDetailPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const location = useLocation();
   const locationState = (location.state as PinDetailLocationState | null) ?? null;
   const { pinId } = useParams<{ pinId: string }>();
@@ -85,15 +91,12 @@ export default function PinDetailPage() {
   // 지도/피드에서 navigate state로 넘긴 토큰만 사용 (스토어 잔여 토큰 혼입 방지)
   const placeAccessToken = locationState?.placeAccessToken;
   const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
-  const [actionError, setActionError] = useState<unknown>(null);
-
   const userLatitude = hasLocationFromState
     ? locationState.userLatitude
     : currentPositionQuery.data?.latitude;
   const userLongitude = hasLocationFromState
     ? locationState.userLongitude
     : currentPositionQuery.data?.longitude;
-
   const pinDetailQuery = usePlaceTrackDetail({
     placeTrackId: pinId,
     userLatitude,
@@ -133,10 +136,9 @@ export default function PinDetailPage() {
     (isLocationPending || pinDetailQuery.isPending || pinPagesQuery.isPending);
   const queryError =
     (!pinDetail ? pinDetailQuery.error : null) ?? (!pinPages ? pinPagesQuery.error : null);
-  const requestError = actionError ?? queryError;
+  const requestError = queryError;
 
   const handleErrorAction = () => {
-    setActionError(null);
     void Promise.all([pinDetailQuery.refetch(), pinPagesQuery.refetch()]);
   };
 
@@ -162,10 +164,14 @@ export default function PinDetailPage() {
 
     const placeTrackId = String(pinDetail.placeTrackId);
     if (pinDetail.userLike) {
-      deleteLikedTrack(placeTrackId);
+      deleteLikedTrack(placeTrackId, {
+        onError: () => toast.error(LIKE_FAILED_MESSAGE),
+      });
       return;
     }
-    putLikedTrack(placeTrackId);
+    putLikedTrack(placeTrackId, {
+      onError: () => toast.error(LIKE_FAILED_MESSAGE),
+    });
   };
 
   if (locationErrorMessage) {
@@ -308,8 +314,7 @@ export default function PinDetailPage() {
           try {
             await reportPin(Number(reportFeedId), reason, detail);
           } catch (error) {
-            setReportFeedId(null);
-            setActionError(error);
+            toast.error(REPORT_FAILED_MESSAGE);
             throw error;
           }
         }}
@@ -331,6 +336,7 @@ export default function PinDetailPage() {
               if (!deletePinId || isDeletePinPending) return;
               deletePin(deletePinId, {
                 onSuccess: () => setDeletePinId(null),
+                onError: () => toast.error(DELETE_FAILED_MESSAGE),
               });
             },
           },

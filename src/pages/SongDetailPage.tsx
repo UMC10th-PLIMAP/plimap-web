@@ -9,7 +9,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import PlayIcon from '@/assets/icons/play.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import rectangleBg from '@/assets/Rectangle.png';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { useToast } from '@/hooks/useToast';
 import { Tag } from '@/components/ui/tag';
 import { SongSelectSheet } from '@/features/pin/components/SongSelectSheet';
 import {
@@ -32,13 +32,7 @@ const MIN_TAG_COUNT = 1;
 const MAX_TAG_COUNT = 4;
 const MIN_TAG_ERROR_MESSAGE = '태그를 최소 1개 선택해 주세요.';
 const MAX_TAG_ERROR_MESSAGE = '태그는 최대 4개까지 선택 가능해요.';
-const CREATION_TOAST_DURATION_MS = 2_000;
 const SONG_PREVIEW_PLAY_KEY = 'song-detail-preview';
-
-type CreationToast = {
-  attempt: number;
-  message: string;
-};
 
 type TrimRangeDrag = {
   originPercent: number;
@@ -443,6 +437,7 @@ function FeedVisibilityToggle({
 
 export default function SongDetailPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { songId } = useParams<{ songId: string }>();
   const place = usePinCreationStore((state) => state.place);
   const currentLocation = usePinCreationStore((state) => state.currentLocation);
@@ -461,7 +456,6 @@ export default function SongDetailPage() {
   const [hasTagLimitError, setHasTagLimitError] = useState(false);
   const [isFeedPublic, setIsFeedPublic] = useState(true);
   const [isSongSelectOpen, setIsSongSelectOpen] = useState(false);
-  const [creationToast, setCreationToast] = useState<CreationToast | null>(null);
   const [clipStartMs, setClipStartMs] = useState(0);
   const songChangeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -476,18 +470,11 @@ export default function SongDetailPage() {
       ? MAX_TAG_ERROR_MESSAGE
       : null;
 
-  const showCreationToast = (message: string) => {
-    setCreationToast((currentToast) => ({
-      attempt: (currentToast?.attempt ?? 0) + 1,
-      message,
-    }));
-  };
-
   const handleCreatePin = () => {
     if (createPinMutation.isPending) return;
 
     if (!place || !currentLocation || itunesTrackId === null) {
-      showCreationToast('핀 생성 정보를 확인할 수 없어요. 노래를 다시 선택해 주세요.');
+      toast.error('핀 생성 정보를 확인할 수 없어요.\n노래를 다시 선택해 주세요.');
       return;
     }
 
@@ -498,12 +485,12 @@ export default function SongDetailPage() {
 
     const normalizedIntroduction = introduction.trim();
     if (!normalizedIntroduction) {
-      showCreationToast('소개를 입력해 주세요.');
+      toast.error('소개를 입력해 주세요.');
       return;
     }
 
     if (!hasRequiredTags) {
-      showCreationToast(MIN_TAG_ERROR_MESSAGE);
+      toast.error(MIN_TAG_ERROR_MESSAGE);
       return;
     }
 
@@ -524,7 +511,7 @@ export default function SongDetailPage() {
           navigate('/app', { replace: true });
         },
         onError: (error) => {
-          showCreationToast(
+          toast.error(
             error instanceof Error ? error.message : '핀을 생성하지 못했어요. 다시 시도해 주세요.',
           );
         },
@@ -546,9 +533,6 @@ export default function SongDetailPage() {
 
     setSelectedTags((currentTags) => [...currentTags, tag]);
     setHasTagLimitError(false);
-    setCreationToast((currentToast) =>
-      currentToast?.message === MIN_TAG_ERROR_MESSAGE ? null : currentToast,
-    );
   };
 
   if (!place || !currentLocation) {
@@ -556,7 +540,7 @@ export default function SongDetailPage() {
   }
 
   return (
-    <ToastProvider duration={CREATION_TOAST_DURATION_MS}>
+    <>
       <div className="relative flex min-h-0 flex-1">
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
           <section className="relative w-full overflow-hidden pb-4">
@@ -710,16 +694,7 @@ export default function SongDetailPage() {
             }}
           />
         </div>
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-50 flex justify-center">
-          {creationToast ? (
-            <Toast key={`${creationToast.message}:${creationToast.attempt}`} defaultOpen>
-              {creationToast.message}
-            </Toast>
-          ) : null}
-          <ToastViewport />
-        </div>
       </div>
-    </ToastProvider>
+    </>
   );
 }

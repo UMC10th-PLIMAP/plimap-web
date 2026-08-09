@@ -4,6 +4,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { getPlaceDetail } from '@/api/place';
 import { getPinDetail, getPlaceTrackPins, postFeedPlaceAccessRequest } from '@/api/pin';
 import { getPlaceTracks } from '@/api/track';
+import { useToast, type AppToastPlacement } from '@/hooks/useToast';
 import type { FocusedFeedPin, PinDetailResponse, PinSearchPlace } from '@/features/pin/types';
 import type { AppOutletContext } from '@/layouts/RootLayout';
 import { useFeedPlaceAccessStore } from '@/store/feedPlaceAccessStore';
@@ -30,6 +31,10 @@ type OpenPlaceTrackOptions = {
 };
 
 export type OpenPlaceTrackResult = { ok: true } | { ok: false; message: string };
+
+type UseOpenPinPlaceOnMapOptions = {
+  errorToastPlacement?: AppToastPlacement;
+};
 
 async function resolvePlace(params: {
   pinDetail: PinDetailResponse;
@@ -108,8 +113,11 @@ function toFocusedFeedPin(
 }
 
 /** pinId로 상세/장소 조회 후 지도 PinListSheet를 연다. */
-export function useOpenPinPlaceOnMap() {
+export function useOpenPinPlaceOnMap({
+  errorToastPlacement = 'screen',
+}: UseOpenPinPlaceOnMapOptions = {}) {
   const navigate = useNavigate();
+  const toast = useToast();
   const { selectMapPlace } = useOutletContext<AppOutletContext>();
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -209,10 +217,13 @@ export function useOpenPinPlaceOnMap() {
         setIsNavigating(false);
       } catch (error) {
         console.error(error);
+        toast.error('지도에서 장소를 열지 못했어요.\n다시 시도해 주세요.', {
+          placement: errorToastPlacement,
+        });
         setIsNavigating(false);
       }
     },
-    [isNavigating, navigate, selectMapPlace],
+    [errorToastPlacement, isNavigating, navigate, selectMapPlace, toast],
   );
 
   /** 찜한 노래(placeTrackId)로 대표 PIN을 찾아 지도 PinListSheet를 연다. */
@@ -246,6 +257,9 @@ export function useOpenPinPlaceOnMap() {
         });
         const popularPin = trackPins.data[0];
         if (!popularPin) {
+          toast.error('지도에서 표시할 PIN을 찾지 못했어요.', {
+            placement: errorToastPlacement,
+          });
           setIsNavigating(false);
           return { ok: false, message: '이 곡에 등록된 핀을 찾지 못했어요.' };
         }
@@ -273,6 +287,9 @@ export function useOpenPinPlaceOnMap() {
         return { ok: true };
       } catch (error) {
         console.error(error);
+        toast.error('지도에서 장소를 열지 못했어요.\n다시 시도해 주세요.', {
+          placement: errorToastPlacement,
+        });
         setIsNavigating(false);
         return {
           ok: false,
@@ -283,7 +300,7 @@ export function useOpenPinPlaceOnMap() {
         };
       }
     },
-    [isNavigating, navigate, selectMapPlace],
+    [errorToastPlacement, isNavigating, navigate, selectMapPlace, toast],
   );
 
   return { openPinPlaceOnMap, openPlaceTrackOnMap, isNavigating };
