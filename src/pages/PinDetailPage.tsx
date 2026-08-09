@@ -19,7 +19,6 @@ import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTub
 import HeartIcon from '@/assets/icons/heart.svg?react';
 import ChangeIcon from '@/assets/icons/change.svg?react';
 import { cn } from '@/lib/utils';
-import { useFeedPlaceAccessStore } from '@/store/feedPlaceAccessStore';
 import { getGeolocationErrorMessage, type GeolocationFailureReason } from '@/utils/geolocation';
 
 const SORT_LABEL: Record<PinSort, string> = {
@@ -32,6 +31,7 @@ type PlaceTrackPin = GetPlaceTrackPinsResponse['data'][number];
 type PinDetailLocationState = {
   userLatitude?: number;
   userLongitude?: number;
+  placeAccessToken?: string;
 };
 
 function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
@@ -81,9 +81,8 @@ export default function PinDetailPage() {
   const currentPositionQuery = useCurrentPosition({
     enabled: !hasLocationFromState,
   });
-  const placeAccessToken = useFeedPlaceAccessStore((state) =>
-    state.activePlaceId != null ? state.tokens[state.activePlaceId] : undefined,
-  );
+  // 지도/피드에서 navigate state로 넘긴 토큰만 사용 (스토어 잔여 토큰 혼입 방지)
+  const placeAccessToken = locationState?.placeAccessToken;
   const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
 
   const userLatitude = hasLocationFromState

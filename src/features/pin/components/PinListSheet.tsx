@@ -6,8 +6,8 @@ import CloseIcon from '@/assets/icons/close.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { PinListSheetSkeleton } from '@/components/skeletons/PinListSheetSkeleton';
+import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
@@ -87,6 +87,12 @@ function findFocusedPlaceTrackId(focusedFeedPin?: FocusedFeedPin) {
   return String(focusedFeedPin.placeTrackId);
 }
 
+const PLACE_NAME_MAX_LENGTH = 14;
+
+function truncatePlaceName(name: string) {
+  return name.length > PLACE_NAME_MAX_LENGTH ? `${name.slice(0, PLACE_NAME_MAX_LENGTH)}...` : name;
+}
+
 type PinListContentProps = {
   place: PlaceInfo;
   pins: Pin[];
@@ -152,12 +158,20 @@ function PinListContent({
                 </span>
               </div>
 
-              <div className="min-w-0">
-                <BottomSheet.Title className="block truncate head-24-sb text-grayscale-100">
-                  {place.name ||
-                    (detailErrorMessage
+              <div className="w-full min-w-0">
+                <BottomSheet.Title
+                  className={cn(
+                    'block head-24-sb text-grayscale-100',
+                    isFullPage ? 'line-clamp-2' : 'truncate',
+                  )}
+                >
+                  {place.name
+                    ? isFullPage
+                      ? place.name
+                      : truncatePlaceName(place.name)
+                    : detailErrorMessage
                       ? '장소 정보를 불러올 수 없어요'
-                      : '장소 정보를 불러오고 있어요')}
+                      : '장소 정보를 불러오고 있어요'}
                 </BottomSheet.Title>
                 {detailErrorMessage ? (
                   <p role="alert" className="body-15-r text-red">
@@ -286,7 +300,8 @@ function PinListContent({
 }
 
 const BOOKMARK_TOAST_DURATION_MS = 2_000;
-const TRACK_DETAIL_BLOCKED_TOAST_MESSAGE = '피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
+const TRACK_DETAIL_BLOCKED_TOAST_MESSAGE =
+  '내 장소이거나, 피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
 
 type BookmarkToast = {
   attempt: number;
@@ -317,12 +332,13 @@ export function PinListSheet({
     : place.id;
   const parsedPlaceId = place.placeId ?? Number(normalizedPlaceId);
   const placeId = Number.isSafeInteger(parsedPlaceId) && parsedPlaceId > 0 ? parsedPlaceId : null;
-  const queryLatitude = detailLocation?.latitude ?? 0;
-  const queryLongitude = detailLocation?.longitude ?? 0;
+  // GPS 소수점 흔들림으로 쿼리 키가 매번 바뀌어 로딩이 반복되지 않도록 11m 단위로 반올림.
+  const queryLatitude = detailLocation ? Number(detailLocation.latitude.toFixed(4)) : 0;
+  const queryLongitude = detailLocation ? Number(detailLocation.longitude.toFixed(4)) : 0;
   const placeDetailQuery = usePlaceDetail({
     placeId,
-    latitude: detailLocation?.latitude ?? 0,
-    longitude: detailLocation?.longitude ?? 0,
+    latitude: queryLatitude,
+    longitude: queryLongitude,
     enabled: open && detailLocation !== null,
   });
   // 지도 핀 탭으로 열렸을 때(place.name이 아직 없음)만 최초 로딩 스켈레톤을 보여준다.
@@ -408,6 +424,8 @@ export function PinListSheet({
     })) ?? [];
 
   const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin);
+  // 피드 진입이거나, 내가 등록한 장소(MY)면 곡 상세 열람 허용
+  const canOpenTrackDetail = allowTrackDetailAccess || Boolean(resolvedPlace.isMine);
   const midSnap = focusedFeedPin ? PIN_LIST_SHEET_FEED_MID_SNAP : PIN_LIST_SHEET_MID_SNAP;
   // 매 렌더 새 배열이면 vaul이 prop 변화로 인식해 재실행하므로 값이 바뀔 때만 새로 만든다.
   const snapPoints = useMemo(
@@ -451,6 +469,7 @@ export function PinListSheet({
         onActiveSnapChange={handleActiveSnapChange}
       >
         <BottomSheet.FullPageNav onBack={onFullPageBack} trailing={bookmarkTrailingButton} />
+
         {isInitialLoading ? (
           <PinListSheetSkeleton />
         ) : (
@@ -471,7 +490,7 @@ export function PinListSheet({
                 message: TRACK_DETAIL_BLOCKED_TOAST_MESSAGE,
               }));
             }}
-            allowTrackDetailAccess={allowTrackDetailAccess}
+            allowTrackDetailAccess={canOpenTrackDetail}
             focusedFeedPin={focusedFeedPin}
             onFocusedTrackClick={
               focusedPlaceTrackId && onFocusedTrackClick
@@ -482,19 +501,21 @@ export function PinListSheet({
         )}
       </BottomSheet>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">
-        {bookmarkToast ? (
-          <Toast key={`bookmark:${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
-            {bookmarkToast.message}
-          </Toast>
-        ) : null}
-        {accessToast ? (
-          <Toast key={`access:${accessToast.message}:${accessToast.attempt}`} defaultOpen>
-            {accessToast.message}
-          </Toast>
-        ) : null}
-        <ToastViewport />
-      </div>
+      <ToastPortal>
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
+          {bookmarkToast ? (
+            <Toast key={`bookmark:${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
+              {bookmarkToast.message}
+            </Toast>
+          ) : null}
+          {accessToast ? (
+            <Toast key={`access:${accessToast.message}:${accessToast.attempt}`} defaultOpen>
+              {accessToast.message}
+            </Toast>
+          ) : null}
+          <ToastViewport />
+        </div>
+      </ToastPortal>
     </ToastProvider>
   );
 }

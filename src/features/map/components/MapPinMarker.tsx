@@ -24,7 +24,7 @@ export function MapPinMarker({
   showMessageBubble = false,
 }: MapPinMarkerProps) {
   return (
-    <div className="relative cursor-pointer select-none" style={{ width: 51, height: 57 }}>
+    <div className="relative cursor-pointer select-none" style={{ width: 63, height: 70 }}>
       {showMessageBubble && nickname && introduction ? (
         <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2">
           <MapPinMessageBox
@@ -45,6 +45,14 @@ export function MapPinMarker({
           role="img"
           aria-label="핀 아이콘"
           className="pointer-events-none block size-full overflow-visible"
+          style={
+            isSelected
+              ? {
+                  filter:
+                    'drop-shadow(0px 24px 9.85px rgba(0, 0, 0, 0.5)) drop-shadow(0px 4px 2px rgba(0, 0, 0, 0.25))',
+                }
+              : undefined
+          }
         />
 
         <div
@@ -52,8 +60,8 @@ export function MapPinMarker({
           style={{
             left: '49.7%',
             top: '36%',
-            width: 24,
-            height: 24,
+            width: 28,
+            height: 28,
             transform: 'translate(-50%, -50%)',
             background: coverUrl,
           }}

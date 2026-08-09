@@ -260,10 +260,7 @@ function SongWaveform({
   );
 
   return (
-    <div
-      ref={trackRef}
-      className="relative mx-[6px] mt-1 flex h-[68px] w-[297px] items-center justify-between gap-x-[6px]"
-    >
+    <div ref={trackRef} className="relative mt-1 flex h-[68px] w-full items-center justify-between">
       {peaks.map((height, index) => {
         const isSelected = index >= trimStartIndex && index <= trimEndIndex;
 
@@ -466,17 +463,18 @@ export default function SongDetailPage() {
   const [isSongSelectOpen, setIsSongSelectOpen] = useState(false);
   const [creationToast, setCreationToast] = useState<CreationToast | null>(null);
   const [clipStartMs, setClipStartMs] = useState(0);
+  const songChangeButtonRef = useRef<HTMLButtonElement>(null);
 
   const preparedTrack = playbackPreparationQuery.data;
   const coverUrl = preparedTrack?.albumImageUrl || rectangleBg;
   const waveformPeaks = MOCK_WAVEFORM_PEAKS;
   const durationMs = preparedTrack?.durationMs ?? MOCK_PREVIEW_DURATION * 1_000;
   const hasRequiredTags = selectedTags.length >= MIN_TAG_COUNT;
-  const tagErrorMessage = hasRequiredTags
-    ? hasTagLimitError
+  const tagErrorMessage = !hasRequiredTags
+    ? MIN_TAG_ERROR_MESSAGE
+    : hasTagLimitError
       ? MAX_TAG_ERROR_MESSAGE
-      : null
-    : MIN_TAG_ERROR_MESSAGE;
+      : null;
 
   const showCreationToast = (message: string) => {
     setCreationToast((currentToast) => ({
@@ -548,6 +546,9 @@ export default function SongDetailPage() {
 
     setSelectedTags((currentTags) => [...currentTags, tag]);
     setHasTagLimitError(false);
+    setCreationToast((currentToast) =>
+      currentToast?.message === MIN_TAG_ERROR_MESSAGE ? null : currentToast,
+    );
   };
 
   if (!place || !currentLocation) {
@@ -610,6 +611,7 @@ export default function SongDetailPage() {
                   <img src={coverUrl} alt="" className="size-16 rounded-md object-cover" />
 
                   <button
+                    ref={songChangeButtonRef}
                     type="button"
                     aria-label="노래 변경"
                     onClick={() => setIsSongSelectOpen(true)}
@@ -702,6 +704,7 @@ export default function SongDetailPage() {
           <SongSelectSheet
             open={isSongSelectOpen}
             onClose={() => setIsSongSelectOpen(false)}
+            finalFocusRef={songChangeButtonRef}
             onSelect={(selected) => {
               navigate(`/app/song/detail/${selected.itunesTrackId}`, { replace: true });
             }}

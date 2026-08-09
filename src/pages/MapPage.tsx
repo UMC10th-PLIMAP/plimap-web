@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
 import type {
   MapCoordinate,
@@ -27,6 +27,7 @@ import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
+import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 const REGISTRATION_TOAST_DURATION_MS = 2_000;
@@ -49,6 +50,7 @@ type MapPageProps = {
   selectedMapPinId: string | null;
   onSelectMapPinChange: (pinId: string | null) => void;
   isCovered: boolean;
+  isUiActive: boolean;
   savedViewport: MapViewport | null;
   onSaveViewport: (viewport: MapViewport) => void;
   onCurrentLocationChange: (coordinate: MapCoordinate) => void;
@@ -88,6 +90,7 @@ const MapPage: React.FC<MapPageProps> = ({
   selectedMapPinId,
   onSelectMapPinChange,
   isCovered,
+  isUiActive,
   savedViewport,
   onSaveViewport,
   onCurrentLocationChange,
@@ -96,7 +99,7 @@ const MapPage: React.FC<MapPageProps> = ({
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
-  const [zoom, setZoom] = useState<number>(savedViewport?.zoom ?? 15);
+  const [zoom, setZoom] = useState<number>(savedViewport?.zoom ?? 19);
   const [mapLoadStatus, setMapLoadStatus] = useState<MapLoadStatus>(
     hasApiKey ? 'loading' : 'error',
   );
@@ -105,6 +108,29 @@ const MapPage: React.FC<MapPageProps> = ({
   );
   const [currentLocation, setCurrentLocation] = useState<MapCoordinate | null>(null);
   const [currentLocationError, setCurrentLocationError] = useState<string | null>(null);
+  // 기본 좌표로 그렸다가 GPS 도착 시 옮기는 대신, 위치를 먼저 받아 바로 그 좌표로 지도를 만든다.
+  const initialPositionQuery = useCurrentPosition({
+    enabled: !savedViewport && !selectedMapPlace,
+  });
+  const hasInitialPosition =
+    Boolean(savedViewport) ||
+    Boolean(selectedMapPlace) ||
+    initialPositionQuery.isSuccess ||
+    initialPositionQuery.isError;
+  // 초기 조회 결과를 currentLocation/부모 콜백에도 반영한다.
+  const [trackedInitialPosition, setTrackedInitialPosition] = useState(initialPositionQuery.data);
+  if (initialPositionQuery.data !== trackedInitialPosition) {
+    setTrackedInitialPosition(initialPositionQuery.data);
+    if (initialPositionQuery.data) {
+      const coordinate = {
+        lat: initialPositionQuery.data.latitude,
+        lng: initialPositionQuery.data.longitude,
+      };
+      setCurrentLocation(coordinate);
+      setCurrentLocationError(null);
+      onCurrentLocationChange(coordinate);
+    }
+  }
   const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
   // 지도 빈 곳을 탭하면 시트를 닫지 않고 가장 작은 스냅으로만 축소한다 - 값은 의미 없이 신호로만 쓴다.
@@ -190,11 +216,12 @@ const MapPage: React.FC<MapPageProps> = ({
     [selectedMapPlace],
   );
   const selectedPlaceId = selectedMapPlace?.id ?? null;
-  const isPlaceSheetOpen = selectedMapPlace !== null;
+  const isPlaceSheetOpen = selectedMapPlace !== null && isUiActive;
   const viewerSelectedMapPinId = focusedMapPinId ?? (selectedMapPlace ? null : displayedMapPinId);
   // 검색 장소든 핀 클릭이든, 피드 진입(찜한 곡 등)이 아닐 때는 등록하기 버튼을 보여준다.
   const isRegisterButtonVisible =
-    (isPlaceSheetOpen && !selectedMapPlace?.focusedFeedPin) || selectedMapPin !== null;
+    isUiActive &&
+    ((isPlaceSheetOpen && !selectedMapPlace?.focusedFeedPin) || selectedMapPin !== null);
   // 아직 장소 정보가 안 왔거나(로딩 중), 500m 밖이거나, 본인 핀이면 등록할 수 없다.
   const isRegisterButtonDisabled =
     !resolvedActivePlace || resolvedActivePlace.isMine || !resolvedActivePlace.withinAccessRange;
@@ -209,7 +236,7 @@ const MapPage: React.FC<MapPageProps> = ({
     toggle: toggleClipPlayback,
     stop: stopClipPlayback,
   } = useYouTubeClipPlayer({
-    enabled: !isCovered,
+    enabled: isUiActive,
   });
 
   useLayoutEffect(() => {
@@ -246,8 +273,8 @@ const MapPage: React.FC<MapPageProps> = ({
   }, [viewerSelectedMapPinId, stopClipPlayback]);
 
   useEffect(() => {
-    if (isCovered) stopClipPlayback();
-  }, [isCovered, stopClipPlayback]);
+    if (!isUiActive) stopClipPlayback();
+  }, [isUiActive, stopClipPlayback]);
 
   // 목표 좌표 근처 핀을 찾으면(mapPins가 새로 도착할 때마다 재계산) 부모에게 선택을
   // 알린다. 부모 콜백은 렌더 중이 아니라 커밋 이후(effect)에 호출하고, 같은 핀을
@@ -390,6 +417,18 @@ const MapPage: React.FC<MapPageProps> = ({
     );
   }
 
+  if (!hasInitialPosition) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-pli-black-100 p-6 text-center">
+        <div
+          aria-hidden
+          className="size-8 animate-spin rounded-full border-2 border-grayscale-700 border-t-neon"
+        />
+        <p className="body-15-r text-grayscale-500">현재 위치를 확인하고 있어요</p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full w-full">
       {/* 상단 장소 검색 바 + 북마크/현재 위치 버튼 */}
@@ -448,14 +487,19 @@ const MapPage: React.FC<MapPageProps> = ({
             </Button>
           </div>
 
-          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">
-            {registrationToast ? (
-              <Toast key={`${registrationToast.message}:${registrationToast.attempt}`} defaultOpen>
-                {registrationToast.message}
-              </Toast>
-            ) : null}
-            <ToastViewport />
-          </div>
+          <ToastPortal>
+            <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
+              {registrationToast ? (
+                <Toast
+                  key={`${registrationToast.message}:${registrationToast.attempt}`}
+                  defaultOpen
+                >
+                  {registrationToast.message}
+                </Toast>
+              ) : null}
+              <ToastViewport />
+            </div>
+          </ToastPortal>
         </ToastProvider>
       ) : null}
 
@@ -466,27 +510,51 @@ const MapPage: React.FC<MapPageProps> = ({
           place={toPlaceInfo(selectedMapPlace)}
           focusedFeedPin={selectedMapPlace.focusedFeedPin}
           allowTrackDetailAccess={Boolean(selectedMapPlace.allowTrackDetailAccess)}
-          detailLocation={
-            selectedMapPlace.selectionLocation ??
-            (currentLocation
-              ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
-              : null)
-          }
+          detailLocation={{
+            latitude:
+              selectedMapPlace.selectionLocation?.latitude ??
+              currentLocation?.lat ??
+              selectedMapPlace.coordinates.lat,
+            longitude:
+              selectedMapPlace.selectionLocation?.longitude ??
+              currentLocation?.lng ??
+              selectedMapPlace.coordinates.lng,
+          }}
           detailLocationError={currentLocationError}
-          onPinClick={(pin) =>
+          onPinClick={(pin) => {
+            const latitude =
+              currentLocation?.lat ??
+              selectedMapPlace.selectionLocation?.latitude ??
+              selectedMapPlace.coordinates.lat;
+            const longitude =
+              currentLocation?.lng ??
+              selectedMapPlace.selectionLocation?.longitude ??
+              selectedMapPlace.coordinates.lng;
             navigate(`/app/pins/${pin.placeTrackId}`, {
-              state: currentLocation
-                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
-                : undefined,
-            })
-          }
-          onFocusedTrackClick={(placeTrackId) =>
+              state: {
+                userLatitude: latitude,
+                userLongitude: longitude,
+                placeAccessToken: selectedMapPlace.placeAccessToken,
+              },
+            });
+          }}
+          onFocusedTrackClick={(placeTrackId) => {
+            const latitude =
+              currentLocation?.lat ??
+              selectedMapPlace.selectionLocation?.latitude ??
+              selectedMapPlace.coordinates.lat;
+            const longitude =
+              currentLocation?.lng ??
+              selectedMapPlace.selectionLocation?.longitude ??
+              selectedMapPlace.coordinates.lng;
             navigate(`/app/pins/${placeTrackId}`, {
-              state: currentLocation
-                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
-                : undefined,
-            })
-          }
+              state: {
+                userLatitude: latitude,
+                userLongitude: longitude,
+                placeAccessToken: selectedMapPlace.placeAccessToken,
+              },
+            });
+          }}
           resetKey={selectedMapPlace.id}
           collapseToSmallestSignal={sheetCollapseSignal}
           onActiveSnapChange={setActiveSheetSnap}
@@ -503,7 +571,7 @@ const MapPage: React.FC<MapPageProps> = ({
         />
       ) : selectedMapPin ? (
         <PinListSheet
-          open
+          open={isUiActive}
           onClose={() => onSelectMapPinChange(null)}
           place={mapPinToPlaceInfo(selectedMapPin)}
           allowTrackDetailAccess={false}
@@ -511,34 +579,41 @@ const MapPage: React.FC<MapPageProps> = ({
           collapseToSmallestSignal={sheetCollapseSignal}
           onActiveSnapChange={setActiveSheetSnap}
           onResolvedPlaceChange={setResolvedActivePlace}
-          detailLocation={
-            currentLocation
-              ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
-              : null
-          }
+          detailLocation={{
+            latitude: currentLocation?.lat ?? selectedMapPin.lat,
+            longitude: currentLocation?.lng ?? selectedMapPin.lng,
+          }}
           detailLocationError={currentLocationError}
-          onPinClick={(pin) =>
+          onPinClick={(pin) => {
+            const latitude = currentLocation?.lat ?? selectedMapPin.lat;
+            const longitude = currentLocation?.lng ?? selectedMapPin.lng;
             navigate(`/app/pins/${pin.placeTrackId}`, {
-              state: currentLocation
-                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
-                : undefined,
-            })
-          }
+              state: { userLatitude: latitude, userLongitude: longitude },
+            });
+          }}
         />
       ) : null}
 
       <MapViewer
         ref={mapViewerRef}
         isLoaded={mapLoadStatus === 'ready'}
+        isInteractionDisabled={!isUiActive}
         isLocationTrackingDisabled={isCovered}
         zoom={zoom}
-        initialCenter={savedViewport?.center}
+        initialCenter={
+          savedViewport?.center ??
+          (initialPositionQuery.data
+            ? { lat: initialPositionQuery.data.latitude, lng: initialPositionQuery.data.longitude }
+            : undefined)
+        }
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
         mapPins={displayMapPins}
         mapClusters={mapClusters}
         selectedMapPinId={viewerSelectedMapPinId}
-        centerOnFirstLocation={!selectedMapPlace && !savedViewport}
+        centerOnFirstLocation={
+          !selectedMapPlace && !savedViewport && !initialPositionQuery.isSuccess
+        }
         onZoomChanged={handleZoomChange}
         onCurrentLocationChanged={handleCurrentLocationChanged}
         onCurrentLocationError={setCurrentLocationError}

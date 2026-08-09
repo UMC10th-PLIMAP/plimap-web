@@ -76,6 +76,10 @@ type BottomSheetProps = {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  /** 시트가 열릴 때 포커스를 받을 요소. */
+  initialFocusRef?: React.RefObject<HTMLElement | null>;
+  /** 시트가 닫힐 때 포커스를 돌려줄 요소. */
+  finalFocusRef?: React.RefObject<HTMLElement | null>;
   /** drag handle 표시 여부 */
   showHandle?: boolean;
   /** 오버레이 클릭·드래그로 닫기 */
@@ -110,6 +114,8 @@ function BottomSheet({
   open,
   onClose,
   children,
+  initialFocusRef,
+  finalFocusRef,
   showHandle = true,
   dismissible = true,
   snapPoints = DEFAULT_SNAP_POINTS,
@@ -144,6 +150,7 @@ function BottomSheet({
 
   const onActiveSnapChangeRef = React.useRef(onActiveSnapChange);
   const snapObserverRef = React.useRef<MutationObserver | null>(null);
+  const snapReportRafRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     onActiveSnapChangeRef.current = onActiveSnapChange;
@@ -154,6 +161,10 @@ function BottomSheet({
   const setSnapObserverTarget = React.useCallback((node: HTMLDivElement | null) => {
     snapObserverRef.current?.disconnect();
     snapObserverRef.current = null;
+    if (snapReportRafRef.current !== null) {
+      cancelAnimationFrame(snapReportRafRef.current);
+      snapReportRafRef.current = null;
+    }
     if (!node) return;
 
     const reportFromStyle = () => {
@@ -165,7 +176,16 @@ function BottomSheet({
     };
 
     reportFromStyle();
-    const observer = new MutationObserver(reportFromStyle);
+    // 드래그 중엔 스타일 변경이 화면 주사율보다 잦을 수 있어, 매번 리액트 상태를
+    // 갱신하면 프레임당 여러 번 리렌더돼 버벅임/떨림으로 보인다 - 프레임당 최대
+    // 한 번만 반영한다.
+    const observer = new MutationObserver(() => {
+      if (snapReportRafRef.current !== null) return;
+      snapReportRafRef.current = requestAnimationFrame(() => {
+        snapReportRafRef.current = null;
+        reportFromStyle();
+      });
+    });
     observer.observe(node, { attributes: true, attributeFilter: ['style'] });
     snapObserverRef.current = observer;
   }, []);
@@ -200,6 +220,15 @@ function BottomSheet({
       >
         <SheetContent
           ref={setSnapObserverTarget}
+          onOpenAutoFocus={() => initialFocusRef?.current?.focus({ preventScroll: true })}
+          onCloseAutoFocus={
+            finalFocusRef
+              ? (event) => {
+                  event.preventDefault();
+                  finalFocusRef.current?.focus({ preventScroll: true });
+                }
+              : undefined
+          }
           data-full-page={isFullPage ? '' : undefined}
           className={cn(
             // h-full은 모바일 주소창 노출 시 "큰" 뷰포트 기준이라 하단이 잘려 보인다 - dvh로 교체.

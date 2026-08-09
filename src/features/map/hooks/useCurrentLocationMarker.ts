@@ -6,7 +6,7 @@ import {
 } from '../utils/currentLocationOverlay';
 
 // "현재 위치로 이동" 버튼을 눌렀을 때 항상 이 줌으로 고정한다.
-const RECENTER_ZOOM = 16;
+const RECENTER_ZOOM = 19;
 
 // 이 시간 동안 더 정확한 fix가 안 오면, 정확도가 나빠졌더라도 최신 위치를 받아들인다.
 // (GPS 신호가 실내 진입 등으로 영구적으로 나빠졌을 때 마커가 영원히 멈춰있는 것 방지)
@@ -181,8 +181,6 @@ export function useCurrentLocationMarker({
           // 핀(overlayMouseTarget, zIndex 최대 200)보다 항상 위에 보이도록 floatPane에 렌더링한다.
           overlayRef.current = createCurrentLocationOverlay(DEFAULT_MARKER_COLOR, pos);
           overlayRef.current.setMap(map);
-
-          enableCompassIfNeeded();
 
           if (centerOnFirstLocationRef.current) {
             onCenterChangedRef.current?.(pos);

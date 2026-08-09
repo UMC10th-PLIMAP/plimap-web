@@ -8,7 +8,10 @@ import { usePinCreationStore } from '@/store/pinCreationStore';
 
 type BottomNavRouteHandle = {
   bottomNavItem?: NavItemId;
+  mapPresentation?: 'visible' | 'overlay' | 'covered';
 };
+
+type MapPresentation = NonNullable<BottomNavRouteHandle['mapPresentation']>;
 
 export default function BottomNavLayout() {
   const appContext = useOutletContext<AppOutletContext>();
@@ -20,9 +23,13 @@ export default function BottomNavLayout() {
     const { bottomNavItem } = (match.handle as BottomNavRouteHandle | undefined) ?? {};
     return bottomNavItem ?? activeItem;
   }, null);
+  const mapPresentation = matches.reduce<MapPresentation>((presentation, match) => {
+    return (match.handle as BottomNavRouteHandle | undefined)?.mapPresentation ?? presentation;
+  }, 'visible');
+  const isMapOverlay = mapPresentation === 'overlay';
   const isMapNavHidden =
     activeNavItem === 'plimap' &&
-    (appContext.selectedMapPlace !== null || appContext.selectedMapPinId !== null);
+    (isMapOverlay || appContext.selectedMapPlace !== null || appContext.selectedMapPinId !== null);
 
   return (
     <>
@@ -37,7 +44,7 @@ export default function BottomNavLayout() {
                 resetPinCreation();
                 navigate('/app/pin/register/place');
               }}
-              className="flex size-16 items-center justify-center rounded-full bg-gradient-neon text-grayscale-1200 shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
+              className="pointer-events-auto flex size-16 items-center justify-center rounded-full bg-gradient-neon text-grayscale-1200 shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
             >
               <PlusIcon className="size-7" />
             </button>
