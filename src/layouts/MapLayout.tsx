@@ -31,17 +31,23 @@ const MapLayout = () => {
 
   const shouldRenderMap = hasVisitedMap || mapPresentation !== 'covered';
   const isMapCovered = mapPresentation === 'covered';
+  const isMapUiActive = mapPresentation === 'visible';
 
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
       {shouldRenderMap ? (
-        <div className="absolute inset-0">
+        <div
+          className="absolute inset-0 z-0"
+          aria-hidden={!isMapUiActive || undefined}
+          inert={!isMapUiActive}
+        >
           <MapPage
             selectedMapPlace={appContext.selectedMapPlace}
             onClearMapPlace={() => appContext.selectMapPlace(null)}
             selectedMapPinId={appContext.selectedMapPinId}
             onSelectMapPinChange={appContext.selectMapPin}
             isCovered={isMapCovered}
+            isUiActive={isMapUiActive}
             savedViewport={savedMapViewport}
             onSaveViewport={setSavedMapViewport}
             onCurrentLocationChange={setCurrentLocation}

@@ -1,4 +1,5 @@
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Toast as ToastPrimitive } from 'radix-ui';
 
 import { cn } from '@/lib/utils';
@@ -7,6 +8,10 @@ export type ToastProviderProps = ComponentProps<typeof ToastPrimitive.Provider>;
 
 export function ToastProvider({ label = '알림', ...props }: ToastProviderProps) {
   return <ToastPrimitive.Provider label={label} {...props} />;
+}
+
+export function ToastPortal({ children }: { children: ReactNode }) {
+  return createPortal(children, document.body);
 }
 
 export type ToastProps = ComponentProps<typeof ToastPrimitive.Root>;

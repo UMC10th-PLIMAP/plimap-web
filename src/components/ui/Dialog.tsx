@@ -20,11 +20,12 @@ function Dialog({ open, onClose, children, className }: DialogProps) {
       }}
     >
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/[.85]" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-[80] bg-black/[.85]" />
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(
-            'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
+            // MapLayout의 covered 페이지(z-60)보다 높은 body 포털 레이어를 사용한다.
+            'fixed left-1/2 top-1/2 z-[80] -translate-x-1/2 -translate-y-1/2',
             'flex flex-col items-stretch rounded-xl bg-grayscale-1200 outline-none',
             className,
           )}

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
 import type {
   MapCoordinate,
@@ -49,6 +49,7 @@ type MapPageProps = {
   selectedMapPinId: string | null;
   onSelectMapPinChange: (pinId: string | null) => void;
   isCovered: boolean;
+  isUiActive: boolean;
   savedViewport: MapViewport | null;
   onSaveViewport: (viewport: MapViewport) => void;
   onCurrentLocationChange: (coordinate: MapCoordinate) => void;
@@ -88,6 +89,7 @@ const MapPage: React.FC<MapPageProps> = ({
   selectedMapPinId,
   onSelectMapPinChange,
   isCovered,
+  isUiActive,
   savedViewport,
   onSaveViewport,
   onCurrentLocationChange,
@@ -190,11 +192,12 @@ const MapPage: React.FC<MapPageProps> = ({
     [selectedMapPlace],
   );
   const selectedPlaceId = selectedMapPlace?.id ?? null;
-  const isPlaceSheetOpen = selectedMapPlace !== null;
+  const isPlaceSheetOpen = selectedMapPlace !== null && isUiActive;
   const viewerSelectedMapPinId = focusedMapPinId ?? (selectedMapPlace ? null : displayedMapPinId);
   // 검색 장소든 핀 클릭이든, 피드 진입(찜한 곡 등)이 아닐 때는 등록하기 버튼을 보여준다.
   const isRegisterButtonVisible =
-    (isPlaceSheetOpen && !selectedMapPlace?.focusedFeedPin) || selectedMapPin !== null;
+    isUiActive &&
+    ((isPlaceSheetOpen && !selectedMapPlace?.focusedFeedPin) || selectedMapPin !== null);
   // 아직 장소 정보가 안 왔거나(로딩 중), 500m 밖이거나, 본인 핀이면 등록할 수 없다.
   const isRegisterButtonDisabled =
     !resolvedActivePlace || resolvedActivePlace.isMine || !resolvedActivePlace.withinAccessRange;
@@ -209,7 +212,7 @@ const MapPage: React.FC<MapPageProps> = ({
     toggle: toggleClipPlayback,
     stop: stopClipPlayback,
   } = useYouTubeClipPlayer({
-    enabled: !isCovered,
+    enabled: isUiActive,
   });
 
   useLayoutEffect(() => {
@@ -246,8 +249,8 @@ const MapPage: React.FC<MapPageProps> = ({
   }, [viewerSelectedMapPinId, stopClipPlayback]);
 
   useEffect(() => {
-    if (isCovered) stopClipPlayback();
-  }, [isCovered, stopClipPlayback]);
+    if (!isUiActive) stopClipPlayback();
+  }, [isUiActive, stopClipPlayback]);
 
   // 목표 좌표 근처 핀을 찾으면(mapPins가 새로 도착할 때마다 재계산) 부모에게 선택을
   // 알린다. 부모 콜백은 렌더 중이 아니라 커밋 이후(effect)에 호출하고, 같은 핀을
@@ -448,14 +451,19 @@ const MapPage: React.FC<MapPageProps> = ({
             </Button>
           </div>
 
-          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">
-            {registrationToast ? (
-              <Toast key={`${registrationToast.message}:${registrationToast.attempt}`} defaultOpen>
-                {registrationToast.message}
-              </Toast>
-            ) : null}
-            <ToastViewport />
-          </div>
+          <ToastPortal>
+            <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
+              {registrationToast ? (
+                <Toast
+                  key={`${registrationToast.message}:${registrationToast.attempt}`}
+                  defaultOpen
+                >
+                  {registrationToast.message}
+                </Toast>
+              ) : null}
+              <ToastViewport />
+            </div>
+          </ToastPortal>
         </ToastProvider>
       ) : null}
 
@@ -503,7 +511,7 @@ const MapPage: React.FC<MapPageProps> = ({
         />
       ) : selectedMapPin ? (
         <PinListSheet
-          open
+          open={isUiActive}
           onClose={() => onSelectMapPinChange(null)}
           place={mapPinToPlaceInfo(selectedMapPin)}
           allowTrackDetailAccess={false}
@@ -530,6 +538,7 @@ const MapPage: React.FC<MapPageProps> = ({
       <MapViewer
         ref={mapViewerRef}
         isLoaded={mapLoadStatus === 'ready'}
+        isInteractionDisabled={!isUiActive}
         isLocationTrackingDisabled={isCovered}
         zoom={zoom}
         initialCenter={savedViewport?.center}
