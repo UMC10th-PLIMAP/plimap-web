@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -15,9 +15,10 @@ type SongSelectSheetProps = {
   open: boolean;
   onClose: () => void;
   onSelect?: (song: SearchTrack) => void;
+  finalFocusRef?: RefObject<HTMLElement | null>;
 };
 
-export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProps) {
+export function SongSelectSheet({ open, onClose, onSelect, finalFocusRef }: SongSelectSheetProps) {
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
@@ -62,8 +63,9 @@ export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProp
       open={open}
       onClose={onClose}
       initialFocusRef={searchInputRef}
+      finalFocusRef={finalFocusRef}
       snapPoints={[0.98, 1]}
-      className="bg-pli-black-85 "
+      className="z-[80] bg-pli-black-85"
     >
       <BottomSheet.Header className="px-[15px]">
         <BottomSheet.Title className="my-5.5 text-center body-15-r text-grayscale-300">

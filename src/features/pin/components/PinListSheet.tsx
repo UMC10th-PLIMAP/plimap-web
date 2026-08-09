@@ -6,7 +6,7 @@ import CloseIcon from '@/assets/icons/close.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
@@ -474,19 +474,21 @@ export function PinListSheet({
         />
       </BottomSheet>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
-        {bookmarkToast ? (
-          <Toast key={`bookmark:${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
-            {bookmarkToast.message}
-          </Toast>
-        ) : null}
-        {accessToast ? (
-          <Toast key={`access:${accessToast.message}:${accessToast.attempt}`} defaultOpen>
-            {accessToast.message}
-          </Toast>
-        ) : null}
-        <ToastViewport />
-      </div>
+      <ToastPortal>
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
+          {bookmarkToast ? (
+            <Toast key={`bookmark:${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
+              {bookmarkToast.message}
+            </Toast>
+          ) : null}
+          {accessToast ? (
+            <Toast key={`access:${accessToast.message}:${accessToast.attempt}`} defaultOpen>
+              {accessToast.message}
+            </Toast>
+          ) : null}
+          <ToastViewport />
+        </div>
+      </ToastPortal>
     </ToastProvider>
   );
 }

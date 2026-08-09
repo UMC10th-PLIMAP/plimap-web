@@ -28,8 +28,7 @@ function SheetContent({ className, children, ref, ...props }: SheetContentProps)
         ref={ref}
         data-slot="bottom-sheet-content"
         className={cn(
-          // MapLayout의 covered 페이지(z-60) 안에서도 body 포털 시트가 항상 위에 보이게 한다.
-          'fixed inset-x-0 bottom-0 z-[80] mx-auto flex w-full max-w-[402px] flex-col overflow-hidden',
+          'fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[402px] flex-col overflow-hidden',
           'rounded-t-[20px] bg-pli-black-100 pb-[env(safe-area-inset-bottom)] outline-none',
           className,
         )}
@@ -79,6 +78,8 @@ type BottomSheetProps = {
   children: React.ReactNode;
   /** 시트가 열릴 때 포커스를 받을 요소. */
   initialFocusRef?: React.RefObject<HTMLElement | null>;
+  /** 시트가 닫힐 때 포커스를 돌려줄 요소. */
+  finalFocusRef?: React.RefObject<HTMLElement | null>;
   /** drag handle 표시 여부 */
   showHandle?: boolean;
   /** 오버레이 클릭·드래그로 닫기 */
@@ -114,6 +115,7 @@ function BottomSheet({
   onClose,
   children,
   initialFocusRef,
+  finalFocusRef,
   showHandle = true,
   dismissible = true,
   snapPoints = DEFAULT_SNAP_POINTS,
@@ -205,6 +207,14 @@ function BottomSheet({
         <SheetContent
           ref={setSnapObserverTarget}
           onOpenAutoFocus={() => initialFocusRef?.current?.focus({ preventScroll: true })}
+          onCloseAutoFocus={
+            finalFocusRef
+              ? (event) => {
+                  event.preventDefault();
+                  finalFocusRef.current?.focus({ preventScroll: true });
+                }
+              : undefined
+          }
           data-full-page={isFullPage ? '' : undefined}
           className={cn(
             // h-full은 모바일 주소창 노출 시 "큰" 뷰포트 기준이라 하단이 잘려 보인다 - dvh로 교체.

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
 import type {
   MapCoordinate,
@@ -451,14 +451,19 @@ const MapPage: React.FC<MapPageProps> = ({
             </Button>
           </div>
 
-          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
-            {registrationToast ? (
-              <Toast key={`${registrationToast.message}:${registrationToast.attempt}`} defaultOpen>
-                {registrationToast.message}
-              </Toast>
-            ) : null}
-            <ToastViewport />
-          </div>
+          <ToastPortal>
+            <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
+              {registrationToast ? (
+                <Toast
+                  key={`${registrationToast.message}:${registrationToast.attempt}`}
+                  defaultOpen
+                >
+                  {registrationToast.message}
+                </Toast>
+              ) : null}
+              <ToastViewport />
+            </div>
+          </ToastPortal>
         </ToastProvider>
       ) : null}
 
