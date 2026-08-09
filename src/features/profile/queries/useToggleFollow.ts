@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 
 import { followMember, unfollowMember } from '@/api/member';
-import type { FollowListResponse } from '@/types/member.type';
+import type { FollowListResponse, MyProfileResponse } from '@/types/member.type';
 
 type ToggleFollowParams = {
   memberId: number;
@@ -26,6 +26,16 @@ export function useToggleFollow() {
                 item.id === memberId ? { ...item, isFollowing: !isFollowing } : item,
               ),
             })),
+          },
+      );
+
+      // 내 프로필의 팔로잉 수도 캐시에 반영
+      queryClient.setQueryData<MyProfileResponse>(
+        ['me'],
+        (old) =>
+          old && {
+            ...old,
+            followingCount: old.followingCount + (isFollowing ? -1 : 1),
           },
       );
     },
