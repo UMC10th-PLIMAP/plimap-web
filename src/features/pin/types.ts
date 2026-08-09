@@ -254,7 +254,7 @@ export type PlaceResult = {
 
 export type FocusedFeedPin = {
   pinId: number;
-  placeTrackId: number;
+  placeTrackId?: number;
   nickname: string;
   avatarUrl?: string;
   albumImageUrl: string;

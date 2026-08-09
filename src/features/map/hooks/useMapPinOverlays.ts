@@ -9,7 +9,7 @@ import {
 } from '../utils/mapPinMarker';
 
 // 핀 클릭 시 포커스할 줌 레벨. 말풍선도 이 줌 범위에서만 노출한다.
-const PIN_FOCUS_ZOOM = 21;
+export const PIN_FOCUS_ZOOM = 21;
 // flyTo 도중 소수점 줌과 정확히 21을 구분하기 위한 오차 허용치.
 const ZOOM_EQUALITY_EPSILON = 0.01;
 

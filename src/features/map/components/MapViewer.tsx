@@ -44,6 +44,7 @@ export type MapViewerHandle = {
   /** 지도를 현재 위치 마커로 이동시킨다. 위치를 아직 못 받았으면 아무 동작도 하지 않는다. */
   recenterToCurrentLocation: () => void;
   panTo: (coordinate: MapCoordinate, options?: { notifyCenterChanged?: boolean }) => void;
+  flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
   restoreViewport: (viewport: MapViewport) => void;
   captureViewport: () => MapViewport | null;
 };
@@ -107,10 +108,11 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     () => ({
       recenterToCurrentLocation,
       panTo,
+      flyTo,
       restoreViewport,
       captureViewport,
     }),
-    [captureViewport, panTo, recenterToCurrentLocation, restoreViewport],
+    [captureViewport, flyTo, panTo, recenterToCurrentLocation, restoreViewport],
   );
 
   usePlaceMarkers({ mapInstanceRef, isLoaded, placeResults, selectedPlaceId, onSelectPlace });

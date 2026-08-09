@@ -82,7 +82,7 @@ function formatDistance(distance: number) {
 }
 
 function findFocusedPlaceTrackId(focusedFeedPin?: FocusedFeedPin) {
-  if (!focusedFeedPin) return null;
+  if (focusedFeedPin?.placeTrackId == null) return null;
   return String(focusedFeedPin.placeTrackId);
 }
 
