@@ -32,7 +32,13 @@ export function usePlaceTrackPins({
       'pin',
       'placeTrackPins',
       placeTrackId,
-      { pageSize, pinSortType, userLatitude, userLongitude, placeAccessToken },
+      {
+        pageSize,
+        pinSortType,
+        userLatitude,
+        userLongitude,
+        hasPlaceAccessToken: Boolean(placeAccessToken),
+      },
     ],
     queryFn: ({ pageParam }) =>
       getPlaceTrackPins({

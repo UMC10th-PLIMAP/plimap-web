@@ -5,7 +5,7 @@ import { getPlaceDetail } from '@/api/place';
 import { getPinDetail, getPlaceTrackPins } from '@/api/pin';
 import type { FocusedFeedPin, PinDetailResponse, PinSearchPlace } from '@/features/pin/types';
 import type { AppOutletContext } from '@/layouts/RootLayout';
-import { getCurrentPosition } from '@/utils/geolocation';
+import { getCurrentPosition, getGeolocationErrorMessage } from '@/utils/geolocation';
 
 type OpenPinPlaceOptions = {
   pinId: number | string;
@@ -20,6 +20,8 @@ type OpenPlaceTrackOptions = {
   placeTrackId: number | string;
   fallbackPlaceName?: string;
 };
+
+export type OpenPlaceTrackResult = { ok: true } | { ok: false; message: string };
 
 async function resolvePlace(params: {
   pinDetail: PinDetailResponse;
@@ -138,8 +140,13 @@ export function useOpenPinPlaceOnMap() {
 
   /** 찜한 노래(placeTrackId)로 대표 PIN을 찾아 지도 PinListSheet를 연다. */
   const openPlaceTrackOnMap = useCallback(
-    async ({ placeTrackId, fallbackPlaceName = '' }: OpenPlaceTrackOptions) => {
-      if (isNavigating) return;
+    async ({
+      placeTrackId,
+      fallbackPlaceName = '',
+    }: OpenPlaceTrackOptions): Promise<OpenPlaceTrackResult> => {
+      if (isNavigating) {
+        return { ok: false, message: '이미 지도를 여는 중이에요. 잠시만 기다려 주세요.' };
+      }
 
       setIsNavigating(true);
       try {
@@ -147,7 +154,10 @@ export function useOpenPinPlaceOnMap() {
         const positionResult = await getCurrentPosition();
         if (!positionResult.ok) {
           setIsNavigating(false);
-          return;
+          return {
+            ok: false,
+            message: getGeolocationErrorMessage(positionResult.reason),
+          };
         }
         const trackPins = await getPlaceTrackPins({
           placeTrackId: String(placeTrackId),
@@ -159,7 +169,7 @@ export function useOpenPinPlaceOnMap() {
         const popularPin = trackPins.data[0];
         if (!popularPin) {
           setIsNavigating(false);
-          return;
+          return { ok: false, message: '이 곡에 등록된 핀을 찾지 못했어요.' };
         }
 
         const pinDetail = await getPinDetail(String(popularPin.pinId));
@@ -178,9 +188,17 @@ export function useOpenPinPlaceOnMap() {
 
         selectMapPlace(place);
         navigate('/app');
+        return { ok: true };
       } catch (error) {
         console.error(error);
         setIsNavigating(false);
+        return {
+          ok: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : '지도를 열지 못했어요. 잠시 후 다시 시도해 주세요.',
+        };
       }
     },
     [isNavigating, navigate, selectMapPlace],

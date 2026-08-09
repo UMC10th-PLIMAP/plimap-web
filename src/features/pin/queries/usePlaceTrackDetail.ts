@@ -27,7 +27,11 @@ export function usePlaceTrackDetail({
       'pin',
       'placeTrackDetail',
       placeTrackId,
-      { userLatitude, userLongitude, placeAccessToken },
+      {
+        userLatitude,
+        userLongitude,
+        hasPlaceAccessToken: Boolean(placeAccessToken),
+      },
     ],
     queryFn: () =>
       getPlaceTrackDetail({
