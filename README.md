@@ -96,6 +96,10 @@ pnpm dev
 
 `API_DOMAIN` GitHub Variable을 `plimap.kr`로 설정합니다. 미리보기 API는 `https://pr-<PR_NUMBER>.<API_DOMAIN>/api`, 개발 API는 `https://dev.<API_DOMAIN>/api`를 사용합니다.
 
+Prod는 `main` Release를 GCP Cloud Run `plimap-web-prod`에 배포합니다. `plimap.kr`의 `/`은 프론트 Cloud Run으로, `/api/**`와 `/oauth/**`는 백엔드 Cloud Run으로 라우팅합니다.
+
+운영 환경과 최초 Release 절차는 [Deployment Guide](docs/DEPLOYMENT.md)를 참고합니다.
+
 ## 화면 목록 및 플로우
 
 ### 인증 및 온보딩
