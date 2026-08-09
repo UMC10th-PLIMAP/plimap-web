@@ -11,6 +11,8 @@ type BottomNavRouteHandle = {
   mapPresentation?: 'visible' | 'overlay' | 'covered';
 };
 
+type MapPresentation = NonNullable<BottomNavRouteHandle['mapPresentation']>;
+
 export default function BottomNavLayout() {
   const appContext = useOutletContext<AppOutletContext>();
   const matches = useMatches();
@@ -21,9 +23,10 @@ export default function BottomNavLayout() {
     const { bottomNavItem } = (match.handle as BottomNavRouteHandle | undefined) ?? {};
     return bottomNavItem ?? activeItem;
   }, null);
-  const isMapOverlay = matches.some(
-    (match) => (match.handle as BottomNavRouteHandle | undefined)?.mapPresentation === 'overlay',
-  );
+  const mapPresentation = matches.reduce<MapPresentation>((presentation, match) => {
+    return (match.handle as BottomNavRouteHandle | undefined)?.mapPresentation ?? presentation;
+  }, 'visible');
+  const isMapOverlay = mapPresentation === 'overlay';
   const isMapNavHidden =
     activeNavItem === 'plimap' &&
     (isMapOverlay || appContext.selectedMapPlace !== null || appContext.selectedMapPinId !== null);
