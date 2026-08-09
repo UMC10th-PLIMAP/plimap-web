@@ -27,6 +27,7 @@ import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
+import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 const REGISTRATION_TOAST_DURATION_MS = 2_000;
@@ -98,7 +99,7 @@ const MapPage: React.FC<MapPageProps> = ({
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
-  const [zoom, setZoom] = useState<number>(savedViewport?.zoom ?? 15);
+  const [zoom, setZoom] = useState<number>(savedViewport?.zoom ?? 19);
   const [mapLoadStatus, setMapLoadStatus] = useState<MapLoadStatus>(
     hasApiKey ? 'loading' : 'error',
   );
@@ -107,6 +108,29 @@ const MapPage: React.FC<MapPageProps> = ({
   );
   const [currentLocation, setCurrentLocation] = useState<MapCoordinate | null>(null);
   const [currentLocationError, setCurrentLocationError] = useState<string | null>(null);
+  // 기본 좌표로 그렸다가 GPS 도착 시 옮기는 대신, 위치를 먼저 받아 바로 그 좌표로 지도를 만든다.
+  const initialPositionQuery = useCurrentPosition({
+    enabled: !savedViewport && !selectedMapPlace,
+  });
+  const hasInitialPosition =
+    Boolean(savedViewport) ||
+    Boolean(selectedMapPlace) ||
+    initialPositionQuery.isSuccess ||
+    initialPositionQuery.isError;
+  // 초기 조회 결과를 currentLocation/부모 콜백에도 반영한다.
+  const [trackedInitialPosition, setTrackedInitialPosition] = useState(initialPositionQuery.data);
+  if (initialPositionQuery.data !== trackedInitialPosition) {
+    setTrackedInitialPosition(initialPositionQuery.data);
+    if (initialPositionQuery.data) {
+      const coordinate = {
+        lat: initialPositionQuery.data.latitude,
+        lng: initialPositionQuery.data.longitude,
+      };
+      setCurrentLocation(coordinate);
+      setCurrentLocationError(null);
+      onCurrentLocationChange(coordinate);
+    }
+  }
   const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
   // 지도 빈 곳을 탭하면 시트를 닫지 않고 가장 작은 스냅으로만 축소한다 - 값은 의미 없이 신호로만 쓴다.
@@ -393,6 +417,18 @@ const MapPage: React.FC<MapPageProps> = ({
     );
   }
 
+  if (!hasInitialPosition) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-pli-black-100 p-6 text-center">
+        <div
+          aria-hidden
+          className="size-8 animate-spin rounded-full border-2 border-grayscale-700 border-t-neon"
+        />
+        <p className="body-15-r text-grayscale-500">현재 위치를 확인하고 있어요</p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full w-full">
       {/* 상단 장소 검색 바 + 북마크/현재 위치 버튼 */}
@@ -541,13 +577,20 @@ const MapPage: React.FC<MapPageProps> = ({
         isInteractionDisabled={!isUiActive}
         isLocationTrackingDisabled={isCovered}
         zoom={zoom}
-        initialCenter={savedViewport?.center}
+        initialCenter={
+          savedViewport?.center ??
+          (initialPositionQuery.data
+            ? { lat: initialPositionQuery.data.latitude, lng: initialPositionQuery.data.longitude }
+            : undefined)
+        }
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
         mapPins={displayMapPins}
         mapClusters={mapClusters}
         selectedMapPinId={viewerSelectedMapPinId}
-        centerOnFirstLocation={!selectedMapPlace && !savedViewport}
+        centerOnFirstLocation={
+          !selectedMapPlace && !savedViewport && !initialPositionQuery.isSuccess
+        }
         onZoomChanged={handleZoomChange}
         onCurrentLocationChanged={handleCurrentLocationChanged}
         onCurrentLocationError={setCurrentLocationError}
