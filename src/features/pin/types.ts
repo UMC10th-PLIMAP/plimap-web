@@ -272,6 +272,11 @@ export type PinSearchPlace = PlaceResult & {
   focusedFeedPin?: FocusedFeedPin;
   /** 지도 핀 말풍선용 (CTA와 별개로 인기 PIN 등을 표시할 때) */
   mapFocusPin?: FocusedFeedPin;
+  /**
+   * 내/친구 피드 → 지도 진입 시에만 true.
+   * false/미설정이면 곡 목록만 보이고 상세 조회는 불가.
+   */
+  allowTrackDetailAccess?: boolean;
   source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
   withinAccessRange?: boolean;
   selectionLocation?: PlaceSearchHistoryRequest;

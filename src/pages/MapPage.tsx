@@ -465,6 +465,7 @@ const MapPage: React.FC<MapPageProps> = ({
           onClose={() => onClearMapPlace?.()}
           place={toPlaceInfo(selectedMapPlace)}
           focusedFeedPin={selectedMapPlace.focusedFeedPin}
+          allowTrackDetailAccess={Boolean(selectedMapPlace.allowTrackDetailAccess)}
           detailLocation={
             selectedMapPlace.selectionLocation ??
             (currentLocation
@@ -472,8 +473,20 @@ const MapPage: React.FC<MapPageProps> = ({
               : null)
           }
           detailLocationError={currentLocationError}
-          onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
-          onFocusedTrackClick={(placeTrackId) => navigate(`/app/pins/${placeTrackId}`)}
+          onPinClick={(pin) =>
+            navigate(`/app/pins/${pin.placeTrackId}`, {
+              state: currentLocation
+                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
+                : undefined,
+            })
+          }
+          onFocusedTrackClick={(placeTrackId) =>
+            navigate(`/app/pins/${placeTrackId}`, {
+              state: currentLocation
+                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
+                : undefined,
+            })
+          }
           resetKey={selectedMapPlace.id}
           collapseToSmallestSignal={sheetCollapseSignal}
           onActiveSnapChange={setActiveSheetSnap}
@@ -493,6 +506,7 @@ const MapPage: React.FC<MapPageProps> = ({
           open
           onClose={() => onSelectMapPinChange(null)}
           place={mapPinToPlaceInfo(selectedMapPin)}
+          allowTrackDetailAccess={false}
           resetKey={selectedMapPin.id}
           collapseToSmallestSignal={sheetCollapseSignal}
           onActiveSnapChange={setActiveSheetSnap}
@@ -503,7 +517,13 @@ const MapPage: React.FC<MapPageProps> = ({
               : null
           }
           detailLocationError={currentLocationError}
-          onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
+          onPinClick={(pin) =>
+            navigate(`/app/pins/${pin.placeTrackId}`, {
+              state: currentLocation
+                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
+                : undefined,
+            })
+          }
         />
       ) : null}
 

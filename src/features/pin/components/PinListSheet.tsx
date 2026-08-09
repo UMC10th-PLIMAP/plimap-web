@@ -39,6 +39,11 @@ type PinListSheetProps = {
   detailLocationError?: string | null;
   onPinClick?: (pin: Pin) => void;
   onFocusedTrackClick?: (placeTrackId: string) => void;
+  /**
+   * 내/친구 피드 → 지도 진입 시에만 true.
+   * false면 곡 카드는 보이되 하트·상세 이동은 막는다.
+   */
+  allowTrackDetailAccess?: boolean;
   /** 이 값이 바뀌면 시트가 열린 채로도 default 스냅으로 리셋한다(다른 핀/장소 선택 시 사용). */
   resetKey?: string | number;
   /** 이 값이 바뀔 때마다 가장 작은 스냅으로 축소한다(지도 빈 곳 탭 시 사용). */
@@ -92,6 +97,8 @@ type PinListContentProps = {
   isBookmarkPending: boolean;
   onBookmarkToggle: () => void;
   onPinClick?: (pin: Pin) => void;
+  onBlockedPinClick?: () => void;
+  allowTrackDetailAccess?: boolean;
   focusedFeedPin?: FocusedFeedPin;
   onFocusedTrackClick?: () => void;
 };
@@ -107,6 +114,8 @@ function PinListContent({
   isBookmarkPending,
   onBookmarkToggle,
   onPinClick,
+  onBlockedPinClick,
+  allowTrackDetailAccess = false,
   focusedFeedPin,
   onFocusedTrackClick,
 }: PinListContentProps) {
@@ -250,7 +259,17 @@ function PinListContent({
           <ul className="flex flex-col gap-4">
             {pins.map((pin) => (
               <li key={pin.placeTrackId}>
-                <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
+                <PinCard
+                  pin={pin}
+                  showLike={allowTrackDetailAccess}
+                  onClick={
+                    allowTrackDetailAccess
+                      ? () => onPinClick?.(pin)
+                      : onBlockedPinClick
+                        ? () => onBlockedPinClick()
+                        : undefined
+                  }
+                />
               </li>
             ))}
           </ul>
@@ -266,6 +285,7 @@ function PinListContent({
 }
 
 const BOOKMARK_TOAST_DURATION_MS = 2_000;
+const TRACK_DETAIL_BLOCKED_TOAST_MESSAGE = '피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
 
 type BookmarkToast = {
   attempt: number;
@@ -281,6 +301,7 @@ export function PinListSheet({
   detailLocationError = null,
   onPinClick,
   onFocusedTrackClick,
+  allowTrackDetailAccess = false,
   resetKey,
   collapseToSmallestSignal,
   onActiveSnapChange,
@@ -289,6 +310,7 @@ export function PinListSheet({
 }: PinListSheetProps) {
   const [sort, setSort] = useState<PinSort>('POPULAR');
   const [bookmarkToast, setBookmarkToast] = useState<BookmarkToast | null>(null);
+  const [accessToast, setAccessToast] = useState<BookmarkToast | null>(null);
   const normalizedPlaceId = place.id.startsWith('place:')
     ? place.id.slice('place:'.length)
     : place.id;
@@ -436,6 +458,13 @@ export function PinListSheet({
           isBookmarkPending={bookmarkMutation.isPending}
           onBookmarkToggle={handleBookmarkToggle}
           onPinClick={onPinClick}
+          onBlockedPinClick={() => {
+            setAccessToast((currentToast) => ({
+              attempt: (currentToast?.attempt ?? 0) + 1,
+              message: TRACK_DETAIL_BLOCKED_TOAST_MESSAGE,
+            }));
+          }}
+          allowTrackDetailAccess={allowTrackDetailAccess}
           focusedFeedPin={focusedFeedPin}
           onFocusedTrackClick={
             focusedPlaceTrackId && onFocusedTrackClick
@@ -447,8 +476,13 @@ export function PinListSheet({
 
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">
         {bookmarkToast ? (
-          <Toast key={`${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
+          <Toast key={`bookmark:${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
             {bookmarkToast.message}
+          </Toast>
+        ) : null}
+        {accessToast ? (
+          <Toast key={`access:${accessToast.message}:${accessToast.attempt}`} defaultOpen>
+            {accessToast.message}
           </Toast>
         ) : null}
         <ToastViewport />
