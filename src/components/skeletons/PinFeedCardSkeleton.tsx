@@ -7,7 +7,7 @@ export function PinFeedCardSkeleton() {
         <Skeleton className="size-7 rounded-full" />
         <div className="flex flex-1 items-center gap-1.5">
           <Skeleton className="h-[21px] w-25 rounded-sm" />
-          <Skeleton className="h-[21px] w-9 rounded-sm" />
+          <Skeleton className="h-[21px] w-13 rounded-sm" />
         </div>
         <Skeleton className="size-6 rounded-sm" />
       </header>

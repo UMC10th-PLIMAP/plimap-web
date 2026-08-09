@@ -21,14 +21,14 @@ export function PlaceSearchSkeleton({ variant = 'search-result' }: PlaceSearchSk
       <div className="flex min-w-0 flex-1 flex-col gap-[6px] pb-3 pt-4">
         <div className="flex h-6 items-center gap-1.5">
           <Skeleton className="h-4 w-25 rounded-sm" />
-          <Skeleton className="h-4 w-6 rounded-sm" />
+          <Skeleton className="h-4 w-16 rounded-sm" />
         </div>
         <div className="flex h-[21px] items-center">
           <Skeleton className="h-4 w-[252px] max-w-full rounded-sm" />
         </div>
         <div className="flex h-[21px] items-center gap-1">
           <Skeleton className="h-4 w-30 rounded-sm" />
-          <Skeleton className="h-4 w-13 rounded-sm" />
+          <Skeleton className="h-4 w-18 rounded-sm" />
         </div>
       </div>
     </div>

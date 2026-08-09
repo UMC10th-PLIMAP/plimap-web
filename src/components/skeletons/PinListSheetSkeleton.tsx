@@ -16,7 +16,7 @@ export function PinListSheetSkeleton() {
           <Skeleton className="h-3 w-[154px] rounded-sm mt-[11px]" />
           <div className="flex items-center gap-1 mt-[6px]">
             <Skeleton className="h-3 w-[119px] rounded-sm" />
-            <Skeleton className="h-3 w-11 rounded-sm" />
+            <Skeleton className="h-3 w-18 rounded-sm" />
           </div>
         </div>
         <div className="flex size-11 items-center justify-center rounded-full bg-pli-black-75">
@@ -33,8 +33,8 @@ export function PinListSheetSkeleton() {
           <div className="flex min-w-0 items-center gap-4">
             <Skeleton className="size-13 rounded-lg" />
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <Skeleton className="h-[21px] w-[110px] rounded-sm" />
-              <Skeleton className="h-4 w-13 rounded-sm" />
+              <Skeleton className="h-[21px] w-[132px] rounded-sm" />
+              <Skeleton className="h-4 w-17 rounded-sm" />
             </div>
           </div>
           <Skeleton className="h-[21px] w-[36px] rounded-sm" />
