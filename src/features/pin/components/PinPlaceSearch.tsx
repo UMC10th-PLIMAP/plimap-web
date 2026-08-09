@@ -12,6 +12,7 @@ import {
 import type { PinSearchPlace } from '@/features/pin/types';
 import type { MapCoordinate } from '@/features/map/types';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
+import { useAutoFocusAfterViewTransition } from '@/hooks/useAutoFocusAfterViewTransition';
 import type { PlaceSearchHistoryRequest } from '@/types/place.type';
 
 export type PinPlaceSearchProps = {
@@ -45,7 +46,7 @@ export function PinPlaceSearch({
   placeholder = '장소를 검색하세요',
   headerContent,
 }: PinPlaceSearchProps) {
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useAutoFocusAfterViewTransition<HTMLInputElement>(autoFocus);
   const selectionControllerRef = useRef<AbortController | null>(null);
   const [query, setQuery] = useState(initialQuery);
   const [selectionConstraintError, setSelectionConstraintError] = useState<string | null>(null);
@@ -94,29 +95,6 @@ export function PinPlaceSearch({
       : recentSearchQuery.error instanceof Error
         ? recentSearchQuery.error.message
         : null;
-
-  useEffect(() => {
-    if (!autoFocus) return;
-
-    let isCancelled = false;
-    const focusSearchInput = () => {
-      if (!isCancelled) searchInputRef.current?.focus({ preventScroll: true });
-    };
-    const activeViewTransition = (
-      document as Document & { activeViewTransition?: { finished: Promise<void> } | null }
-    ).activeViewTransition;
-
-    if (!activeViewTransition) {
-      focusSearchInput();
-      return;
-    }
-
-    void activeViewTransition.finished.then(focusSearchInput, focusSearchInput);
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [autoFocus]);
 
   useEffect(() => {
     return () => selectionControllerRef.current?.abort();

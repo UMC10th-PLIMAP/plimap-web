@@ -77,6 +77,8 @@ type BottomSheetProps = {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  /** 시트가 열릴 때 포커스를 받을 요소. */
+  initialFocusRef?: React.RefObject<HTMLElement | null>;
   /** drag handle 표시 여부 */
   showHandle?: boolean;
   /** 오버레이 클릭·드래그로 닫기 */
@@ -111,6 +113,7 @@ function BottomSheet({
   open,
   onClose,
   children,
+  initialFocusRef,
   showHandle = true,
   dismissible = true,
   snapPoints = DEFAULT_SNAP_POINTS,
@@ -201,6 +204,7 @@ function BottomSheet({
       >
         <SheetContent
           ref={setSnapObserverTarget}
+          onOpenAutoFocus={() => initialFocusRef?.current?.focus({ preventScroll: true })}
           data-full-page={isFullPage ? '' : undefined}
           className={cn(
             // h-full은 모바일 주소창 노출 시 "큰" 뷰포트 기준이라 하단이 잘려 보인다 - dvh로 교체.

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -19,6 +19,7 @@ type SongSelectSheetProps = {
 
 export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProps) {
   const queryClient = useQueryClient();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [prevOpen, setPrevOpen] = useState(open);
   const [preparingTrackId, setPreparingTrackId] = useState<number | null>(null);
@@ -57,12 +58,19 @@ export function SongSelectSheet({ open, onClose, onSelect }: SongSelectSheetProp
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} snapPoints={[0.98, 1]} className="bg-pli-black-85 ">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      initialFocusRef={searchInputRef}
+      snapPoints={[0.98, 1]}
+      className="bg-pli-black-85 "
+    >
       <BottomSheet.Header className="px-[15px]">
         <BottomSheet.Title className="my-5.5 text-center body-15-r text-grayscale-300">
           노래 선택하기
         </BottomSheet.Title>
         <SearchInput
+          ref={searchInputRef}
           variant="song"
           value={query}
           onChange={(event) => setQuery(event.target.value)}

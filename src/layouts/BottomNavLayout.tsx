@@ -8,6 +8,7 @@ import { usePinCreationStore } from '@/store/pinCreationStore';
 
 type BottomNavRouteHandle = {
   bottomNavItem?: NavItemId;
+  mapPresentation?: 'visible' | 'overlay' | 'covered';
 };
 
 export default function BottomNavLayout() {
@@ -20,9 +21,12 @@ export default function BottomNavLayout() {
     const { bottomNavItem } = (match.handle as BottomNavRouteHandle | undefined) ?? {};
     return bottomNavItem ?? activeItem;
   }, null);
+  const isMapOverlay = matches.some(
+    (match) => (match.handle as BottomNavRouteHandle | undefined)?.mapPresentation === 'overlay',
+  );
   const isMapNavHidden =
     activeNavItem === 'plimap' &&
-    (appContext.selectedMapPlace !== null || appContext.selectedMapPinId !== null);
+    (isMapOverlay || appContext.selectedMapPlace !== null || appContext.selectedMapPinId !== null);
 
   return (
     <>
