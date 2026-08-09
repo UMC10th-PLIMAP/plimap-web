@@ -158,9 +158,16 @@ function PinListContent({
               </div>
 
               <div className="w-full min-w-0">
-                <BottomSheet.Title className="block truncate head-24-sb text-grayscale-100">
+                <BottomSheet.Title
+                  className={cn(
+                    'block head-24-sb text-grayscale-100',
+                    isFullPage ? 'line-clamp-2' : 'truncate',
+                  )}
+                >
                   {place.name
-                    ? truncatePlaceName(place.name)
+                    ? isFullPage
+                      ? place.name
+                      : truncatePlaceName(place.name)
                     : detailErrorMessage
                       ? '장소 정보를 불러올 수 없어요'
                       : '장소 정보를 불러오고 있어요'}
