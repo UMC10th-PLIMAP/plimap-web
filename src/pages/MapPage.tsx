@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
 import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
@@ -43,6 +43,10 @@ const SINGLE_CLUSTER_MATCH_RADIUS_METERS = 15;
 type RegistrationToast = {
   attempt: number;
   message: string;
+};
+
+type MapNavigationState = {
+  mapFocusCoordinate?: MapCoordinate;
 };
 
 type MapPageProps = {
@@ -97,6 +101,8 @@ const MapPage: React.FC<MapPageProps> = ({
   onCurrentLocationChange,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const mapFocusCoordinate = (location.state as MapNavigationState | null)?.mapFocusCoordinate;
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
@@ -346,6 +352,17 @@ const MapPage: React.FC<MapPageProps> = ({
 
     return () => window.cancelAnimationFrame(frameId);
   }, [mapLoadStatus, selectedMapPlace]);
+
+  // 홈의 현재 위치 링크 등 외부 화면에서 전달한 좌표로 지도를 이동한다.
+  useEffect(() => {
+    if (mapLoadStatus !== 'ready' || !mapFocusCoordinate) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      mapViewerRef.current?.panTo(mapFocusCoordinate);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [mapFocusCoordinate, mapLoadStatus]);
 
   // --- 지도 로드 재시도 (실패한 스크립트 태그를 지우고 다시 요청, 클릭 핸들러이므로 동기 setState 가능) ---
   const handleRetryMapLoad = () => {

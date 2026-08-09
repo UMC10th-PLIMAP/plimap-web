@@ -49,6 +49,24 @@ export type CreatePinResponse = {
   clipStartMs: number;
 };
 
+export type FriendPinItem = {
+  pinId: number;
+  placeName: string;
+  latitude: number;
+  longitude: number;
+  writerNickname: string;
+  writerProfileImage: string | null;
+  albumImageUrl: string | null;
+  createdAt: string;
+};
+
+export type FriendPinsResponse = {
+  data: FriendPinItem[];
+  nextCursor: string | null;
+  hasNext: boolean;
+  pageSize: number;
+};
+
 export type MapPinsRequest = {
   southWestLat: number;
   southWestLng: number;
@@ -234,6 +252,20 @@ export async function getMemberMe({
 }: MemberMeRequest): Promise<MemberMeResponse> {
   const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(`/api/v1/feed/members/me`, {
     params: { pageSize, cursor, userLatitude, userLongitude },
+  });
+  return data.result;
+}
+
+/** GET /api/v1/pins/friends - 내가 팔로우한 사용자의 최근 공개 PIN 목록 */
+export async function getFriendPins({
+  pageSize = 10,
+  cursor,
+}: {
+  pageSize?: number;
+  cursor?: string;
+} = {}): Promise<FriendPinsResponse> {
+  const { data } = await apiClient.get<ApiResponse<FriendPinsResponse>>('/api/v1/pins/friends', {
+    params: { pageSize, cursor },
   });
   return data.result;
 }
