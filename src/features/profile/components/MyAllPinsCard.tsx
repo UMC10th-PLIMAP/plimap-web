@@ -5,31 +5,36 @@ import type { MyAllPin } from '@/features/profile/types';
 
 type MyAllPinsCardProps = {
   pin: MyAllPin;
-  onPlaceClick?: () => void;
+  onClick?: () => void;
   onMoreClick?: () => void;
 };
 
-export function MyAllPinsCard({ pin, onPlaceClick, onMoreClick }: MyAllPinsCardProps) {
+export function MyAllPinsCard({ pin, onClick, onMoreClick }: MyAllPinsCardProps) {
   return (
-    <article className="flex flex-col w-full rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3">
-      <div className="flex items-center gap-[6px]">
+    <article className="relative flex w-full flex-col rounded-[20px] bg-pli-black-85 px-4 pt-4 pb-3">
+      {onClick ? (
         <button
           type="button"
-          onClick={onPlaceClick}
-          className="flex flex-1 items-center gap-1 text-left cursor-pointer"
-        >
+          aria-label={`${pin.placeName}에 등록한 ${pin.trackName} 상세 보기`}
+          onClick={onClick}
+          className="absolute inset-0 rounded-[20px] cursor-pointer"
+        />
+      ) : null}
+
+      <div className="flex items-center gap-[6px]">
+        <div className="flex flex-1 items-center gap-1 text-left">
           <LocationPinIcon className="size-5 text-neon" aria-hidden />
           <span className="flex body-17-m text-grayscale-100">
             {pin.placeName}
             <NextIcon className="size-6 text-grayscale-400" aria-hidden />
           </span>
-        </button>
+        </div>
 
         <button
           type="button"
           aria-label="더보기"
           onClick={onMoreClick}
-          className="flex size-6 items-center justify-center cursor-pointer"
+          className="relative z-10 flex size-6 items-center justify-center cursor-pointer"
         >
           <MoreIcon className="size-6 text-grayscale-100" aria-hidden />
         </button>

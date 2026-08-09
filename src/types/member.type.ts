@@ -6,7 +6,6 @@ export type NicknameCheckResponse =
   | { nickname: string; available: false; reason: NicknameCheckReason };
 
 export type ProfileImageUploadResponse = {
-  objectKey: string;
   imageUrl: string;
 };
 
@@ -18,6 +17,7 @@ export type MyProfileResponse = {
   profileImageUrl: string | null;
   followerCount: number;
   followingCount: number;
+  pinCount: number;
   onboardingCompletedAt: string | null;
 };
 
@@ -42,6 +42,27 @@ export type FollowListResponse = {
   hasNext: boolean;
   pageSize: number;
 };
+
+export type MemberSearchRequest = {
+  keyword: string;
+  pageSize?: number;
+  cursor?: string;
+};
+
+export type MemberSearchItem = {
+  id: number;
+  nickname: string;
+  name: string | null;
+  profileImageUrl: string | null;
+  isFollowing: boolean;
+};
+
+export type MemberSearchResponse = {
+  data: MemberSearchItem[];
+  nextCursor: string | null;
+  hasNext: boolean;
+  pageSize: number;
+};
 export type MemberProfileResponse = {
   id: number;
   nickname: string;
@@ -50,6 +71,7 @@ export type MemberProfileResponse = {
   profileImageUrl: string | null;
   followerCount: number;
   followingCount: number;
+  pinCount: number;
   isFollowing: boolean;
 };
 
@@ -62,9 +84,9 @@ export type UpdateMyProfileRequest = {
 export type UpdateMyProfileResponse = {
   id: number;
   nickname: string;
-  name: string;
-  introduction: string;
-  profileImageObjectKey: string;
+  name: string | null;
+  introduction: string | null;
+  profileImageUrl: string | null;
   updatedAt: string;
 };
 

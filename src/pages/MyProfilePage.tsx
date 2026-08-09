@@ -16,6 +16,7 @@ import { useMyProfile } from '@/hooks/useMyProfile';
 import { cn } from '@/lib/utils';
 
 const SHARE_TOAST_DURATION_MS = 2_000;
+const MY_PROFILE_STALE_TIME = 60 * 1000;
 
 type ShareToast = {
   attempt: number;
@@ -23,7 +24,7 @@ type ShareToast = {
 
 export default function MyProfilePage() {
   const navigate = useNavigate();
-  const { data: myProfile } = useMyProfile();
+  const { data: myProfile } = useMyProfile({ staleTime: MY_PROFILE_STALE_TIME });
   const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
   const {
     data: memberMePages,
@@ -99,6 +100,7 @@ export default function MyProfilePage() {
           onPinClick={(pin) => {
             void openPinPlaceOnMap({
               pinId: pin.pinId,
+              placeTrackId: pin.placeTrackId,
               fallbackPlaceName: pin.placeName,
               isMine: true,
               showMyRegisteredTrackCta: true,

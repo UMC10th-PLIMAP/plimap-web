@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
 import { PinDetailSkeleton } from '@/components/skeletons/PinDetailSkeleton';
@@ -14,9 +14,13 @@ import { usePlaceTrackPins } from '@/features/pin/queries/usePlaceTrackPins';
 import { usePutLikedTrack } from '@/features/pin/queries/usePutLikedTrack';
 import type { GetPlaceTrackPinsResponse, PinFeedEntry, PinSort } from '@/features/pin/types';
 import { ConfirmAlertDialog } from '@/features/settings/components/ConfirmAlertDialog';
+import { useCurrentPosition } from '@/hooks/useCurrentPosition';
+import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
 import HeartIcon from '@/assets/icons/heart.svg?react';
 import ChangeIcon from '@/assets/icons/change.svg?react';
 import { cn } from '@/lib/utils';
+import { useFeedPlaceAccessStore } from '@/store/feedPlaceAccessStore';
+import { getGeolocationErrorMessage, type GeolocationFailureReason } from '@/utils/geolocation';
 
 const SORT_LABEL: Record<PinSort, string> = {
   LATEST: '최신순',
@@ -25,34 +29,92 @@ const SORT_LABEL: Record<PinSort, string> = {
 
 type PlaceTrackPin = GetPlaceTrackPinsResponse['data'][number];
 
+type PinDetailLocationState = {
+  userLatitude?: number;
+  userLongitude?: number;
+};
+
 function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
   return {
     id: String(pin.pinId),
     memberId: pin.memberId,
     nickname: pin.writerNickname,
-    avatarUrl: pin.writerProfileImage,
+    avatarUrl: pin.writerProfileImage ?? undefined,
     createdAtLabel: pin.staticCreatedAt,
     content: pin.introduction,
     tags: pin.tags,
     likeCount: pin.likeCount,
     liked: pin.userLike,
     isMine: pin.pinByMe,
+    clipStartMs: pin.clipStartMs,
   };
+}
+
+function toGeolocationFailureReason(error: Error): GeolocationFailureReason {
+  const reason = error.message;
+  if (
+    reason === 'PERMISSION_DENIED' ||
+    reason === 'POSITION_UNAVAILABLE' ||
+    reason === 'TIMEOUT' ||
+    reason === 'UNSUPPORTED'
+  ) {
+    return reason;
+  }
+  return 'POSITION_UNAVAILABLE';
 }
 
 export default function PinDetailPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = (location.state as PinDetailLocationState | null) ?? null;
   const { pinId } = useParams<{ pinId: string }>();
   const [sort, setSort] = useState<PinSort>('LATEST');
   const [reportFeedId, setReportFeedId] = useState<string | null>(null);
   const [deletePinId, setDeletePinId] = useState<string | null>(null);
 
-  const { data: pinDetail, isPending: isPinDetailPending } = usePlaceTrackDetail({
-    placeTrackId: pinId,
+  const hasLocationFromState =
+    locationState?.userLatitude != null &&
+    locationState?.userLongitude != null &&
+    Number.isFinite(locationState.userLatitude) &&
+    Number.isFinite(locationState.userLongitude);
+
+  const currentPositionQuery = useCurrentPosition({
+    enabled: !hasLocationFromState,
   });
-  const { data: pinPages, isPending: isPinPagesPending } = usePlaceTrackPins({
+  const placeAccessToken = useFeedPlaceAccessStore((state) =>
+    state.activePlaceId != null ? state.tokens[state.activePlaceId] : undefined,
+  );
+  const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
+
+  const userLatitude = hasLocationFromState
+    ? locationState.userLatitude
+    : currentPositionQuery.data?.latitude;
+  const userLongitude = hasLocationFromState
+    ? locationState.userLongitude
+    : currentPositionQuery.data?.longitude;
+
+  const {
+    data: pinDetail,
+    isPending: isDetailPending,
+    isError: isDetailError,
+    refetch: refetchDetail,
+  } = usePlaceTrackDetail({
+    placeTrackId: pinId,
+    userLatitude,
+    userLongitude,
+    placeAccessToken,
+  });
+  const {
+    data: pinPages,
+    isPending: isPinsPending,
+    isError: isPinsError,
+    refetch: refetchPins,
+  } = usePlaceTrackPins({
     placeTrackId: pinId,
     pinSortType: sort,
+    userLatitude,
+    userLongitude,
+    placeAccessToken,
   });
 
   const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
@@ -61,6 +123,39 @@ export default function PinDetailPage() {
   const isLikePending = isPutPending || isDeletePending;
 
   const pins = pinPages?.pages.flatMap((page) => page.data.map(toPinFeedEntry)) ?? [];
+  const locationErrorMessage =
+    !hasLocationFromState && currentPositionQuery.isError
+      ? getGeolocationErrorMessage(
+          toGeolocationFailureReason(
+            currentPositionQuery.error instanceof Error
+              ? currentPositionQuery.error
+              : new Error('POSITION_UNAVAILABLE'),
+          ),
+        )
+      : null;
+
+  const isLocationPending = !hasLocationFromState && currentPositionQuery.isPending;
+  const isContentPending =
+    !locationErrorMessage && (isLocationPending || isDetailPending || isPinsPending);
+  const isContentError =
+    !locationErrorMessage && !isContentPending && (isDetailError || isPinsError);
+
+  useEffect(() => {
+    preloadYouTubeIframeApi();
+  }, []);
+
+  useEffect(() => {
+    stopClipPlayback();
+  }, [pinId, sort, stopClipPlayback]);
+
+  const handlePlay = (entry: PinFeedEntry) => {
+    if (!pinDetail?.youtubeVideoId) return;
+
+    toggleClipPlayback(entry.id, {
+      videoId: pinDetail.youtubeVideoId,
+      clipStartMs: entry.clipStartMs,
+    });
+  };
 
   const handleLikeClick = () => {
     if (!pinDetail || isLikePending) return;
@@ -73,16 +168,61 @@ export default function PinDetailPage() {
     putLikedTrack(placeTrackId);
   };
 
-  if (isPinDetailPending || isPinPagesPending) {
-    return <PinDetailSkeleton onBack={() => navigate(-1)} />;
+  if (locationErrorMessage) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <TopBar onBack={() => navigate(-1)} className="pt-[env(safe-area-inset-top)]" />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+          <p className="body-15-r text-grayscale-500">{locationErrorMessage}</p>
+          <button
+            type="button"
+            onClick={() => void currentPositionQuery.refetch()}
+            disabled={currentPositionQuery.isFetching}
+            className="cursor-pointer rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100 disabled:opacity-50"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isContentPending) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <TopBar onBack={() => navigate(-1)} className="pt-[env(safe-area-inset-top)]" />
+        <PinDetailSkeleton />
+      </div>
+    );
+  }
+
+  if (isContentError || !pinDetail) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <TopBar onBack={() => navigate(-1)} className="pt-[env(safe-area-inset-top)]" />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+          <p className="body-15-r text-grayscale-500">곡 정보를 불러오지 못했어요.</p>
+          <button
+            type="button"
+            onClick={() => {
+              void refetchDetail();
+              void refetchPins();
+            }}
+            className="cursor-pointer rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-hide">
       <div className="relative h-[296px] shrink-0 overflow-hidden">
         <img
-          src={pinDetail?.albumImageUrl}
-          alt={pinDetail?.title}
+          src={pinDetail.albumImageUrl}
+          alt={pinDetail.title}
           aria-hidden
           className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-12 blur-[4px]"
         />
@@ -93,18 +233,18 @@ export default function PinDetailPage() {
         />
         <div className="relative z-10 flex h-full flex-col items-center">
           <img
-            src={pinDetail?.albumImageUrl}
-            alt={pinDetail?.title}
+            src={pinDetail.albumImageUrl}
+            alt={pinDetail.title}
             aria-hidden
             className="size-[112px] rounded-lg object-cover"
           />
-          <h1 className="pt-3 head-24-sb text-grayscale-100">{pinDetail?.title}</h1>
-          <p className="body-15-r text-grayscale-600">{pinDetail?.artist}</p>
+          <h1 className="pt-3 head-24-sb text-grayscale-100">{pinDetail.title}</h1>
+          <p className="body-15-r text-grayscale-600">{pinDetail.artist}</p>
 
           <button
             type="button"
-            aria-pressed={pinDetail?.userLike}
-            aria-label={pinDetail?.userLike ? '좋아요 취소' : '좋아요'}
+            aria-pressed={pinDetail.userLike}
+            aria-label={pinDetail.userLike ? '좋아요 취소' : '좋아요'}
             disabled={isLikePending}
             onClick={handleLikeClick}
             className="mt-[14px] flex h-11 w-full max-w-[183px] cursor-pointer items-center justify-center gap-[5px] rounded-lg bg-pli-black-75 disabled:opacity-100"
@@ -112,11 +252,11 @@ export default function PinDetailPage() {
             <HeartIcon
               className={cn(
                 'size-[18px]',
-                pinDetail?.userLike ? 'fill-red text-red' : 'text-grayscale-400',
+                pinDetail.userLike ? 'fill-red text-red' : 'text-grayscale-400',
               )}
               aria-hidden
             />
-            <span className="body-15-m text-grayscale-300">{pinDetail?.likeCount}</span>
+            <span className="body-15-m text-grayscale-300">{pinDetail.likeCount}</span>
           </button>
         </div>
       </div>
@@ -140,6 +280,8 @@ export default function PinDetailPage() {
           <PinFeedCard
             key={entry.id}
             entry={entry}
+            isPlaying={playingKey === entry.id}
+            onPlay={() => handlePlay(entry)}
             onReport={setReportFeedId}
             onNicknameClick={() => {
               if (entry.isMine) {
@@ -151,9 +293,9 @@ export default function PinDetailPage() {
             onEdit={(entryId) => {
               navigate(`/app/pins/${entryId}/edit`, {
                 state: {
-                  title: pinDetail?.title,
-                  artist: pinDetail?.artist,
-                  albumImageUrl: pinDetail?.albumImageUrl,
+                  title: pinDetail.title,
+                  artist: pinDetail.artist,
+                  albumImageUrl: pinDetail.albumImageUrl,
                   introduction: entry.content,
                   tags: entry.tags,
                   feedOpen: true,

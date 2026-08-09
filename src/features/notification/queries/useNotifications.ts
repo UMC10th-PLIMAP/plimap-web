@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { getOtherMemberProfile, followMember } from '@/api/member';
+import { getOtherMemberProfile } from '@/api/member';
 import { getNotifications, subscribeToNotifications } from '@/api/notification';
-import type { MemberProfileResponse } from '@/types/member.type';
+import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 
 const NOTIFICATIONS_QUERY_KEY = ['notification', 'infinite'] as const;
 
@@ -45,23 +45,9 @@ export function useNotificationSubscription() {
 
 export function useActorProfile(actorId: number, enabled: boolean) {
   return useQuery({
-    queryKey: ['member', 'profile', actorId],
+    queryKey: memberQueryKeys.profile(actorId),
     queryFn: () => getOtherMemberProfile(actorId),
     enabled,
     staleTime: 60_000,
-  });
-}
-
-export function useFollowBackNotification() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: followMember,
-    onSuccess: (_, actorId) => {
-      queryClient.setQueryData<MemberProfileResponse>(['member', 'profile', actorId], (profile) =>
-        profile ? { ...profile, isFollowing: true } : profile,
-      );
-      void queryClient.invalidateQueries({ queryKey: ['member', 'profile', actorId] });
-    },
   });
 }

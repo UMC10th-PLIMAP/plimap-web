@@ -10,7 +10,6 @@ const SESSION_CHECK_FAILED_MESSAGE = '로그인 상태를 확인하지 못했어
 const AuthGuard = () => {
   const context = useOutletContext<AppOutletContext>();
   const { status, error } = useMyProfile({
-    staleTime: Infinity,
     retry: (failureCount, err) => !isUnauthorizedError(err) && failureCount < 2,
   });
 

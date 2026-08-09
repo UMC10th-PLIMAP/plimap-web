@@ -10,6 +10,8 @@ const searchInputVariants = cva('flex w-full items-center rounded-[50px] transit
   variants: {
     variant: {
       map: 'h-[60px] gap-2.5 bg-pli-black-100 px-5 py-2.5 backdrop-blur-[1.95px]',
+      friend:
+        'h-[60px] gap-2 bg-pli-black-75 px-4 py-2 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-neon-2',
       song: 'h-10 gap-2 bg-pli-black-75 px-4 body-15-r',
     },
   },
@@ -24,6 +26,7 @@ const searchInputFieldVariants = cva(
     variants: {
       variant: {
         map: 'body-17-m text-grayscale-300 placeholder:text-grayscale-700 placeholder-shown:body-17-r placeholder-shown:text-grayscale-700',
+        friend: 'body-17-m text-grayscale-300 placeholder:text-grayscale-700',
         song: '',
       },
     },
@@ -44,6 +47,8 @@ type SearchInputProps = Omit<React.ComponentProps<'input'>, 'type' | 'size'> &
 type SearchLauncherProps = Omit<React.ComponentProps<'button'>, 'children'> & {
   value?: string;
   placeholder?: string;
+  /** 선택된 값(value)이 있을 때 X 버튼을 보여주고, 눌리면 이 콜백을 호출한다. */
+  onClear?: () => void;
 };
 
 const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
@@ -82,8 +87,13 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
       onClear?.();
     };
 
+    // 검색어가 남아있으면 지우기만 하고, 이미 비어있을 때만 실제로 뒤로 나간다 -
+    // 눌러서 지우고, 한 번 더 눌러야 나가는 2단계 뒤로가기.
     const handleBack = () => {
-      handleClear();
+      if (currentValue.trim().length > 0) {
+        handleClear();
+        return;
+      }
       onBack?.();
     };
 
@@ -137,33 +147,53 @@ const SearchLauncher = React.forwardRef<HTMLButtonElement, SearchLauncherProps>(
       value,
       placeholder = '장소를 검색하세요',
       type = 'button',
+      onClear,
       'aria-label': ariaLabel,
       ...props
     },
     ref,
   ) => {
     const hasValue = Boolean(value?.trim());
+    const showClearButton = hasValue && Boolean(onClear);
 
     return (
-      <button
-        ref={ref}
-        type={type}
+      <div
         data-slot="search-launcher"
         data-variant="map"
-        aria-label={ariaLabel}
-        className={cn(searchInputVariants({ variant: 'map' }), 'text-left', className)}
-        {...props}
+        className={cn(searchInputVariants({ variant: 'map' }), className)}
       >
-        <SearchIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
-        <span
-          className={cn(
-            'min-w-0 flex-1 truncate',
-            hasValue ? 'body-17-m text-grayscale-300' : 'body-17-r text-grayscale-700',
-          )}
+        <button
+          ref={ref}
+          type={type}
+          aria-label={ariaLabel}
+          className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+          {...props}
         >
-          {hasValue ? value : placeholder}
-        </span>
-      </button>
+          {hasValue ? (
+            <BackIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
+          ) : (
+            <SearchIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
+          )}
+          <span
+            className={cn(
+              'min-w-0 flex-1 truncate',
+              hasValue ? 'body-17-m text-grayscale-300' : 'body-17-r text-grayscale-700',
+            )}
+          >
+            {hasValue ? value : placeholder}
+          </span>
+        </button>
+        {showClearButton ? (
+          <button
+            type="button"
+            aria-label="검색 결과 지우기"
+            onClick={() => onClear?.()}
+            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-pli-black-50"
+          >
+            <CloseIcon className="size-4 text-grayscale-400" />
+          </button>
+        ) : null}
+      </div>
     );
   },
 );

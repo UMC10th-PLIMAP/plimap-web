@@ -30,11 +30,31 @@ type UseGoogleMapParams = {
   onViewportChanged?: (viewport: MapViewport) => void;
   /** 핀 등 오버레이가 아닌, 지도의 빈 영역을 클릭했을 때만 호출된다. */
   onMapClick?: () => void;
+  /** 사용자가 지도를 드래그(패닝)하기 시작했을 때 호출된다. */
+  onMapDragStart?: () => void;
 };
 
 type PanToOptions = {
   notifyCenterChanged?: boolean;
 };
+
+function readMapViewport(map: google.maps.Map): MapViewport | null {
+  const center = map.getCenter();
+  const bounds = map.getBounds();
+  const zoom = map.getZoom();
+  if (!center || !bounds || zoom === undefined) return null;
+
+  const southWest = bounds.getSouthWest();
+  const northEast = bounds.getNorthEast();
+  return {
+    center: { lat: center.lat(), lng: center.lng() },
+    zoom,
+    bounds: {
+      southWest: { lat: southWest.lat(), lng: southWest.lng() },
+      northEast: { lat: northEast.lat(), lng: northEast.lng() },
+    },
+  };
+}
 
 /** 구글맵 인스턴스를 생성하고, zoom/center 변경을 리스닝한다. */
 export function useGoogleMap({
@@ -46,6 +66,7 @@ export function useGoogleMap({
   onCenterChanged,
   onViewportChanged,
   onMapClick,
+  onMapDragStart,
 }: UseGoogleMapParams) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -53,6 +74,7 @@ export function useGoogleMap({
   const onZoomChangedRef = useRef(onZoomChanged);
   const onViewportChangedRef = useRef(onViewportChanged);
   const onMapClickRef = useRef(onMapClick);
+  const onMapDragStartRef = useRef(onMapDragStart);
   const initialCenterRef = useRef(initialCenter);
   const suppressNextCenterChangedRef = useRef(false);
   const centerChangeSuppressionTimeoutRef = useRef<number | null>(null);
@@ -91,6 +113,10 @@ export function useGoogleMap({
   useEffect(() => {
     onMapClickRef.current = onMapClick;
   }, [onMapClick]);
+
+  useEffect(() => {
+    onMapDragStartRef.current = onMapDragStart;
+  }, [onMapDragStart]);
 
   useEffect(() => {
     mapInstanceRef.current?.setOptions({
@@ -162,6 +188,7 @@ export function useGoogleMap({
       map.addListener('dragstart', () => {
         clearCenterChangeSuppression();
         clearFlyingSuppression();
+        onMapDragStartRef.current?.();
       });
 
       // 핀 오버레이는 overlayMouseTarget 페인에서 클릭을 자체 처리하므로,
@@ -171,15 +198,10 @@ export function useGoogleMap({
       });
 
       map.addListener('idle', () => {
-        const newCenter = map.getCenter();
-        const bounds = map.getBounds();
-        const newZoom = map.getZoom();
-        if (!newCenter || !bounds || newZoom === undefined) return;
+        const nextViewport = readMapViewport(map);
+        if (!nextViewport) return;
 
-        const center = {
-          lat: newCenter.lat(),
-          lng: newCenter.lng(),
-        };
+        const { center, zoom: newZoom } = nextViewport;
         if (!suppressNextCenterChangedRef.current) {
           onCenterChangedRef.current?.(center);
         }
@@ -193,16 +215,7 @@ export function useGoogleMap({
         // zoom 동기화 effect가 오래된 값으로 지도를 되돌리는 것을 막는다.
         onZoomChangedRef.current?.(newZoom);
 
-        const southWest = bounds.getSouthWest();
-        const northEast = bounds.getNorthEast();
-        onViewportChangedRef.current?.({
-          center,
-          zoom: newZoom,
-          bounds: {
-            southWest: { lat: southWest.lat(), lng: southWest.lng() },
-            northEast: { lat: northEast.lat(), lng: northEast.lng() },
-          },
-        });
+        onViewportChangedRef.current?.(nextViewport);
       });
     } else if (!isFlyingRef.current && mapInstanceRef.current.getZoom() !== zoom) {
       mapInstanceRef.current.setZoom(zoom);
@@ -307,5 +320,49 @@ export function useGoogleMap({
     [clearCenterChangeSuppression],
   );
 
-  return { mapRef, mapInstanceRef, panTo, flyTo, fitToBounds };
+  const restoreViewport = useCallback(
+    (viewport: MapViewport) => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+
+      flyingCancelRef.current?.();
+      flyingCancelRef.current = null;
+      clearFlyingSuppression();
+      clearCenterChangeSuppression();
+
+      map.setZoom(viewport.zoom);
+      map.setCenter(viewport.center);
+      onZoomChangedRef.current?.(viewport.zoom);
+    },
+    [clearCenterChangeSuppression, clearFlyingSuppression],
+  );
+
+  const captureViewport = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return null;
+
+    flyingCancelRef.current?.();
+    flyingCancelRef.current = null;
+    clearFlyingSuppression();
+    clearCenterChangeSuppression();
+
+    const viewport = readMapViewport(map);
+    if (!viewport) return null;
+
+    // native panTo 애니메이션도 현재 프레임에서 멈추도록 같은 카메라 값을 다시 적용한다.
+    map.setCenter(viewport.center);
+    map.setZoom(viewport.zoom);
+    onZoomChangedRef.current?.(viewport.zoom);
+    return viewport;
+  }, [clearCenterChangeSuppression, clearFlyingSuppression]);
+
+  return {
+    mapRef,
+    mapInstanceRef,
+    panTo,
+    restoreViewport,
+    captureViewport,
+    flyTo,
+    fitToBounds,
+  };
 }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
@@ -12,15 +12,21 @@ import type {
   PinCluster,
 } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
+import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceMeters';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
 import { usePinMapView } from '@/features/map/queries/usePinMapView';
 import { useAutoFocusNearestPin } from '@/features/map/hooks/useAutoFocusNearestPin';
 import { DEV_MOCK_MAP_PINS } from '@/features/map/constants/devMockMapPins';
-import { PinListSheet } from '@/features/pin/components/PinListSheet';
+import {
+  PinListSheet,
+  PIN_LIST_SHEET_MID_SNAP,
+  type ResolvedPlaceSummary,
+} from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 import { usePinCreationStore } from '@/store/pinCreationStore';
+import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 const REGISTRATION_TOAST_DURATION_MS = 2_000;
@@ -29,6 +35,8 @@ const REGISTRATION_TOAST_DURATION_MS = 2_000;
 // 계속 바뀌면 무한 렌더 루프(React #301)가 된다.
 const EMPTY_MAP_PINS: MapPin[] = [];
 const EMPTY_MAP_CLUSTERS: PinCluster[] = [];
+// 장소 1개짜리 클러스터를 눌러 줌 21로 이동한 뒤, 근처 몇 m 안 개별 핀을 같은 장소로 본다.
+const SINGLE_CLUSTER_MATCH_RADIUS_METERS = 15;
 
 type RegistrationToast = {
   attempt: number;
@@ -40,6 +48,10 @@ type MapPageProps = {
   onClearMapPlace?: () => void;
   selectedMapPinId: string | null;
   onSelectMapPinChange: (pinId: string | null) => void;
+  isCovered: boolean;
+  savedViewport: MapViewport | null;
+  onSaveViewport: (viewport: MapViewport) => void;
+  onCurrentLocationChange: (coordinate: MapCoordinate) => void;
 };
 
 function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
@@ -75,12 +87,16 @@ const MapPage: React.FC<MapPageProps> = ({
   onClearMapPlace,
   selectedMapPinId,
   onSelectMapPinChange,
+  isCovered,
+  savedViewport,
+  onSaveViewport,
+  onCurrentLocationChange,
 }) => {
   const navigate = useNavigate();
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
-  const [zoom, setZoom] = useState<number>(15);
+  const [zoom, setZoom] = useState<number>(savedViewport?.zoom ?? 15);
   const [mapLoadStatus, setMapLoadStatus] = useState<MapLoadStatus>(
     hasApiKey ? 'loading' : 'error',
   );
@@ -91,6 +107,24 @@ const MapPage: React.FC<MapPageProps> = ({
   const [currentLocationError, setCurrentLocationError] = useState<string | null>(null);
   const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
+  // 지도 빈 곳을 탭하면 시트를 닫지 않고 가장 작은 스냅으로만 축소한다 - 값은 의미 없이 신호로만 쓴다.
+  const [sheetCollapseSignal, setSheetCollapseSignal] = useState(0);
+  // 등록하기 버튼을 바텀시트 상단에 붙이기 위해 시트의 현재 활성 스냅(0~1)을 추적한다.
+  const [activeSheetSnap, setActiveSheetSnap] = useState<number>(PIN_LIST_SHEET_MID_SNAP);
+  // 버튼 위치도 스냅 추적과 같은 기준(window.innerHeight)의 픽셀값으로 계산한다.
+  const [viewportInnerHeight, setViewportInnerHeight] = useState(() => window.innerHeight);
+  useEffect(() => {
+    const handleResize = () => setViewportInnerHeight(window.innerHeight);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  // 등록하기 버튼 활성화 여부(500m 이내·본인 핀 아님) 판단용, 서버에서 해결된 장소 정보.
+  const [resolvedActivePlace, setResolvedActivePlace] = useState<ResolvedPlaceSummary | null>(null);
+  // 클러스터 응답엔 placeId가 없어 그 자리에서 시트를 못 여니, 목표 좌표를 잡아두고
+  // 줌 21 재조회로 도착한 개별 핀 중 가장 가까운 걸 찾으면 선택한다.
+  const [pendingClusterPinPosition, setPendingClusterPinPosition] = useState<MapCoordinate | null>(
+    null,
+  );
   const { data: mapViewData } = usePinMapView(viewport);
   // 클러스터가 있는 줌 구간(6~19)에서는 개별 핀이 0개인 게 정상이라, 목데이터로
   // 대체하면 안 된다 - 핀만 반환되는 구간(clusters가 없음)에서 실제로 핀이 하나도
@@ -102,11 +136,53 @@ const MapPage: React.FC<MapPageProps> = ({
     (mapViewData.clusters?.length ?? 0) === 0;
   const mapPins = shouldUseDevMockPins ? DEV_MOCK_MAP_PINS : (mapViewData?.pins ?? EMPTY_MAP_PINS);
   const mapClusters = mapViewData?.clusters ?? EMPTY_MAP_CLUSTERS;
+  // 핀을 선택한 뒤 지도를 축소(줌아웃)하면, 그 핀이 개별 핀이 아니라 클러스터로
+  // 묶여 mapPins 응답에서 통째로 빠질 수 있다 - 그러면 마커·말풍선·바텀시트가 전부
+  // 갑자기 사라진다. 선택된 핀의 마지막으로 알고 있던 데이터를 스냅샷으로 잡아두고,
+  // mapPins에 없을 때만 displayMapPins에 그대로 얹어서 계속 보이게 한다.
+  const [trackedSelectedPinId, setTrackedSelectedPinId] = useState(selectedMapPinId);
+  const [selectedMapPinSnapshot, setSelectedMapPinSnapshot] = useState<MapPin | null>(null);
+
+  if (selectedMapPinId !== trackedSelectedPinId) {
+    setTrackedSelectedPinId(selectedMapPinId);
+    setSelectedMapPinSnapshot(
+      selectedMapPinId ? (mapPins.find((pin) => pin.id === selectedMapPinId) ?? null) : null,
+    );
+  }
+
+  // 피드/찜한 노래 진입 시: 말풍선용 핀을 주입·덮어쓰고 선택된 상태로 표시한다.
+  // CTA(focusedFeedPin)와 말풍선(mapFocusPin)을 분리해, 찜한 노래에서는 내 등록 곡이 없어도 인기 PIN 말풍선은 유지한다.
+  const overlayFocusPin = selectedMapPlace?.mapFocusPin ?? selectedMapPlace?.focusedFeedPin;
+  const focusedMapPinId = selectedMapPlace && overlayFocusPin ? selectedMapPlace.id : null;
+  const displayMapPins = useMemo(() => {
+    let pins = mapPins;
+
+    if (selectedMapPinSnapshot && !pins.some((pin) => pin.id === selectedMapPinSnapshot.id)) {
+      pins = [...pins, selectedMapPinSnapshot];
+    }
+
+    if (!selectedMapPlace || !overlayFocusPin) return pins;
+
+    const focusedPin: MapPin = {
+      id: selectedMapPlace.id,
+      placeId: selectedMapPlace.placeId,
+      lat: selectedMapPlace.coordinates.lat,
+      lng: selectedMapPlace.coordinates.lng,
+      coverUrl: overlayFocusPin.albumImageUrl || undefined,
+      nickname: overlayFocusPin.nickname,
+      avatarUrl: overlayFocusPin.avatarUrl,
+      introduction: overlayFocusPin.introduction,
+      youtubeVideoId: overlayFocusPin.youtubeVideoId,
+      clipStartMs: overlayFocusPin.clipStartMs,
+    };
+
+    return [...pins.filter((pin) => pin.id !== focusedPin.id), focusedPin];
+  }, [mapPins, overlayFocusPin, selectedMapPlace, selectedMapPinSnapshot]);
   // 최대 줌에서 화면 중심 근처 핀을 자동으로 포커스 (탭으로 연 시트가 있으면 그게 우선)
-  const autoFocusedPinId = useAutoFocusNearestPin({ mapPins, viewport });
+  const autoFocusedPinId = useAutoFocusNearestPin({ mapPins: displayMapPins, viewport });
   const displayedMapPinId = selectedMapPinId ?? autoFocusedPinId;
   const selectedMapPin = selectedMapPinId
-    ? (mapPins.find((pin) => pin.id === selectedMapPinId) ?? null)
+    ? (displayMapPins.find((pin) => pin.id === selectedMapPinId) ?? null)
     : null;
   // develop 방식: selectedMapPlace prop으로 장소 결과 관리
   const placeResults = useMemo<MapPlace[]>(
@@ -115,11 +191,88 @@ const MapPage: React.FC<MapPageProps> = ({
   );
   const selectedPlaceId = selectedMapPlace?.id ?? null;
   const isPlaceSheetOpen = selectedMapPlace !== null;
+  const viewerSelectedMapPinId = focusedMapPinId ?? (selectedMapPlace ? null : displayedMapPinId);
+  // 검색 장소든 핀 클릭이든, 피드 진입(찜한 곡 등)이 아닐 때는 등록하기 버튼을 보여준다.
+  const isRegisterButtonVisible =
+    (isPlaceSheetOpen && !selectedMapPlace?.focusedFeedPin) || selectedMapPin !== null;
+  // 아직 장소 정보가 안 왔거나(로딩 중), 500m 밖이거나, 본인 핀이면 등록할 수 없다.
+  const isRegisterButtonDisabled =
+    !resolvedActivePlace || resolvedActivePlace.isMine || !resolvedActivePlace.withinAccessRange;
   const resetPinCreation = usePinCreationStore((state) => state.reset);
   const setPinCreationCurrentLocation = usePinCreationStore((state) => state.setCurrentLocation);
   const setPinCreationPlace = usePinCreationStore((state) => state.setPlace);
 
   const mapViewerRef = useRef<MapViewerHandle>(null);
+  const wasCoveredRef = useRef(isCovered);
+  const {
+    playingKey,
+    toggle: toggleClipPlayback,
+    stop: stopClipPlayback,
+  } = useYouTubeClipPlayer({
+    enabled: !isCovered,
+  });
+
+  useLayoutEffect(() => {
+    const wasCovered = wasCoveredRef.current;
+    wasCoveredRef.current = isCovered;
+
+    if (!wasCovered && isCovered) {
+      const liveViewport = mapViewerRef.current?.captureViewport();
+      if (liveViewport) onSaveViewport(liveViewport);
+      return;
+    }
+
+    if (!wasCovered || isCovered || !savedViewport || mapLoadStatus !== 'ready') return;
+
+    mapViewerRef.current?.restoreViewport(savedViewport);
+  }, [isCovered, mapLoadStatus, onSaveViewport, savedViewport]);
+
+  const handlePlayMapPin = useCallback(
+    (pinId: string) => {
+      const pin = displayMapPins.find((candidate) => candidate.id === pinId);
+      if (!pin?.youtubeVideoId) return;
+
+      toggleClipPlayback(pinId, {
+        videoId: pin.youtubeVideoId,
+        clipStartMs: pin.clipStartMs ?? 0,
+      });
+    },
+    [displayMapPins, toggleClipPlayback],
+  );
+
+  // 말풍선을 띄우는 핀이 바뀌면(선택·자동 포커스 포함) 재생 중인 클립을 멈춘다.
+  useEffect(() => {
+    stopClipPlayback();
+  }, [viewerSelectedMapPinId, stopClipPlayback]);
+
+  useEffect(() => {
+    if (isCovered) stopClipPlayback();
+  }, [isCovered, stopClipPlayback]);
+
+  // 목표 좌표 근처 핀을 찾으면(mapPins가 새로 도착할 때마다 재계산) 부모에게 선택을
+  // 알린다. 부모 콜백은 렌더 중이 아니라 커밋 이후(effect)에 호출하고, 같은 핀을
+  // 중복 호출하지 않도록 ref로 막는다.
+  const pendingClusterNearestPin = pendingClusterPinPosition
+    ? (displayMapPins.find(
+        (pin) =>
+          calculateDistanceMeters(pendingClusterPinPosition, { lat: pin.lat, lng: pin.lng }) <=
+          SINGLE_CLUSTER_MATCH_RADIUS_METERS,
+      ) ?? null)
+    : null;
+  const lastClusterSelectedIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingClusterNearestPin) return;
+    if (lastClusterSelectedIdRef.current === pendingClusterNearestPin.id) return;
+
+    lastClusterSelectedIdRef.current = pendingClusterNearestPin.id;
+    onSelectMapPinChange(pendingClusterNearestPin.id);
+  }, [pendingClusterNearestPin, onSelectMapPinChange]);
+
+  // 부모의 선택이 실제로 반영되면(selectedMapPinId가 갱신되면) 목표 좌표를 정리한다.
+  if (pendingClusterPinPosition && selectedMapPinId === pendingClusterNearestPin?.id) {
+    setPendingClusterPinPosition(null);
+  }
 
   // --- 구글맵 스크립트 로드 (setState는 전부 프로미스 콜백 안에서만 일어나 effect에서 안전하게 호출 가능) ---
   const startGoogleMapsLoad = useCallback((apiKey: string) => {
@@ -139,6 +292,11 @@ const MapPage: React.FC<MapPageProps> = ({
     if (!hasApiKey) return;
     startGoogleMapsLoad(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
   }, [startGoogleMapsLoad, hasApiKey]);
+
+  useEffect(() => {
+    if (mapLoadStatus !== 'ready') return;
+    preloadYouTubeIframeApi();
+  }, [mapLoadStatus]);
 
   // 선택된 장소가 있으면 해당 위도·경도로 지도를 이동한다.
   // 현재 위치 최초 센터링보다 우선한다.
@@ -178,15 +336,22 @@ const MapPage: React.FC<MapPageProps> = ({
   const handleCurrentLocationChanged = (coordinate: MapCoordinate) => {
     setCurrentLocation(coordinate);
     setCurrentLocationError(null);
+    onCurrentLocationChange(coordinate);
   };
 
-  // --- 지도 빈 영역 탭: 핀 탭으로 연 시트 닫기 ---
+  const handleViewportChanged = (nextViewport: MapViewport) => {
+    setViewport(nextViewport);
+    if (!isCovered) onSaveViewport(nextViewport);
+  };
+
+  // 지도 빈 영역 탭/드래그 시작: 시트를 닫지 않고 가장 작은 스냅으로만 축소한다.
   const handleMapClick = () => {
-    onSelectMapPinChange(null);
+    setSheetCollapseSignal((signal) => signal + 1);
   };
 
-  const handleRegisterSelectedPlace = () => {
-    if (!selectedMapPlace || selectedMapPlace.placeId === undefined) return;
+  // 두 플로우 모두 PinListSheet가 조회해 알려준 resolvedActivePlace 기준으로 등록한다.
+  const handleRegisterActivePlace = () => {
+    if (!resolvedActivePlace) return;
 
     if (!currentLocation) {
       setRegistrationToast((currentToast) => ({
@@ -199,13 +364,13 @@ const MapPage: React.FC<MapPageProps> = ({
     resetPinCreation();
     setPinCreationCurrentLocation(currentLocation);
     setPinCreationPlace({
-      placeId: selectedMapPlace.placeId,
-      placeName: selectedMapPlace.placeName,
-      address: selectedMapPlace.address,
-      roadAddress: selectedMapPlace.searchSource?.roadAddress ?? null,
-      source: selectedMapPlace.source ?? 'PLACE_SEARCH',
-      coordinates: selectedMapPlace.coordinates,
-      distanceMeters: selectedMapPlace.distance,
+      placeId: resolvedActivePlace.placeId,
+      placeName: resolvedActivePlace.placeName,
+      address: resolvedActivePlace.address,
+      roadAddress: resolvedActivePlace.roadAddress,
+      source: selectedMapPlace?.source ?? 'PLACE_SEARCH',
+      coordinates: { lat: resolvedActivePlace.latitude, lng: resolvedActivePlace.longitude },
+      distanceMeters: resolvedActivePlace.distance,
     });
     navigate('/app/song/list');
   };
@@ -234,11 +399,15 @@ const MapPage: React.FC<MapPageProps> = ({
             className="map-search-hero"
             value={selectedMapPlace?.placeName}
             placeholder="장소를 검색하세요"
-            onClick={() =>
+            onClick={() => {
+              // 선택된 장소가 검색어로 찾은 것이면 그 검색어를 그대로 복원해 검색
+              // 결과 화면으로, 최근 검색에서 바로 고른 것이면 검색어 없이 최근
+              // 검색 목록으로 들어간다.
               navigate('/app/pin/search', {
-                state: { fromMap: true },
-              })
-            }
+                state: { fromMap: true, initialQuery: selectedMapPlace?.searchQuery ?? '' },
+              });
+            }}
+            onClear={() => onClearMapPlace?.()}
           />
         </div>
 
@@ -261,16 +430,19 @@ const MapPage: React.FC<MapPageProps> = ({
         </div>
       </div>
 
-      {isPlaceSheetOpen && !selectedMapPlace?.focusedFeedPin ? (
+      {isRegisterButtonVisible ? (
         <ToastProvider duration={REGISTRATION_TOAST_DURATION_MS}>
-          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(50%+16px)] z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4">
+          <div
+            className="pointer-events-none fixed inset-x-0 z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4"
+            style={{ bottom: `${activeSheetSnap * viewportInnerHeight + 16}px` }}
+          >
             <Button
               type="button"
               variant="pin"
               size="pin"
               className="pointer-events-auto"
-              onClick={handleRegisterSelectedPlace}
-              disabled={selectedMapPlace?.placeId === undefined}
+              onClick={handleRegisterActivePlace}
+              disabled={isRegisterButtonDisabled}
             >
               등록하기
             </Button>
@@ -293,6 +465,7 @@ const MapPage: React.FC<MapPageProps> = ({
           onClose={() => onClearMapPlace?.()}
           place={toPlaceInfo(selectedMapPlace)}
           focusedFeedPin={selectedMapPlace.focusedFeedPin}
+          allowTrackDetailAccess={Boolean(selectedMapPlace.allowTrackDetailAccess)}
           detailLocation={
             selectedMapPlace.selectionLocation ??
             (currentLocation
@@ -300,40 +473,82 @@ const MapPage: React.FC<MapPageProps> = ({
               : null)
           }
           detailLocationError={currentLocationError}
-          onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
-          onFocusedTrackClick={(placeTrackId) => navigate(`/app/pins/${placeTrackId}`)}
+          onPinClick={(pin) =>
+            navigate(`/app/pins/${pin.placeTrackId}`, {
+              state: currentLocation
+                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
+                : undefined,
+            })
+          }
+          onFocusedTrackClick={(placeTrackId) =>
+            navigate(`/app/pins/${placeTrackId}`, {
+              state: currentLocation
+                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
+                : undefined,
+            })
+          }
+          resetKey={selectedMapPlace.id}
+          collapseToSmallestSignal={sheetCollapseSignal}
+          onActiveSnapChange={setActiveSheetSnap}
+          onResolvedPlaceChange={setResolvedActivePlace}
+          // 검색으로 들어온 장소만 "<"를 누르면 검색 화면으로 돌아간다(피드 진입은 기본 접기).
+          onFullPageBack={
+            selectedMapPlace.focusedFeedPin
+              ? undefined
+              : () =>
+                  navigate('/app/pin/search', {
+                    state: { fromMap: true, initialQuery: selectedMapPlace.searchQuery ?? '' },
+                  })
+          }
         />
       ) : selectedMapPin ? (
         <PinListSheet
           open
           onClose={() => onSelectMapPinChange(null)}
           place={mapPinToPlaceInfo(selectedMapPin)}
+          allowTrackDetailAccess={false}
+          resetKey={selectedMapPin.id}
+          collapseToSmallestSignal={sheetCollapseSignal}
+          onActiveSnapChange={setActiveSheetSnap}
+          onResolvedPlaceChange={setResolvedActivePlace}
           detailLocation={
             currentLocation
               ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
               : null
           }
           detailLocationError={currentLocationError}
-          onPinClick={(pin) => navigate(`/app/pins/${pin.placeTrackId}`)}
+          onPinClick={(pin) =>
+            navigate(`/app/pins/${pin.placeTrackId}`, {
+              state: currentLocation
+                ? { userLatitude: currentLocation.lat, userLongitude: currentLocation.lng }
+                : undefined,
+            })
+          }
         />
       ) : null}
 
       <MapViewer
         ref={mapViewerRef}
         isLoaded={mapLoadStatus === 'ready'}
+        isLocationTrackingDisabled={isCovered}
         zoom={zoom}
+        initialCenter={savedViewport?.center}
         placeResults={placeResults}
         selectedPlaceId={selectedPlaceId}
-        mapPins={mapPins}
+        mapPins={displayMapPins}
         mapClusters={mapClusters}
-        selectedMapPinId={selectedMapPlace ? null : displayedMapPinId}
-        centerOnFirstLocation={!selectedMapPlace}
+        selectedMapPinId={viewerSelectedMapPinId}
+        centerOnFirstLocation={!selectedMapPlace && !savedViewport}
         onZoomChanged={handleZoomChange}
         onCurrentLocationChanged={handleCurrentLocationChanged}
         onCurrentLocationError={setCurrentLocationError}
-        onViewportChanged={setViewport}
+        onViewportChanged={handleViewportChanged}
         onSelectMapPin={onSelectMapPinChange}
+        onPlayPin={handlePlayMapPin}
+        playingMapPinId={playingKey}
         onMapClick={handleMapClick}
+        onMapDragStart={handleMapClick}
+        onSingleClusterArrive={setPendingClusterPinPosition}
       />
     </div>
   );

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
+import CloseIcon from '@/assets/icons/close.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
@@ -17,6 +18,19 @@ import type { PlaceSearchHistoryRequest } from '@/types/place.type';
 
 type BookmarkStatus = 'loading' | 'error' | 'ready';
 
+/** MapPage처럼 시트 바깥에서 등록 가능 여부(거리·본인 핀 여부)를 판단해야 하는 곳에서 쓴다. */
+export type ResolvedPlaceSummary = {
+  placeId: number;
+  placeName: string;
+  address: string;
+  roadAddress: string | null;
+  latitude: number;
+  longitude: number;
+  distance: number;
+  isMine: boolean;
+  withinAccessRange: boolean;
+};
+
 type PinListSheetProps = {
   open: boolean;
   onClose: () => void;
@@ -26,14 +40,33 @@ type PinListSheetProps = {
   detailLocationError?: string | null;
   onPinClick?: (pin: Pin) => void;
   onFocusedTrackClick?: (placeTrackId: string) => void;
+  /**
+   * 내/친구 피드 → 지도 진입 시에만 true.
+   * false면 곡 카드는 보이되 하트·상세 이동은 막는다.
+   */
+  allowTrackDetailAccess?: boolean;
+  /** 이 값이 바뀌면 시트가 열린 채로도 default 스냅으로 리셋한다(다른 핀/장소 선택 시 사용). */
+  resetKey?: string | number;
+  /** 이 값이 바뀔 때마다 가장 작은 스냅으로 축소한다(지도 빈 곳 탭 시 사용). */
+  collapseToSmallestSignal?: number;
+  /** 현재 활성 스냅(0~1)이 바뀔 때마다 호출된다. */
+  onActiveSnapChange?: (snap: number) => void;
+  /** 서버에서 해결된 장소 정보(등록 가능 거리·본인 핀 여부 포함)가 바뀔 때마다 호출된다. */
+  onResolvedPlaceChange?: (summary: ResolvedPlaceSummary | null) => void;
+  /** 풀페이지에서 뒤로가기를 눌렀을 때 호출. 생략하면 기본 스냅으로 접는다. */
+  onFullPageBack?: () => void;
 };
 
-// 화면 전체 높이 874 기준 Figma 스냅
-const PIN_LIST_SHEET_SNAP_POINTS = [161 / 874, 340 / 874, 0.8, 1];
-const PIN_LIST_SHEET_DEFAULT_SNAP_POINT = 340 / 874;
+// 화면 전체 높이 874 기준 Figma 스냅. 헤더(제목·주소·등록자·거리)까지만 보이는 높이.
+const PIN_LIST_SHEET_COLLAPSED_SNAP = 180 / 874;
+// MapPage 등 시트 바깥에서 기본 높이를 알아야 하는 곳에서 재사용한다.
+export const PIN_LIST_SHEET_MID_SNAP = 340 / 874;
 // 프로필 피드 진입: MY·장소정보·등록곡 CTA·정렬 탭까지 보이는 높이 (Figma FD-01-04)
-const PIN_LIST_SHEET_FEED_SNAP_POINTS = [161 / 874, 300 / 874, 0.8, 1];
-const PIN_LIST_SHEET_FEED_DEFAULT_SNAP_POINT = 300 / 874;
+const PIN_LIST_SHEET_FEED_MID_SNAP = 300 / 874;
+
+function buildSnapPoints(collapsedSnap: number, midSnap: number) {
+  return [collapsedSnap, midSnap, 1];
+}
 
 function formatDistance(distance: number) {
   const normalizedDistance = Math.max(0, distance);
@@ -65,6 +98,8 @@ type PinListContentProps = {
   isBookmarkPending: boolean;
   onBookmarkToggle: () => void;
   onPinClick?: (pin: Pin) => void;
+  onBlockedPinClick?: () => void;
+  allowTrackDetailAccess?: boolean;
   focusedFeedPin?: FocusedFeedPin;
   onFocusedTrackClick?: () => void;
 };
@@ -80,10 +115,12 @@ function PinListContent({
   isBookmarkPending,
   onBookmarkToggle,
   onPinClick,
+  onBlockedPinClick,
+  allowTrackDetailAccess = false,
   focusedFeedPin,
   onFocusedTrackClick,
 }: PinListContentProps) {
-  const { isFullPage } = useBottomSheet();
+  const { isFullPage, onClose } = useBottomSheet();
   const distance = formatDistance(place.distance);
   const hasPins = pins.length > 0;
   const bookmarkLabel =
@@ -99,12 +136,21 @@ function PinListContent({
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex flex-col items-start gap-2">
-              {place.isMine ? (
-                <div className="flex items-center justify-center gap-1.5 rounded-[25px] bg-pli-black-75 px-2 py-1">
-                  <span className="size-1.5 rounded-full bg-neon-2" aria-hidden />
-                  <span className="etc-13-r text-neon-2">MY</span>
-                </div>
-              ) : null}
+              {/* MY 칩은 본인 핀 여부와 무관하게 항상 보이고, 본인 핀일 때만 활성(네온) 스타일을 쓴다. */}
+              <div className="flex items-center justify-center gap-1.5 rounded-[25px] bg-pli-black-75 px-2 py-1">
+                <span
+                  className={cn(
+                    'size-1.5 rounded-full',
+                    place.isMine ? 'bg-neon-2' : 'bg-pli-black-10',
+                  )}
+                  aria-hidden
+                />
+                <span
+                  className={cn('etc-13-r', place.isMine ? 'text-neon-2' : 'text-pli-black-10')}
+                >
+                  MY
+                </span>
+              </div>
 
               <div className="min-w-0">
                 <BottomSheet.Title className="block truncate head-24-sb text-grayscale-100">
@@ -139,27 +185,41 @@ function PinListContent({
             </p>
           </div>
 
-          <button
-            type="button"
-            aria-label={bookmarkLabel}
-            aria-pressed={bookmarkStatus === 'ready' ? isBookmarked : undefined}
-            aria-busy={bookmarkStatus === 'loading' || isBookmarkPending || undefined}
-            disabled={bookmarkStatus !== 'ready' || isBookmarkPending}
-            onClick={onBookmarkToggle}
-            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pli-black-75 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {bookmarkStatus === 'loading' ? (
-              <span aria-hidden className="size-6 animate-pulse rounded-md bg-grayscale-700" />
-            ) : bookmarkStatus === 'error' ? (
-              <span aria-hidden className="body-15-m text-grayscale-500">
-                !
-              </span>
-            ) : isBookmarked ? (
-              <BookmarkActiveIcon className="size-7" aria-hidden />
-            ) : (
-              <BookmarkIcon className="size-7" aria-hidden />
-            )}
-          </button>
+          {/* 풀페이지 상태에선 BottomSheet.FullPageNav의 상단바에 북마크·닫기가 이미 있어 중복 노출을 피한다. */}
+          {!isFullPage ? (
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                aria-label={bookmarkLabel}
+                aria-pressed={bookmarkStatus === 'ready' ? isBookmarked : undefined}
+                aria-busy={bookmarkStatus === 'loading' || isBookmarkPending || undefined}
+                disabled={bookmarkStatus !== 'ready' || isBookmarkPending}
+                onClick={onBookmarkToggle}
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pli-black-75 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {bookmarkStatus === 'loading' ? (
+                  <span aria-hidden className="size-6 animate-pulse rounded-md bg-grayscale-700" />
+                ) : bookmarkStatus === 'error' ? (
+                  <span aria-hidden className="body-15-m text-grayscale-500">
+                    !
+                  </span>
+                ) : isBookmarked ? (
+                  <BookmarkActiveIcon className="size-7" aria-hidden />
+                ) : (
+                  <BookmarkIcon className="size-7" aria-hidden />
+                )}
+              </button>
+
+              <button
+                type="button"
+                aria-label="닫기"
+                onClick={onClose}
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pli-black-75"
+              >
+                <CloseIcon className="size-6" aria-hidden />
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {focusedFeedPin ? (
@@ -200,7 +260,17 @@ function PinListContent({
           <ul className="flex flex-col gap-4">
             {pins.map((pin) => (
               <li key={pin.placeTrackId}>
-                <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
+                <PinCard
+                  pin={pin}
+                  showLike={allowTrackDetailAccess}
+                  onClick={
+                    allowTrackDetailAccess
+                      ? () => onPinClick?.(pin)
+                      : onBlockedPinClick
+                        ? () => onBlockedPinClick()
+                        : undefined
+                  }
+                />
               </li>
             ))}
           </ul>
@@ -216,6 +286,7 @@ function PinListContent({
 }
 
 const BOOKMARK_TOAST_DURATION_MS = 2_000;
+const TRACK_DETAIL_BLOCKED_TOAST_MESSAGE = '피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
 
 type BookmarkToast = {
   attempt: number;
@@ -231,9 +302,16 @@ export function PinListSheet({
   detailLocationError = null,
   onPinClick,
   onFocusedTrackClick,
+  allowTrackDetailAccess = false,
+  resetKey,
+  collapseToSmallestSignal,
+  onActiveSnapChange,
+  onResolvedPlaceChange,
+  onFullPageBack,
 }: PinListSheetProps) {
   const [sort, setSort] = useState<PinSort>('POPULAR');
   const [bookmarkToast, setBookmarkToast] = useState<BookmarkToast | null>(null);
+  const [accessToast, setAccessToast] = useState<BookmarkToast | null>(null);
   const normalizedPlaceId = place.id.startsWith('place:')
     ? place.id.slice('place:'.length)
     : place.id;
@@ -259,6 +337,28 @@ export function PinListSheet({
       : place.address,
     isMine: placeDetailQuery.data?.pinnedByMe ?? place.isMine,
   };
+  useEffect(() => {
+    if (!onResolvedPlaceChange) return;
+
+    const detail = placeDetailQuery.data;
+    if (!detail) {
+      onResolvedPlaceChange(null);
+      return;
+    }
+
+    onResolvedPlaceChange({
+      placeId: detail.placeId,
+      placeName: detail.placeName,
+      address: detail.address,
+      roadAddress: detail.roadAddress,
+      latitude: detail.latitude,
+      longitude: detail.longitude,
+      distance: detail.distanceMeters,
+      isMine: detail.pinnedByMe,
+      withinAccessRange: detail.withinAccessRange,
+    });
+  }, [onResolvedPlaceChange, placeDetailQuery.data]);
+
   const bookmarkMutation = useTogglePlaceBookmark();
   const resolvedBookmarkState = placeDetailQuery.data?.bookmarkedByMe ?? place.bookmarkedByMe;
   const detailErrorMessage =
@@ -308,20 +408,49 @@ export function PinListSheet({
     })) ?? [];
 
   const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin);
+  const midSnap = focusedFeedPin ? PIN_LIST_SHEET_FEED_MID_SNAP : PIN_LIST_SHEET_MID_SNAP;
+  // 매 렌더 새 배열이면 vaul이 prop 변화로 인식해 재실행하므로 값이 바뀔 때만 새로 만든다.
+  const snapPoints = useMemo(
+    () => buildSnapPoints(PIN_LIST_SHEET_COLLAPSED_SNAP, midSnap),
+    [midSnap],
+  );
+  const handleActiveSnapChange = useCallback(
+    (snap: number | string) => {
+      onActiveSnapChange?.(typeof snap === 'number' ? snap : midSnap);
+    },
+    [onActiveSnapChange, midSnap],
+  );
+
+  const bookmarkTrailingButton = (
+    <button
+      type="button"
+      aria-label={isBookmarked ? '북마크 해제' : '북마크 등록'}
+      aria-pressed={bookmarkStatus === 'ready' ? isBookmarked : undefined}
+      disabled={bookmarkStatus !== 'ready' || bookmarkMutation.isPending}
+      onClick={handleBookmarkToggle}
+      className="flex size-7 shrink-0 items-center justify-center text-grayscale-100 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {isBookmarked ? (
+        <BookmarkActiveIcon className="size-6" aria-hidden />
+      ) : (
+        <BookmarkIcon className="size-6" aria-hidden />
+      )}
+    </button>
+  );
 
   return (
     <ToastProvider duration={BOOKMARK_TOAST_DURATION_MS}>
       <BottomSheet
         open={open}
         onClose={onClose}
-        snapPoints={focusedFeedPin ? PIN_LIST_SHEET_FEED_SNAP_POINTS : PIN_LIST_SHEET_SNAP_POINTS}
-        defaultSnapPoint={
-          focusedFeedPin
-            ? PIN_LIST_SHEET_FEED_DEFAULT_SNAP_POINT
-            : PIN_LIST_SHEET_DEFAULT_SNAP_POINT
-        }
+        dismissible={false}
+        snapPoints={snapPoints}
+        defaultSnapPoint={midSnap}
+        resetKey={resetKey}
+        collapseToSmallestSignal={collapseToSmallestSignal}
+        onActiveSnapChange={handleActiveSnapChange}
       >
-        <BottomSheet.FullPageNav />
+        <BottomSheet.FullPageNav onBack={onFullPageBack} trailing={bookmarkTrailingButton} />
         {isInitialLoading ? (
           <PinListSheetSkeleton />
         ) : (
@@ -336,6 +465,13 @@ export function PinListSheet({
             isBookmarkPending={bookmarkMutation.isPending}
             onBookmarkToggle={handleBookmarkToggle}
             onPinClick={onPinClick}
+            onBlockedPinClick={() => {
+              setAccessToast((currentToast) => ({
+                attempt: (currentToast?.attempt ?? 0) + 1,
+                message: TRACK_DETAIL_BLOCKED_TOAST_MESSAGE,
+              }));
+            }}
+            allowTrackDetailAccess={allowTrackDetailAccess}
             focusedFeedPin={focusedFeedPin}
             onFocusedTrackClick={
               focusedPlaceTrackId && onFocusedTrackClick
@@ -348,8 +484,13 @@ export function PinListSheet({
 
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">
         {bookmarkToast ? (
-          <Toast key={`${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
+          <Toast key={`bookmark:${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
             {bookmarkToast.message}
+          </Toast>
+        ) : null}
+        {accessToast ? (
+          <Toast key={`access:${accessToast.message}:${accessToast.attempt}`} defaultOpen>
+            {accessToast.message}
           </Toast>
         ) : null}
         <ToastViewport />

@@ -14,13 +14,17 @@ export const toMapPinMarkerProps = (
   pin: MapPin,
   isSelected = false,
   onPlay?: () => void,
+  isPlaying = false,
+  showMessageBubble = false,
 ): MapPinMarkerProps => ({
   coverUrl: pin.coverUrl,
   isSelected,
+  isPlaying,
   nickname: pin.nickname,
   avatarUrl: pin.avatarUrl,
   introduction: pin.introduction,
   onPlay,
+  showMessageBubble,
 });
 
 export const renderMapPinMarker = (mount: HTMLElement, props: MapPinMarkerProps) => {

@@ -19,6 +19,7 @@
     "ui:info": "shadcn info"
   },
   "dependencies": {
+    "@jsquash/webp": "^1.5.0",
     "@tanstack/react-query": "^5.101.1",
     "axios": "latest",
     "browser-image-compression": "^2.0.2",

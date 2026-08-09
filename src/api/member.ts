@@ -1,8 +1,10 @@
-import { apiClient } from '@/api/client';
+import { apiClient, ApiError } from '@/api/client';
 import type { ApiResponse } from '@/api/types';
 import type {
   FollowListRequest,
   FollowListResponse,
+  MemberSearchRequest,
+  MemberSearchResponse,
   MemberProfileResponse,
   MyProfileResponse,
   NicknameCheckResponse,
@@ -83,4 +85,23 @@ export async function followMember(memberId: number) {
 // 9) DELETE /api/v1/members/{memberId}/follow - 언팔로우
 export async function unfollowMember(memberId: number) {
   await apiClient.delete(`${ENDPOINT}/${memberId}/follow`);
+}
+
+// 10) DELETE /api/v1/members/me - 회원 탈퇴
+export async function withdrawMember() {
+  // 2xx 응답이라도 isSuccess:false(code 없는 논리적 실패 포함)일 수 있어 직접 검사한다 -
+  // client.ts의 응답 인터셉터는 axios가 에러로 취급하는 비-2xx 응답만 ApiError로 변환한다.
+  const { data, status } = await apiClient.delete<ApiResponse<string>>(`${ENDPOINT}/me`);
+  if (!data.isSuccess) {
+    throw new ApiError(data.code, data.message, status);
+  }
+  return data.result;
+}
+
+// 11) GET /api/v1/members/search - 닉네임으로 회원 검색
+export async function searchMembersByNickname({ keyword, pageSize, cursor }: MemberSearchRequest) {
+  const { data } = await apiClient.get<ApiResponse<MemberSearchResponse>>(`${ENDPOINT}/search`, {
+    params: { keyword, pageSize, cursor },
+  });
+  return data.result;
 }

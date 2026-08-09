@@ -1,20 +1,9 @@
 import { Skeleton } from '@/components/ui/Skeleton';
-import { TopBar } from '@/components/ui/TopBar';
 import { PinFeedCardSkeleton } from './PinFeedCardSkeleton';
 
-type PinDetailSkeletonProps = {
-  onBack?: () => void;
-};
-
-export function PinDetailSkeleton({ onBack }: PinDetailSkeletonProps) {
+export function PinDetailSkeleton() {
   return (
-    <div
-      role="status"
-      aria-label="핀 상세 불러오는 중"
-      className="flex min-h-full flex-col bg-pli-black-100"
-    >
-      <TopBar onBack={onBack} />
-
+    <div role="status" aria-label="핀 상세 불러오는 중" className="flex flex-col">
       <div className="flex flex-col items-center px-4">
         <Skeleton className="size-[112px] rounded-lg" />
         <Skeleton className="mt-3 h-7 w-[183px] rounded-sm" />

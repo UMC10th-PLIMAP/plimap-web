@@ -1,16 +1,28 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import BackIcon from '@/assets/icons/back.svg?react';
 import MoreIcon from '@/assets/icons/more.svg?react';
 
 import { ProfileSkeleton } from '@/components/skeletons/ProfileSkeleton';
+import { reportMember } from '@/api/report';
+import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { ReportModal } from '@/features/pin/components/ReportModal';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
 import { ProfilePinGrid } from '@/features/profile/components/ProfilePinGrid';
+import { ProfileShareDialog } from '@/features/profile/components/ProfileShareDialog';
+import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteOtherMemberFeed } from '@/features/pin/queries/useOtherMemberFeed';
-import { useFollowMember } from '@/hooks/useFollowMember';
+import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
+import { useGoBack } from '@/hooks/useGoBack';
 import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
+
+const SHARE_TOAST_DURATION_MS = 2_000;
+
+type ShareToast = {
+  attempt: number;
+};
 
 export default function UserProfilePage() {
   const navigate = useNavigate();
@@ -18,6 +30,18 @@ export default function UserProfilePage() {
   const parsedId = Number(memberId);
   const id = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : undefined;
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const goBack = useGoBack('/app/home');
+  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareToast, setShareToast] = useState<ShareToast | null>(null);
+  const [trackedMemberId, setTrackedMemberId] = useState(id);
+
+  if (id !== trackedMemberId) {
+    setTrackedMemberId(id);
+    setIsShareOpen(false);
+    setShareToast(null);
+  }
 
   const {
     data: member,
@@ -34,7 +58,10 @@ export default function UserProfilePage() {
     isError: isFeedError,
     refetch: refetchFeed,
   } = useInfiniteOtherMemberFeed({ memberId: id });
-  const followMutation = useFollowMember(id ?? 0);
+  const followMutation = useToggleFollow();
+
+  const nickname = member?.nickname?.trim() ?? '';
+  const canShareProfile = nickname.length > 0;
 
   useEffect(() => {
     const loadMoreElement = loadMoreRef.current;
@@ -53,103 +80,150 @@ export default function UserProfilePage() {
     return () => observer.disconnect();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      await navigator.share({ title: member?.nickname, url });
-      return;
-    }
-    await navigator.clipboard.writeText(url);
-  };
-
   return (
-    <div className="flex flex-col pb-[env(safe-area-inset-bottom)]">
-      <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
-        <button
-          type="button"
-          aria-label="뒤로가기"
-          onClick={() => navigate(-1)}
-          className="flex size-6 items-center text-grayscale-100 cursor-pointer"
-        >
-          <BackIcon className="size-6" />
-        </button>
-        <h1 className="text-center head-24-sb text-grayscale-100 truncate">
-          {member?.nickname ?? ''}
-        </h1>
-        <button
-          type="button"
-          aria-label="더보기"
-          className="flex size-6 items-center justify-end text-grayscale-100 cursor-pointer"
-        >
-          <MoreIcon className="size-6" />
-        </button>
-      </header>
+    <ToastProvider duration={SHARE_TOAST_DURATION_MS}>
+      <div className="relative flex flex-col pb-[env(safe-area-inset-bottom)]">
+        <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
+          <button
+            type="button"
+            aria-label="뒤로가기"
+            onClick={goBack}
+            className="flex size-6 items-center text-grayscale-100 cursor-pointer"
+          >
+            <BackIcon className="size-6" />
+          </button>
+          <h1 className="text-center head-24-sb text-grayscale-100 truncate">
+            {member?.nickname ?? ''}
+          </h1>
+          <button
+            type="button"
+            aria-label="더보기"
+            onClick={() => {
+              if (!id) return;
+              setIsReportOpen(true);
+            }}
+            className="flex size-6 items-center justify-end text-grayscale-100 cursor-pointer"
+          >
+            <MoreIcon className="size-6" />
+          </button>
+        </header>
 
-      {member ? (
-        <>
-          <div className="mt-[3px] flex flex-col">
-            <ProfileInfo
-              profile={{
-                name: member.name,
-                introduction: member.introduction,
-                profileImageUrl: member.profileImageUrl,
-                followerCount: member.followerCount,
-                followingCount: member.followingCount,
+        {member ? (
+          <>
+            <div className="mt-[3px] flex flex-col">
+              <ProfileInfo
+                profile={{
+                  name: member.name,
+                  introduction: member.introduction,
+                  profileImageUrl: member.profileImageUrl,
+                  followerCount: member.followerCount,
+                  followingCount: member.followingCount,
+                  pinCount: member.pinCount,
+                }}
+                onFollowingClick={() => {
+                  if (!id) return;
+                  navigate(`/app/users/${id}/following`);
+                }}
+                onFollowerClick={() => {
+                  if (!id) return;
+                  navigate(`/app/users/${id}/followers`);
+                }}
+              />
+              <ProfileActions
+                actions={[
+                  {
+                    label: member.isFollowing ? '팔로잉' : '팔로우',
+                    onClick: () => {
+                      if (followMutation.isPending || !id) return;
+                      followMutation.mutate({ memberId: id, isFollowing: member.isFollowing });
+                    },
+                    className: member.isFollowing
+                      ? undefined
+                      : 'bg-neon-2 text-grayscale-1200 body-15-m',
+                  },
+                  {
+                    label: '프로필 공유',
+                    onClick: () => {
+                      if (!canShareProfile) return;
+                      setIsShareOpen(true);
+                    },
+                  },
+                ]}
+              />
+            </div>
+            <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
+            <ProfilePinGrid
+              pins={feedPages?.pages.flatMap((page) => page.data) ?? []}
+              isPending={isFeedPending}
+              isError={isFeedError}
+              onRetry={() => {
+                void refetchFeed();
+              }}
+              onPinClick={(pin) => {
+                void openPinPlaceOnMap({
+                  pinId: pin.pinId,
+                  fallbackPlaceName: pin.placeName,
+                  isMine: false,
+                  showMyRegisteredTrackCta: false,
+                  // 팔로잉한 친구 피드 핀이면 장소 접근 토큰 발급
+                  requestFeedPlaceAccess: Boolean(member?.isFollowing),
+                });
               }}
             />
-            <ProfileActions
-              actions={[
-                {
-                  label: member.isFollowing ? '팔로잉' : '팔로우',
-                  onClick: () => {
-                    if (followMutation.isPending || !id) return;
-                    followMutation.mutate(member.isFollowing);
-                  },
-                  className: member.isFollowing
-                    ? undefined
-                    : 'bg-neon-2 text-grayscale-1200 body-15-m',
-                },
-                {
-                  label: '프로필 공유',
-                  onClick: () => {
-                    void handleShare();
-                  },
-                },
-              ]}
-            />
+          </>
+        ) : id && isMemberPending ? (
+          <ProfileSkeleton />
+        ) : (
+          // TODO: 공통 에러 페이지/토스트 구현 시 교체 필요
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-20 text-center">
+            <p className="body-15-r text-grayscale-500">
+              {isMemberError ? '프로필을 불러오지 못했어요.' : '존재하지 않는 사용자예요.'}
+            </p>
+            {isMemberError ? (
+              <button
+                type="button"
+                onClick={() => refetchMember()}
+                className="rounded-full bg-neon px-6 py-3 body-15-sb text-grayscale-1250"
+              >
+                다시 시도
+              </button>
+            ) : null}
           </div>
+        )}
 
-          <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
-          <ProfilePinGrid
-            pins={feedPages?.pages.flatMap((page) => page.data) ?? []}
-            isPending={isFeedPending}
-            isError={isFeedError}
-            onRetry={() => {
-              void refetchFeed();
+        <div ref={loadMoreRef} aria-hidden className="h-px" />
+
+        {canShareProfile ? (
+          <ProfileShareDialog
+            open={isShareOpen}
+            onClose={() => setIsShareOpen(false)}
+            onCopied={() => {
+              setShareToast((current) => ({ attempt: (current?.attempt ?? 0) + 1 }));
             }}
+            nickname={nickname}
+            name={member?.name}
+            profileImageUrl={member?.profileImageUrl}
           />
-        </>
-      ) : id && isMemberPending ? (
-        <ProfileSkeleton />
-      ) : (
-        // TODO: 공통 에러 페이지/토스트 구현 시 교체 필요
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-20 text-center">
-          <p className="body-15-r text-grayscale-500">
-            {isMemberError ? '프로필을 불러오지 못했어요.' : '존재하지 않는 사용자예요.'}
-          </p>
-          {isMemberError ? (
-            <button
-              type="button"
-              onClick={() => refetchMember()}
-              className="rounded-full bg-neon px-6 py-3 body-15-sb text-grayscale-1250"
-            >
-              다시 시도
-            </button>
-          ) : null}
-        </div>
-      )}
+        ) : null}
 
-      <div ref={loadMoreRef} aria-hidden className="h-px" />
-    </div>
+        <ReportModal
+          open={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          onSubmit={async (reason, detail) => {
+            if (!id) return;
+            await reportMember(id, reason, detail);
+          }}
+        />
+
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+24px)] z-50 flex justify-center">
+          {shareToast ? (
+            <Toast key={shareToast.attempt} defaultOpen>
+              닉네임이 복사되었어요!
+            </Toast>
+          ) : null}
+          <ToastViewport />
+        </div>
+      </div>
+    </ToastProvider>
   );
 }

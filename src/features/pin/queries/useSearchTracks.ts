@@ -10,13 +10,19 @@ type UseSearchTracksParams = {
 };
 
 export function useSearchTracks({ keyword, limit, debounceMs = 300 }: UseSearchTracksParams) {
-  const debouncedKeyword = useDebouncedValue(keyword.trim(), debounceMs);
+  const normalizedKeyword = keyword.trim();
+  const debouncedKeyword = useDebouncedValue(normalizedKeyword, debounceMs);
   const enabled = debouncedKeyword.length > 0;
 
-  return useQuery({
+  const searchQuery = useQuery({
     queryKey: ['pin', 'tracks', 'search', { keyword: debouncedKeyword, limit }],
     queryFn: () => searchTracks(debouncedKeyword, limit),
     enabled,
     staleTime: 60_000,
   });
+
+  return {
+    ...searchQuery,
+    isDebouncing: normalizedKeyword.length > 0 && normalizedKeyword !== debouncedKeyword,
+  };
 }

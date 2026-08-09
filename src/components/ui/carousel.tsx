@@ -75,10 +75,12 @@ function Carousel({
   onKeyDownCapture,
   ...props
 }: CarouselProps) {
+  const [initialSelectedIndex] = useState(selectedIndex ?? 0);
   const [carouselRef, api] = useEmblaCarousel({
     axis: orientation === 'horizontal' ? 'x' : 'y',
     align: snapAlignment,
     containScroll: containScroll ? 'trimSnaps' : false,
+    startIndex: initialSelectedIndex,
   });
   const prefersReducedMotion = usePrefersReducedMotion();
   const lastSyncedApiRef = useRef<EmblaApi>(undefined);

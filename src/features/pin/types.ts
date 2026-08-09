@@ -39,6 +39,8 @@ export type MemberMeRequest = {
 
 export type MemberMeFeedItem = {
   pinId: number;
+  /** 서버 피드 응답에 포함되면 추가 조회 없이 곡 상세 CTA를 연결한다. */
+  placeTrackId?: number;
   albumImageUrl: string;
   latitude: number;
   longitude: number;
@@ -64,6 +66,8 @@ export type GetPlaceTracksResponse = {
     pinCount: number;
     likeCount?: number;
     isLiked: boolean;
+    /** 내가 이 장소·곡에 핀을 등록했는지 */
+    pinByMe?: boolean;
   })[];
   page: number;
   size: number;
@@ -105,7 +109,7 @@ export type GetPlaceTrackPinsResponse = {
     memberId: number;
     pinId: number;
     writerNickname: string;
-    writerProfileImage: string;
+    writerProfileImage: string | null;
     introduction: string;
     tags: string[];
     clipStartMs: number;
@@ -127,6 +131,8 @@ export type LikeCountResponse = {
 export type GetMyPinsResponse = {
   data: {
     pinId: number;
+    /** 서버 목록 응답에 포함되면 추가 조회 없이 곡 상세 CTA를 연결한다. */
+    placeTrackId?: number;
     albumImageUrl: string;
     trackTitle: string;
     artist: string;
@@ -146,7 +152,7 @@ export type PinDetailResponse = {
   latitude: number;
   longitude: number;
   writerNickname: string;
-  writerProfileImage: string;
+  writerProfileImage: string | null;
   introduction: string;
   albumImageUrl: string;
   youtubeVideoId: string;
@@ -167,6 +173,11 @@ export type PatchPinResponse = {
   tags: string[];
   feedOpen: boolean;
   clipStartMs?: number;
+};
+
+export type postFeedPlaceAccessResponse = {
+  placeAccessToken: string;
+  placeId: number;
 };
 
 // --------------------------------------------------
@@ -190,6 +201,8 @@ export type Pin = Omit<LikedTrack, 'likeCount'> & {
   likeCount?: number;
   pinCount?: number;
   liked?: boolean;
+  /** 내가 이 장소·곡에 핀을 등록했는지 */
+  pinByMe?: boolean;
   pinId?: string;
 };
 
@@ -212,6 +225,7 @@ export type PinFeedEntry = {
   likeCount: number;
   liked?: boolean;
   isMine?: boolean;
+  clipStartMs: number;
 };
 
 export type PinDetail = {
@@ -244,14 +258,25 @@ export type FocusedFeedPin = {
   nickname: string;
   avatarUrl?: string;
   albumImageUrl: string;
+  introduction: string;
+  /** 말풍선 미리듣기 재생용 */
+  youtubeVideoId?: string;
+  clipStartMs?: number;
 };
 
 export type PinSearchPlace = PlaceResult & {
   placeId?: number;
   bookmarkedByMe?: boolean;
   isMine?: boolean;
-  /** 프로필 피드 게시물에서 진입했을 때, 등록 곡 상세 CTA에 쓰는 정보 */
+  /** 등록 곡 상세 보기 CTA (내 등록 곡이 있을 때만) */
   focusedFeedPin?: FocusedFeedPin;
+  /** 지도 핀 말풍선용 (CTA와 별개로 인기 PIN 등을 표시할 때) */
+  mapFocusPin?: FocusedFeedPin;
+  /**
+   * 내/친구 피드 → 지도 진입 시에만 true.
+   * false/미설정이면 곡 목록만 보이고 상세 조회는 불가.
+   */
+  allowTrackDetailAccess?: boolean;
   source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
   withinAccessRange?: boolean;
   selectionLocation?: PlaceSearchHistoryRequest;
@@ -261,4 +286,6 @@ export type PinSearchPlace = PlaceResult & {
   };
   searchHistoryId?: number;
   searchSource?: PlaceSearchSource;
+  /** 선택 당시 입력창에 있던 검색어. 지도 검색 화면 재진입 시 그대로 복원한다. */
+  searchQuery?: string;
 };

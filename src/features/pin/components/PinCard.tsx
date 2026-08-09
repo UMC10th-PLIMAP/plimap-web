@@ -8,9 +8,11 @@ import { cn } from '@/lib/utils';
 type PinCardProps = {
   pin: Pin;
   onClick?: () => void;
+  /** false면 하트(찜) UI 숨김 — 상세 열람 불가 진입 */
+  showLike?: boolean;
 };
 
-export function PinCard({ pin, onClick }: PinCardProps) {
+export function PinCard({ pin, onClick, showLike = true }: PinCardProps) {
   const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
   const { mutate: deleteLikedTrack, isPending: isDeletePending } = useDeleteLikedTrack();
   const isPending = isPutPending || isDeletePending;
@@ -44,7 +46,7 @@ export function PinCard({ pin, onClick }: PinCardProps) {
           : undefined
       }
       className={cn(
-        'flex w-full items-center justify-between rounded-xl bg-pli-black-85 p-4.5 text-left',
+        'flex w-full items-center justify-between rounded-xl bg-pli-black-85 px-4.5 pt-4 pb-3 text-left',
         onClick && 'cursor-pointer',
       )}
     >
@@ -65,7 +67,7 @@ export function PinCard({ pin, onClick }: PinCardProps) {
           </div>
         </div>
 
-        {pin.likeCount !== undefined ? (
+        {showLike && pin.likeCount !== undefined ? (
           <button
             type="button"
             aria-label={pin.liked ? '좋아요 취소' : '좋아요'}
