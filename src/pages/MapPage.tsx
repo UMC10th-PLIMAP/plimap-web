@@ -115,6 +115,20 @@ const MapPage: React.FC<MapPageProps> = ({
     Boolean(selectedMapPlace) ||
     initialPositionQuery.isSuccess ||
     initialPositionQuery.isError;
+  // 초기 조회 결과를 currentLocation/부모 콜백에도 반영한다.
+  const [trackedInitialPosition, setTrackedInitialPosition] = useState(initialPositionQuery.data);
+  if (initialPositionQuery.data !== trackedInitialPosition) {
+    setTrackedInitialPosition(initialPositionQuery.data);
+    if (initialPositionQuery.data) {
+      const coordinate = {
+        lat: initialPositionQuery.data.latitude,
+        lng: initialPositionQuery.data.longitude,
+      };
+      setCurrentLocation(coordinate);
+      setCurrentLocationError(null);
+      onCurrentLocationChange(coordinate);
+    }
+  }
   const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
   // 지도 빈 곳을 탭하면 시트를 닫지 않고 가장 작은 스냅으로만 축소한다 - 값은 의미 없이 신호로만 쓴다.
@@ -565,7 +579,9 @@ const MapPage: React.FC<MapPageProps> = ({
         mapPins={displayMapPins}
         mapClusters={mapClusters}
         selectedMapPinId={viewerSelectedMapPinId}
-        centerOnFirstLocation={!selectedMapPlace && !savedViewport}
+        centerOnFirstLocation={
+          !selectedMapPlace && !savedViewport && !initialPositionQuery.isSuccess
+        }
         onZoomChanged={handleZoomChange}
         onCurrentLocationChanged={handleCurrentLocationChanged}
         onCurrentLocationError={setCurrentLocationError}

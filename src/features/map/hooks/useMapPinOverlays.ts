@@ -83,10 +83,22 @@ export function useMapPinOverlays({
     const prevById = new Map(mapPinOverlaysRef.current.map(({ id, entry }) => [id, entry]));
     const nextEntries: { id: string; entry: MapPinOverlayEntry }[] = [];
 
+    const handlePinClick = (pin: MapPin) => () => {
+      // 카메라 이동이 다 끝난 뒤에 바텀시트를 열어서, 지도 애니메이션과
+      // 시트 마운트가 동시에 일어나 화면이 안 뜨는 것처럼 보이지 않게 한다.
+      flyToRef.current({ lat: pin.lat, lng: pin.lng }, PIN_FOCUS_ZOOM, () => {
+        onSelectMapPinRef.current?.(pin.id);
+      });
+    };
+
     mapPins.forEach((pin) => {
       const existing = prevById.get(pin.id);
       if (existing) {
         prevById.delete(pin.id);
+        // 같은 id라도 좌표가 바뀔 수 있으니(예: 서버 좌표 보정) 위치와 클릭
+        // 핸들러(클로저로 좌표를 캡처)를 최신 pin 기준으로 갱신한다.
+        existing.overlay.setPosition({ lat: pin.lat, lng: pin.lng });
+        existing.overlay.setOnClick(handlePinClick(pin));
         nextEntries.push({ id: pin.id, entry: existing });
         return;
       }
@@ -94,13 +106,7 @@ export function useMapPinOverlays({
       const entry = createMapPinOverlay({
         position: { lat: pin.lat, lng: pin.lng },
         zIndex: pin.id === selectedId ? 200 : 100,
-        onClick: () => {
-          // 카메라 이동이 다 끝난 뒤에 바텀시트를 열어서, 지도 애니메이션과
-          // 시트 마운트가 동시에 일어나 화면이 안 뜨는 것처럼 보이지 않게 한다.
-          flyToRef.current({ lat: pin.lat, lng: pin.lng }, PIN_FOCUS_ZOOM, () => {
-            onSelectMapPinRef.current?.(pin.id);
-          });
-        },
+        onClick: handlePinClick(pin),
         ...toMapPinMarkerProps(
           pin,
           pin.id === selectedId,
