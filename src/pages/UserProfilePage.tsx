@@ -19,7 +19,12 @@ export default function UserProfilePage() {
   const id = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : undefined;
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const { data: member } = useOtherMemberProfile(id);
+  const {
+    data: member,
+    isPending: isMemberPending,
+    isError: isMemberError,
+    refetch: refetchMember,
+  } = useOtherMemberProfile(id);
   const {
     data: feedPages,
     fetchNextPage,
@@ -124,8 +129,24 @@ export default function UserProfilePage() {
             }}
           />
         </>
-      ) : (
+      ) : id && isMemberPending ? (
         <ProfileSkeleton />
+      ) : (
+        // TODO: 공통 에러 페이지/토스트 구현 시 교체 필요
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-20 text-center">
+          <p className="body-15-r text-grayscale-500">
+            {isMemberError ? '프로필을 불러오지 못했어요.' : '존재하지 않는 사용자예요.'}
+          </p>
+          {isMemberError ? (
+            <button
+              type="button"
+              onClick={() => refetchMember()}
+              className="rounded-full bg-neon px-6 py-3 body-15-sb text-grayscale-1250"
+            >
+              다시 시도
+            </button>
+          ) : null}
+        </div>
       )}
 
       <div ref={loadMoreRef} aria-hidden className="h-px" />
