@@ -9,7 +9,7 @@ type UseCurrentAddressParams = {
 };
 
 function formatCurrentAddress(address: string) {
-  return address.replace(/^(대한민국|South Korea)\s*/, '');
+  return address.replace(/^(대한민국|South Korea)[,\s]*/, '');
 }
 
 export function useCurrentAddress({ latitude, longitude }: UseCurrentAddressParams) {
