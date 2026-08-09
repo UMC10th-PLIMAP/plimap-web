@@ -153,8 +153,9 @@ export function useYouTubeClipPlayer({ enabled = true }: UseYouTubeClipPlayerOpt
   const destroyPlayer = useCallback(() => {
     playerReadyRef.current = false;
     playerReadyPromiseRef.current = null;
-    playerRef.current?.destroy();
+    const player = playerRef.current;
     playerRef.current = null;
+    player?.destroy();
     if (hostRef.current) {
       hostRef.current.replaceChildren();
     }
@@ -217,7 +218,7 @@ export function useYouTubeClipPlayer({ enabled = true }: UseYouTubeClipPlayerOpt
             events: {
               onReady: (event) => {
                 if (!enabledRef.current) {
-                  event.target.destroy();
+                  if (playerRef.current === event.target) destroyPlayer();
                   reject(new Error('YouTube clip player is disabled'));
                   return;
                 }

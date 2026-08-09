@@ -326,6 +326,7 @@ export function useGoogleMap({
       if (!map) return;
 
       flyingCancelRef.current?.();
+      flyingCancelRef.current = null;
       clearFlyingSuppression();
       clearCenterChangeSuppression();
 
