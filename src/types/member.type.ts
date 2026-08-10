@@ -56,6 +56,8 @@ export type MemberSearchItem = {
   name: string | null;
   profileImageUrl: string | null;
   isFollowing: boolean;
+  isFollowingViewer: boolean;
+  joinedAt: string;
 };
 
 export type MemberSearchResponse = {

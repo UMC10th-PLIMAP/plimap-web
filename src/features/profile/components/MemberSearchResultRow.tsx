@@ -1,4 +1,5 @@
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
+import { getFollowActionLabel } from '@/features/profile/utils/getFollowActionLabel';
 import type { MemberSearchItem } from '@/types/member.type';
 
 type MemberSearchResultRowProps = {
@@ -47,7 +48,7 @@ export function MemberSearchResultRow({
             : 'bg-neon-2 text-grayscale-1200'
         }`}
       >
-        {member.isFollowing ? '팔로잉' : '팔로우'}
+        {getFollowActionLabel(member)}
       </button>
     </li>
   );
