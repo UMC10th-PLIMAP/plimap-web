@@ -60,8 +60,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // API·OAuth 경로로 직접 이동(navigation)하는 경우 index.html로 폴백하지 않는다.
-        navigateFallbackDenylist: [/^\/api\//, /^\/oauth\/authorization\//],
+        // 실제 프론트 라우트(/app/**)로 이동할 때만 index.html로 폴백한다.
+        // 백엔드 경로(/api/, /oauth/, /swagger-ui/ 등)는 새로 생겨도 항상 제외된다.
+        navigateFallbackAllowlist: [/^\/app(\/|$)/],
         // runtimeCaching에 /api/ 규칙을 두지 않아, 지도/위치 등 API 응답은 캐싱하지 않는다.
         runtimeCaching: [
           {
