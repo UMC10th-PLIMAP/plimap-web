@@ -424,11 +424,12 @@ export function PinListSheet({
     })) ?? [];
 
   const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin);
-  // 피드 진입 · 내가 등록한 장소(MY) · 현재 위치 500m 이내면 곡 상세 열람 허용
+
+  const hasReliableUserLocation = detailLocation !== null;
   const canOpenTrackDetail =
     allowTrackDetailAccess ||
     Boolean(resolvedPlace.isMine) ||
-    Boolean(placeDetailQuery.data?.withinAccessRange);
+    (hasReliableUserLocation && Boolean(placeDetailQuery.data?.withinAccessRange));
   const midSnap = focusedFeedPin ? PIN_LIST_SHEET_FEED_MID_SNAP : PIN_LIST_SHEET_MID_SNAP;
   // 매 렌더 새 배열이면 vaul이 prop 변화로 인식해 재실행하므로 값이 바뀔 때만 새로 만든다.
   const snapPoints = useMemo(

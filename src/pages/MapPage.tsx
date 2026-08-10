@@ -534,49 +534,37 @@ const MapPage: React.FC<MapPageProps> = ({
           place={toPlaceInfo(selectedMapPlace)}
           focusedFeedPin={selectedMapPlace.focusedFeedPin}
           allowTrackDetailAccess={Boolean(selectedMapPlace.allowTrackDetailAccess)}
-          detailLocation={{
-            latitude:
-              selectedMapPlace.selectionLocation?.latitude ??
-              currentLocation?.lat ??
-              selectedMapPlace.coordinates.lat,
-            longitude:
-              selectedMapPlace.selectionLocation?.longitude ??
-              currentLocation?.lng ??
-              selectedMapPlace.coordinates.lng,
-          }}
+          detailLocation={
+            currentLocation
+              ? {
+                  latitude: currentLocation.lat,
+                  longitude: currentLocation.lng,
+                }
+              : (selectedMapPlace.selectionLocation ?? null)
+          }
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
-            const latitude =
-              currentLocation?.lat ??
-              selectedMapPlace.selectionLocation?.latitude ??
-              selectedMapPlace.coordinates.lat;
-            const longitude =
-              currentLocation?.lng ??
-              selectedMapPlace.selectionLocation?.longitude ??
-              selectedMapPlace.coordinates.lng;
+            const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
+            const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
             onClearMapPlace?.();
             navigate(`/app/pins/${pin.placeTrackId}`, {
               state: {
-                userLatitude: latitude,
-                userLongitude: longitude,
+                ...(latitude != null && longitude != null
+                  ? { userLatitude: latitude, userLongitude: longitude }
+                  : {}),
                 placeAccessToken: selectedMapPlace.placeAccessToken,
               },
             });
           }}
           onFocusedTrackClick={(placeTrackId) => {
-            const latitude =
-              currentLocation?.lat ??
-              selectedMapPlace.selectionLocation?.latitude ??
-              selectedMapPlace.coordinates.lat;
-            const longitude =
-              currentLocation?.lng ??
-              selectedMapPlace.selectionLocation?.longitude ??
-              selectedMapPlace.coordinates.lng;
+            const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
+            const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
             onClearMapPlace?.();
             navigate(`/app/pins/${placeTrackId}`, {
               state: {
-                userLatitude: latitude,
-                userLongitude: longitude,
+                ...(latitude != null && longitude != null
+                  ? { userLatitude: latitude, userLongitude: longitude }
+                  : {}),
                 placeAccessToken: selectedMapPlace.placeAccessToken,
               },
             });
@@ -605,17 +593,25 @@ const MapPage: React.FC<MapPageProps> = ({
           collapseToSmallestSignal={sheetCollapseSignal}
           onActiveSnapChange={setActiveSheetSnap}
           onResolvedPlaceChange={setResolvedActivePlace}
-          detailLocation={{
-            latitude: currentLocation?.lat ?? selectedMapPin.lat,
-            longitude: currentLocation?.lng ?? selectedMapPin.lng,
-          }}
+          detailLocation={
+            currentLocation
+              ? {
+                  latitude: currentLocation.lat,
+                  longitude: currentLocation.lng,
+                }
+              : null
+          }
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
-            const latitude = currentLocation?.lat ?? selectedMapPin.lat;
-            const longitude = currentLocation?.lng ?? selectedMapPin.lng;
             onSelectMapPinChange(null);
             navigate(`/app/pins/${pin.placeTrackId}`, {
-              state: { userLatitude: latitude, userLongitude: longitude },
+              state:
+                currentLocation != null
+                  ? {
+                      userLatitude: currentLocation.lat,
+                      userLongitude: currentLocation.lng,
+                    }
+                  : undefined,
             });
           }}
         />

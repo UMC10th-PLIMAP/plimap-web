@@ -40,14 +40,14 @@ async function resolvePlace(params: {
 }) {
   const { pinDetail } = params;
   const positionResult = await getCurrentPosition();
-  const userCoordinate = positionResult.ok
+  const queryCoordinate = positionResult.ok
     ? positionResult.coordinate
     : { lat: pinDetail.latitude, lng: pinDetail.longitude };
 
   const placeDetail = await getPlaceDetail({
     placeId: pinDetail.placeId,
-    latitude: userCoordinate.lat,
-    longitude: userCoordinate.lng,
+    latitude: queryCoordinate.lat,
+    longitude: queryCoordinate.lng,
   });
 
   const place: PinSearchPlace = {
@@ -61,10 +61,12 @@ async function resolvePlace(params: {
     bookmarkedByMe: placeDetail.bookmarkedByMe,
     isMine: params.isMine || placeDetail.pinnedByMe,
     allowTrackDetailAccess: params.allowTrackDetailAccess,
-    selectionLocation: {
-      latitude: userCoordinate.lat,
-      longitude: userCoordinate.lng,
-    },
+    selectionLocation: positionResult.ok
+      ? {
+          latitude: positionResult.coordinate.lat,
+          longitude: positionResult.coordinate.lng,
+        }
+      : undefined,
     coordinates: {
       lat: pinDetail.latitude,
       lng: pinDetail.longitude,
@@ -73,7 +75,10 @@ async function resolvePlace(params: {
     mapFocusPin: params.mapFocusPin,
   };
 
-  return { place, userCoordinate };
+  return {
+    place,
+    userCoordinate: positionResult.ok ? positionResult.coordinate : null,
+  };
 }
 
 type PlaceTrackPinItem = Awaited<ReturnType<typeof getPlaceTrackPins>>['data'][number];
