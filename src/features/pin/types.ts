@@ -274,14 +274,23 @@ export type PinSearchPlace = PlaceResult & {
   mapFocusPin?: FocusedFeedPin;
   /**
    * 내/친구 피드 → 지도 진입 시에만 true.
-   * false/미설정이면 곡 목록만 보이고 상세 조회는 불가.
+   * false/미설정이어도 내 장소이거나 현재 위치 500m 이내이면 곡 상세 열람이 허용된다.
    */
   allowTrackDetailAccess?: boolean;
   /** 친구 피드 진입 시 발급받은 장소 접근 토큰 (해당 장소 곡 상세에만 사용) */
   placeAccessToken?: string;
   source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
   withinAccessRange?: boolean;
+  /**
+   * 실제 GPS로 얻은 사용자 위치 (500m 접근 판정용).
+   * 위치 조회 실패 시 넣지 않는다 — 장소 좌표로 대체하면 안 된다.
+   */
   selectionLocation?: PlaceSearchHistoryRequest;
+  /**
+   * 장소 상세·곡 목록 API 조회용 좌표.
+   * GPS가 있으면 GPS, 없으면 장소 좌표로 채운다 (목록은 위치 없이도 볼 수 있어야 함).
+   */
+  queryLocation?: PlaceSearchHistoryRequest;
   coordinates: {
     lat: number;
     lng: number;

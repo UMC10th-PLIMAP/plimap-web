@@ -195,9 +195,11 @@ export default function UserProfilePage() {
               onPinClick={(pin) => {
                 void openPinPlaceOnMap({
                   pinId: pin.pinId,
+                  placeTrackId: pin.placeTrackId,
                   fallbackPlaceName: pin.placeName,
                   isMine: false,
-                  showMyRegisteredTrackCta: false,
+                  // 팔로잉 친구 피드 → 지도에서도 '{닉네임} 님이 등록한 곡 상세 보기' CTA 표시
+                  showMyRegisteredTrackCta: true,
                   // 팔로잉한 친구 피드 핀이면 장소 접근 토큰 발급
                   requestFeedPlaceAccess: Boolean(member?.isFollowing),
                 });
