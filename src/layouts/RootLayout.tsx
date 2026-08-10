@@ -32,7 +32,7 @@ const RootLayout = () => {
   } satisfies AppOutletContext;
 
   return (
-    <div className="mx-auto flex h-dvh max-w-[402px] flex-col overflow-y-auto bg-pli-black-100 scrollbar-hide">
+    <div className="mx-auto flex h-[var(--app-vh,100dvh)] max-w-[402px] flex-col overflow-y-auto bg-pli-black-100 scrollbar-hide">
       <Outlet context={outletContext} />
     </div>
   );

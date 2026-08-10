@@ -36,7 +36,7 @@ export default function ProfileEditPage() {
   const { data: profile, isError } = useMyProfile();
 
   return (
-    <div className="flex h-full min-h-screen flex-col">
+    <div className="flex h-full min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar title="프로필 편집" titleWeight="medium" onBack={() => navigate(-1)} />
       {isError && (
         <p className="mt-8 text-center body-15-r text-grayscale-600">
@@ -199,7 +199,10 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           onZoomChange={setZoom}
           onCropComplete={handleCropComplete}
         />
-        <TopBar onBack={handleCropBack} className="absolute top-[55px] left-0 z-10 w-full" />
+        <TopBar
+          onBack={handleCropBack}
+          className="absolute top-[calc(env(safe-area-inset-top)+16px)] left-0 z-10 w-full"
+        />
         <div className="absolute bottom-0 left-1/2 z-10 flex w-full max-w-[402px] -translate-x-1/2 flex-col items-center px-[10px] pb-[52px]">
           <Button
             variant="cta"

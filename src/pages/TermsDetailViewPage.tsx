@@ -45,7 +45,7 @@ export default function TermsDetailViewPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar onBack={() => navigate(-1)} />
       <div className="pt-4">
         <TermsDetailContent term={term} />

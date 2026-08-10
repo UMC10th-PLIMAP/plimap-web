@@ -87,7 +87,7 @@ export default function NicknameSetupPage() {
 
   return (
     <form
-      className="flex h-full min-h-screen flex-col"
+      className="flex h-full min-h-screen flex-col pt-[env(safe-area-inset-top)]"
       onSubmit={(event) => {
         event.preventDefault();
         handleSubmit();

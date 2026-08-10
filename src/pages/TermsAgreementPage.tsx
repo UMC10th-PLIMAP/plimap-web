@@ -60,7 +60,7 @@ export default function TermsAgreementPage() {
   if (detailTermId) {
     const term = TERMS_BY_ID[detailTermId];
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col pt-[env(safe-area-inset-top)]">
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-hide pt-[44px]">
           <TermsDetailContent term={term} />
         </div>
@@ -86,7 +86,7 @@ export default function TermsAgreementPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar onBack={() => navigate(-1)} />
 
       <div className="flex flex-col gap-5 px-4 pt-[44px]">

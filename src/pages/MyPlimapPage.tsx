@@ -57,7 +57,7 @@ export default function MyPlimapPage() {
 
   return (
     <ToastProvider duration={LOCATION_TOAST_DURATION_MS}>
-      <div className="flex min-h-full flex-col">
+      <div className="flex min-h-full flex-col pt-[env(safe-area-inset-top)]">
         <TopBar onBack={() => navigate(-1)} title="내 PLIMAP" titleWeight="medium" />
 
         <div className="flex flex-1 flex-col px-4 pt-3">

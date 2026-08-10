@@ -61,7 +61,7 @@ export default function SongListPage() {
 
   return (
     <ToastProvider duration={TOAST_DURATION_MS}>
-      <div className="relative flex min-h-full flex-col">
+      <div className="relative flex min-h-full flex-col pt-[env(safe-area-inset-top)]">
         <TopBar onBack={() => navigate(-1)} title="노래 선택하기" titleWeight="regular" />
         <div className="px-[15px] pt-4">
           <SearchInput

@@ -143,7 +143,7 @@ export default function FollowListPage() {
   const emptyState = isOtherMember ? OTHER_EMPTY_STATE[tab] : EMPTY_STATE[tab];
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar title={titleNickname} titleWeight="medium" onBack={goBack} />
 
       <div
