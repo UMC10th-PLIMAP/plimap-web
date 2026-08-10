@@ -212,9 +212,12 @@ export default function FollowListPage() {
               <FollowUserRow
                 key={user.id}
                 user={user}
-                onClick={(target) => navigate(`/app/users/${target.id}`)}
+                onClick={(target) =>
+                  navigate(target.id === myProfile?.id ? '/app/my' : `/app/users/${target.id}`)
+                }
                 onActionClick={handleActionClick}
                 disabled={pendingMemberIds.has(user.id)}
+                hideAction={user.id === myProfile?.id}
               />
             ))}
           </ul>

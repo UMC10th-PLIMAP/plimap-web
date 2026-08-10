@@ -1,6 +1,7 @@
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { useActorProfile } from '@/features/notification/queries/useNotifications';
 import type { Notification } from '@/features/notification/types';
+import { getFollowActionLabel } from '@/features/profile/utils/getFollowActionLabel';
 import { cn } from '@/lib/utils';
 
 const NOTIFICATION_MESSAGE: Record<Notification['type'], string> = {
@@ -59,6 +60,7 @@ export function NotificationRow({
   const isFollowNotification = notification.type === 'FOLLOW';
   const actorProfile = useActorProfile(notification.actorId, isFollowNotification);
   const isFollowing = actorProfile.data?.isFollowing ?? false;
+  const isFollowingViewer = actorProfile.data?.isFollowingViewer ?? false;
   const canOpenPin = notification.pinId !== null && !isFollowNotification;
   const createdAtLabel = formatCreatedAt(notification.createdAt);
   const notificationContent = (
@@ -101,7 +103,7 @@ export function NotificationRow({
             (actorProfile.isPending || isFollowPending) && 'cursor-wait opacity-60',
           )}
         >
-          {isFollowing ? '팔로잉' : '맞팔로우'}
+          {getFollowActionLabel({ isFollowing, isFollowingViewer })}
         </button>
       )}
     </li>
