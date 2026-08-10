@@ -175,15 +175,10 @@
   body,
   #root {
     @apply h-dvh min-h-dvh bg-[#000000];
-  }
-
-  /* iOS standalone PWA에서 100dvh가 홈 인디케이터 영역을 빼고 계산되는 WebKit 버그 우회 */
-  @supports (-webkit-touch-callout: none) {
-    html,
-    body,
-    #root {
-      height: -webkit-fill-available;
-    }
+    /* 모바일 브라우저가 첫 렌더에서 100dvh를 잘못(작게) 계산했다가 터치·스크롤 후에야
+       재계산하는 문제 우회 - main.tsx에서 실측한 innerHeight를 우선 사용한다. */
+    height: var(--app-vh, 100dvh);
+    min-height: var(--app-vh, 100dvh);
   }
 
   @media (min-width: 500px) {

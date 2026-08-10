@@ -40,7 +40,7 @@ export default function MyNotificationsPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-col pt-[env(safe-area-inset-top)]">
       <TopBar onBack={() => navigate(-1)} title="내 소식" titleWeight="medium" />
 
       <main className="flex flex-1 flex-col px-4 pt-4">
