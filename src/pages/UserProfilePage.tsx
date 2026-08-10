@@ -99,7 +99,7 @@ export default function UserProfilePage() {
 
   return (
     <ToastProvider duration={SHARE_TOAST_DURATION_MS}>
-      <div className="relative flex flex-col pb-[env(safe-area-inset-bottom)]">
+      <div className="relative flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
           <button
             type="button"

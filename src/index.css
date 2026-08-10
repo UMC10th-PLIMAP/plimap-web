@@ -177,6 +177,15 @@
     @apply h-dvh min-h-dvh bg-[#000000];
   }
 
+  /* iOS standalone PWA에서 100dvh가 홈 인디케이터 영역을 빼고 계산되는 WebKit 버그 우회 */
+  @supports (-webkit-touch-callout: none) {
+    html,
+    body,
+    #root {
+      height: -webkit-fill-available;
+    }
+  }
+
   @media (min-width: 500px) {
     html,
     body,
