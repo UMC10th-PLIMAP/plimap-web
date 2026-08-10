@@ -43,6 +43,11 @@ export const router = createBrowserRouter([
     element: <Navigate to="/app/home" replace />,
   },
   {
+    // 백엔드가 /app 접두사 없이 이 경로로 리다이렉트한다.
+    path: '/oauth/callback',
+    element: <OAuthCallbackPage />,
+  },
+  {
     path: '/preview/pin-radius',
     element: <PinRadiusOverlayPreviewPage />,
   },
