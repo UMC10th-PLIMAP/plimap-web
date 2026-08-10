@@ -136,6 +136,16 @@ export const router = createBrowserRouter([
                 element: <SongDetailPage />,
                 handle: { mapPresentation: 'covered' },
               },
+              {
+                path: 'pins/:pinId',
+                element: <PinDetailPage />,
+                handle: { mapPresentation: 'covered' },
+              },
+              {
+                path: 'pins/:pinId/edit',
+                element: <PinEditPage />,
+                handle: { mapPresentation: 'covered' },
+              },
             ],
           },
           {
@@ -157,14 +167,6 @@ export const router = createBrowserRouter([
           {
             path: 'onboarding/welcome',
             element: <WelcomePage />,
-          },
-          {
-            path: 'pins/:pinId',
-            element: <PinDetailPage />,
-          },
-          {
-            path: 'pins/:pinId/edit',
-            element: <PinEditPage />,
           },
           {
             path: 'users/:memberId',
