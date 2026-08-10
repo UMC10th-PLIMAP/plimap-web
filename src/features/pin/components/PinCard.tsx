@@ -46,7 +46,8 @@ export function PinCard({ pin, onClick, showLike = true }: PinCardProps) {
           : undefined
       }
       className={cn(
-        'flex w-full items-center justify-between rounded-xl bg-pli-black-85 px-4.5 pt-4 pb-3 text-left',
+        'flex w-full items-center justify-between rounded-xl bg-pli-black-85 px-4.5 text-left',
+        showLike ? 'pt-4 pb-3' : 'py-4.5',
         onClick && 'cursor-pointer',
       )}
     >

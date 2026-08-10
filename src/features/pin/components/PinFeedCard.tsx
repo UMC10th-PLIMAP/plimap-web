@@ -145,7 +145,7 @@ export function PinFeedCard({
             aria-label={isPlaying ? '미리듣기 일시정지' : '미리듣기 재생'}
             aria-pressed={isPlaying}
             onClick={() => onPlay?.(entry.id)}
-            className="flex size-[30px] cursor-pointer items-center justify-center rounded-full bg-neon text-grayscale-1250"
+            className="flex size-[30px] cursor-pointer items-center justify-center rounded-full bg-gradient-neon text-grayscale-1250"
           >
             {isPlaying ? (
               <span className="flex items-center gap-[3px]" aria-hidden>

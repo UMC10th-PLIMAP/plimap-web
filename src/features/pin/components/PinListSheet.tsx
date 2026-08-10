@@ -41,8 +41,8 @@ type PinListSheetProps = {
   onPinClick?: (pin: Pin) => void;
   onFocusedTrackClick?: (placeTrackId: string) => void;
   /**
-   * 내/친구 피드 → 지도 진입 시에만 true.
-   * false면 곡 카드는 보이되 하트·상세 이동은 막는다.
+   * 내/친구 피드 → 지도 진입 시에만 true로 넘긴다.
+   * false여도 시트 내부에서 내 장소·500m 이내이면 상세 열람을 허용한다.
    */
   allowTrackDetailAccess?: boolean;
   /** 이 값이 바뀌면 시트가 열린 채로도 default 스냅으로 리셋한다(다른 핀/장소 선택 시 사용). */
@@ -301,7 +301,7 @@ function PinListContent({
 
 const BOOKMARK_TOAST_DURATION_MS = 2_000;
 const TRACK_DETAIL_BLOCKED_TOAST_MESSAGE =
-  '내 장소이거나, 피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
+  '현재 위치 500m 이내이거나, 내 장소·피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
 
 type BookmarkToast = {
   attempt: number;
@@ -424,8 +424,11 @@ export function PinListSheet({
     })) ?? [];
 
   const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin);
-  // 피드 진입이거나, 내가 등록한 장소(MY)면 곡 상세 열람 허용
-  const canOpenTrackDetail = allowTrackDetailAccess || Boolean(resolvedPlace.isMine);
+  // 피드 진입 · 내가 등록한 장소(MY) · 현재 위치 500m 이내면 곡 상세 열람 허용
+  const canOpenTrackDetail =
+    allowTrackDetailAccess ||
+    Boolean(resolvedPlace.isMine) ||
+    Boolean(placeDetailQuery.data?.withinAccessRange);
   const midSnap = focusedFeedPin ? PIN_LIST_SHEET_FEED_MID_SNAP : PIN_LIST_SHEET_MID_SNAP;
   // 매 렌더 새 배열이면 vaul이 prop 변화로 인식해 재실행하므로 값이 바뀔 때만 새로 만든다.
   const snapPoints = useMemo(
