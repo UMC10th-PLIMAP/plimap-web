@@ -22,11 +22,11 @@ export function MyAllPinsCard({ pin, onClick, onMoreClick }: MyAllPinsCardProps)
       ) : null}
 
       <div className="flex items-center gap-[6px]">
-        <div className="flex flex-1 items-center gap-1 text-left">
-          <LocationPinIcon className="size-5 text-neon" aria-hidden />
-          <span className="flex body-17-m text-grayscale-100">
-            {pin.placeName}
-            <NextIcon className="size-6 text-grayscale-400" aria-hidden />
+        <div className="flex min-w-0 flex-1 items-center gap-1 text-left">
+          <LocationPinIcon className="size-5  text-neon" aria-hidden />
+          <span className="flex min-w-0 flex-1 items-center body-17-m text-grayscale-100">
+            <span className="truncate">{pin.placeName}</span>
+            <NextIcon className="size-6 shrink-0 text-grayscale-400" aria-hidden />
           </span>
         </div>
 
@@ -34,22 +34,22 @@ export function MyAllPinsCard({ pin, onClick, onMoreClick }: MyAllPinsCardProps)
           type="button"
           aria-label="더보기"
           onClick={onMoreClick}
-          className="relative z-10 flex size-6 items-center justify-center cursor-pointer"
+          className="relative z-10 flex size-6 shrink-0 items-center justify-center cursor-pointer"
         >
           <MoreIcon className="size-6 text-grayscale-100" aria-hidden />
         </button>
       </div>
 
-      <div className="pt-[13px] flex items-center gap-[17px]">
-        <div className="max-w-[59px] max-h-[59px] overflow-hidden rounded-lg">
+      <div className="flex items-center gap-[17px] pt-[13px]">
+        <div className="size-[59px] overflow-hidden rounded-lg">
           <img
             src={pin.albumImageUrl}
             alt={`${pin.trackName} 앨범 커버`}
             className="size-full object-cover"
           />
         </div>
-        <div className="flex flex-col ">
-          <p className="truncate body-17-r text-grayscale-300">{pin.trackName}</p>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <p className="body-17-r text-grayscale-300 line-clamp-2">{pin.trackName}</p>
           <p className="truncate body-15-r text-grayscale-500">{pin.artistName}</p>
         </div>
       </div>
