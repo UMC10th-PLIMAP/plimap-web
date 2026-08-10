@@ -44,7 +44,7 @@ export default function MyProfilePage() {
 
   return (
     <ToastProvider duration={SHARE_TOAST_DURATION_MS}>
-      <div className="relative flex flex-col pb-[calc(env(safe-area-inset-bottom)+108px)]">
+      <div className="relative flex flex-col pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+108px)]">
         <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
           <div />
           <h1 className="text-center head-24-sb text-grayscale-100">{myProfile.nickname}</h1>
