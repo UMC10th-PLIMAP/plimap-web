@@ -10,30 +10,14 @@ import { HomeHotPlaceCarouselSkeleton, HomeSkeleton } from '@/components/skeleto
 import { Chip } from '@/components/ui/chip';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
-import { useCurrentAddress } from '@/features/home/hooks/useCurrentAddress';
 import { useFriendPins } from '@/features/home/hooks/useFriendPins';
+import { useHomeContext } from '@/features/home/hooks/useHomeContext';
 import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
-import { useMyProfile } from '@/hooks/useMyProfile';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
 type HotPlaceFilter = 'nearby' | 'popular';
-
-function HomeErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <main className="flex min-h-full shrink-0 flex-col items-center justify-center gap-4 bg-pli-black-100 px-6 text-center">
-      <p className="body-15-r text-grayscale-300">홈 화면을 불러오지 못했어요.</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="rounded-full bg-neon px-6 py-3 body-15-sb text-grayscale-1250"
-      >
-        다시 시도
-      </button>
-    </main>
-  );
-}
 
 function formatDistanceMeters(distanceMeters: number) {
   const normalizedDistance = Math.max(0, distanceMeters);
@@ -120,9 +104,8 @@ export default function HomePage() {
     nearby: 0,
     popular: 0,
   });
-  const myProfileQuery = useMyProfile();
   const currentPositionQuery = useCurrentPosition();
-  const currentAddressQuery = useCurrentAddress({
+  const homeContextQuery = useHomeContext({
     latitude: currentPositionQuery.data?.latitude ?? null,
     longitude: currentPositionQuery.data?.longitude ?? null,
   });
@@ -141,16 +124,15 @@ export default function HomePage() {
   const toggleBookmarkMutation = useTogglePlaceBookmark();
   const savedPlaces = savedPlacesQuery.data?.items ?? [];
   const isHomePending =
-    myProfileQuery.isPending ||
     currentPositionQuery.isPending ||
     friendPinsQuery.isPending ||
     (!currentPositionQuery.isError && savedPlacesQuery.isPending);
 
   const currentLocationLabel = currentPositionQuery.isError
     ? '위치 정보를 확인할 수 없어요'
-    : currentAddressQuery.isPending
+    : homeContextQuery.isPending
       ? '주소를 확인하고 있어요'
-      : (currentAddressQuery.data ?? '현재 위치');
+      : (homeContextQuery.data?.currentRegion.displayName ?? '현재 위치');
 
   const handleCurrentLocationClick = () => {
     if (!currentPositionQuery.data) return;
@@ -167,10 +149,6 @@ export default function HomePage() {
 
   if (isHomePending) {
     return <HomeSkeleton />;
-  }
-
-  if (!myProfileQuery.data) {
-    return <HomeErrorState onRetry={() => void myProfileQuery.refetch()} />;
   }
 
   return (
@@ -195,9 +173,9 @@ export default function HomePage() {
 
           <div className="flex h-[94px] flex-col gap-1 px-4 py-4">
             <h1 className="head-24-sb text-grayscale-100">
-              {myProfileQuery.data.nickname ? (
+              {homeContextQuery.data?.nickname ? (
                 <>
-                  반가워요, <span className="text-neon-2">{myProfileQuery.data.nickname}</span> 님
+                  반가워요, <span className="text-neon-2">{homeContextQuery.data.nickname}</span> 님
                 </>
               ) : (
                 '반가워요!'
