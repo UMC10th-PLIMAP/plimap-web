@@ -10,6 +10,7 @@ import { TopBar } from '@/components/ui/TopBar';
 import { ProfileTextAreaField } from '@/features/profile/components/ProfileTextAreaField';
 import { ProfileTextField } from '@/features/profile/components/ProfileTextField';
 import { useProfileEditForm } from '@/features/profile/hooks/useProfileEditForm';
+import { useDeleteProfileImage } from '@/features/profile/queries/useDeleteProfileImage';
 import { useUpdateMyProfile } from '@/features/profile/queries/useUpdateMyProfile';
 import { useUploadProfileImage } from '@/features/profile/queries/useUploadProfileImage';
 import { getCroppedImageBlob } from '@/features/profile/utils/cropImage';
@@ -17,6 +18,7 @@ import { INTRODUCTION_MAX_LENGTH } from '@/features/profile/utils/validateIntrod
 import { NAME_MAX_LENGTH } from '@/features/profile/utils/validateName';
 import { NICKNAME_MAX_LENGTH } from '@/features/profile/utils/validateNickname';
 import { useMyProfile } from '@/hooks/useMyProfile';
+import { cn } from '@/lib/utils';
 import type { MyProfileResponse } from '@/types/member.type';
 
 type ImageStep = 'idle' | 'crop';
@@ -58,6 +60,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
   const [croppedImageFile, setCroppedImageFile] = useState<File | null>(null);
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
   const [isCropProcessing, setIsCropProcessing] = useState(false);
+  const [isImageMarkedForDeletion, setIsImageMarkedForDeletion] = useState(false);
 
   const { nicknameField, nameField, introductionField, isDirty, isValid, buildPayload } =
     useProfileEditForm({
@@ -68,11 +71,15 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
 
   const { mutateAsync: saveProfile, isPending: isSavingProfile } = useUpdateMyProfile();
   const { mutateAsync: uploadImage, isPending: isUploadingImage } = useUploadProfileImage();
-  const isSubmitting = isSavingProfile || isUploadingImage;
+  const { mutateAsync: deleteImage, isPending: isDeletingImage } = useDeleteProfileImage();
+  const isSubmitting = isSavingProfile || isUploadingImage || isDeletingImage;
 
   const isImageChanged = croppedImageFile !== null;
-  const canSubmit = (isDirty || isImageChanged) && isValid;
-  const profileImageSrc = croppedImageUrl ?? profile.profileImageUrl;
+  const hasImageDeletion = isImageMarkedForDeletion && profile.profileImageUrl !== null;
+  const canSubmit = (isDirty || isImageChanged || hasImageDeletion) && isValid;
+  const profileImageSrc = isImageMarkedForDeletion
+    ? null
+    : (croppedImageUrl ?? profile.profileImageUrl);
 
   const handlePickImage = () => {
     fileInputRef.current?.click();
@@ -117,6 +124,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
       }
       setCroppedImageFile(file);
       setCroppedImageUrl(URL.createObjectURL(file));
+      setIsImageMarkedForDeletion(false);
       setImageStep('idle');
     } catch (error) {
       console.error('크롭 실패:', error);
@@ -134,11 +142,23 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
     setImageStep('idle');
   };
 
+  const handleDeleteClick = () => {
+    if (!profileImageSrc) return;
+
+    if (croppedImageUrl) URL.revokeObjectURL(croppedImageUrl);
+    setCroppedImageFile(null);
+    setCroppedImageUrl(null);
+    setIsImageMarkedForDeletion(true);
+  };
+
   const handleSubmit = async () => {
     try {
       if (croppedImageFile) {
         await uploadImage(croppedImageFile);
         setCroppedImageFile(null);
+      } else if (hasImageDeletion) {
+        await deleteImage();
+        setIsImageMarkedForDeletion(false);
       }
 
       const payload = buildPayload();
@@ -211,7 +231,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
         className="hidden"
       />
 
-      <div className="mt-[37px] flex flex-col items-center">
+      <div className="mt-[37px] flex flex-col items-center gap-6">
         <button
           type="button"
           onClick={handlePickImage}
@@ -228,6 +248,17 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           <span className="absolute right-0 bottom-0 flex size-[27px] items-center justify-center rounded-full bg-grayscale-300">
             <CameraIcon className="size-[15px] text-grayscale-1250" />
           </span>
+        </button>
+        <button
+          type="button"
+          onClick={handleDeleteClick}
+          disabled={!profileImageSrc || isSubmitting}
+          className={cn(
+            'body-15-r underline disabled:cursor-not-allowed',
+            profileImageSrc ? 'cursor-pointer text-grayscale-300' : 'text-grayscale-900',
+          )}
+        >
+          프로필 사진 삭제
         </button>
       </div>
 
