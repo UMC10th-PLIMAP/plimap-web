@@ -41,7 +41,7 @@ export function MemberSearchResultRow({
         type="button"
         onClick={() => onToggleFollow(member)}
         disabled={isFollowPending}
-        aria-label={`${member.nickname} ${member.isFollowing ? '팔로우 취소' : '팔로우'}`}
+        aria-label={`${member.nickname} ${member.isFollowing ? '팔로우 취소' : getFollowActionLabel(member)}`}
         className={`flex h-8 min-w-[102px] shrink-0 items-center justify-center rounded-lg etc-13-sb cursor-pointer disabled:opacity-50 ${
           member.isFollowing
             ? 'bg-pli-black-50 text-grayscale-100'
