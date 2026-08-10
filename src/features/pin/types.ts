@@ -281,7 +281,16 @@ export type PinSearchPlace = PlaceResult & {
   placeAccessToken?: string;
   source?: 'PLACE_SEARCH' | 'ADDRESS_SEARCH' | 'MAP_SELECTION';
   withinAccessRange?: boolean;
+  /**
+   * 실제 GPS로 얻은 사용자 위치 (500m 접근 판정용).
+   * 위치 조회 실패 시 넣지 않는다 — 장소 좌표로 대체하면 안 된다.
+   */
   selectionLocation?: PlaceSearchHistoryRequest;
+  /**
+   * 장소 상세·곡 목록 API 조회용 좌표.
+   * GPS가 있으면 GPS, 없으면 장소 좌표로 채운다 (목록은 위치 없이도 볼 수 있어야 함).
+   */
+  queryLocation?: PlaceSearchHistoryRequest;
   coordinates: {
     lat: number;
     lng: number;

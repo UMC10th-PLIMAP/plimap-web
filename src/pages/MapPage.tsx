@@ -540,8 +540,13 @@ const MapPage: React.FC<MapPageProps> = ({
                   latitude: currentLocation.lat,
                   longitude: currentLocation.lng,
                 }
-              : (selectedMapPlace.selectionLocation ?? null)
+              : (selectedMapPlace.queryLocation ??
+                selectedMapPlace.selectionLocation ?? {
+                  latitude: selectedMapPlace.coordinates.lat,
+                  longitude: selectedMapPlace.coordinates.lng,
+                })
           }
+          hasReliableUserLocation={Boolean(currentLocation ?? selectedMapPlace.selectionLocation)}
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
             const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
@@ -599,8 +604,12 @@ const MapPage: React.FC<MapPageProps> = ({
                   latitude: currentLocation.lat,
                   longitude: currentLocation.lng,
                 }
-              : null
+              : {
+                  latitude: selectedMapPin.lat,
+                  longitude: selectedMapPin.lng,
+                }
           }
+          hasReliableUserLocation={Boolean(currentLocation)}
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
             onSelectMapPinChange(null);

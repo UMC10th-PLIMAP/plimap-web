@@ -36,8 +36,14 @@ type PinListSheetProps = {
   onClose: () => void;
   place: PlaceInfo;
   focusedFeedPin?: FocusedFeedPin;
+  /** 장소 상세·곡 목록 API 조회용 좌표 (GPS 또는 장소 좌표) */
   detailLocation: PlaceSearchHistoryRequest | null;
   detailLocationError?: string | null;
+  /**
+   * detailLocation이 실제 사용자 GPS인지 여부.
+   * false면 목록은 조회하되 withinAccessRange(500m)로 상세 열람을 허용하지 않는다.
+   */
+  hasReliableUserLocation?: boolean;
   onPinClick?: (pin: Pin) => void;
   onFocusedTrackClick?: (placeTrackId: string) => void;
   /**
@@ -322,6 +328,7 @@ export function PinListSheet({
   focusedFeedPin,
   detailLocation,
   detailLocationError = null,
+  hasReliableUserLocation: hasReliableUserLocationProp,
   onPinClick,
   onFocusedTrackClick,
   allowTrackDetailAccess = false,
@@ -339,14 +346,21 @@ export function PinListSheet({
     : place.id;
   const parsedPlaceId = place.placeId ?? Number(normalizedPlaceId);
   const placeId = Number.isSafeInteger(parsedPlaceId) && parsedPlaceId > 0 ? parsedPlaceId : null;
+  // 조회 좌표가 없으면 장소 좌표로 폴백 — GPS 실패해도 목록은 볼 수 있어야 한다.
+  const listQueryLocation =
+    detailLocation ??
+    (Number.isFinite(place.latitude) && Number.isFinite(place.longitude)
+      ? { latitude: place.latitude, longitude: place.longitude }
+      : null);
   // GPS 소수점 흔들림으로 쿼리 키가 매번 바뀌어 로딩이 반복되지 않도록 11m 단위로 반올림.
-  const queryLatitude = detailLocation ? Number(detailLocation.latitude.toFixed(4)) : 0;
-  const queryLongitude = detailLocation ? Number(detailLocation.longitude.toFixed(4)) : 0;
+  const queryLatitude = listQueryLocation ? Number(listQueryLocation.latitude.toFixed(4)) : 0;
+  const queryLongitude = listQueryLocation ? Number(listQueryLocation.longitude.toFixed(4)) : 0;
+  const canQueryPlace = listQueryLocation !== null;
   const placeDetailQuery = usePlaceDetail({
     placeId,
     latitude: queryLatitude,
     longitude: queryLongitude,
-    enabled: open && detailLocation !== null,
+    enabled: open && canQueryPlace,
   });
   // 지도 핀 탭으로 열렸을 때(place.name이 아직 없음)만 최초 로딩 스켈레톤을 보여준다.
   // 검색 결과로 열렸을 때는 이미 이름/주소가 있어 부분 데이터를 그대로 보여준다.
@@ -384,12 +398,11 @@ export function PinListSheet({
 
   const bookmarkMutation = useTogglePlaceBookmark();
   const resolvedBookmarkState = placeDetailQuery.data?.bookmarkedByMe ?? place.bookmarkedByMe;
-  const detailErrorMessage =
-    detailLocation === null
-      ? detailLocationError
-      : placeDetailQuery.isError
-        ? '장소 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
-        : null;
+  const detailErrorMessage = !canQueryPlace
+    ? detailLocationError
+    : placeDetailQuery.isError
+      ? '장소 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
+      : null;
   const bookmarkStatus: BookmarkStatus =
     resolvedBookmarkState !== undefined ? 'ready' : detailErrorMessage ? 'error' : 'loading';
   const isCurrentPlaceMutation = bookmarkMutation.variables?.placeId === placeId;
@@ -402,7 +415,7 @@ export function PinListSheet({
     latitude: queryLatitude,
     longitude: queryLongitude,
     sort: sort === 'LATEST' ? 'LATEST' : 'POPULAR',
-    enabled: open && detailLocation !== null,
+    enabled: open && canQueryPlace,
   });
 
   const handleBookmarkToggle = () => {
@@ -442,8 +455,8 @@ export function PinListSheet({
     }
     onFocusedTrackClick(focusedPlaceTrackId);
   };
-  // detailLocation은 실제 사용자 위치일 때만 넘어오도록 MapPage/resolvePlace에서 보장한다.
-  const hasReliableUserLocation = detailLocation !== null;
+  // 500m 판정은 실제 GPS일 때만 신뢰한다. 미전달 시 하위 호환으로 detailLocation 유무를 본다.
+  const hasReliableUserLocation = hasReliableUserLocationProp ?? detailLocation !== null;
   // 이 장소 곡 목록에 찜한 노래가 하나라도 있으면 리스트 전체 상세 열람 허용
   const hasLikedTrackInPlace = pins.some((pin) => Boolean(pin.liked));
   const canOpenTrackDetail =

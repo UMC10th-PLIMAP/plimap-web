@@ -62,12 +62,18 @@ async function resolvePlace(params: {
     bookmarkedByMe: placeDetail.bookmarkedByMe,
     isMine: params.isMine || placeDetail.pinnedByMe,
     allowTrackDetailAccess: params.allowTrackDetailAccess,
+    // GPS 성공 시에만 — 500m 판정에 장소 좌표를 쓰면 안 된다.
     selectionLocation: positionResult.ok
       ? {
           latitude: positionResult.coordinate.lat,
           longitude: positionResult.coordinate.lng,
         }
       : undefined,
+    // 목록/상세 조회용 — GPS 실패 시에도 장소 좌표로 조회 가능해야 한다.
+    queryLocation: {
+      latitude: queryCoordinate.lat,
+      longitude: queryCoordinate.lng,
+    },
     coordinates: {
       lat: pinDetail.latitude,
       lng: pinDetail.longitude,
