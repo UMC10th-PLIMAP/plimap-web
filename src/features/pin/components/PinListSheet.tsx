@@ -301,7 +301,7 @@ function PinListContent({
 
 const BOOKMARK_TOAST_DURATION_MS = 2_000;
 const TRACK_DETAIL_BLOCKED_TOAST_MESSAGE =
-  '현재 위치 500m 이내이거나, 내 장소·피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
+  '현재 위치 500m 이내이거나, 찜한 노래·내 장소·피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
 
 type BookmarkToast = {
   attempt: number;
@@ -424,12 +424,16 @@ export function PinListSheet({
     })) ?? [];
 
   const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin);
-
+  // detailLocation은 실제 사용자 위치일 때만 넘어오도록 MapPage/resolvePlace에서 보장한다.
   const hasReliableUserLocation = detailLocation !== null;
+  // 이 장소 곡 목록에 찜한 노래가 하나라도 있으면 리스트 전체 상세 열람 허용
+  const hasLikedTrackInPlace = pins.some((pin) => Boolean(pin.liked));
   const canOpenTrackDetail =
     allowTrackDetailAccess ||
     Boolean(resolvedPlace.isMine) ||
-    (hasReliableUserLocation && Boolean(placeDetailQuery.data?.withinAccessRange));
+    (hasReliableUserLocation && Boolean(placeDetailQuery.data?.withinAccessRange)) ||
+    hasLikedTrackInPlace ||
+    Boolean(data?.isTrackDetailAccessible);
   const midSnap = focusedFeedPin ? PIN_LIST_SHEET_FEED_MID_SNAP : PIN_LIST_SHEET_MID_SNAP;
   // 매 렌더 새 배열이면 vaul이 prop 변화로 인식해 재실행하므로 값이 바뀔 때만 새로 만든다.
   const snapPoints = useMemo(
