@@ -74,6 +74,7 @@ export type MemberProfileResponse = {
   followingCount: number;
   pinCount: number;
   isFollowing: boolean;
+  isFollowingViewer: boolean;
 };
 
 export type UpdateMyProfileRequest = {

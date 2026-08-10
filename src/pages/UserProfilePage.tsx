@@ -15,6 +15,7 @@ import { ProfileShareDialog } from '@/features/profile/components/ProfileShareDi
 import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteOtherMemberFeed } from '@/features/pin/queries/useOtherMemberFeed';
 import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
+import { getFollowActionLabel } from '@/features/profile/utils/getFollowActionLabel';
 import { useGoBack } from '@/hooks/useGoBack';
 import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
@@ -164,7 +165,7 @@ export default function UserProfilePage() {
               <ProfileActions
                 actions={[
                   {
-                    label: member.isFollowing ? '팔로잉' : '팔로우',
+                    label: getFollowActionLabel(member),
                     onClick: () => {
                       if (followMutation.isPending || !id) return;
                       followMutation.mutate({ memberId: id, isFollowing: member.isFollowing });
