@@ -23,34 +23,46 @@ export default defineConfig({
     svgr(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['Logo.png'],
+      includeAssets: [
+        'Logo.png',
+        'apple-touch-icon.png',
+        'icons/pwa-icon-192.png',
+        'icons/pwa-icon-512.png',
+      ],
       manifest: {
         name: 'PLIMAP',
         short_name: 'PLIMAP',
         description: '지도 위에서 발견하는 새로운 플레이리스트',
         display: 'standalone',
-        theme_color: '#000000',
-        background_color: '#000000',
+        theme_color: '#12141F',
+        background_color: '#12141F',
         start_url: '/app/home',
         orientation: 'portrait',
         icons: [
           {
-            src: '/Logo.png',
-            sizes: '160x160',
+            src: '/icons/pwa-icon-192.png',
+            sizes: '192x192',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/Logo.png',
-            sizes: '160x160',
+            src: '/icons/pwa-icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icons/pwa-icon-512.png',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
           },
         ],
       },
       workbox: {
-        // 지도/위치 등 실시간 API 응답은 캐싱하지 않고 정적 자원(app shell)만 캐싱한다.
+        // API 경로로 직접 이동(navigation)하는 경우 index.html로 폴백하지 않는다.
         navigateFallbackDenylist: [/^\/api\//],
+        // runtimeCaching에 /api/ 규칙을 두지 않아, 지도/위치 등 API 응답은 캐싱하지 않는다.
         runtimeCaching: [
           {
             urlPattern: ({ request }) =>
