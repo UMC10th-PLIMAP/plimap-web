@@ -48,6 +48,9 @@ export function useCurrentLocationMarker({
   const positionRef = useRef<MapCoordinate | null>(null);
   const bestAccuracyRef = useRef(Infinity);
   const lastAcceptedAtRef = useRef(0);
+  const deviceHeadingRef = useRef<number | null>(null);
+  const mapHeadingRef = useRef(0);
+  const headingListenerRef = useRef<google.maps.MapsEventListener | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
   const onCurrentLocationChangedRef = useRef(onCurrentLocationChanged);
   const onCurrentLocationErrorRef = useRef(onCurrentLocationError);
@@ -75,11 +78,24 @@ export function useCurrentLocationMarker({
   }, [isTrackingEnabled]);
 
   // --- 기기 방향 이벤트 처리 (방향 쐐기 회전) ---
-  const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
-    const heading = getCompassHeading(event);
-    if (heading === null) return;
-    overlayRef.current?.setHeading(heading);
+  // 쐐기는 지도와 함께 회전하는 floatPane 안에 그려지므로, 기기 나침반 값(진북 기준)에서
+  // 지도 자체의 회전값을 빼야 화면상 항상 실제 방향을 가리킨다.
+  const applyHeading = useCallback(() => {
+    if (deviceHeadingRef.current === null) return;
+    const relativeHeading =
+      (((deviceHeadingRef.current - mapHeadingRef.current) % 360) + 360) % 360;
+    overlayRef.current?.setHeading(relativeHeading);
   }, []);
+
+  const handleOrientation = useCallback(
+    (event: DeviceOrientationEvent) => {
+      const heading = getCompassHeading(event);
+      if (heading === null) return;
+      deviceHeadingRef.current = heading;
+      applyHeading();
+    },
+    [applyHeading],
+  );
 
   // --- 나침반 리스너 등록 (iOS는 사용자 제스처 안에서 권한 요청 후에만 이벤트가 발생함) ---
   const compassRegisteredRef = useRef(false);
@@ -135,6 +151,10 @@ export function useCurrentLocationMarker({
     positionRef.current = null;
     bestAccuracyRef.current = Infinity;
     lastAcceptedAtRef.current = 0;
+    headingListenerRef.current?.remove();
+    headingListenerRef.current = null;
+    mapHeadingRef.current = 0;
+    deviceHeadingRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -182,6 +202,12 @@ export function useCurrentLocationMarker({
           overlayRef.current = createCurrentLocationOverlay(DEFAULT_MARKER_COLOR, pos);
           overlayRef.current.setMap(map);
 
+          mapHeadingRef.current = map.getHeading() ?? 0;
+          headingListenerRef.current = map.addListener('heading_changed', () => {
+            mapHeadingRef.current = map.getHeading() ?? 0;
+            applyHeading();
+          });
+
           if (centerOnFirstLocationRef.current) {
             onCenterChangedRef.current?.(pos);
           }
@@ -203,7 +229,7 @@ export function useCurrentLocationMarker({
       ignore = true;
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [isLoaded, isTrackingEnabled, enableCompassIfNeeded, mapInstanceRef]);
+  }, [isLoaded, isTrackingEnabled, enableCompassIfNeeded, mapInstanceRef, applyHeading]);
 
   // --- "현재 위치" 버튼에서 호출할 재중심 이동 ---
   const recenterToCurrentLocation = useCallback(() => {
