@@ -82,9 +82,19 @@ function formatDistance(distance: number) {
   return { value: String(Math.round(normalizedDistance)), unit: 'm' };
 }
 
-function findFocusedPlaceTrackId(focusedFeedPin?: FocusedFeedPin) {
-  if (focusedFeedPin?.placeTrackId == null) return null;
-  return String(focusedFeedPin.placeTrackId);
+function findFocusedPlaceTrackId(focusedFeedPin?: FocusedFeedPin, pins: Pin[] = []) {
+  if (focusedFeedPin?.placeTrackId != null) return String(focusedFeedPin.placeTrackId);
+  if (!focusedFeedPin) return null;
+
+  const matchedByPinId = pins.find(
+    (pin) => pin.pinId != null && Number(pin.pinId) === focusedFeedPin.pinId,
+  );
+  if (matchedByPinId) return String(matchedByPinId.placeTrackId);
+
+  const matchedByMe = pins.find((pin) => pin.pinByMe);
+  if (matchedByMe) return String(matchedByMe.placeTrackId);
+
+  return null;
 }
 
 const PLACE_NAME_MAX_LENGTH = 14;
@@ -240,8 +250,7 @@ function PinListContent({
           <button
             type="button"
             onClick={onFocusedTrackClick}
-            disabled={!onFocusedTrackClick}
-            className="mt-4 flex w-full min-w-0 items-center gap-3 rounded-xl bg-pli-black-85 px-3 py-3 text-left disabled:opacity-50 cursor-pointer"
+            className="mt-4 flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-pli-black-50 bg-pli-black-85 px-3 py-3 text-left"
           >
             {focusedFeedPin.avatarUrl ? (
               <img
@@ -258,7 +267,7 @@ function PinListContent({
               <span className="text-neon-2">{focusedFeedPin.nickname} </span>님이 등록한 곡 상세
               보기
             </p>
-            <NextIcon className="size-5 text-grayscale-400" aria-hidden />
+            <NextIcon className="size-5 shrink-0 text-grayscale-400" aria-hidden />
           </button>
         ) : null}
 
@@ -423,7 +432,18 @@ export function PinListSheet({
       liked: track.isLiked,
     })) ?? [];
 
-  const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin);
+  const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin, pins);
+  const handleFocusedTrackClick = () => {
+    if (!onFocusedTrackClick) return;
+    if (!focusedPlaceTrackId) {
+      setAccessToast((currentToast) => ({
+        attempt: (currentToast?.attempt ?? 0) + 1,
+        message: '곡 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.',
+      }));
+      return;
+    }
+    onFocusedTrackClick(focusedPlaceTrackId);
+  };
   // detailLocation은 실제 사용자 위치일 때만 넘어오도록 MapPage/resolvePlace에서 보장한다.
   const hasReliableUserLocation = detailLocation !== null;
   // 이 장소 곡 목록에 찜한 노래가 하나라도 있으면 리스트 전체 상세 열람 허용
@@ -500,11 +520,7 @@ export function PinListSheet({
             }}
             allowTrackDetailAccess={canOpenTrackDetail}
             focusedFeedPin={focusedFeedPin}
-            onFocusedTrackClick={
-              focusedPlaceTrackId && onFocusedTrackClick
-                ? () => onFocusedTrackClick(focusedPlaceTrackId)
-                : undefined
-            }
+            onFocusedTrackClick={onFocusedTrackClick ? handleFocusedTrackClick : undefined}
           />
         )}
       </BottomSheet>

@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 
 import { getPlaceDetail } from '@/api/place';
 import { getPinDetail, getPlaceTrackPins, postFeedPlaceAccessRequest } from '@/api/pin';
+import { getPlaceTracks } from '@/api/track';
 import type { FocusedFeedPin, PinDetailResponse, PinSearchPlace } from '@/features/pin/types';
 import type { AppOutletContext } from '@/layouts/RootLayout';
 import { useFeedPlaceAccessStore } from '@/store/feedPlaceAccessStore';
@@ -123,7 +124,7 @@ export function useOpenPinPlaceOnMap() {
         const resolvedPinId = Number(pinId);
         const pinDetail = await getPinDetail(String(pinId));
 
-        const { place } = await resolvePlace({
+        const { place, userCoordinate } = await resolvePlace({
           pinDetail,
           fallbackPlaceName,
           isMine,
@@ -142,11 +143,32 @@ export function useOpenPinPlaceOnMap() {
           place.placeAccessToken = access.placeAccessToken;
         }
 
-        const resolvedPlaceTrackId = (() => {
+        let resolvedPlaceTrackId = (() => {
           if (placeTrackId == null) return undefined;
           const parsed = Number(placeTrackId);
           return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
         })();
+
+        // 내 모든 핀 등에서 placeTrackId가 목록에 없으면, 해당 장소의 내 등록 곡으로 보완한다.
+        if (showMyRegisteredTrackCta && resolvedPlaceTrackId == null && place.placeId != null) {
+          const lookupCoordinate = userCoordinate ?? place.coordinates;
+          try {
+            const placeTracks = await getPlaceTracks(
+              String(place.placeId),
+              '0',
+              50,
+              lookupCoordinate.lat,
+              lookupCoordinate.lng,
+              'LATEST',
+            );
+            const myTrack = placeTracks.tracks.find((track) => track.pinByMe);
+            if (myTrack?.placeTrackId != null) {
+              resolvedPlaceTrackId = myTrack.placeTrackId;
+            }
+          } catch (error) {
+            console.error(error);
+          }
+        }
 
         // 피드 진입 시 지도 핀 말풍선(MapPinMessageBox)용 데이터
         place.mapFocusPin = {
@@ -160,13 +182,14 @@ export function useOpenPinPlaceOnMap() {
           clipStartMs: pinDetail.clipStartMs,
         };
 
-        // 내 등록 곡 상세 CTA는 placeTrackId가 있을 때만
-        if (showMyRegisteredTrackCta && resolvedPlaceTrackId != null) {
+        // 내 등록 곡 상세 CTA (내 모든 핀·내 프로필 피드 진입)
+        if (showMyRegisteredTrackCta) {
           place.focusedFeedPin = place.mapFocusPin;
         }
 
         selectMapPlace(place);
         navigate('/app');
+        setIsNavigating(false);
       } catch (error) {
         console.error(error);
         setIsNavigating(false);
@@ -229,6 +252,7 @@ export function useOpenPinPlaceOnMap() {
 
         selectMapPlace(place);
         navigate('/app');
+        setIsNavigating(false);
         return { ok: true };
       } catch (error) {
         console.error(error);
