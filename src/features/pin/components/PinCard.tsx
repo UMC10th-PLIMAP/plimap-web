@@ -63,12 +63,26 @@ export function PinCard({ pin, onClick, showLike = true }: PinCardProps) {
             ) : null}
           </div>
           <div className="flex min-w-0 flex-col items-start gap-[3px]">
-            <p className="w-full truncate body-15-sb text-grayscale-100">{pin.trackName}</p>
-            <p className="w-full truncate body-15-r text-grayscale-500">{pin.artistName}</p>
+            <p
+              className={cn(
+                'w-full truncate body-15-sb',
+                showLike ? 'text-grayscale-100' : 'text-grayscale-500',
+              )}
+            >
+              {pin.trackName}
+            </p>
+            <p
+              className={cn(
+                'w-full truncate body-15-r',
+                showLike ? 'text-grayscale-500' : 'text-grayscale-700',
+              )}
+            >
+              {pin.artistName}
+            </p>
           </div>
         </div>
 
-        {showLike && pin.likeCount !== undefined ? (
+        {showLike ? (
           <button
             type="button"
             aria-label={pin.liked ? '좋아요 취소' : '좋아요'}
@@ -81,14 +95,22 @@ export function PinCard({ pin, onClick, showLike = true }: PinCardProps) {
               className={cn('size-[18px]', pin.liked ? 'fill-red text-red' : 'text-grayscale-300')}
               aria-hidden
             />
-            <span>{pin.likeCount}</span>
+            <span>{pin.likeCount ?? 0}</span>
           </button>
         ) : null}
       </div>
 
-      <span className="ml-3 flex items-center gap-1 etc-13-r text-grayscale-300">
+      <span
+        className={cn(
+          'ml-3 flex items-center gap-1 etc-13-r',
+          showLike ? 'text-grayscale-300' : 'text-grayscale-700',
+        )}
+      >
         {pin.pinCount != null ? `${pin.pinCount}명이 등록` : '맵으로 이동'}
-        <NextIcon className="size-5" aria-hidden />
+        <NextIcon
+          className={cn('size-5', showLike ? 'text-grayscale-400' : 'text-grayscale-900')}
+          aria-hidden
+        />
       </span>
     </article>
   );
