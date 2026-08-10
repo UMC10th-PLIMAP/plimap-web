@@ -9,12 +9,10 @@ if (import.meta.env.DEV) {
   });
 }
 
-// 모바일 브라우저가 100dvh를 첫 렌더에서 잘못(작게) 계산했다가 터치·스크롤 후에야
-// 재계산하는 문제 우회 - window.innerHeight를 실측해 --app-vh로 즉시 반영한다.
+// 초기값은 index.html의 인라인 스크립트가 첫 페인트 전에 반영한다 - 여기선 갱신만 담당.
 function setAppViewportHeight() {
   document.documentElement.style.setProperty('--app-vh', `${window.innerHeight}px`);
 }
-setAppViewportHeight();
 window.addEventListener('resize', setAppViewportHeight);
 window.addEventListener('orientationchange', setAppViewportHeight);
 

@@ -60,8 +60,8 @@ export default function TermsAgreementPage() {
   if (detailTermId) {
     const term = TERMS_BY_ID[detailTermId];
     return (
-      <div className="flex min-h-0 flex-1 flex-col pt-[env(safe-area-inset-top)]">
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-hide pt-[44px]">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-hide pt-[calc(env(safe-area-inset-top)+44px)]">
           <TermsDetailContent term={term} />
         </div>
         <div className="flex shrink-0 justify-center px-[10px] pt-[38px] pb-[52px]">
