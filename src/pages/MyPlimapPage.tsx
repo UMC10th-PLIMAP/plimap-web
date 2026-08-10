@@ -25,7 +25,12 @@ export default function MyPlimapPage() {
   const { openPinPlaceOnMap, openPlaceTrackOnMap, isNavigating } = useOpenPinPlaceOnMap();
   const [tab, setTab] = useState<MyPlimapTab>('liked');
   const [feedbackToast, setFeedbackToast] = useState<FeedbackToast | null>(null);
-  const { data: myPins, isPending: isMyPinsPending } = useInfiniteMyPins();
+  const {
+    data: myPins,
+    isPending: isMyPinsPending,
+    isError: isMyPinsError,
+    refetch: refetchMyPins,
+  } = useInfiniteMyPins();
   const {
     data: likedTracks,
     fetchNextPage,
@@ -41,6 +46,7 @@ export default function MyPlimapPage() {
 
   const pins = myPins?.pages.flatMap((page) => page.data) ?? [];
   const tracks = likedTracks?.pages.flatMap((page) => page.tracks) ?? [];
+  const isLikedTracksInitialError = isLikedTracksError && !isFetchNextPageError;
 
   const loadMoreRef = useInfiniteScroll(
     () => {
@@ -82,6 +88,17 @@ export default function MyPlimapPage() {
                     <PinCardSkeleton key={index} />
                   ))}
                 </>
+              ) : isMyPinsError ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+                  <p className="body-15-r text-grayscale-500">내 핀을 불러오지 못했어요.</p>
+                  <button
+                    type="button"
+                    onClick={() => void refetchMyPins()}
+                    className="body-15-m cursor-pointer text-grayscale-300 underline"
+                  >
+                    다시 시도
+                  </button>
+                </div>
               ) : pins.length === 0 ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-0.5 text-center">
                   <p className="body-17-m text-grayscale-300">아직 등록한 곡이 없어요</p>
@@ -128,7 +145,7 @@ export default function MyPlimapPage() {
                   <PinCardSkeleton key={index} />
                 ))}
               </>
-            ) : isLikedTracksError ? (
+            ) : isLikedTracksInitialError ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
                 <p className="body-15-r text-grayscale-500">찜한 노래를 불러오지 못했어요.</p>
                 <button
