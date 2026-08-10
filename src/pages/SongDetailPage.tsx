@@ -572,7 +572,7 @@ export default function SongDetailPage() {
               className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-pli-black-100/0 to-pli-black-100"
             />
 
-            <div className="relative z-10 flex h-full flex-col">
+            <div className="relative z-10 flex h-full flex-col pt-[env(safe-area-inset-top)]">
               <div className="flex h-[64px] items-center justify-between px-4">
                 <button
                   type="button"
