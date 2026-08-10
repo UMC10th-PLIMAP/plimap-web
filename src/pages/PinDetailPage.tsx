@@ -218,7 +218,7 @@ export default function PinDetailPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-hide">
-      <div className="relative h-[296px] shrink-0 overflow-hidden">
+      <div className="relative overflow-hidden ">
         <img
           src={pinDetail.albumImageUrl}
           alt={pinDetail.title}
@@ -230,14 +230,16 @@ export default function PinDetailPage() {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-pli-black-100/0 to-pli-black-100"
         />
-        <div className="relative z-10 flex h-full flex-col items-center">
+        <div className="relative z-10 flex w-full flex-col items-center px-15">
           <img
             src={pinDetail.albumImageUrl}
             alt={pinDetail.title}
             aria-hidden
             className="size-[112px] rounded-lg object-cover"
           />
-          <h1 className="pt-3 head-24-sb text-grayscale-100">{pinDetail.title}</h1>
+          <h1 className="w-full min-w-0 pt-3 text-center head-24-sb text-grayscale-100 line-clamp-2">
+            {pinDetail.title}
+          </h1>
           <p className="body-15-r text-grayscale-600">{pinDetail.artist}</p>
 
           <button

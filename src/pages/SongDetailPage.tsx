@@ -572,7 +572,7 @@ export default function SongDetailPage() {
               className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-pli-black-100/0 to-pli-black-100"
             />
 
-            <div className="relative z-10 flex h-full flex-col">
+            <div className="relative z-10 flex h-full flex-col pt-[env(safe-area-inset-top)]">
               <div className="flex h-[64px] items-center justify-between px-4">
                 <button
                   type="button"
@@ -606,7 +606,7 @@ export default function SongDetailPage() {
                 </button>
               </div>
 
-              <div className="flex flex-col items-center">
+              <div className="flex w-full flex-col items-center">
                 <div className="relative">
                   <img src={coverUrl} alt="" className="size-16 rounded-md object-cover" />
 
@@ -623,8 +623,8 @@ export default function SongDetailPage() {
                   </button>
                 </div>
 
-                <div className="mt-3.5 text-center">
-                  <h2 className="body-17-m text-grayscale-0">
+                <div className="mt-3.5 w-full min-w-0 px-15 text-center">
+                  <h2 className="body-17-m text-grayscale-0 line-clamp-2">
                     {preparedTrack?.title ??
                       (playbackPreparationQuery.isError
                         ? '노래 정보를 불러오지 못했어요.'
