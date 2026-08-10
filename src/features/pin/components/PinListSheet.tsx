@@ -86,13 +86,11 @@ function findFocusedPlaceTrackId(focusedFeedPin?: FocusedFeedPin, pins: Pin[] = 
   if (focusedFeedPin?.placeTrackId != null) return String(focusedFeedPin.placeTrackId);
   if (!focusedFeedPin) return null;
 
+  // 장소 곡 목록에 pinId가 있으면 포커스 핀과 매칭한다. (친구 CTA에서 내 곡으로 잘못 연결하지 않음)
   const matchedByPinId = pins.find(
     (pin) => pin.pinId != null && Number(pin.pinId) === focusedFeedPin.pinId,
   );
   if (matchedByPinId) return String(matchedByPinId.placeTrackId);
-
-  const matchedByMe = pins.find((pin) => pin.pinByMe);
-  if (matchedByMe) return String(matchedByMe.placeTrackId);
 
   return null;
 }

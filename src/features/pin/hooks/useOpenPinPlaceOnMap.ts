@@ -14,7 +14,7 @@ type OpenPinPlaceOptions = {
   placeTrackId?: number | string;
   fallbackPlaceName?: string;
   isMine?: boolean;
-  /** 프로필 피드 등에서 진입 시 ‘등록한 곡 상세 보기’ CTA 표시 */
+  /** 내/친구 프로필 피드 등에서 진입 시 ‘{닉네임} 님이 등록한 곡 상세 보기’ CTA 표시 */
   showMyRegisteredTrackCta?: boolean;
   /** 친구 피드 장소 접근 토큰 발급 (팔로잉한 친구 핀 진입 시) */
   requestFeedPlaceAccess?: boolean;
@@ -149,7 +149,8 @@ export function useOpenPinPlaceOnMap() {
           return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
         })();
 
-        // 내 모든 핀 등에서 placeTrackId가 목록에 없으면, 해당 장소의 내 등록 곡으로 보완한다.
+        // 내 모든 핀 등에서 placeTrackId가 없으면, 해당 장소의 내 등록 곡으로만 보완한다.
+        // 친구 피드에서는 pinByMe로 내 곡을 잡으면 안 되므로 isMine일 때만 조회한다.
         if (showMyRegisteredTrackCta && resolvedPlaceTrackId == null && place.placeId != null) {
           const lookupCoordinate = userCoordinate ?? place.coordinates;
           try {
@@ -161,9 +162,19 @@ export function useOpenPinPlaceOnMap() {
               lookupCoordinate.lng,
               'LATEST',
             );
-            const myTrack = placeTracks.tracks.find((track) => track.pinByMe);
-            if (myTrack?.placeTrackId != null) {
-              resolvedPlaceTrackId = myTrack.placeTrackId;
+            if (isMine) {
+              const myTrack = placeTracks.tracks.find((track) => track.pinByMe);
+              if (myTrack?.placeTrackId != null) {
+                resolvedPlaceTrackId = myTrack.placeTrackId;
+              }
+            } else {
+              // 친구 핀: 앨범 이미지로 같은 장소 곡을 찾아 CTA 연결
+              const matchedTrack = placeTracks.tracks.find(
+                (track) => track.artworkUrl != null && track.artworkUrl === pinDetail.albumImageUrl,
+              );
+              if (matchedTrack?.placeTrackId != null) {
+                resolvedPlaceTrackId = matchedTrack.placeTrackId;
+              }
             }
           } catch (error) {
             console.error(error);
@@ -182,7 +193,7 @@ export function useOpenPinPlaceOnMap() {
           clipStartMs: pinDetail.clipStartMs,
         };
 
-        // 내 등록 곡 상세 CTA (내 모든 핀·내 프로필 피드 진입)
+        // 등록 곡 상세 CTA (내 모든 핀·내/친구 프로필 피드 진입)
         if (showMyRegisteredTrackCta) {
           place.focusedFeedPin = place.mapFocusPin;
         }
