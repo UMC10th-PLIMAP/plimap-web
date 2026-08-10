@@ -554,6 +554,7 @@ const MapPage: React.FC<MapPageProps> = ({
               currentLocation?.lng ??
               selectedMapPlace.selectionLocation?.longitude ??
               selectedMapPlace.coordinates.lng;
+            onClearMapPlace?.();
             navigate(`/app/pins/${pin.placeTrackId}`, {
               state: {
                 userLatitude: latitude,
@@ -571,6 +572,7 @@ const MapPage: React.FC<MapPageProps> = ({
               currentLocation?.lng ??
               selectedMapPlace.selectionLocation?.longitude ??
               selectedMapPlace.coordinates.lng;
+            onClearMapPlace?.();
             navigate(`/app/pins/${placeTrackId}`, {
               state: {
                 userLatitude: latitude,
@@ -611,6 +613,7 @@ const MapPage: React.FC<MapPageProps> = ({
           onPinClick={(pin) => {
             const latitude = currentLocation?.lat ?? selectedMapPin.lat;
             const longitude = currentLocation?.lng ?? selectedMapPin.lng;
+            onSelectMapPinChange(null);
             navigate(`/app/pins/${pin.placeTrackId}`, {
               state: { userLatitude: latitude, userLongitude: longitude },
             });
