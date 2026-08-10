@@ -155,7 +155,12 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
           <span className="text-[#9A9A9A]">Loading Google Maps...</span>
         </div>
       )}
-      <div ref={mapRef} className="h-full w-full" />
+      <div
+        ref={mapRef}
+        className="h-full w-full touch-none"
+        // Keep Chrome from claiming an in-progress map pinch for viewport zoom.
+        // Google Maps owns the gesture through gestureHandling: 'greedy'.
+      />
     </main>
   );
 });

@@ -215,9 +215,10 @@ export function useGoogleMap({
 
         onViewportChangedRef.current?.(nextViewport);
       });
-    } else if (!isFlyingRef.current && mapInstanceRef.current.getZoom() !== zoom) {
-      mapInstanceRef.current.setZoom(zoom);
     }
+    // After creation, zoom is observational state reported by this map. Writing it
+    // back here can replay an older fractional value while a mobile pinch is still
+    // advancing, which interrupts Google Maps' native gesture handling.
   }, [
     cancelCameraFlight,
     clearCenterChangeSuppression,
