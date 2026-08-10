@@ -60,8 +60,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // API 경로로 직접 이동(navigation)하는 경우 index.html로 폴백하지 않는다.
-        navigateFallbackDenylist: [/^\/api\//],
+        // API·OAuth 경로로 직접 이동(navigation)하는 경우 index.html로 폴백하지 않는다.
+        navigateFallbackDenylist: [/^\/api\//, /^\/oauth\/authorization\//],
         // runtimeCaching에 /api/ 규칙을 두지 않아, 지도/위치 등 API 응답은 캐싱하지 않는다.
         runtimeCaching: [
           {
