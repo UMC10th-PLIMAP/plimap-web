@@ -34,6 +34,7 @@ export type FollowListItem = {
   profileImageUrl: string | null;
   followedAt: string;
   isFollowing: boolean;
+  isFollowingViewer: boolean;
 };
 
 export type FollowListResponse = {

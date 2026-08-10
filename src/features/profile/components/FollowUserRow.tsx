@@ -1,4 +1,5 @@
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
+import { getFollowActionLabel } from '@/features/profile/utils/getFollowActionLabel';
 import type { FollowListItem } from '@/types/member.type';
 
 type FollowUserRowProps = {
@@ -42,7 +43,7 @@ export function FollowUserRow({ user, onClick, onActionClick, disabled }: Follow
           user.isFollowing ? 'bg-pli-black-50 text-grayscale-100' : 'bg-neon-2 text-grayscale-1200'
         }`}
       >
-        {user.isFollowing ? '팔로잉' : '맞팔로우'}
+        {getFollowActionLabel(user)}
       </button>
     </li>
   );
