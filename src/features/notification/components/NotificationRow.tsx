@@ -12,9 +12,15 @@ const NOTIFICATION_MESSAGE: Record<Notification['type'], string> = {
 type NotificationRowProps = {
   notification: Notification;
   pinAlbumImageUrl: string | null;
-  isFollowing?: boolean;
+  followRelation?: {
+    isFollowing: boolean;
+    isFollowingViewer: boolean;
+  };
+  isFollowRelationPending: boolean;
+  isFollowRelationError: boolean;
   isFollowPending: boolean;
   onFollowBack: (actorId: number) => void;
+  onRetryFollowRelation: () => void;
   onOpenPin: (pinId: number) => void;
 };
 
@@ -73,13 +79,19 @@ function PinThumbnail({ imageUrl }: { imageUrl: string | null }) {
 export function NotificationRow({
   notification,
   pinAlbumImageUrl,
-  isFollowing,
+  followRelation,
+  isFollowRelationPending,
+  isFollowRelationError,
   isFollowPending,
   onFollowBack,
+  onRetryFollowRelation,
   onOpenPin,
 }: NotificationRowProps) {
   const isFollowNotification = notification.type === 'FOLLOW';
   const canOpenPin = notification.pinId !== null && !isFollowNotification;
+  const shouldRetryFollowRelation = !followRelation && isFollowRelationError;
+  const isFollowing = followRelation?.isFollowing ?? false;
+  const isFollowButtonPending = (!followRelation && isFollowRelationPending) || isFollowPending;
   const createdAtLabel = formatCreatedAt(notification.createdAt);
   const notificationContent = (
     <>
@@ -112,21 +124,24 @@ export function NotificationRow({
       {isFollowNotification && (
         <button
           type="button"
-          disabled={isFollowing === undefined || isFollowing || isFollowPending}
-          onClick={() => onFollowBack(notification.actorId)}
+          disabled={isFollowing || isFollowButtonPending}
+          onClick={() =>
+            shouldRetryFollowRelation ? onRetryFollowRelation() : onFollowBack(notification.actorId)
+          }
           className={cn(
             'etc-13-sb flex h-8 w-[102px] shrink-0 items-center justify-center rounded-lg transition-colors',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-2',
             isFollowing
               ? 'cursor-default bg-pli-black-50 text-grayscale-100'
               : 'cursor-pointer bg-neon-2 text-grayscale-1200 hover:bg-neon',
-            (isFollowing === undefined || isFollowPending) && 'cursor-wait opacity-60',
+            isFollowButtonPending && 'cursor-wait opacity-60',
           )}
         >
-          {getFollowActionLabel({
-            isFollowing: isFollowing ?? false,
-            isFollowingViewer: true,
-          })}
+          {shouldRetryFollowRelation
+            ? '다시 시도'
+            : followRelation
+              ? getFollowActionLabel(followRelation)
+              : '맞팔로우'}
         </button>
       )}
     </li>

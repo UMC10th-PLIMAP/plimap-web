@@ -5,6 +5,8 @@ import { getPinDetail } from '@/api/pin';
 import type { Notification } from '@/features/notification/types';
 import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 
+const MEMBER_PROFILE_STALE_TIME = 60_000;
+
 export function useNotificationResources(notifications: Notification[]) {
   const likedPinIds = [
     ...new Set(
@@ -33,6 +35,7 @@ export function useNotificationResources(notifications: Notification[]) {
     queries: followActorIds.map((actorId) => ({
       queryKey: memberQueryKeys.profile(actorId),
       queryFn: () => getOtherMemberProfile(actorId),
+      staleTime: MEMBER_PROFILE_STALE_TIME,
     })),
   });
 
@@ -43,10 +46,24 @@ export function useNotificationResources(notifications: Notification[]) {
         pinDetailQueries[index]?.data?.albumImageUrl ?? null,
       ]),
     ),
-    isFollowingByActorId: new Map(
-      followActorIds.flatMap((actorId, index) => {
-        const isFollowing = actorProfileQueries[index]?.data?.isFollowing;
-        return isFollowing === undefined ? [] : [[actorId, isFollowing]];
+    followRelationByActorId: new Map(
+      followActorIds.map((actorId, index) => {
+        const query = actorProfileQueries[index];
+
+        return [
+          actorId,
+          {
+            relation: query?.data
+              ? {
+                  isFollowing: query.data.isFollowing,
+                  isFollowingViewer: query.data.isFollowingViewer,
+                }
+              : undefined,
+            isPending: !query?.data && (query?.isPending || query?.isFetching),
+            isError: query?.isError ?? false,
+            retry: () => void query?.refetch(),
+          },
+        ];
       }),
     ),
   };

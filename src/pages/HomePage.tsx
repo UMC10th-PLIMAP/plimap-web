@@ -206,7 +206,6 @@ export default function HomePage() {
             <Link
               to="/app/my/notifications"
               aria-label="알림"
-              onClick={() => navigate('/app/my/notifications')}
               className="flex size-11 items-center justify-center rounded-full bg-pli-black-75"
             >
               <BellIcon aria-hidden className="h-[22px] w-[18px]" />
@@ -271,7 +270,7 @@ export default function HomePage() {
               )}
             </div>
           ) : (
-            <div className="flex h-44 gap-3 overflow-x-auto px-4 pt-3 pb-10 scrollbar-hide">
+            <div className="flex gap-3 overflow-x-auto px-4 pt-3 pb-10 scrollbar-hide">
               {friendPins.map((pin) => (
                 <RecommendationPinCard
                   key={pin.pinId}

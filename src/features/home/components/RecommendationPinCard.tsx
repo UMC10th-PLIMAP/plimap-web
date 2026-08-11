@@ -48,13 +48,13 @@ export function RecommendationPinCard({
   return (
     <article
       className={cn(
-        'relative size-[124px] shrink-0 overflow-hidden rounded-xl border border-pli-black-50',
+        'relative size-[124px] shrink-0 rounded-xl border border-pli-black-50',
         className,
       )}
     >
       <button
         type="button"
-        className="absolute inset-0 cursor-pointer rounded-xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon"
+        className="absolute inset-0 cursor-pointer overflow-hidden rounded-xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon"
         aria-label={
           ariaLabel ??
           `${place.name}${song ? `, ${song.title} - ${song.artist}` : ''}, ${creator.name}님의 PIN`
