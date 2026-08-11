@@ -5,10 +5,10 @@ import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BellIcon from '@/assets/home/bell.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
-import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { HomeHotPlaceCarouselSkeleton, HomeSkeleton } from '@/components/skeletons/HomeSkeleton';
 import { useToast } from '@/hooks/useToast';
 import { Chip } from '@/components/ui/chip';
+import { HomeBrandLogo } from '@/features/home/components/HomeBrandLogo';
 import { HomeCarouselState } from '@/features/home/components/HomeCarouselState';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
@@ -189,7 +189,7 @@ export default function HomePage() {
       <div className="relative flex flex-col">
         <section className="pt-[calc(env(safe-area-inset-top)+2px)]">
           <header className="flex h-14 items-center justify-between px-4">
-            <PlimapLogo aria-label="PLIMAP" className="h-[30px] w-auto" />
+            <HomeBrandLogo />
             <Link
               to="/app/my/notifications"
               aria-label="알림"
