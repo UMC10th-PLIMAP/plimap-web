@@ -24,6 +24,7 @@ export type PinPlaceSearchProps = {
   isReturningToMap?: boolean;
   onCloseAnimationEnd?: () => void;
   onPlaceSelect: (place: PinSearchPlace) => void;
+  maxSelectableDistanceMeters?: number;
   validatePlace?: (place: PinSearchPlace) => string | null;
   onValidationError?: (message: string) => void;
   onCurrentLocationChanged?: (coordinate: MapCoordinate) => void;
@@ -32,6 +33,7 @@ export type PinPlaceSearchProps = {
   autoFocus?: boolean;
   placeholder?: string;
   headerContent?: ReactNode;
+  noResultsDescription?: string;
 };
 
 export function PinPlaceSearch({
@@ -40,6 +42,7 @@ export function PinPlaceSearch({
   isReturningToMap = false,
   onCloseAnimationEnd,
   onPlaceSelect,
+  maxSelectableDistanceMeters,
   validatePlace,
   onValidationError,
   onCurrentLocationChanged,
@@ -48,6 +51,7 @@ export function PinPlaceSearch({
   autoFocus = true,
   placeholder = '장소를 검색하세요',
   headerContent,
+  noResultsDescription,
 }: PinPlaceSearchProps) {
   const searchInputRef = useAutoFocusAfterViewTransition<HTMLInputElement>(autoFocus);
   const selectionControllerRef = useRef<AbortController | null>(null);
@@ -114,6 +118,8 @@ export function PinPlaceSearch({
 
   const visiblePlaces = isSelectionLocked ? [] : normalizedQuery ? searchResults : recentPlaces;
   const isShowingRecentPlaces = showRecentPlaces && !normalizedQuery && !isSelectionLocked;
+  const isPlaceOutOfRange = (place: PinSearchPlace) =>
+    maxSelectableDistanceMeters !== undefined && place.distance > maxSelectableDistanceMeters;
 
   const resetSearch = () => {
     selectionControllerRef.current?.abort();
@@ -132,7 +138,7 @@ export function PinPlaceSearch({
   };
 
   const handlePlaceSelect = (place: PinSearchPlace) => {
-    if (isSelectionLocked) return;
+    if (isSelectionLocked || isPlaceOutOfRange(place)) return;
 
     const reportConstraintError = (message: string) => {
       if (onValidationError) {
@@ -262,6 +268,7 @@ export function PinPlaceSearch({
                 <PlaceResultRow
                   place={place}
                   variant={isShowingRecentPlaces ? 'recent-search' : 'search-result'}
+                  isOutOfRange={isPlaceOutOfRange(place)}
                   onClick={() => handlePlaceSelect(place)}
                   onDelete={
                     isShowingRecentPlaces && place.searchHistoryId !== undefined
@@ -290,9 +297,10 @@ export function PinPlaceSearch({
         ) : null}
 
         {hasNoResults ? (
-          <p className="m-auto whitespace-nowrap body-15-r text-grayscale-600">
-            검색 결과가 없어요.
-          </p>
+          <div className="m-auto px-6 text-center body-15-r text-grayscale-600">
+            <p>검색 결과가 없어요.</p>
+            {noResultsDescription ? <p>{noResultsDescription}</p> : null}
+          </div>
         ) : null}
 
         {isWaitingForLocation ? (
