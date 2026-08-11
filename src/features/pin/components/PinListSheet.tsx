@@ -13,6 +13,7 @@ import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { usePlaceTrack } from '@/features/pin/queries/usePlaceTrack';
 import type { FocusedFeedPin, Pin, PinSort, PlaceInfo } from '@/features/pin/types';
+import { useMyProfile } from '@/hooks/useMyProfile';
 import { cn } from '@/lib/utils';
 import type { PlaceSearchHistoryRequest } from '@/types/place.type';
 
@@ -45,6 +46,8 @@ type PinListSheetProps = {
    */
   hasReliableUserLocation?: boolean;
   onPinClick?: (pin: Pin) => void;
+  /** MY 버튼(본인 등록 곡 상세 보기) 클릭 시 호출. 생략하면 onPinClick으로 대체된다. */
+  onMyPinClick?: (pin: Pin) => void;
   onFocusedTrackClick?: (placeTrackId: string) => void;
   /**
    * 내/친구 피드 → 지도 진입 시에만 true로 넘긴다.
@@ -117,10 +120,12 @@ type PinListContentProps = {
   isBookmarkPending: boolean;
   onBookmarkToggle: () => void;
   onPinClick?: (pin: Pin) => void;
+  onMyPinClick?: (pin: Pin) => void;
   onBlockedPinClick?: () => void;
   allowTrackDetailAccess?: boolean;
   focusedFeedPin?: FocusedFeedPin;
   onFocusedTrackClick?: () => void;
+  myPin?: Pin;
 };
 
 function PinListContent({
@@ -134,12 +139,15 @@ function PinListContent({
   isBookmarkPending,
   onBookmarkToggle,
   onPinClick,
+  onMyPinClick,
   onBlockedPinClick,
   allowTrackDetailAccess = false,
   focusedFeedPin,
   onFocusedTrackClick,
+  myPin,
 }: PinListContentProps) {
   const { isFullPage, onClose } = useBottomSheet();
+  const { data: myProfile } = useMyProfile();
   const distance = formatDistance(place.distance);
   const hasPins = pins.length > 0;
   const bookmarkLabel =
@@ -272,6 +280,29 @@ function PinListContent({
             </p>
             <NextIcon className="size-5 shrink-0 text-grayscale-400" aria-hidden />
           </button>
+        ) : myPin ? (
+          <button
+            type="button"
+            onClick={() => (onMyPinClick ?? onPinClick)?.(myPin)}
+            className="mt-4 flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-pli-black-50 bg-pli-black-85 px-3 py-3 text-left"
+          >
+            {myProfile?.profileImageUrl ? (
+              <img
+                src={myProfile.profileImageUrl}
+                alt=""
+                className="size-7 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex size-7 items-center justify-center rounded-full bg-pli-black-75 ">
+                <UserPlaceholderIcon className="size-4 text-pli-black-50" aria-hidden />
+              </span>
+            )}
+            <p className="min-w-0 flex-1 truncate body-15-r text-grayscale-100">
+              <span className="text-neon-2">{myProfile?.nickname ?? '나'} </span>님이 등록한 곡 상세
+              보기
+            </p>
+            <NextIcon className="size-5 shrink-0 text-grayscale-400" aria-hidden />
+          </button>
         ) : null}
 
         {hasPins ? (
@@ -322,6 +353,7 @@ export function PinListSheet({
   detailLocationError = null,
   hasReliableUserLocation: hasReliableUserLocationProp,
   onPinClick,
+  onMyPinClick,
   onFocusedTrackClick,
   allowTrackDetailAccess = false,
   resetKey,
@@ -431,6 +463,7 @@ export function PinListSheet({
       ...track,
       liked: track.isLiked,
     })) ?? [];
+  const myPin = pins.find((pin) => pin.pinByMe);
 
   const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin, pins);
   const handleFocusedTrackClick = () => {
@@ -502,12 +535,14 @@ export function PinListSheet({
             isBookmarkPending={bookmarkMutation.isPending}
             onBookmarkToggle={handleBookmarkToggle}
             onPinClick={onPinClick}
+            onMyPinClick={onMyPinClick}
             onBlockedPinClick={() => {
               toast.error(TRACK_DETAIL_BLOCKED_TOAST_MESSAGE);
             }}
             allowTrackDetailAccess={canOpenTrackDetail}
             focusedFeedPin={focusedFeedPin}
             onFocusedTrackClick={onFocusedTrackClick ? handleFocusedTrackClick : undefined}
+            myPin={myPin}
           />
         )}
       </BottomSheet>
