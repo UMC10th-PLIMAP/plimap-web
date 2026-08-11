@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { TopBar } from '@/components/ui/TopBar';
 import { SearchInput } from '@/components/ui/SearchInput';
+import { SongSelectSkeleton } from '@/components/skeletons/SongSelectSkeleton';
 import { useToast } from '@/hooks/useToast';
 import { SongCard } from '@/features/pin/components/SongCard';
 import { fetchPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
@@ -25,7 +26,13 @@ export default function SongListPage() {
   const [preparingTrackId, setPreparingTrackId] = useState<number | null>(null);
 
   const trackSearchQuery = useSearchTracks({ keyword: query, limit: 200 });
-  const tracks = trackSearchQuery.data;
+  const hasSearchQuery = query.trim().length > 0;
+  const isSearchPending =
+    hasSearchQuery && (trackSearchQuery.isDebouncing || trackSearchQuery.isPending);
+  const tracks =
+    hasSearchQuery && !trackSearchQuery.isDebouncing
+      ? (trackSearchQuery.data?.tracks ?? [])
+      : [];
 
   useEffect(() => {
     if (!trackSearchQuery.isError) return;
@@ -68,7 +75,9 @@ export default function SongListPage() {
           />
         </div>
         <div className="px-4 pt-5.5">
-          {trackSearchQuery.isError ? (
+          {isSearchPending ? (
+            <SongSelectSkeleton />
+          ) : trackSearchQuery.isError ? (
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <p className="body-15-r text-grayscale-500">노래를 검색하지 못했어요.</p>
               <button
@@ -81,7 +90,7 @@ export default function SongListPage() {
             </div>
           ) : (
             <ul>
-              {tracks?.tracks.map((track) => (
+              {tracks.map((track) => (
                 <li key={track.itunesTrackId}>
                   <SongCard
                     song={track}
