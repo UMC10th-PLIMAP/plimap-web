@@ -199,7 +199,11 @@ const CarouselContent = forwardRef<HTMLDivElement, ComponentProps<'div'>>(
     const { carouselRef, orientation } = useCarousel();
 
     return (
-      <div ref={carouselRef} className="overflow-hidden" data-slot="carousel-content">
+      <div
+        ref={carouselRef}
+        className="h-full min-h-0 overflow-hidden"
+        data-slot="carousel-content"
+      >
         <div
           ref={ref}
           className={cn('flex', orientation === 'horizontal' ? '' : 'flex-col', className)}
@@ -305,4 +309,4 @@ const CarouselNext = forwardRef<HTMLButtonElement, ComponentProps<'button'>>(
 
 CarouselNext.displayName = 'CarouselNext';
 
-export { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious };
+export { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, useCarousel };
