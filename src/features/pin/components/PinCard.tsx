@@ -53,12 +53,12 @@ export function PinCard({ pin, onClick, showLike = true }: PinCardProps) {
     >
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex min-w-0 items-center gap-4">
-          <div className="size-13 overflow-hidden rounded-lg bg-grayscale-0">
+          <div className="flex-shrink-0 h-[52px] w-[52px] overflow-hidden rounded-lg bg-grayscale-0">
             {pin.artworkUrl ? (
               <img
                 src={pin.artworkUrl}
                 alt={pin.trackName ?? undefined}
-                className="size-full object-cover"
+                className="h-full w-full object-cover"
               />
             ) : null}
           </div>
