@@ -45,6 +45,7 @@ export function PlaceResultRow({
   const showDeleteButton = isRecentSearch && onDelete;
   const formattedDistance = formatDistance(distance);
   const isSelectionDisabled = disabled || isOutOfRange;
+  const displayCategory = category.split('>')[0]?.trim() || category;
 
   return (
     <div
@@ -77,7 +78,7 @@ export function PlaceResultRow({
         <span className="flex min-w-0 flex-1 flex-col items-start gap-[6px] whitespace-nowrap pb-3 pt-4">
           <span className="flex w-full min-w-0 items-center gap-[6px]">
             <span className="min-w-0 truncate body-17-r text-grayscale-100">{placeName}</span>
-            <span className="shrink-0 etc-13-r text-grayscale-400">{category}</span>
+            <span className="shrink-0 etc-13-r text-grayscale-400">{displayCategory}</span>
           </span>
 
           <span className="w-full truncate body-15-r text-grayscale-500">{address}</span>
