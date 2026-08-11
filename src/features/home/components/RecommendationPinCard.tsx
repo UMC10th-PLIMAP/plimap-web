@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 
 import NextIcon from '@/assets/icons/next.svg?react';
+import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { cn } from '@/lib/utils';
 
 export type RecommendationPin = {
@@ -14,13 +15,17 @@ export type RecommendationPin = {
   };
   creator: {
     name: string;
-    avatarUrl: string;
+    avatarUrl: string | null;
   };
-  imageUrl: string;
+  imageUrl: string | null;
+};
+
+type RecommendationPinCardData = Omit<RecommendationPin, 'song'> & {
+  song?: RecommendationPin['song'];
 };
 
 type RecommendationPinCardProps = Omit<ComponentProps<'button'>, 'children' | 'type'> & {
-  pin: RecommendationPin;
+  pin: RecommendationPinCardData;
 };
 
 export function RecommendationPinCard({
@@ -39,18 +44,32 @@ export function RecommendationPinCard({
         className,
       )}
       aria-label={
-        ariaLabel ?? `${place.name}, ${song.title} - ${song.artist}, ${creator.name}님의 PIN`
+        ariaLabel ??
+        `${place.name}${song ? `, ${song.title} - ${song.artist}` : ''}, ${creator.name}님의 PIN`
       }
       {...props}
     >
-      <img src={imageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+      {imageUrl ? (
+        <img src={imageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+      ) : (
+        <span aria-hidden className="absolute inset-0 bg-pli-black-75" />
+      )}
       <span aria-hidden className="absolute inset-0 bg-black/70 backdrop-blur-[4px]" />
 
-      <img
-        src={creator.avatarUrl}
-        alt={`${creator.name} 프로필`}
-        className="absolute left-3.5 top-[15px] size-[38px] rounded-full object-cover"
-      />
+      <span className="absolute left-3.5 top-[15px] flex size-[38px] items-center justify-center overflow-hidden rounded-full bg-pli-black-75">
+        {creator.avatarUrl ? (
+          <img
+            src={creator.avatarUrl}
+            alt={`${creator.name} 프로필`}
+            className="size-full object-cover"
+          />
+        ) : (
+          <UserPlaceholderIcon
+            aria-label={`${creator.name} 프로필`}
+            className="size-5 text-pli-black-50"
+          />
+        )}
+      </span>
       <span className="absolute left-3.5 right-3.5 top-[68px] truncate etc-13-r text-grayscale-300">
         {creator.name}
       </span>

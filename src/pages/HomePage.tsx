@@ -8,31 +8,16 @@ import SearchIcon from '@/assets/icons/search.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { HomeHotPlaceCarouselSkeleton, HomeSkeleton } from '@/components/skeletons/HomeSkeleton';
 import { Chip } from '@/components/ui/chip';
-import { MOCK_FRIEND_PINS, MOCK_HOME_USER } from '@/features/home/constants/mockHome';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
+import { useFriendPins } from '@/features/home/hooks/useFriendPins';
+import { useHomeContext } from '@/features/home/hooks/useHomeContext';
 import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
-import { useMyProfile } from '@/hooks/useMyProfile';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
 type HotPlaceFilter = 'nearby' | 'popular';
-
-function HomeErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <main className="flex min-h-full shrink-0 flex-col items-center justify-center gap-4 bg-pli-black-100 px-6 text-center">
-      <p className="body-15-r text-grayscale-300">홈 화면을 불러오지 못했어요.</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="rounded-full bg-neon px-6 py-3 body-15-sb text-grayscale-1250"
-      >
-        다시 시도
-      </button>
-    </main>
-  );
-}
 
 function formatDistanceMeters(distanceMeters: number) {
   const normalizedDistance = Math.max(0, distanceMeters);
@@ -119,8 +104,13 @@ export default function HomePage() {
     nearby: 0,
     popular: 0,
   });
-  const myProfileQuery = useMyProfile();
   const currentPositionQuery = useCurrentPosition();
+  const homeContextQuery = useHomeContext({
+    latitude: currentPositionQuery.data?.latitude ?? null,
+    longitude: currentPositionQuery.data?.longitude ?? null,
+  });
+  const friendPinsQuery = useFriendPins();
+  const friendPins = friendPinsQuery.data?.data ?? [];
   const popularPlacesQuery = usePopularPlaces({
     scope: hotPlaceFilter === 'nearby' ? 'NEARBY' : 'GLOBAL',
     latitude: currentPositionQuery.data?.latitude ?? null,
@@ -134,16 +124,31 @@ export default function HomePage() {
   const toggleBookmarkMutation = useTogglePlaceBookmark();
   const savedPlaces = savedPlacesQuery.data?.items ?? [];
   const isHomePending =
-    myProfileQuery.isPending ||
     currentPositionQuery.isPending ||
+    friendPinsQuery.isPending ||
     (!currentPositionQuery.isError && savedPlacesQuery.isPending);
+
+  const currentLocationLabel = currentPositionQuery.isError
+    ? '위치 정보를 확인할 수 없어요'
+    : homeContextQuery.isPending
+      ? '주소를 확인하고 있어요'
+      : (homeContextQuery.data?.currentRegion.displayName ?? '현재 위치');
+
+  const handleCurrentLocationClick = () => {
+    if (!currentPositionQuery.data) return;
+
+    navigate('/app', {
+      state: {
+        mapFocusCoordinate: {
+          lat: currentPositionQuery.data.latitude,
+          lng: currentPositionQuery.data.longitude,
+        },
+      },
+    });
+  };
 
   if (isHomePending) {
     return <HomeSkeleton />;
-  }
-
-  if (!myProfileQuery.data) {
-    return <HomeErrorState onRetry={() => void myProfileQuery.refetch()} />;
   }
 
   return (
@@ -168,9 +173,9 @@ export default function HomePage() {
 
           <div className="flex h-[94px] flex-col gap-1 px-4 py-4">
             <h1 className="head-24-sb text-grayscale-100">
-              {myProfileQuery.data.nickname ? (
+              {homeContextQuery.data?.nickname ? (
                 <>
-                  반가워요, <span className="text-neon-2">{myProfileQuery.data.nickname}</span> 님
+                  반가워요, <span className="text-neon-2">{homeContextQuery.data.nickname}</span> 님
                 </>
               ) : (
                 '반가워요!'
@@ -180,19 +185,49 @@ export default function HomePage() {
               <span className="shrink-0 text-grayscale-500">현재 위치</span>
               <button
                 type="button"
+                disabled={!currentPositionQuery.data}
+                onClick={handleCurrentLocationClick}
                 className="flex min-w-0 items-center text-grayscale-30"
-                aria-label={`현재 위치 ${MOCK_HOME_USER.currentLocation}에서 검색`}
+                aria-label={`${currentLocationLabel} 지도에서 보기`}
               >
-                <span className="max-w-[190px] truncate">{MOCK_HOME_USER.currentLocation}</span>
+                <span className="max-w-[190px] truncate">{currentLocationLabel}</span>
                 <NextIcon aria-hidden className="size-4 shrink-0" />
               </button>
             </div>
           </div>
 
           <div className="flex h-44 gap-3 overflow-x-auto px-4 pt-3 pb-10 scrollbar-hide">
-            {MOCK_FRIEND_PINS.map((pin) => (
-              <RecommendationPinCard key={pin.id} pin={pin} />
-            ))}
+            {friendPinsQuery.isError ? (
+              <div className="flex w-full items-center justify-center gap-3 text-center">
+                <p className="body-15-r text-grayscale-500">친구의 PIN을 불러오지 못했어요.</p>
+                <button
+                  type="button"
+                  onClick={() => void friendPinsQuery.refetch()}
+                  className="rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100"
+                >
+                  다시 시도
+                </button>
+              </div>
+            ) : friendPins.length === 0 ? (
+              <p className="flex w-full items-center justify-center body-15-r text-grayscale-500">
+                팔로우한 친구의 PIN이 아직 없어요.
+              </p>
+            ) : (
+              friendPins.map((pin) => (
+                <RecommendationPinCard
+                  key={pin.pinId}
+                  pin={{
+                    id: String(pin.pinId),
+                    place: { name: pin.placeName },
+                    creator: {
+                      name: pin.writerNickname,
+                      avatarUrl: pin.writerProfileImage,
+                    },
+                    imageUrl: pin.albumImageUrl,
+                  }}
+                />
+              ))
+            )}
           </div>
         </section>
 
