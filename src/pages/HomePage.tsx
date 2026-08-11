@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { getPinDetail, type FriendPinItem } from '@/api/pin';
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BellIcon from '@/assets/home/bell.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
@@ -175,6 +176,21 @@ export default function HomePage() {
     void savedPlacesQuery.refetch();
   };
 
+  const handleFriendProfileClick = async (pin: FriendPinItem) => {
+    let memberId = pin.memberId;
+
+    if (!Number.isInteger(memberId) || (memberId ?? 0) <= 0) {
+      try {
+        memberId = (await getPinDetail(String(pin.pinId))).memberId;
+      } catch {
+        return;
+      }
+    }
+
+    if (!Number.isInteger(memberId) || (memberId ?? 0) <= 0) return;
+    navigate(`/app/users/${memberId}`);
+  };
+
   if (isHomePending) {
     return <HomeSkeleton />;
   }
@@ -263,7 +279,7 @@ export default function HomePage() {
                 <RecommendationPinCard
                   key={pin.pinId}
                   aria-label={`${pin.writerNickname} 프로필 보기`}
-                  onClick={() => navigate(`/app/users/${pin.memberId}`)}
+                  onClick={() => void handleFriendProfileClick(pin)}
                   pin={{
                     id: String(pin.pinId),
                     place: { name: pin.placeName },

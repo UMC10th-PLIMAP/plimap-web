@@ -51,7 +51,7 @@ export type CreatePinResponse = {
 
 export type FriendPinItem = {
   pinId: number;
-  memberId: number;
+  memberId?: number;
   placeName: string;
   latitude: number;
   longitude: number;
