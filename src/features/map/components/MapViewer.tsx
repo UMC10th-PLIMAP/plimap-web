@@ -38,6 +38,8 @@ type MapViewerProps = {
   onMapDragStart?: () => void;
   /** 장소가 1개뿐인 클러스터를 눌러 줌 21로 이동을 마쳤을 때 호출된다. */
   onSingleClusterArrive?: (position: MapCoordinate) => void;
+  /** 북마크 강조 모드 on/off. 켜져 있으면 hasBookmarkedPlace인 핀/클러스터 색이 바뀐다. */
+  isBookmarkHighlightOn?: boolean;
 };
 
 export type MapViewerHandle = {
@@ -77,6 +79,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onMapClick,
     onMapDragStart,
     onSingleClusterArrive,
+    isBookmarkHighlightOn = false,
   },
   ref,
 ) {
@@ -126,6 +129,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     flyTo,
     onSelectMapPin,
     onPlayPin,
+    isBookmarkHighlightOn,
   });
   useClusterOverlays({
     mapInstanceRef,
@@ -135,6 +139,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     flyTo,
     fitToBounds,
     onSingleClusterArrive,
+    isBookmarkHighlightOn,
   });
   useCoordinateProjection({
     mapInstanceRef,

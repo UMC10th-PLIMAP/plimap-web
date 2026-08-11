@@ -23,6 +23,8 @@ type UseMapPinOverlaysParams = {
   flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
   onSelectMapPin?: (pinId: string) => void;
   onPlayPin?: (pinId: string) => void;
+  /** 북마크 강조 모드 on/off. 켜져 있으면 hasBookmarkedPlace인 핀 색이 바뀐다. */
+  isBookmarkHighlightOn?: boolean;
 };
 
 /** 지도 위 핀(OverlayView)을 렌더링하고, 선택 상태에 따라 강조한다. */
@@ -36,6 +38,7 @@ export function useMapPinOverlays({
   flyTo,
   onSelectMapPin,
   onPlayPin,
+  isBookmarkHighlightOn = false,
 }: UseMapPinOverlaysParams) {
   const mapPinOverlaysRef = useRef<{ id: string; entry: MapPinOverlayEntry }[]>([]);
   const onSelectMapPinRef = useRef(onSelectMapPin);
@@ -43,6 +46,7 @@ export function useMapPinOverlays({
   const selectedMapPinIdRef = useRef(selectedMapPinId);
   const playingMapPinIdRef = useRef(playingMapPinId);
   const flyToRef = useRef(flyTo);
+  const isBookmarkHighlightOnRef = useRef(isBookmarkHighlightOn);
   // 마커 재생성 이펙트가 zoom에 매 프레임 반응하면 깜빡이므로 최신 값은 ref로 읽는다.
   const isAtPinFocusZoomRef = useRef(Math.abs(zoom - PIN_FOCUS_ZOOM) <= ZOOM_EQUALITY_EPSILON);
   // 선택 상태 갱신 이펙트는 줌 21 문턱을 넘었는지(불리언)만 의존성으로 쓴다.
@@ -67,6 +71,10 @@ export function useMapPinOverlays({
   useEffect(() => {
     flyToRef.current = flyTo;
   }, [flyTo]);
+
+  useEffect(() => {
+    isBookmarkHighlightOnRef.current = isBookmarkHighlightOn;
+  }, [isBookmarkHighlightOn]);
 
   useEffect(() => {
     isAtPinFocusZoomRef.current = isAtPinFocusZoom;
@@ -113,6 +121,7 @@ export function useMapPinOverlays({
           () => onPlayPinRef.current?.(pin.id),
           pin.id === playingId,
           pin.id === selectedId && isAtPinFocusZoomRef.current,
+          isBookmarkHighlightOnRef.current && pin.hasBookmarkedPlace,
         ),
       });
       entry.overlay.setMap(map);
@@ -146,9 +155,10 @@ export function useMapPinOverlays({
           () => onPlayPinRef.current?.(pin.id),
           id === playingMapPinId,
           isSelected && isAtPinFocusZoom,
+          isBookmarkHighlightOn && pin.hasBookmarkedPlace,
         ),
       );
       entry.overlay.setZIndex(isSelected ? 200 : 100);
     });
-  }, [selectedMapPinId, playingMapPinId, mapPins, isAtPinFocusZoom]);
+  }, [selectedMapPinId, playingMapPinId, mapPins, isAtPinFocusZoom, isBookmarkHighlightOn]);
 }
