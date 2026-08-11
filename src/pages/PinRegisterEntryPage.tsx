@@ -84,6 +84,7 @@ export default function PinRegisterEntryPage() {
           autoFocus={false}
           placeholder="내가 등록할 장소는?"
           onBack={handleBack}
+          maxSelectableDistanceMeters={MAX_REGISTRATION_DISTANCE_METERS}
           validatePlace={(place) =>
             place.withinAccessRange === false || place.distance > MAX_REGISTRATION_DISTANCE_METERS
               ? '현재 위치에서 500m 이내의 장소만 선택할 수 있어요.'
@@ -93,6 +94,7 @@ export default function PinRegisterEntryPage() {
           onCurrentLocationChanged={currentLocationOverride ? undefined : setCurrentLocation}
           currentLocationOverride={currentLocationOverride}
           onPlaceSelect={handlePlaceSelect}
+          noResultsDescription="‘지도에서 선택’을 통해 직접 등록해보세요."
           headerContent={
             <nav
               aria-label="핀 등록 장소 선택 방식"
