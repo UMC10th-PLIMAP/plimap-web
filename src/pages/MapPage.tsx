@@ -5,13 +5,7 @@ import { SearchLauncher } from '@/components/ui/SearchInput';
 import { FullScreenError } from '@/components/ui/FullScreenError';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
-import type {
-  MapCoordinate,
-  MapPin,
-  MapPlace,
-  MapViewport,
-  PinCluster,
-} from '@/features/map/types';
+import type { MapCoordinate, MapPin, MapViewport, PinCluster } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceMeters';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
@@ -179,7 +173,11 @@ const MapPage: React.FC<MapPageProps> = ({
   // 피드/찜한 노래 진입 시: 말풍선용 핀을 주입·덮어쓰고 선택된 상태로 표시한다.
   // CTA(focusedFeedPin)와 말풍선(mapFocusPin)을 분리해, 찜한 노래에서는 내 등록 곡이 없어도 인기 PIN 말풍선은 유지한다.
   const overlayFocusPin = selectedMapPlace?.mapFocusPin ?? selectedMapPlace?.focusedFeedPin;
-  const focusedMapPinId = selectedMapPlace && overlayFocusPin ? selectedMapPlace.id : null;
+  const isNewUnregisteredPlace = Boolean(
+    selectedMapPlace && !overlayFocusPin && !selectedMapPlace.creatorName,
+  );
+  const focusedMapPinId =
+    selectedMapPlace && (overlayFocusPin || isNewUnregisteredPlace) ? selectedMapPlace.id : null;
   const displayMapPins = useMemo(() => {
     let pins = mapPins;
 
@@ -187,38 +185,41 @@ const MapPage: React.FC<MapPageProps> = ({
       pins = [...pins, selectedMapPinSnapshot];
     }
 
-    if (!selectedMapPlace || !overlayFocusPin) return pins;
+    if (!selectedMapPlace || (!overlayFocusPin && !isNewUnregisteredPlace)) return pins;
 
-    const focusedPin: MapPin = {
-      id: selectedMapPlace.id,
-      placeId: selectedMapPlace.placeId,
-      lat: selectedMapPlace.coordinates.lat,
-      lng: selectedMapPlace.coordinates.lng,
-      coverUrl: overlayFocusPin.albumImageUrl || undefined,
-      nickname: overlayFocusPin.nickname,
-      avatarUrl: overlayFocusPin.avatarUrl,
-      introduction: overlayFocusPin.introduction,
-      youtubeVideoId: overlayFocusPin.youtubeVideoId,
-      clipStartMs: overlayFocusPin.clipStartMs,
-      hasBookmarkedPlace: selectedMapPlace.bookmarkedByMe ?? false,
-    };
+    const focusedPin: MapPin = overlayFocusPin
+      ? {
+          id: selectedMapPlace.id,
+          placeId: selectedMapPlace.placeId,
+          lat: selectedMapPlace.coordinates.lat,
+          lng: selectedMapPlace.coordinates.lng,
+          coverUrl: overlayFocusPin.albumImageUrl || undefined,
+          nickname: overlayFocusPin.nickname,
+          avatarUrl: overlayFocusPin.avatarUrl,
+          introduction: overlayFocusPin.introduction,
+          youtubeVideoId: overlayFocusPin.youtubeVideoId,
+          clipStartMs: overlayFocusPin.clipStartMs,
+          hasBookmarkedPlace: selectedMapPlace.bookmarkedByMe ?? false,
+        }
+      : {
+          id: selectedMapPlace.id,
+          placeId: selectedMapPlace.placeId,
+          lat: selectedMapPlace.coordinates.lat,
+          lng: selectedMapPlace.coordinates.lng,
+          nickname: '',
+          introduction: '',
+          hasBookmarkedPlace: selectedMapPlace.bookmarkedByMe ?? false,
+        };
 
     return [...pins.filter((pin) => pin.id !== focusedPin.id), focusedPin];
-  }, [mapPins, overlayFocusPin, selectedMapPlace, selectedMapPinSnapshot]);
+  }, [mapPins, overlayFocusPin, isNewUnregisteredPlace, selectedMapPlace, selectedMapPinSnapshot]);
   // 최대 줌에서 화면 중심 근처 핀을 자동으로 포커스 (탭으로 연 시트가 있으면 그게 우선)
   const autoFocusedPinId = useAutoFocusNearestPin({ mapPins: displayMapPins, viewport });
   const displayedMapPinId = selectedMapPinId ?? autoFocusedPinId;
   const selectedMapPin = selectedMapPinId
     ? (displayMapPins.find((pin) => pin.id === selectedMapPinId) ?? null)
     : null;
-  // develop 방식: selectedMapPlace prop으로 장소 결과 관리
-  // 피드 진입(말풍선)일 때는 장소 검색 InfoWindow(흰 카드)를 띄우지 않는다.
   const isFeedMapEntry = Boolean(selectedMapPlace?.mapFocusPin ?? selectedMapPlace?.focusedFeedPin);
-  const placeResults = useMemo<MapPlace[]>(
-    () => (selectedMapPlace && !isFeedMapEntry ? [selectedMapPlace] : []),
-    [isFeedMapEntry, selectedMapPlace],
-  );
-  const selectedPlaceId = selectedMapPlace && !isFeedMapEntry ? selectedMapPlace.id : null;
   const isPlaceSheetOpen = selectedMapPlace !== null && isUiActive;
   const viewerSelectedMapPinId = focusedMapPinId ?? (selectedMapPlace ? null : displayedMapPinId);
   // 검색 장소든 핀 클릭이든, 피드 진입이 아닐 때만 등록하기 버튼을 보여준다.
@@ -663,8 +664,8 @@ const MapPage: React.FC<MapPageProps> = ({
             ? { lat: initialPositionQuery.data.latitude, lng: initialPositionQuery.data.longitude }
             : undefined)
         }
-        placeResults={placeResults}
-        selectedPlaceId={selectedPlaceId}
+        placeResults={[]}
+        selectedPlaceId={null}
         mapPins={displayMapPins}
         mapClusters={mapClusters}
         selectedMapPinId={viewerSelectedMapPinId}
