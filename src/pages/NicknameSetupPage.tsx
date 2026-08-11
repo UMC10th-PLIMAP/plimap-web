@@ -115,7 +115,6 @@ export default function NicknameSetupPage() {
               autoComplete="off"
               value={nickname}
               onChange={handleChange}
-              maxLength={NICKNAME_MAX_LENGTH}
               placeholder="닉네임 입력"
               aria-invalid={message.tone === 'error'}
               aria-describedby="nickname-message"

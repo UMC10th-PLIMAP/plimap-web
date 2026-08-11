@@ -30,9 +30,7 @@ export default function SongListPage() {
   const isSearchPending =
     hasSearchQuery && (trackSearchQuery.isDebouncing || trackSearchQuery.isPending);
   const tracks =
-    hasSearchQuery && !trackSearchQuery.isDebouncing
-      ? (trackSearchQuery.data?.tracks ?? [])
-      : [];
+    hasSearchQuery && !trackSearchQuery.isDebouncing ? (trackSearchQuery.data?.tracks ?? []) : [];
 
   useEffect(() => {
     if (!trackSearchQuery.isError) return;
