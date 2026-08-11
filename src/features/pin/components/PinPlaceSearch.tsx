@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'r
 import { isApiRequestCanceled } from '@/api/client';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { PlaceSearchSkeleton } from '@/components/skeletons/PlaceSearchSkeleton';
+import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceMeters';
 import { PlaceResultRow } from '@/features/pin/components/PlaceResultRow';
 import {
   useDeleteRecentSearchPlace,
@@ -118,8 +119,16 @@ export function PinPlaceSearch({
 
   const visiblePlaces = isSelectionLocked ? [] : normalizedQuery ? searchResults : recentPlaces;
   const isShowingRecentPlaces = showRecentPlaces && !normalizedQuery && !isSelectionLocked;
-  const isPlaceOutOfRange = (place: PinSearchPlace) =>
-    maxSelectableDistanceMeters !== undefined && place.distance > maxSelectableDistanceMeters;
+  const isPlaceOutOfRange = (place: PinSearchPlace) => {
+    if (maxSelectableDistanceMeters === undefined || !currentLocation) return false;
+
+    return (
+      calculateDistanceMeters(
+        { lat: currentLocation.latitude, lng: currentLocation.longitude },
+        place.coordinates,
+      ) > maxSelectableDistanceMeters
+    );
+  };
 
   const resetSearch = () => {
     selectionControllerRef.current?.abort();
