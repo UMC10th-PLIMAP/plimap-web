@@ -14,6 +14,7 @@ export type MapPinMarkerProps = {
   avatarUrl?: string;
   introduction?: string;
   onPlay?: () => void;
+  onProfileClick?: () => void;
   /** 말풍선(MapPinMessageBox) 노출 여부. isSelected와 별개로, 줌 21 범위에서만 켠다. */
   showMessageBubble?: boolean;
   /** 북마크 강조 모드가 켜져 있고 이 핀이 북마크된 장소일 때 핀 색을 바꾼다. */
@@ -28,6 +29,7 @@ export function MapPinMarker({
   avatarUrl,
   introduction,
   onPlay,
+  onProfileClick,
   showMessageBubble = false,
   isBookmarked = false,
 }: MapPinMarkerProps) {
@@ -41,6 +43,7 @@ export function MapPinMarker({
             introduction={introduction}
             isPlaying={isPlaying}
             onPlay={onPlay}
+            onProfileClick={onProfileClick}
           />
         </div>
       ) : null}

@@ -79,6 +79,7 @@ type MapPinPreviewResponse = {
   placeId: number;
   latitude: number;
   longitude: number;
+  writerId?: number;
   writerNickname: string;
   writerProfileImage: string | null;
   introduction: string;
@@ -100,6 +101,7 @@ const toMapPin = (pin: MapPinPreviewResponse): MapPin => ({
   youtubeVideoId: pin.youtubeVideoId,
   clipStartMs: pin.clipStartMs,
   hasBookmarkedPlace: pin.hasBookmarkedPlace ?? false,
+  writerId: pin.writerId,
 });
 
 export type MapPinsResponse = {

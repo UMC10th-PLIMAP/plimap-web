@@ -17,6 +17,7 @@ export const toMapPinMarkerProps = (
   isPlaying = false,
   showMessageBubble = false,
   isBookmarked = false,
+  onProfileClick?: () => void,
 ): MapPinMarkerProps => ({
   coverUrl: pin.coverUrl,
   isSelected,
@@ -25,6 +26,7 @@ export const toMapPinMarkerProps = (
   avatarUrl: pin.avatarUrl,
   introduction: pin.introduction,
   onPlay,
+  onProfileClick,
   showMessageBubble,
   isBookmarked,
 });
