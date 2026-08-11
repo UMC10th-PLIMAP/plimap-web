@@ -16,6 +16,7 @@ import { RecommendationPinCard } from '@/features/home/components/Recommendation
 import { useFriendPins } from '@/features/home/hooks/useFriendPins';
 import { useHomeContext } from '@/features/home/hooks/useHomeContext';
 import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
+import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { cn } from '@/lib/utils';
@@ -104,6 +105,7 @@ function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps
 export default function HomePage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
   const [hotPlaceFilter, setHotPlaceFilter] = useState<HotPlaceFilter>('nearby');
   const [hotPlacePages, setHotPlacePages] = useState<Record<HotPlaceFilter, number>>({
     nearby: 0,
@@ -273,8 +275,17 @@ export default function HomePage() {
               {friendPins.map((pin) => (
                 <RecommendationPinCard
                   key={pin.pinId}
-                  aria-label={`${pin.writerNickname} 프로필 보기`}
-                  onClick={() => void handleFriendProfileClick(pin)}
+                  aria-label={`${pin.placeName} 지도에서 PIN 보기`}
+                  profileAriaLabel={`${pin.writerNickname} 프로필 보기`}
+                  onProfileClick={() => void handleFriendProfileClick(pin)}
+                  onClick={() =>
+                    void openPinPlaceOnMap({
+                      pinId: pin.pinId,
+                      fallbackPlaceName: pin.placeName,
+                      showMyRegisteredTrackCta: true,
+                      requestFeedPlaceAccess: true,
+                    })
+                  }
                   pin={{
                     id: String(pin.pinId),
                     place: { name: pin.placeName },
