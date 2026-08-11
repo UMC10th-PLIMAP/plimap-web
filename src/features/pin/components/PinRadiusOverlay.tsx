@@ -105,7 +105,7 @@ export function PinRadiusOverlay({
           <p className="max-w-full px-6 py-4 text-center body-15-m text-grayscale-200 [text-shadow:0_1px_4px_#000]">
             반경 500m 이내에 PIN을 등록할 수 있어요.
             <br />
-            다른 PIN과 20m 이상 떨어진 곳에 등록해 주세요.
+            다른 PIN과 10m 이상 떨어진 곳에 등록해 주세요.
           </p>
         </div>
       </section>

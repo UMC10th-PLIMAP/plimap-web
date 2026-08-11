@@ -73,7 +73,7 @@ export default function PinRadiusOverlayPreviewPage() {
           zoom={zoom}
           centerLatitude={centerLatitude}
           radiusElementRef={radiusElementRef}
-          feedbackMessage={hasNearbyPinConflict ? '이미 근처 20m 이내에 PIN이 있어요' : null}
+          feedbackMessage={hasNearbyPinConflict ? '이미 근처 10m 이내에 PIN이 있어요' : null}
           onCancel={() => setLastAction('Cancel 콜백이 호출됐어요.')}
           onComplete={() => setLastAction('Complete 콜백이 호출됐어요.')}
         />
@@ -86,7 +86,7 @@ export default function PinRadiusOverlayPreviewPage() {
         </p>
 
         <label className="mt-5 flex cursor-pointer items-center justify-between gap-4 body-15-m">
-          20m conflict
+          10m conflict
           <input
             type="checkbox"
             checked={hasNearbyPinConflict}

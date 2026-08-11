@@ -14,7 +14,7 @@ import { usePinCreationStore } from '@/store/pinCreationStore';
 const availabilityMessage = (status: 'OUT_OF_RANGE' | 'TOO_CLOSE_TO_PIN') =>
   status === 'OUT_OF_RANGE'
     ? '현재 위치에서 500m 이내에 PIN을 등록해 주세요'
-    : '이미 근처 20m 이내에 PIN이 있어요';
+    : '이미 근처 10m 이내에 PIN이 있어요';
 
 export default function PinRegisterPage() {
   const navigate = useNavigate();
