@@ -34,11 +34,7 @@ const PROFILE_UPDATE_FAILED_MESSAGE = '프로필 수정에 실패했어요. 다�
 export default function ProfileEditPage() {
   const navigate = useNavigate();
 
-  const {
-    data: profile,
-    error: profileError,
-    refetch,
-  } = useMyProfile();
+  const { data: profile, error: profileError, refetch } = useMyProfile();
 
   if (profileError && !profile) {
     return <RequestErrorScreen error={profileError} onRetry={() => void refetch()} />;

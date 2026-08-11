@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { ApiError } from '@/api/client';
 import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { NotificationRow } from '@/features/notification/components/NotificationRow';
@@ -10,11 +11,14 @@ import {
   useNotificationSubscription,
 } from '@/features/notification/queries/useNotifications';
 import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
+import { useToast } from '@/hooks/useToast';
 
 const INITIAL_SKELETON_COUNT = 3;
+const FOLLOW_BACK_FAILED_MESSAGE = '맞팔로우하지 못했어요. 다시 시도해주세요.';
 
 export default function MyNotificationsPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const {
     data,
@@ -49,24 +53,10 @@ export default function MyNotificationsPage() {
     return () => observer.disconnect();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const requestError = followBackMutation.error ?? (!data && isError ? error : null);
+  const requestError = !data && isError ? error : null;
 
   if (requestError) {
-    return (
-      <RequestErrorScreen
-        error={requestError}
-        onRetry={() => {
-          if (followBackMutation.error && followBackMutation.variables) {
-            const variables = followBackMutation.variables;
-            followBackMutation.reset();
-            followBackMutation.mutate(variables);
-            return;
-          }
-
-          void refetch();
-        }}
-      />
-    );
+    return <RequestErrorScreen error={requestError} onRetry={() => void refetch()} />;
   }
 
   return (
@@ -112,7 +102,18 @@ export default function MyNotificationsPage() {
                 followBackMutation.variables?.memberId === notification.actorId
               }
               onFollowBack={(actorId) =>
-                followBackMutation.mutate({ memberId: actorId, isFollowing: false })
+                followBackMutation.mutate(
+                  { memberId: actorId, isFollowing: false },
+                  {
+                    onError: (mutationError) => {
+                      toast.error(
+                        mutationError instanceof ApiError
+                          ? mutationError.message
+                          : FOLLOW_BACK_FAILED_MESSAGE,
+                      );
+                    },
+                  },
+                )
               }
               onOpenPin={(pinId) => navigate(`/app/pins/${pinId}`)}
             />

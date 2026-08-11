@@ -18,12 +18,16 @@ const AuthGuard = () => {
       return <FullScreenError variant="network" onAction={() => void refetch()} />;
     }
 
-    return (
-      <FullScreenError
-        variant="session"
-        onAction={() => navigate('/app/login', { replace: true })}
-      />
-    );
+    if (isUnauthorizedError(error)) {
+      return (
+        <FullScreenError
+          variant="session"
+          onAction={() => navigate('/app/login', { replace: true })}
+        />
+      );
+    }
+
+    return <FullScreenError variant="unknown" onAction={() => void refetch()} />;
   }
 
   return <Outlet context={context} />;
