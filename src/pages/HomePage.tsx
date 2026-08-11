@@ -193,6 +193,7 @@ export default function HomePage() {
             <Link
               to="/app/my/notifications"
               aria-label="알림"
+              onClick={() => navigate('/app/my/notifications')}
               className="flex size-11 items-center justify-center rounded-full bg-pli-black-75"
             >
               <BellIcon aria-hidden className="h-[22px] w-[18px]" />
@@ -261,6 +262,8 @@ export default function HomePage() {
               {friendPins.map((pin) => (
                 <RecommendationPinCard
                   key={pin.pinId}
+                  aria-label={`${pin.writerNickname} 프로필 보기`}
+                  onClick={() => navigate(`/app/users/${pin.memberId}`)}
                   pin={{
                     id: String(pin.pinId),
                     place: { name: pin.placeName },

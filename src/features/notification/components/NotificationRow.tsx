@@ -1,13 +1,12 @@
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
-import { useActorProfile } from '@/features/notification/queries/useNotifications';
 import type { Notification } from '@/features/notification/types';
 import { getFollowActionLabel } from '@/features/profile/utils/getFollowActionLabel';
 import { cn } from '@/lib/utils';
 
 const NOTIFICATION_MESSAGE: Record<Notification['type'], string> = {
   FOLLOW: '님이 나를 팔로우하기 시작했어요.',
-  PIN_CREATED: '님이 새로운 PIN을 등록했어요.',
-  PIN_LIKED: '님이 내 PIN을 좋아해요.',
+  PIN_CREATED: '님이 새로운 핀을 등록했어요.',
+  PIN_LIKED: '님이 나의 핀에 좋아요를 눌렀어요.',
 };
 
 type NotificationRowProps = {
@@ -27,6 +26,7 @@ function formatCreatedAt(createdAt: string) {
   if (elapsedSeconds < 3_600) return `${Math.floor(elapsedSeconds / 60)}분전`;
   if (elapsedSeconds < 86_400) return `${Math.floor(elapsedSeconds / 3_600)}시간전`;
   if (elapsedSeconds < 604_800) return `${Math.floor(elapsedSeconds / 86_400)}일전`;
+  if (elapsedSeconds < 1_209_600) return '일주일전';
 
   return new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric' }).format(
     new Date(createdAtTimestamp),
@@ -51,6 +51,49 @@ function ProfileImage({ notification }: { notification: Notification }) {
   );
 }
 
+function NotificationMessage({ notification }: { notification: Notification }) {
+  if (notification.type === 'PIN_CREATED' && notification.pinPlaceName) {
+    return (
+      <>
+        <span className="font-semibold text-grayscale-100">{notification.actorNickname}</span>
+        님이{' '}
+        <span className="font-semibold text-grayscale-100">{notification.pinPlaceName} 핀</span>을
+        등록했어요.
+      </>
+    );
+  }
+
+  if (notification.type === 'PIN_LIKED' && notification.pinPlaceName) {
+    return (
+      <>
+        <span className="font-semibold text-grayscale-100">{notification.actorNickname}</span>
+        님이 나의{' '}
+        <span className="font-semibold text-grayscale-100">{notification.pinPlaceName} 핀</span>에
+        좋아요를 눌렀어요.
+      </>
+    );
+  }
+
+  return (
+    <>
+      <span className="font-semibold text-grayscale-100">{notification.actorNickname}</span>
+      {NOTIFICATION_MESSAGE[notification.type]}
+    </>
+  );
+}
+
+function PinThumbnail({ notification }: { notification: Notification }) {
+  return notification.pinImageUrl ? (
+    <img
+      src={notification.pinImageUrl}
+      alt=""
+      className="size-[59px] shrink-0 rounded-lg object-cover"
+    />
+  ) : (
+    <span aria-hidden className="size-[59px] shrink-0 rounded-lg bg-pli-black-75" />
+  );
+}
+
 export function NotificationRow({
   notification,
   isFollowPending,
@@ -58,15 +101,11 @@ export function NotificationRow({
   onOpenPin,
 }: NotificationRowProps) {
   const isFollowNotification = notification.type === 'FOLLOW';
-  const actorProfile = useActorProfile(notification.actorId, isFollowNotification);
-  const isFollowing = actorProfile.data?.isFollowing ?? false;
-  const isFollowingViewer = actorProfile.data?.isFollowingViewer ?? false;
   const canOpenPin = notification.pinId !== null && !isFollowNotification;
   const createdAtLabel = formatCreatedAt(notification.createdAt);
   const notificationContent = (
     <>
-      <span className="font-semibold text-grayscale-100">{notification.actorNickname}</span>
-      {NOTIFICATION_MESSAGE[notification.type]}{' '}
+      <NotificationMessage notification={notification} />{' '}
       {createdAtLabel && <span className="etc-12-r text-grayscale-600">{createdAtLabel}</span>}
     </>
   );
@@ -79,12 +118,15 @@ export function NotificationRow({
         <button
           type="button"
           onClick={() => notification.pinId !== null && onOpenPin(notification.pinId)}
-          className="body-15-r min-w-0 flex-1 cursor-pointer text-left text-grayscale-200"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left"
         >
-          {notificationContent}
+          <span className="body-15-r min-w-0 flex-1 break-words text-grayscale-200">
+            {notificationContent}
+          </span>
+          <PinThumbnail notification={notification} />
         </button>
       ) : (
-        <div className="body-15-r min-w-0 flex-1 text-left text-grayscale-200">
+        <div className="body-15-r min-w-0 flex-1 break-words text-left text-grayscale-200">
           {notificationContent}
         </div>
       )}
@@ -92,18 +134,21 @@ export function NotificationRow({
       {isFollowNotification && (
         <button
           type="button"
-          disabled={isFollowing || actorProfile.isPending || isFollowPending}
+          disabled={notification.isFollowing || isFollowPending}
           onClick={() => onFollowBack(notification.actorId)}
           className={cn(
             'etc-13-sb flex h-8 w-[102px] shrink-0 items-center justify-center rounded-lg transition-colors',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-2',
-            isFollowing
+            notification.isFollowing
               ? 'cursor-default bg-pli-black-50 text-grayscale-100'
               : 'cursor-pointer bg-neon-2 text-grayscale-1200 hover:bg-neon',
-            (actorProfile.isPending || isFollowPending) && 'cursor-wait opacity-60',
+            isFollowPending && 'cursor-wait opacity-60',
           )}
         >
-          {getFollowActionLabel({ isFollowing, isFollowingViewer })}
+          {getFollowActionLabel({
+            isFollowing: notification.isFollowing,
+            isFollowingViewer: true,
+          })}
         </button>
       )}
     </li>

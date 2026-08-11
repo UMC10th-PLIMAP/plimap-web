@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useQueryClient,
+  type InfiniteData,
+  type QueryClient,
+} from '@tanstack/react-query';
 
-import { getOtherMemberProfile } from '@/api/member';
 import { getNotifications, subscribeToNotifications } from '@/api/notification';
-import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
+import type { NotificationPage } from '@/features/notification/types';
 
 const NOTIFICATIONS_QUERY_KEY = ['notification', 'infinite'] as const;
 
@@ -43,11 +47,25 @@ export function useNotificationSubscription() {
   return isDisconnected;
 }
 
-export function useActorProfile(actorId: number, enabled: boolean) {
-  return useQuery({
-    queryKey: memberQueryKeys.profile(actorId),
-    queryFn: () => getOtherMemberProfile(actorId),
-    enabled,
-    staleTime: 60_000,
-  });
+export function updateNotificationFollowState(
+  queryClient: QueryClient,
+  actorId: number,
+  isFollowing: boolean,
+) {
+  queryClient.setQueriesData<InfiniteData<NotificationPage>>(
+    { queryKey: NOTIFICATIONS_QUERY_KEY },
+    (current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        pages: current.pages.map((page) => ({
+          ...page,
+          data: page.data.map((notification) =>
+            notification.actorId === actorId ? { ...notification, isFollowing } : notification,
+          ),
+        })),
+      };
+    },
+  );
 }
