@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
@@ -10,8 +9,8 @@ import { NotificationRowSkeleton } from '@/features/notification/components/Noti
 import {
   useInfiniteNotifications,
   useNotificationSubscription,
-  updateNotificationFollowState,
 } from '@/features/notification/queries/useNotifications';
+import { useNotificationResources } from '@/features/notification/queries/useNotificationResources';
 import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 import { useToast } from '@/hooks/useToast';
 
@@ -21,7 +20,6 @@ const FOLLOW_BACK_FAILED_MESSAGE = '맞팔로우하지 못했어요. 다시 시�
 export default function MyNotificationsPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const queryClient = useQueryClient();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const {
     data,
@@ -36,6 +34,7 @@ export default function MyNotificationsPage() {
   } = useInfiniteNotifications();
   const followBackMutation = useToggleFollow();
   const notifications = data?.pages.flatMap((page) => page.data) ?? [];
+  const { pinAlbumImageById, isFollowingByActorId } = useNotificationResources(notifications);
 
   const isNotificationStreamDisconnected = useNotificationSubscription();
 
@@ -100,6 +99,12 @@ export default function MyNotificationsPage() {
             <NotificationRow
               key={notification.notificationId}
               notification={notification}
+              pinAlbumImageUrl={
+                notification.pinId === null
+                  ? null
+                  : (pinAlbumImageById.get(notification.pinId) ?? null)
+              }
+              isFollowing={isFollowingByActorId.get(notification.actorId)}
               isFollowPending={
                 followBackMutation.isPending &&
                 followBackMutation.variables?.memberId === notification.actorId
@@ -108,7 +113,6 @@ export default function MyNotificationsPage() {
                 followBackMutation.mutate(
                   { memberId: actorId, isFollowing: false },
                   {
-                    onSuccess: () => updateNotificationFollowState(queryClient, actorId, true),
                     onError: (mutationError) => {
                       toast.error(
                         mutationError instanceof ApiError

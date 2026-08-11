@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
-import {
-  useInfiniteQuery,
-  useQueryClient,
-  type InfiniteData,
-  type QueryClient,
-} from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 
 import { getNotifications, subscribeToNotifications } from '@/api/notification';
-import type { NotificationPage } from '@/features/notification/types';
 
 const NOTIFICATIONS_QUERY_KEY = ['notification', 'infinite'] as const;
 
@@ -45,27 +39,4 @@ export function useNotificationSubscription() {
   }, [queryClient]);
 
   return isDisconnected;
-}
-
-export function updateNotificationFollowState(
-  queryClient: QueryClient,
-  actorId: number,
-  isFollowing: boolean,
-) {
-  queryClient.setQueriesData<InfiniteData<NotificationPage>>(
-    { queryKey: NOTIFICATIONS_QUERY_KEY },
-    (current) => {
-      if (!current) return current;
-
-      return {
-        ...current,
-        pages: current.pages.map((page) => ({
-          ...page,
-          data: page.data.map((notification) =>
-            notification.actorId === actorId ? { ...notification, isFollowing } : notification,
-          ),
-        })),
-      };
-    },
-  );
 }
