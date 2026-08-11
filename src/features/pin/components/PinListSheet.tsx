@@ -298,7 +298,8 @@ function PinListContent({
               </span>
             )}
             <p className="min-w-0 flex-1 truncate body-15-r text-grayscale-100">
-              <span className="text-neon-2">{myProfile?.nickname} </span>님이 등록한 곡 상세 보기
+              <span className="text-neon-2">{myProfile?.nickname ?? '나'} </span>님이 등록한 곡 상세
+              보기
             </p>
             <NextIcon className="size-5 shrink-0 text-grayscale-400" aria-hidden />
           </button>
