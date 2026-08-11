@@ -83,9 +83,9 @@ function NotificationMessage({ notification }: { notification: Notification }) {
 }
 
 function PinThumbnail({ notification }: { notification: Notification }) {
-  return notification.pinImageUrl ? (
+  return notification.pinAlbumImageUrl ? (
     <img
-      src={notification.pinImageUrl}
+      src={notification.pinAlbumImageUrl}
       alt=""
       className="size-[59px] shrink-0 rounded-lg object-cover"
     />

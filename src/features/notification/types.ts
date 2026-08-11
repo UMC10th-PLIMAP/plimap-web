@@ -8,7 +8,7 @@ export type Notification = {
   actorProfileImageUrl: string | null;
   pinId: number | null;
   pinPlaceName: string | null;
-  pinImageUrl: string | null;
+  pinAlbumImageUrl: string | null;
   isFollowing: boolean;
   read: boolean;
   createdAt: string;
