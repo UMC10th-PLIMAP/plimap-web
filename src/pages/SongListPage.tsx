@@ -30,9 +30,7 @@ export default function SongListPage() {
   const isSearchPending =
     hasSearchQuery && (trackSearchQuery.isDebouncing || trackSearchQuery.isPending);
   const tracks =
-    hasSearchQuery && !trackSearchQuery.isDebouncing
-      ? (trackSearchQuery.data?.tracks ?? [])
-      : [];
+    hasSearchQuery && !trackSearchQuery.isDebouncing ? (trackSearchQuery.data?.tracks ?? []) : [];
 
   useEffect(() => {
     if (!trackSearchQuery.isError) return;
@@ -88,6 +86,8 @@ export default function SongListPage() {
                 다시 시도
               </button>
             </div>
+          ) : hasSearchQuery && tracks.length === 0 ? (
+            <p className="py-10 text-center body-17-r text-grayscale-500">검색 결과가 없어요</p>
           ) : (
             <ul>
               {tracks.map((track) => (
