@@ -132,6 +132,11 @@ function BottomSheet({
   const [prevOpen, setPrevOpen] = React.useState(open);
   const [prevResetKey, setPrevResetKey] = React.useState(resetKey);
   const [prevCollapseSignal, setPrevCollapseSignal] = React.useState(collapseToSmallestSignal);
+  const [hasBeenOpen, setHasBeenOpen] = React.useState(open);
+  if (open && !hasBeenOpen) {
+    setHasBeenOpen(true);
+  }
+  const vaulOpen = hasBeenOpen;
 
   if (open !== prevOpen || resetKey !== prevResetKey) {
     setPrevOpen(open);
@@ -217,7 +222,7 @@ function BottomSheet({
   return (
     <BottomSheetContext.Provider value={{ isFullPage, onClose, collapse, expand }}>
       <SheetRoot
-        open={open}
+        open={vaulOpen}
         dismissible={dismissible}
         // Radix Dialog의 기본 modal은 시트 바깥(지도) 클릭을 막으므로 modeless로 연다.
         modal={false}
@@ -228,6 +233,7 @@ function BottomSheet({
         setActiveSnapPoint={setActiveSnap}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
+            setHasBeenOpen(false);
             onClose();
           }
         }}

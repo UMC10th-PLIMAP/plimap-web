@@ -529,7 +529,7 @@ const MapPage: React.FC<MapPageProps> = ({
 
       {selectedMapPlace ? (
         <PinListSheet
-          open={selectedMapPlace !== null}
+          open={isPlaceSheetOpen}
           onClose={() => onClearMapPlace?.()}
           place={toPlaceInfo(selectedMapPlace)}
           focusedFeedPin={selectedMapPlace.focusedFeedPin}
@@ -603,7 +603,7 @@ const MapPage: React.FC<MapPageProps> = ({
         />
       ) : selectedMapPin ? (
         <PinListSheet
-          open={selectedMapPin !== null}
+          open={isUiActive}
           onClose={() => onSelectMapPinChange(null)}
           place={mapPinToPlaceInfo(selectedMapPin)}
           allowTrackDetailAccess={false}
