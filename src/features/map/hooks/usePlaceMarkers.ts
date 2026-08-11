@@ -91,7 +91,6 @@ export function usePlaceMarkers({
       infoWindowRef.current = new mapsApi.InfoWindow();
     }
 
-    const bounds = new mapsApi.LatLngBounds();
     const selectedId = selectedPlaceIdRef.current;
 
     placeMarkersRef.current = placeResults.map((place, index) => {
@@ -113,17 +112,8 @@ export function usePlaceMarkers({
       marker.addListener('click', () => {
         onSelectPlaceRef.current?.(place.id);
       });
-      bounds.extend(position);
-
       return { id: place.id, place, marker };
     });
-
-    if (placeResults.length === 1) {
-      map.setCenter(placeResults[0].coordinates);
-      map.setZoom(Math.max(map.getZoom() ?? 16, 16));
-    } else {
-      map.fitBounds(bounds, 48);
-    }
   }, [isLoaded, placeResults, mapInstanceRef]);
 
   // --- 선택된 장소 강조 및 정보창 표시 ---
@@ -153,10 +143,5 @@ export function usePlaceMarkers({
       map,
       anchor: selectedMarker.marker,
     });
-
-    const pos = selectedMarker.marker.getPosition();
-    if (pos) {
-      map.panTo(pos);
-    }
   }, [selectedPlaceId, placeResults, mapInstanceRef]);
 }

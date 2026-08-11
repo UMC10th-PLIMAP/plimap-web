@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Outlet, useLocation, useMatch, useOutletContext } from 'react-router-dom';
 
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
@@ -6,7 +6,6 @@ import { useMapPins } from '@/features/map/queries/useMapPins';
 import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '@/features/map/types';
 import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceMeters';
 import { loadGoogleMapsScript } from '@/features/map/utils';
-import type { PinRadiusCenter } from '@/features/pin/components/PinRadiusOverlay';
 import type { MapOutletContext } from '@/layouts/MapLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
@@ -18,7 +17,7 @@ export type PinRegistrationOutletContext = {
   mainMapCurrentLocation: MapCoordinate | null;
   mapStatus: PinRegistrationMapStatus;
   zoom: number;
-  radiusCenter: PinRadiusCenter | null;
+  radiusElementRef: RefObject<HTMLDivElement | null>;
   locationError: string | null;
   isOutsideAllowedRadius: boolean;
   setMapInteractionDisabled: (disabled: boolean) => void;
@@ -28,6 +27,7 @@ export default function PinRegistrationLayout() {
   const { currentLocation: mainMapCurrentLocation } = useOutletContext<MapOutletContext>();
   const location = useLocation();
   const mapViewerRef = useRef<MapViewerHandle>(null);
+  const radiusElementRef = useRef<HTMLDivElement>(null);
   const candidateCoordinate = usePinCreationStore((state) => state.candidateCoordinate);
   const currentLocation = usePinCreationStore((state) => state.currentLocation);
   const place = usePinCreationStore((state) => state.place);
@@ -41,7 +41,6 @@ export default function PinRegistrationLayout() {
   const [mapLoadAttempt, setMapLoadAttempt] = useState(0);
   const [zoom, setZoom] = useState(16);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
-  const [radiusCenter, setRadiusCenter] = useState<PinRadiusCenter | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isMapInteractionDisabled, setMapInteractionDisabled] = useState(false);
 
@@ -115,7 +114,7 @@ export default function PinRegistrationLayout() {
     mainMapCurrentLocation,
     mapStatus,
     zoom,
-    radiusCenter,
+    radiusElementRef,
     locationError,
     isOutsideAllowedRadius,
     setMapInteractionDisabled,
@@ -137,12 +136,12 @@ export default function PinRegistrationLayout() {
         selectedMapPinId={null}
         projectionCoordinate={isSelectionStage ? currentLocation : null}
         projectionRadiusMeters={PIN_REGISTRATION_RADIUS_METERS}
+        projectionTargetRef={radiusElementRef}
         onZoomChanged={setZoom}
         onCurrentLocationChanged={handleCurrentLocationChanged}
         onCurrentLocationError={setLocationError}
         onCenterChanged={handleCenterChanged}
         onViewportChanged={setViewport}
-        onProjectionChanged={setRadiusCenter}
       />
 
       {mapStatus !== 'ready' ? (

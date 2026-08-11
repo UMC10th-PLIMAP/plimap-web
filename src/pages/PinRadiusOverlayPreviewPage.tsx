@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { MapViewer } from '@/features/map/components/MapViewer';
 import { DEFAULT_CENTER } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
-import { PinRadiusOverlay, type PinRadiusCenter } from '@/features/pin/components/PinRadiusOverlay';
+import { PinRadiusOverlay } from '@/features/pin/components/PinRadiusOverlay';
 
 type MapStatus = 'loading' | 'ready' | 'error';
 
@@ -14,7 +14,7 @@ export default function PinRadiusOverlayPreviewPage() {
   const [mapStatus, setMapStatus] = useState<MapStatus>(GOOGLE_MAPS_API_KEY ? 'loading' : 'error');
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
   const [centerLatitude, setCenterLatitude] = useState(DEFAULT_CENTER.lat);
-  const [radiusCenter, setRadiusCenter] = useState<PinRadiusCenter | null>(null);
+  const radiusElementRef = useRef<HTMLDivElement>(null);
   const [hasNearbyPinConflict, setHasNearbyPinConflict] = useState(true);
   const [lastAction, setLastAction] = useState('Complete를 눌러 충돌 토스트를 확인하세요.');
 
@@ -55,9 +55,9 @@ export default function PinRadiusOverlayPreviewPage() {
             selectedMapPinId={null}
             projectionCoordinate={DEFAULT_CENTER}
             projectionRadiusMeters={500}
+            projectionTargetRef={radiusElementRef}
             onZoomChanged={setZoom}
             onCenterChanged={(center) => setCenterLatitude(center.lat)}
-            onProjectionChanged={setRadiusCenter}
           />
         </div>
 
@@ -72,7 +72,7 @@ export default function PinRadiusOverlayPreviewPage() {
         <PinRadiusOverlay
           zoom={zoom}
           centerLatitude={centerLatitude}
-          radiusCenter={radiusCenter ?? undefined}
+          radiusElementRef={radiusElementRef}
           feedbackMessage={hasNearbyPinConflict ? '이미 근처 20m 이내에 PIN이 있어요' : null}
           onCancel={() => setLastAction('Cancel 콜백이 호출됐어요.')}
           onComplete={() => setLastAction('Complete 콜백이 호출됐어요.')}

@@ -99,10 +99,10 @@ type BottomSheetProps = {
   /** 이 값이 바뀔 때마다 snapPoints의 진짜 첫 값(가장 작은 스냅)으로 축소한다. */
   collapseToSmallestSignal?: number;
   /**
-   * 시트 높이(0~1, 화면 높이 대비 비율)가 바뀔 때마다 호출된다 - 스냅에 안착했을 때뿐 아니라
-   * 드래그 중에도 실시간으로 호출되어, 외부 UI(예: 등록하기 버튼)가 시트를 따라 움직이게 할 수 있다.
+   * 시트 바깥의 플로팅 UI가 드래그를 따라가야 할 때 지정한다.
+   * React 상태를 거치지 않고 이 요소의 CSS 변수에 현재 시트 높이를 기록한다.
    */
-  onActiveSnapChange?: (fraction: number) => void;
+  trackingElementRef?: React.RefObject<HTMLElement | null>;
   className?: string;
 };
 
@@ -122,7 +122,7 @@ function BottomSheet({
   defaultSnapPoint,
   resetKey,
   collapseToSmallestSignal,
-  onActiveSnapChange,
+  trackingElementRef,
   className,
 }: BottomSheetProps) {
   const firstSnap = defaultSnapPoint ?? snapPoints[0] ?? null;
@@ -148,47 +148,61 @@ function BottomSheet({
     }
   }
 
-  const onActiveSnapChangeRef = React.useRef(onActiveSnapChange);
   const snapObserverRef = React.useRef<MutationObserver | null>(null);
   const snapReportRafRef = React.useRef<number | null>(null);
 
-  React.useEffect(() => {
-    onActiveSnapChangeRef.current = onActiveSnapChange;
-  }, [onActiveSnapChange]);
-
   // vaul이 드래그 중 DOM에 직접 반영하는 transform을 실시간 관찰해야 해서 콜백 ref를 쓴다 -
   // vaul/Radix가 content 노드를 교체해도(예: presence 애니메이션) 항상 최신 노드를 관찰한다.
-  const setSnapObserverTarget = React.useCallback((node: HTMLDivElement | null) => {
-    snapObserverRef.current?.disconnect();
-    snapObserverRef.current = null;
-    if (snapReportRafRef.current !== null) {
-      cancelAnimationFrame(snapReportRafRef.current);
-      snapReportRafRef.current = null;
-    }
-    if (!node) return;
-
-    const reportFromStyle = () => {
-      const match = /translate3d\(0px,\s*(-?[\d.]+)px/.exec(node.style.transform);
-      if (!match) return;
-      const translateY = Number(match[1]);
-      const viewportHeight = window.innerHeight || 1;
-      onActiveSnapChangeRef.current?.(Math.min(1, Math.max(0, 1 - translateY / viewportHeight)));
-    };
-
-    reportFromStyle();
-    // 드래그 중엔 스타일 변경이 화면 주사율보다 잦을 수 있어, 매번 리액트 상태를
-    // 갱신하면 프레임당 여러 번 리렌더돼 버벅임/떨림으로 보인다 - 프레임당 최대
-    // 한 번만 반영한다.
-    const observer = new MutationObserver(() => {
-      if (snapReportRafRef.current !== null) return;
-      snapReportRafRef.current = requestAnimationFrame(() => {
+  // 드래그 프레임을 React 상태로 올리면 지도 전체가 다시 렌더되므로 CSS 변수만 직접 갱신한다.
+  const setSnapObserverTarget = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      snapObserverRef.current?.disconnect();
+      snapObserverRef.current = null;
+      if (snapReportRafRef.current !== null) {
+        cancelAnimationFrame(snapReportRafRef.current);
         snapReportRafRef.current = null;
-        reportFromStyle();
+      }
+      if (!node) {
+        trackingElementRef?.current?.style.removeProperty('--bottom-sheet-visible-height');
+        return;
+      }
+
+      const reportFromStyle = () => {
+        const match = /translate3d\(0(?:px)?,\s*(-?[\d.]+)px/.exec(node.style.transform);
+        if (!match) return;
+        const translateY = Number(match[1]);
+        const viewportHeight = window.innerHeight || 1;
+        const visibleHeight = Math.min(viewportHeight, Math.max(0, viewportHeight - translateY));
+        trackingElementRef?.current?.style.setProperty(
+          '--bottom-sheet-visible-height',
+          `${visibleHeight}px`,
+        );
+      };
+
+      reportFromStyle();
+      // 드래그 중엔 스타일 변경이 화면 주사율보다 잦을 수 있으므로 프레임당
+      // 최대 한 번만 플로팅 UI 위치를 반영한다.
+      const observer = new MutationObserver(() => {
+        if (snapReportRafRef.current !== null) return;
+        snapReportRafRef.current = requestAnimationFrame(() => {
+          snapReportRafRef.current = null;
+          reportFromStyle();
+        });
       });
-    });
-    observer.observe(node, { attributes: true, attributeFilter: ['style'] });
-    snapObserverRef.current = observer;
-  }, []);
+      observer.observe(node, { attributes: true, attributeFilter: ['style'] });
+      snapObserverRef.current = observer;
+    },
+    [trackingElementRef],
+  );
+
+  React.useEffect(
+    () => () => {
+      snapObserverRef.current?.disconnect();
+      if (snapReportRafRef.current !== null) cancelAnimationFrame(snapReportRafRef.current);
+      trackingElementRef?.current?.style.removeProperty('--bottom-sheet-visible-height');
+    },
+    [trackingElementRef],
+  );
 
   const isFullPage = snapPoints.length > 1 && activeSnap === lastSnap;
 
