@@ -272,7 +272,6 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           label="닉네임"
           placeholder="내용 입력"
           countLimit={NICKNAME_MAX_LENGTH}
-          maxLength={NICKNAME_MAX_LENGTH}
           {...nicknameField}
         />
         <ProfileTextField
@@ -280,7 +279,6 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           label="이름"
           placeholder="내용 입력"
           countLimit={NAME_MAX_LENGTH}
-          maxLength={NAME_MAX_LENGTH}
           {...nameField}
         />
         <ProfileTextAreaField
@@ -288,7 +286,6 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           label="소개"
           placeholder="내용 입력"
           countLimit={INTRODUCTION_MAX_LENGTH}
-          maxLength={INTRODUCTION_MAX_LENGTH}
           {...introductionField}
         />
       </div>
