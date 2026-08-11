@@ -4,6 +4,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { agreeToTerms } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import CheckIcon from '@/assets/icons/check.svg?react';
+import { useToast } from '@/hooks/useToast';
 import { TopBar } from '@/components/ui/TopBar';
 import { TermsDetailContent } from '@/features/auth/components/TermsDetailContent';
 import { TERMS_BY_ID } from '@/features/auth/terms/content';
@@ -17,6 +18,7 @@ const isTermId = (value: string | undefined): value is TermId =>
 
 export default function TermsDetailViewPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { termId } = useParams<{ termId: string }>();
   // TODO: 동의 상태를 조회하는 API가 아직 없어 항상 false로 시작한다.
   // 조회 API가 추가되면 초기값을 서버 값으로 대체할 것.
@@ -38,7 +40,7 @@ export default function TermsDetailViewPage() {
       await agreeToTerms([{ id: 'MARKETING', agreed: nextValue }]);
       setIsMarketingConsentOn(nextValue);
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : MARKETING_CONSENT_FAILED_MESSAGE);
+      toast.error(error instanceof ApiError ? error.message : MARKETING_CONSENT_FAILED_MESSAGE);
     } finally {
       setIsSavingConsent(false);
     }

@@ -34,7 +34,7 @@ const MapLayout = () => {
   const isMapUiActive = mapPresentation === 'visible';
 
   return (
-    <div className="relative min-h-0 flex-1 overflow-hidden">
+    <div className="relative flex min-h-0 flex-1 overflow-hidden">
       {shouldRenderMap ? (
         <div
           className="absolute inset-0 z-0"

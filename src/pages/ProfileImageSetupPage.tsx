@@ -5,6 +5,7 @@ import Cropper, { type Area, type Point } from 'react-easy-crop';
 import { ApiError } from '@/api/client';
 import CameraIcon from '@/assets/icons/camera.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
+import { useToast } from '@/hooks/useToast';
 import { TopBar } from '@/components/ui/TopBar';
 import { Button } from '@/components/ui/button';
 import { uploadProfileImage } from '@/api/member';
@@ -21,6 +22,7 @@ const IMAGE_PROCESSING_FAILED_MESSAGE = '이미지 처리에 실패했어요. �
 
 export default function ProfileImageSetupPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const setOnboardingProfileImage = useOnboardingStore((state) => state.setProfileImage);
 
@@ -44,7 +46,7 @@ export default function ProfileImageSetupPage() {
     if (!file) return;
 
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      alert(INVALID_FORMAT_MESSAGE);
+      toast.error(INVALID_FORMAT_MESSAGE);
       return;
     }
 
@@ -80,7 +82,7 @@ export default function ProfileImageSetupPage() {
       setStep('done');
     } catch (error) {
       console.error('크롭 실패:', error);
-      alert(IMAGE_PROCESSING_FAILED_MESSAGE);
+      toast.error(IMAGE_PROCESSING_FAILED_MESSAGE);
     } finally {
       setIsProcessing(false);
     }
@@ -105,7 +107,7 @@ export default function ProfileImageSetupPage() {
       new Image().src = imageUrl;
       navigate('/app/onboarding/welcome');
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : UPLOAD_FAILED_MESSAGE);
+      toast.error(error instanceof ApiError ? error.message : UPLOAD_FAILED_MESSAGE);
     } finally {
       setIsUploading(false);
     }

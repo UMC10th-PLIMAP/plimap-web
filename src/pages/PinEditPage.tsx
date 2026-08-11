@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import LocationIcon from '@/assets/icons/location.svg?react';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { useToast } from '@/hooks/useToast';
 import { Tag } from '@/components/ui/tag';
 import { TAG_OPTIONS } from '@/features/pin/data/songPreview';
 import { useDeletePin } from '@/features/pin/queries/useDeletePin';
@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils';
 
 const INTRO_MAX_LENGTH = 100;
 const MAX_TAG_COUNT = 4;
-const TOAST_DURATION_MS = 2_000;
 
 export type PinEditLocationState = {
   title?: string;
@@ -24,11 +23,6 @@ export type PinEditLocationState = {
   introduction?: string;
   tags?: string[];
   feedOpen?: boolean;
-};
-
-type EditToast = {
-  attempt: number;
-  message: string;
 };
 
 function areSameTags(a: string[], b: string[]) {
@@ -66,6 +60,7 @@ function FeedVisibilityToggle({
 
 export default function PinEditPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { pinId } = useParams<{ pinId: string }>();
   const location = useLocation();
   const locationState = (location.state as PinEditLocationState | null) ?? null;
@@ -96,7 +91,6 @@ export default function PinEditPage() {
   const [feedOpenDraft, setFeedOpenDraft] = useState<boolean | null>(
     locationState?.feedOpen ?? null,
   );
-  const [toast, setToast] = useState<EditToast | null>(null);
 
   const introduction = introductionDraft ?? baselineIntroduction;
   const selectedTags = tagsDraft ?? baselineTags;
@@ -113,13 +107,6 @@ export default function PinEditPage() {
   const artist = locationState?.artist ?? '';
   const placeName = locationState?.placeName || placeDetailQuery.data?.placeName || '';
 
-  const showToast = (message: string) => {
-    setToast((current) => ({
-      attempt: (current?.attempt ?? 0) + 1,
-      message,
-    }));
-  };
-
   const toggleTag = (tag: string) => {
     setTagsDraft((prev) => {
       const current = prev ?? baselineTags;
@@ -134,7 +121,7 @@ export default function PinEditPage() {
 
     const normalizedIntroduction = introduction.trim();
     if (!normalizedIntroduction) {
-      showToast('소개를 입력해 주세요.');
+      toast.error('소개를 입력해 주세요.');
       return;
     }
 
@@ -149,7 +136,7 @@ export default function PinEditPage() {
       {
         onSuccess: () => navigate(-1),
         onError: (error) => {
-          showToast(
+          toast.error(
             error instanceof Error ? error.message : '핀을 수정하지 못했어요. 다시 시도해 주세요.',
           );
         },
@@ -163,7 +150,7 @@ export default function PinEditPage() {
     deletePinMutation.mutate(pinId, {
       onSuccess: () => navigate(-1),
       onError: (error) => {
-        showToast(
+        toast.error(
           error instanceof Error ? error.message : '핀을 삭제하지 못했어요. 다시 시도해 주세요.',
         );
       },
@@ -171,7 +158,7 @@ export default function PinEditPage() {
   };
 
   return (
-    <ToastProvider duration={TOAST_DURATION_MS}>
+    <>
       <div className="relative flex min-h-0 flex-1 bg-pli-black-100">
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-hide pb-[calc(env(safe-area-inset-bottom)+48px)]">
           <section className="relative w-full">
@@ -301,16 +288,7 @@ export default function PinEditPage() {
             </div>
           </section>
         </div>
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-50 flex justify-center">
-          {toast ? (
-            <Toast key={`${toast.message}:${toast.attempt}`} defaultOpen>
-              {toast.message}
-            </Toast>
-          ) : null}
-          <ToastViewport />
-        </div>
       </div>
-    </ToastProvider>
+    </>
   );
 }

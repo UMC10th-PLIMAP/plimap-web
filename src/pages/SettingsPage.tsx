@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { logout } from '@/api/auth';
 import { ApiError } from '@/api/client';
+import { useToast } from '@/hooks/useToast';
 import { TopBar } from '@/components/ui/TopBar';
 import { ConfirmAlertDialog } from '@/features/settings/components/ConfirmAlertDialog';
 import { SettingsRow } from '@/features/settings/components/SettingsRow';
@@ -21,6 +22,7 @@ const LOGOUT_FAILED_MESSAGE = '로그아웃에 실패했어요. 잠시 후 다�
 
 export default function SettingsPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const queryClient = useQueryClient();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -36,7 +38,7 @@ export default function SettingsPage() {
       navigate('/app/login', { replace: true });
     } catch (error) {
       setIsLogoutDialogOpen(true);
-      alert(error instanceof ApiError ? error.message : LOGOUT_FAILED_MESSAGE);
+      toast.error(error instanceof ApiError ? error.message : LOGOUT_FAILED_MESSAGE);
     } finally {
       setIsLoggingOut(false);
     }

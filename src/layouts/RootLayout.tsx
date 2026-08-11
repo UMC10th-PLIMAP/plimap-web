@@ -1,7 +1,10 @@
-import { useCallback, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
 
+import { SESSION_EXPIRED_EVENT } from '@/api/client';
+import { FullScreenError } from '@/components/ui/FullScreenError';
 import type { PinSearchPlace } from '@/features/pin/types';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 export type AppOutletContext = {
   selectedMapPlace: PinSearchPlace | null;
@@ -11,6 +14,9 @@ export type AppOutletContext = {
 };
 
 const RootLayout = () => {
+  const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
   const [selectedMapPlace, setSelectedMapPlace] = useState<PinSearchPlace | null>(null);
   const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
   // 장소 검색 결과 시트와 핀 탭 시트는 동시에 뜨면 안 되므로 상호 배타적으로 둔다.
@@ -31,9 +37,26 @@ const RootLayout = () => {
     selectMapPin,
   } satisfies AppOutletContext;
 
+  useEffect(() => {
+    const handleSessionExpired = () => setIsSessionExpired(true);
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
+
+  const handleSessionExpiredAction = () => {
+    setIsSessionExpired(false);
+    navigate('/app/login', { replace: true });
+  };
+
   return (
     <div className="mx-auto flex h-[var(--app-vh,100dvh)] max-w-[402px] flex-col overflow-y-auto bg-pli-black-100 scrollbar-hide">
-      <Outlet context={outletContext} />
+      {!isOnline ? (
+        <FullScreenError variant="network" onAction={() => window.location.reload()} />
+      ) : isSessionExpired ? (
+        <FullScreenError variant="session" onAction={handleSessionExpiredAction} />
+      ) : (
+        <Outlet context={outletContext} />
+      )}
     </div>
   );
 };

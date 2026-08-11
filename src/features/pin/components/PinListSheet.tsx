@@ -7,7 +7,7 @@ import NextIcon from '@/assets/icons/next.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
 import { PinListSheetSkeleton } from '@/components/skeletons/PinListSheetSkeleton';
-import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { useToast } from '@/hooks/useToast';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
@@ -311,15 +311,8 @@ function PinListContent({
   );
 }
 
-const BOOKMARK_TOAST_DURATION_MS = 2_000;
 const TRACK_DETAIL_BLOCKED_TOAST_MESSAGE =
   '현재 위치 500m 이내이거나, 찜한 노래·내 장소·피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
-
-type BookmarkToast = {
-  attempt: number;
-  message: string;
-};
-
 export function PinListSheet({
   open,
   onClose,
@@ -337,9 +330,8 @@ export function PinListSheet({
   onResolvedPlaceChange,
   onFullPageBack,
 }: PinListSheetProps) {
+  const toast = useToast();
   const [sort, setSort] = useState<PinSort>('POPULAR');
-  const [bookmarkToast, setBookmarkToast] = useState<BookmarkToast | null>(null);
-  const [accessToast, setAccessToast] = useState<BookmarkToast | null>(null);
   const normalizedPlaceId = place.id.startsWith('place:')
     ? place.id.slice('place:'.length)
     : place.id;
@@ -424,13 +416,11 @@ export function PinListSheet({
       { placeId, bookmarked: !isBookmarked },
       {
         onError: (error) => {
-          setBookmarkToast((currentToast) => ({
-            attempt: (currentToast?.attempt ?? 0) + 1,
-            message:
-              error instanceof Error
-                ? error.message
-                : '북마크를 변경하지 못했어요. 다시 시도해 주세요.',
-          }));
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : '북마크를 변경하지 못했어요. 다시 시도해 주세요.',
+          );
         },
       },
     );
@@ -446,10 +436,7 @@ export function PinListSheet({
   const handleFocusedTrackClick = () => {
     if (!onFocusedTrackClick) return;
     if (!focusedPlaceTrackId) {
-      setAccessToast((currentToast) => ({
-        attempt: (currentToast?.attempt ?? 0) + 1,
-        message: '곡 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.',
-      }));
+      toast.error('곡 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.');
       return;
     }
     onFocusedTrackClick(focusedPlaceTrackId);
@@ -488,7 +475,7 @@ export function PinListSheet({
   );
 
   return (
-    <ToastProvider duration={BOOKMARK_TOAST_DURATION_MS}>
+    <>
       <BottomSheet
         open={open}
         onClose={onClose}
@@ -516,10 +503,7 @@ export function PinListSheet({
             onBookmarkToggle={handleBookmarkToggle}
             onPinClick={onPinClick}
             onBlockedPinClick={() => {
-              setAccessToast((currentToast) => ({
-                attempt: (currentToast?.attempt ?? 0) + 1,
-                message: TRACK_DETAIL_BLOCKED_TOAST_MESSAGE,
-              }));
+              toast.error(TRACK_DETAIL_BLOCKED_TOAST_MESSAGE);
             }}
             allowTrackDetailAccess={canOpenTrackDetail}
             focusedFeedPin={focusedFeedPin}
@@ -527,22 +511,6 @@ export function PinListSheet({
           />
         )}
       </BottomSheet>
-
-      <ToastPortal>
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
-          {bookmarkToast ? (
-            <Toast key={`bookmark:${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
-              {bookmarkToast.message}
-            </Toast>
-          ) : null}
-          {accessToast ? (
-            <Toast key={`access:${accessToast.message}:${accessToast.attempt}`} defaultOpen>
-              {accessToast.message}
-            </Toast>
-          ) : null}
-          <ToastViewport />
-        </div>
-      </ToastPortal>
-    </ToastProvider>
+    </>
   );
 }

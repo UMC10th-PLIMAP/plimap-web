@@ -7,6 +7,7 @@ import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { HomeHotPlaceCarouselSkeleton, HomeSkeleton } from '@/components/skeletons/HomeSkeleton';
+import { useToast } from '@/hooks/useToast';
 import { Chip } from '@/components/ui/chip';
 import { HomeCarouselState } from '@/features/home/components/HomeCarouselState';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
@@ -101,6 +102,7 @@ function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [hotPlaceFilter, setHotPlaceFilter] = useState<HotPlaceFilter>('nearby');
   const [hotPlacePages, setHotPlacePages] = useState<Record<HotPlaceFilter, number>>({
     nearby: 0,
@@ -397,7 +399,16 @@ export default function HomePage() {
                   place={place}
                   isRemoving={toggleBookmarkMutation.isPending}
                   onUnbookmark={(placeId) =>
-                    toggleBookmarkMutation.mutate({ placeId, bookmarked: false })
+                    toggleBookmarkMutation.mutate(
+                      { placeId, bookmarked: false },
+                      {
+                        onError: () => {
+                          toast.error('북마크를 해제하지 못했어요. 다시 시도해 주세요.', {
+                            placement: 'above-navigation',
+                          });
+                        },
+                      },
+                    )
                   }
                 />
               )}
