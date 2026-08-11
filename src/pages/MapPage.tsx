@@ -74,6 +74,7 @@ function mapPinToPlaceInfo(pin: MapPin): PlaceInfo {
     id: pin.id,
     placeId: pin.placeId,
     name: '',
+    creatorName: pin.nickname,
     distance: 0,
     latitude: pin.lat,
     longitude: pin.lng,
