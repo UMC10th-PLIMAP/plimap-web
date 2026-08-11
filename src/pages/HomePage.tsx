@@ -177,18 +177,13 @@ export default function HomePage() {
   };
 
   const handleFriendProfileClick = async (pin: FriendPinItem) => {
-    let memberId = pin.memberId;
-
-    if (!Number.isInteger(memberId) || (memberId ?? 0) <= 0) {
-      try {
-        memberId = (await getPinDetail(String(pin.pinId))).memberId;
-      } catch {
-        return;
-      }
+    try {
+      const { memberId } = await getPinDetail(String(pin.pinId));
+      if (!Number.isInteger(memberId) || memberId <= 0) return;
+      navigate(`/app/users/${memberId}`);
+    } catch {
+      return;
     }
-
-    if (!Number.isInteger(memberId) || (memberId ?? 0) <= 0) return;
-    navigate(`/app/users/${memberId}`);
   };
 
   if (isHomePending) {
