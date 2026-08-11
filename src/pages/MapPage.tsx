@@ -204,7 +204,7 @@ const MapPage: React.FC<MapPageProps> = ({
       introduction: overlayFocusPin.introduction,
       youtubeVideoId: overlayFocusPin.youtubeVideoId,
       clipStartMs: overlayFocusPin.clipStartMs,
-      hasBookmarkedPlace: false,
+      hasBookmarkedPlace: selectedMapPlace.bookmarkedByMe ?? false,
     };
 
     return [...pins.filter((pin) => pin.id !== focusedPin.id), focusedPin];
