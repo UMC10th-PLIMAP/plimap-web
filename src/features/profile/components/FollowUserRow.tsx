@@ -1,4 +1,5 @@
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
+import { getFollowActionLabel } from '@/features/profile/utils/getFollowActionLabel';
 import type { FollowListItem } from '@/types/member.type';
 
 type FollowUserRowProps = {
@@ -6,9 +7,16 @@ type FollowUserRowProps = {
   onClick?: (user: FollowListItem) => void;
   onActionClick?: (user: FollowListItem) => void;
   disabled?: boolean;
+  hideAction?: boolean;
 };
 
-export function FollowUserRow({ user, onClick, onActionClick, disabled }: FollowUserRowProps) {
+export function FollowUserRow({
+  user,
+  onClick,
+  onActionClick,
+  disabled,
+  hideAction,
+}: FollowUserRowProps) {
   return (
     <li className="flex items-center gap-[14px]">
       <button
@@ -34,16 +42,20 @@ export function FollowUserRow({ user, onClick, onActionClick, disabled }: Follow
         </div>
       </button>
 
-      <button
-        type="button"
-        onClick={() => onActionClick?.(user)}
-        disabled={disabled}
-        className={`flex h-8 min-w-[102px] shrink-0 items-center justify-center rounded-lg etc-13-sb cursor-pointer disabled:opacity-50 ${
-          user.isFollowing ? 'bg-pli-black-50 text-grayscale-100' : 'bg-neon-2 text-grayscale-1200'
-        }`}
-      >
-        {user.isFollowing ? '팔로잉' : '맞팔로우'}
-      </button>
+      {hideAction ? null : (
+        <button
+          type="button"
+          onClick={() => onActionClick?.(user)}
+          disabled={disabled}
+          className={`flex h-8 min-w-[102px] shrink-0 items-center justify-center rounded-lg etc-13-sb cursor-pointer disabled:opacity-50 ${
+            user.isFollowing
+              ? 'bg-pli-black-50 text-grayscale-100'
+              : 'bg-neon-2 text-grayscale-1200'
+          }`}
+        >
+          {getFollowActionLabel(user)}
+        </button>
+      )}
     </li>
   );
 }

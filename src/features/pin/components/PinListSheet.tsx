@@ -6,7 +6,8 @@ import CloseIcon from '@/assets/icons/close.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { PinListSheetSkeleton } from '@/components/skeletons/PinListSheetSkeleton';
+import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
@@ -35,10 +36,21 @@ type PinListSheetProps = {
   onClose: () => void;
   place: PlaceInfo;
   focusedFeedPin?: FocusedFeedPin;
+  /** 장소 상세·곡 목록 API 조회용 좌표 (GPS 또는 장소 좌표) */
   detailLocation: PlaceSearchHistoryRequest | null;
   detailLocationError?: string | null;
+  /**
+   * detailLocation이 실제 사용자 GPS인지 여부.
+   * false면 목록은 조회하되 withinAccessRange(500m)로 상세 열람을 허용하지 않는다.
+   */
+  hasReliableUserLocation?: boolean;
   onPinClick?: (pin: Pin) => void;
   onFocusedTrackClick?: (placeTrackId: string) => void;
+  /**
+   * 내/친구 피드 → 지도 진입 시에만 true로 넘긴다.
+   * false여도 시트 내부에서 내 장소·500m 이내이면 상세 열람을 허용한다.
+   */
+  allowTrackDetailAccess?: boolean;
   /** 이 값이 바뀌면 시트가 열린 채로도 default 스냅으로 리셋한다(다른 핀/장소 선택 시 사용). */
   resetKey?: string | number;
   /** 이 값이 바뀔 때마다 가장 작은 스냅으로 축소한다(지도 빈 곳 탭 시 사용). */
@@ -76,9 +88,23 @@ function formatDistance(distance: number) {
   return { value: String(Math.round(normalizedDistance)), unit: 'm' };
 }
 
-function findFocusedPlaceTrackId(focusedFeedPin?: FocusedFeedPin) {
+function findFocusedPlaceTrackId(focusedFeedPin?: FocusedFeedPin, pins: Pin[] = []) {
+  if (focusedFeedPin?.placeTrackId != null) return String(focusedFeedPin.placeTrackId);
   if (!focusedFeedPin) return null;
-  return String(focusedFeedPin.placeTrackId);
+
+  // 장소 곡 목록에 pinId가 있으면 포커스 핀과 매칭한다. (친구 CTA에서 내 곡으로 잘못 연결하지 않음)
+  const matchedByPinId = pins.find(
+    (pin) => pin.pinId != null && Number(pin.pinId) === focusedFeedPin.pinId,
+  );
+  if (matchedByPinId) return String(matchedByPinId.placeTrackId);
+
+  return null;
+}
+
+const PLACE_NAME_MAX_LENGTH = 14;
+
+function truncatePlaceName(name: string) {
+  return name.length > PLACE_NAME_MAX_LENGTH ? `${name.slice(0, PLACE_NAME_MAX_LENGTH)}...` : name;
 }
 
 type PinListContentProps = {
@@ -92,6 +118,8 @@ type PinListContentProps = {
   isBookmarkPending: boolean;
   onBookmarkToggle: () => void;
   onPinClick?: (pin: Pin) => void;
+  onBlockedPinClick?: () => void;
+  allowTrackDetailAccess?: boolean;
   focusedFeedPin?: FocusedFeedPin;
   onFocusedTrackClick?: () => void;
 };
@@ -107,6 +135,8 @@ function PinListContent({
   isBookmarkPending,
   onBookmarkToggle,
   onPinClick,
+  onBlockedPinClick,
+  allowTrackDetailAccess = false,
   focusedFeedPin,
   onFocusedTrackClick,
 }: PinListContentProps) {
@@ -142,12 +172,20 @@ function PinListContent({
                 </span>
               </div>
 
-              <div className="min-w-0">
-                <BottomSheet.Title className="block truncate head-24-sb text-grayscale-100">
-                  {place.name ||
-                    (detailErrorMessage
+              <div className="w-full min-w-0">
+                <BottomSheet.Title
+                  className={cn(
+                    'block head-24-sb text-grayscale-100',
+                    isFullPage ? 'line-clamp-2' : 'truncate',
+                  )}
+                >
+                  {place.name
+                    ? isFullPage
+                      ? place.name
+                      : truncatePlaceName(place.name)
+                    : detailErrorMessage
                       ? '장소 정보를 불러올 수 없어요'
-                      : '장소 정보를 불러오고 있어요')}
+                      : '장소 정보를 불러오고 있어요'}
                 </BottomSheet.Title>
                 {detailErrorMessage ? (
                   <p role="alert" className="body-15-r text-red">
@@ -194,7 +232,7 @@ function PinListContent({
                     !
                   </span>
                 ) : isBookmarked ? (
-                  <BookmarkActiveIcon className="size-7" aria-hidden />
+                  <BookmarkActiveIcon className="size-[26px]" aria-hidden />
                 ) : (
                   <BookmarkIcon className="size-7" aria-hidden />
                 )}
@@ -216,8 +254,7 @@ function PinListContent({
           <button
             type="button"
             onClick={onFocusedTrackClick}
-            disabled={!onFocusedTrackClick}
-            className="mt-4 flex w-full min-w-0 items-center gap-3 rounded-xl bg-pli-black-85 px-3 py-3 text-left disabled:opacity-50 cursor-pointer"
+            className="mt-4 flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-pli-black-50 bg-pli-black-85 px-3 py-3 text-left"
           >
             {focusedFeedPin.avatarUrl ? (
               <img
@@ -234,7 +271,7 @@ function PinListContent({
               <span className="text-neon-2">{focusedFeedPin.nickname} </span>님이 등록한 곡 상세
               보기
             </p>
-            <NextIcon className="size-5 text-grayscale-400" aria-hidden />
+            <NextIcon className="size-5 shrink-0 text-grayscale-400" aria-hidden />
           </button>
         ) : null}
 
@@ -245,12 +282,22 @@ function PinListContent({
         ) : null}
       </BottomSheet.Header>
 
-      <BottomSheet.Content className={cn('mt-5 px-4', !hasPins && 'flex flex-col')}>
+      <BottomSheet.Content className={cn('mt-5 px-4 scrollbar-hide', !hasPins && 'flex flex-col')}>
         {hasPins ? (
           <ul className="flex flex-col gap-4">
             {pins.map((pin) => (
               <li key={pin.placeTrackId}>
-                <PinCard pin={pin} onClick={() => onPinClick?.(pin)} />
+                <PinCard
+                  pin={pin}
+                  showLike={allowTrackDetailAccess}
+                  onClick={
+                    allowTrackDetailAccess
+                      ? () => onPinClick?.(pin)
+                      : onBlockedPinClick
+                        ? () => onBlockedPinClick()
+                        : undefined
+                  }
+                />
               </li>
             ))}
           </ul>
@@ -266,6 +313,8 @@ function PinListContent({
 }
 
 const BOOKMARK_TOAST_DURATION_MS = 2_000;
+const TRACK_DETAIL_BLOCKED_TOAST_MESSAGE =
+  '현재 위치 500m 이내이거나, 찜한 노래·내 장소·피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
 
 type BookmarkToast = {
   attempt: number;
@@ -279,8 +328,10 @@ export function PinListSheet({
   focusedFeedPin,
   detailLocation,
   detailLocationError = null,
+  hasReliableUserLocation: hasReliableUserLocationProp,
   onPinClick,
   onFocusedTrackClick,
+  allowTrackDetailAccess = false,
   resetKey,
   collapseToSmallestSignal,
   onActiveSnapChange,
@@ -289,19 +340,31 @@ export function PinListSheet({
 }: PinListSheetProps) {
   const [sort, setSort] = useState<PinSort>('POPULAR');
   const [bookmarkToast, setBookmarkToast] = useState<BookmarkToast | null>(null);
+  const [accessToast, setAccessToast] = useState<BookmarkToast | null>(null);
   const normalizedPlaceId = place.id.startsWith('place:')
     ? place.id.slice('place:'.length)
     : place.id;
   const parsedPlaceId = place.placeId ?? Number(normalizedPlaceId);
   const placeId = Number.isSafeInteger(parsedPlaceId) && parsedPlaceId > 0 ? parsedPlaceId : null;
-  const queryLatitude = detailLocation?.latitude ?? 0;
-  const queryLongitude = detailLocation?.longitude ?? 0;
+  // 조회 좌표가 없으면 장소 좌표로 폴백 — GPS 실패해도 목록은 볼 수 있어야 한다.
+  const listQueryLocation =
+    detailLocation ??
+    (Number.isFinite(place.latitude) && Number.isFinite(place.longitude)
+      ? { latitude: place.latitude, longitude: place.longitude }
+      : null);
+  // GPS 소수점 흔들림으로 쿼리 키가 매번 바뀌어 로딩이 반복되지 않도록 11m 단위로 반올림.
+  const queryLatitude = listQueryLocation ? Number(listQueryLocation.latitude.toFixed(4)) : 0;
+  const queryLongitude = listQueryLocation ? Number(listQueryLocation.longitude.toFixed(4)) : 0;
+  const canQueryPlace = listQueryLocation !== null;
   const placeDetailQuery = usePlaceDetail({
     placeId,
-    latitude: detailLocation?.latitude ?? 0,
-    longitude: detailLocation?.longitude ?? 0,
-    enabled: open && detailLocation !== null,
+    latitude: queryLatitude,
+    longitude: queryLongitude,
+    enabled: open && canQueryPlace,
   });
+  // 지도 핀 탭으로 열렸을 때(place.name이 아직 없음)만 최초 로딩 스켈레톤을 보여준다.
+  // 검색 결과로 열렸을 때는 이미 이름/주소가 있어 부분 데이터를 그대로 보여준다.
+  const isInitialLoading = !place.name && placeDetailQuery.isLoading;
   const resolvedPlace: PlaceInfo = {
     ...place,
     name: placeDetailQuery.data?.placeName ?? place.name,
@@ -335,12 +398,11 @@ export function PinListSheet({
 
   const bookmarkMutation = useTogglePlaceBookmark();
   const resolvedBookmarkState = placeDetailQuery.data?.bookmarkedByMe ?? place.bookmarkedByMe;
-  const detailErrorMessage =
-    detailLocation === null
-      ? detailLocationError
-      : placeDetailQuery.isError
-        ? '장소 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
-        : null;
+  const detailErrorMessage = !canQueryPlace
+    ? detailLocationError
+    : placeDetailQuery.isError
+      ? '장소 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
+      : null;
   const bookmarkStatus: BookmarkStatus =
     resolvedBookmarkState !== undefined ? 'ready' : detailErrorMessage ? 'error' : 'loading';
   const isCurrentPlaceMutation = bookmarkMutation.variables?.placeId === placeId;
@@ -353,7 +415,7 @@ export function PinListSheet({
     latitude: queryLatitude,
     longitude: queryLongitude,
     sort: sort === 'LATEST' ? 'LATEST' : 'POPULAR',
-    enabled: open && detailLocation !== null,
+    enabled: open && canQueryPlace,
   });
 
   const handleBookmarkToggle = () => {
@@ -381,7 +443,28 @@ export function PinListSheet({
       liked: track.isLiked,
     })) ?? [];
 
-  const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin);
+  const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin, pins);
+  const handleFocusedTrackClick = () => {
+    if (!onFocusedTrackClick) return;
+    if (!focusedPlaceTrackId) {
+      setAccessToast((currentToast) => ({
+        attempt: (currentToast?.attempt ?? 0) + 1,
+        message: '곡 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.',
+      }));
+      return;
+    }
+    onFocusedTrackClick(focusedPlaceTrackId);
+  };
+  // 500m 판정은 실제 GPS일 때만 신뢰한다. 미전달 시 하위 호환으로 detailLocation 유무를 본다.
+  const hasReliableUserLocation = hasReliableUserLocationProp ?? detailLocation !== null;
+  // 이 장소 곡 목록에 찜한 노래가 하나라도 있으면 리스트 전체 상세 열람 허용
+  const hasLikedTrackInPlace = pins.some((pin) => Boolean(pin.liked));
+  const canOpenTrackDetail =
+    allowTrackDetailAccess ||
+    Boolean(resolvedPlace.isMine) ||
+    (hasReliableUserLocation && Boolean(placeDetailQuery.data?.withinAccessRange)) ||
+    hasLikedTrackInPlace ||
+    Boolean(data?.isTrackDetailAccessible);
   const midSnap = focusedFeedPin ? PIN_LIST_SHEET_FEED_MID_SNAP : PIN_LIST_SHEET_MID_SNAP;
   // 매 렌더 새 배열이면 vaul이 prop 변화로 인식해 재실행하므로 값이 바뀔 때만 새로 만든다.
   const snapPoints = useMemo(
@@ -425,34 +508,49 @@ export function PinListSheet({
         onActiveSnapChange={handleActiveSnapChange}
       >
         <BottomSheet.FullPageNav onBack={onFullPageBack} trailing={bookmarkTrailingButton} />
-        <PinListContent
-          place={resolvedPlace}
-          pins={pins}
-          sort={sort}
-          onSortChange={setSort}
-          isBookmarked={isBookmarked}
-          bookmarkStatus={bookmarkStatus}
-          detailErrorMessage={detailErrorMessage}
-          isBookmarkPending={bookmarkMutation.isPending}
-          onBookmarkToggle={handleBookmarkToggle}
-          onPinClick={onPinClick}
-          focusedFeedPin={focusedFeedPin}
-          onFocusedTrackClick={
-            focusedPlaceTrackId && onFocusedTrackClick
-              ? () => onFocusedTrackClick(focusedPlaceTrackId)
-              : undefined
-          }
-        />
+
+        {isInitialLoading ? (
+          <PinListSheetSkeleton />
+        ) : (
+          <PinListContent
+            place={resolvedPlace}
+            pins={pins}
+            sort={sort}
+            onSortChange={setSort}
+            isBookmarked={isBookmarked}
+            bookmarkStatus={bookmarkStatus}
+            detailErrorMessage={detailErrorMessage}
+            isBookmarkPending={bookmarkMutation.isPending}
+            onBookmarkToggle={handleBookmarkToggle}
+            onPinClick={onPinClick}
+            onBlockedPinClick={() => {
+              setAccessToast((currentToast) => ({
+                attempt: (currentToast?.attempt ?? 0) + 1,
+                message: TRACK_DETAIL_BLOCKED_TOAST_MESSAGE,
+              }));
+            }}
+            allowTrackDetailAccess={canOpenTrackDetail}
+            focusedFeedPin={focusedFeedPin}
+            onFocusedTrackClick={onFocusedTrackClick ? handleFocusedTrackClick : undefined}
+          />
+        )}
       </BottomSheet>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[70] flex justify-center">
-        {bookmarkToast ? (
-          <Toast key={`${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
-            {bookmarkToast.message}
-          </Toast>
-        ) : null}
-        <ToastViewport />
-      </div>
+      <ToastPortal>
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
+          {bookmarkToast ? (
+            <Toast key={`bookmark:${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
+              {bookmarkToast.message}
+            </Toast>
+          ) : null}
+          {accessToast ? (
+            <Toast key={`access:${accessToast.message}:${accessToast.attempt}`} defaultOpen>
+              {accessToast.message}
+            </Toast>
+          ) : null}
+          <ToastViewport />
+        </div>
+      </ToastPortal>
     </ToastProvider>
   );
 }

@@ -1,6 +1,5 @@
+import { ProfilePinGridSkeleton } from '@/components/skeletons/ProfilePinGridSkeleton';
 import { Skeleton } from '@/components/ui/Skeleton';
-
-const PIN_SKELETON_COUNT = 12;
 
 export function ProfileSkeleton() {
   return (
@@ -32,13 +31,7 @@ export function ProfileSkeleton() {
 
       <div className="mt-4 mb-4 h-px bg-pli-black-50" />
 
-      <ul className="grid grid-cols-3 gap-1 px-[17px]">
-        {Array.from({ length: PIN_SKELETON_COUNT }).map((_, index) => (
-          <li key={index} className="aspect-square">
-            <Skeleton className="size-full rounded-[4.5px]" />
-          </li>
-        ))}
-      </ul>
+      <ProfilePinGridSkeleton />
     </div>
   );
 }

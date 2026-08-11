@@ -1,6 +1,7 @@
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import SoundWaveIcon from '@/assets/icons/soundwaves.svg?react';
 import PlayIcon from '@/assets/icons/play.svg?react';
+import { cn } from '@/lib/utils';
 import './MapPinMessageBox.css';
 
 export type MapPinMessageBoxProps = {
@@ -33,7 +34,9 @@ export function MapPinMessageBox({
         </div>
 
         <div className="gc-actions">
-          <SoundWaveIcon className="size-6 text-grayscale-400" aria-hidden />
+          <span className={cn('gc-wave', isPlaying && 'gc-wave--playing')} aria-hidden>
+            <SoundWaveIcon className="size-6" />
+          </span>
           <button
             type="button"
             aria-label={isPlaying ? '미리듣기 일시정지' : '미리듣기 재생'}

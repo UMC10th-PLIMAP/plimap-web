@@ -43,7 +43,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar title="설정" titleWeight="medium" onBack={() => navigate(-1)} />
 
       <div className="flex flex-col gap-5 px-4 pt-[35px]">

@@ -1,9 +1,7 @@
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import Cropper, { type Area, type Point } from 'react-easy-crop';
 
-import { getMyProfile } from '@/api/member';
 import { ApiError } from '@/api/client';
 import CameraIcon from '@/assets/icons/camera.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
@@ -12,13 +10,15 @@ import { TopBar } from '@/components/ui/TopBar';
 import { ProfileTextAreaField } from '@/features/profile/components/ProfileTextAreaField';
 import { ProfileTextField } from '@/features/profile/components/ProfileTextField';
 import { useProfileEditForm } from '@/features/profile/hooks/useProfileEditForm';
-import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
+import { useDeleteProfileImage } from '@/features/profile/queries/useDeleteProfileImage';
 import { useUpdateMyProfile } from '@/features/profile/queries/useUpdateMyProfile';
 import { useUploadProfileImage } from '@/features/profile/queries/useUploadProfileImage';
 import { getCroppedImageBlob } from '@/features/profile/utils/cropImage';
 import { INTRODUCTION_MAX_LENGTH } from '@/features/profile/utils/validateIntroduction';
 import { NAME_MAX_LENGTH } from '@/features/profile/utils/validateName';
 import { NICKNAME_MAX_LENGTH } from '@/features/profile/utils/validateNickname';
+import { useMyProfile } from '@/hooks/useMyProfile';
+import { cn } from '@/lib/utils';
 import type { MyProfileResponse } from '@/types/member.type';
 
 type ImageStep = 'idle' | 'crop';
@@ -33,14 +33,10 @@ const PROFILE_LOAD_FAILED_MESSAGE = '프로필을 불러오지 못했어요.';
 export default function ProfileEditPage() {
   const navigate = useNavigate();
 
-  const { data: profile, isError } = useQuery({
-    queryKey: memberQueryKeys.me(),
-    queryFn: getMyProfile,
-    staleTime: Infinity,
-  });
+  const { data: profile, isError } = useMyProfile();
 
   return (
-    <div className="flex h-full min-h-screen flex-col">
+    <div className="flex h-full min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar title="프로필 편집" titleWeight="medium" onBack={() => navigate(-1)} />
       {isError && (
         <p className="mt-8 text-center body-15-r text-grayscale-600">
@@ -64,6 +60,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
   const [croppedImageFile, setCroppedImageFile] = useState<File | null>(null);
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
   const [isCropProcessing, setIsCropProcessing] = useState(false);
+  const [isImageMarkedForDeletion, setIsImageMarkedForDeletion] = useState(false);
 
   const { nicknameField, nameField, introductionField, isDirty, isValid, buildPayload } =
     useProfileEditForm({
@@ -74,11 +71,15 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
 
   const { mutateAsync: saveProfile, isPending: isSavingProfile } = useUpdateMyProfile();
   const { mutateAsync: uploadImage, isPending: isUploadingImage } = useUploadProfileImage();
-  const isSubmitting = isSavingProfile || isUploadingImage;
+  const { mutateAsync: deleteImage, isPending: isDeletingImage } = useDeleteProfileImage();
+  const isSubmitting = isSavingProfile || isUploadingImage || isDeletingImage;
 
   const isImageChanged = croppedImageFile !== null;
-  const canSubmit = (isDirty || isImageChanged) && isValid;
-  const profileImageSrc = croppedImageUrl ?? profile.profileImageUrl;
+  const hasImageDeletion = isImageMarkedForDeletion && profile.profileImageUrl !== null;
+  const canSubmit = (isDirty || isImageChanged || hasImageDeletion) && isValid;
+  const profileImageSrc = isImageMarkedForDeletion
+    ? null
+    : (croppedImageUrl ?? profile.profileImageUrl);
 
   const handlePickImage = () => {
     fileInputRef.current?.click();
@@ -123,6 +124,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
       }
       setCroppedImageFile(file);
       setCroppedImageUrl(URL.createObjectURL(file));
+      setIsImageMarkedForDeletion(false);
       setImageStep('idle');
     } catch (error) {
       console.error('크롭 실패:', error);
@@ -140,11 +142,23 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
     setImageStep('idle');
   };
 
+  const handleDeleteClick = () => {
+    if (!profileImageSrc) return;
+
+    if (croppedImageUrl) URL.revokeObjectURL(croppedImageUrl);
+    setCroppedImageFile(null);
+    setCroppedImageUrl(null);
+    setIsImageMarkedForDeletion(true);
+  };
+
   const handleSubmit = async () => {
     try {
       if (croppedImageFile) {
         await uploadImage(croppedImageFile);
         setCroppedImageFile(null);
+      } else if (hasImageDeletion) {
+        await deleteImage();
+        setIsImageMarkedForDeletion(false);
       }
 
       const payload = buildPayload();
@@ -185,7 +199,10 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           onZoomChange={setZoom}
           onCropComplete={handleCropComplete}
         />
-        <TopBar onBack={handleCropBack} className="absolute top-[55px] left-0 z-10 w-full" />
+        <TopBar
+          onBack={handleCropBack}
+          className="absolute top-[calc(env(safe-area-inset-top)+16px)] left-0 z-10 w-full"
+        />
         <div className="absolute bottom-0 left-1/2 z-10 flex w-full max-w-[402px] -translate-x-1/2 flex-col items-center px-[10px] pb-[52px]">
           <Button
             variant="cta"
@@ -217,7 +234,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
         className="hidden"
       />
 
-      <div className="mt-[37px] flex flex-col items-center">
+      <div className="mt-[37px] flex flex-col items-center gap-6">
         <button
           type="button"
           onClick={handlePickImage}
@@ -234,6 +251,17 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           <span className="absolute right-0 bottom-0 flex size-[27px] items-center justify-center rounded-full bg-grayscale-300">
             <CameraIcon className="size-[15px] text-grayscale-1250" />
           </span>
+        </button>
+        <button
+          type="button"
+          onClick={handleDeleteClick}
+          disabled={!profileImageSrc || isSubmitting}
+          className={cn(
+            'body-15-r underline disabled:cursor-not-allowed',
+            profileImageSrc ? 'cursor-pointer text-grayscale-300' : 'text-grayscale-900',
+          )}
+        >
+          프로필 사진 삭제
         </button>
       </div>
 

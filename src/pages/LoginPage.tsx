@@ -5,6 +5,8 @@ import GoogleIcon from '@/assets/icons/google.svg?react';
 import KakaoIcon from '@/assets/icons/kakao.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { Button } from '@/components/ui/button';
+import { OnboardingSplash } from '@/features/auth/components/OnboardingSplash';
+import { OnboardingTutorial } from '@/features/auth/components/OnboardingTutorial';
 
 export type LoginPageLocationState = {
   oauthError?: boolean;
@@ -28,6 +30,9 @@ const OAUTH_LOGIN_URL: Record<OAuthProvider, string> = {
   google: GOOGLE_LOGIN_URL,
 };
 
+// 로그인 화면 진입 시 항상 스플래시 → 튜토리얼 → 로그인 버튼 순서로 노출한다.
+type LoginStep = 'splash' | 'tutorial' | 'credentials';
+
 function OAuthSpinner() {
   return (
     <span
@@ -38,9 +43,14 @@ function OAuthSpinner() {
 }
 
 export default function LoginPage() {
-  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  // OAuth 실패로 돌아온 경우에는 에러를 바로 보여줘야 하므로 스플래시/튜토리얼을 건너뛴다.
+  const [step, setStep] = useState<LoginStep>(() => {
+    const state = location.state as LoginPageLocationState | null;
+    return state?.oauthError ? 'credentials' : 'splash';
+  });
+  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const hasShownOAuthErrorRef = useRef(false);
 
   useEffect(() => {
@@ -67,6 +77,14 @@ export default function LoginPage() {
     setLoadingProvider(provider);
     window.location.href = OAUTH_LOGIN_URL[provider];
   };
+
+  if (step === 'splash') {
+    return <OnboardingSplash onComplete={() => setStep('tutorial')} />;
+  }
+
+  if (step === 'tutorial') {
+    return <OnboardingTutorial onFinish={() => setStep('credentials')} />;
+  }
 
   return (
     <div className="flex h-full min-h-screen flex-col items-center bg-pli-black-100 px-[39px]">

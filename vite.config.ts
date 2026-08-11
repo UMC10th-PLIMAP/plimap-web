@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
+import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
@@ -20,6 +21,61 @@ export default defineConfig({
     react(),
     tailwindcss(),
     svgr(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: [
+        'Logo.png',
+        'apple-touch-icon.png',
+        'icons/pwa-icon-192.png',
+        'icons/pwa-icon-512.png',
+      ],
+      manifest: {
+        name: 'PLIMAP',
+        short_name: 'PLIMAP',
+        description: '지도 위에서 발견하는 새로운 플레이리스트',
+        display: 'standalone',
+        theme_color: '#12141F',
+        background_color: '#12141F',
+        start_url: '/app/home',
+        orientation: 'portrait',
+        icons: [
+          {
+            src: '/icons/pwa-icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icons/pwa-icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icons/pwa-icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        // 실제 프론트 라우트(/app/**)로 이동할 때만 index.html로 폴백한다.
+        // 백엔드 경로(/api/, /oauth/, /swagger-ui/ 등)는 새로 생겨도 항상 제외된다.
+        navigateFallbackAllowlist: [/^\/app(\/|$)/],
+        // runtimeCaching에 /api/ 규칙을 두지 않아, 지도/위치 등 API 응답은 캐싱하지 않는다.
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) =>
+              request.destination === 'script' ||
+              request.destination === 'style' ||
+              request.destination === 'font',
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'app-shell' },
+          },
+        ],
+      },
+    }),
   ],
   resolve: {
     alias: {

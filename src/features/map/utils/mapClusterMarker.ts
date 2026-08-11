@@ -19,6 +19,10 @@ const unmountClusterMarker = (mount: HTMLElement) => {
   markerRoots.delete(mount);
 };
 
+export const updateClusterMarker = (mount: HTMLElement, props: ClusterMarkerProps) => {
+  renderClusterMarker(mount, props);
+};
+
 type ClusterOverlayOptions = {
   position: google.maps.LatLngLiteral;
   onClick?: () => void;

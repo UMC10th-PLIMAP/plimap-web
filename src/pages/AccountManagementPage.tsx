@@ -33,7 +33,7 @@ export default function AccountManagementPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar title="계정 관리" titleWeight="medium" onBack={() => navigate(-1)} />
 
       <div className="flex flex-col gap-2 px-4 pt-[35px]">

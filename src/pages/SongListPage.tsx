@@ -9,6 +9,7 @@ import { SongCard } from '@/features/pin/components/SongCard';
 import { fetchPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
 import { useSearchTracks } from '@/features/pin/queries/useSearchTracks';
 import type { SearchTrack } from '@/features/pin/types';
+import { useAutoFocusAfterViewTransition } from '@/hooks/useAutoFocusAfterViewTransition';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
 const TOAST_DURATION_MS = 2_500;
@@ -22,6 +23,7 @@ type SelectToast = {
 export default function SongListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const searchInputRef = useAutoFocusAfterViewTransition<HTMLInputElement>();
   const place = usePinCreationStore((state) => state.place);
   const currentLocation = usePinCreationStore((state) => state.currentLocation);
   const [query, setQuery] = useState('');
@@ -59,10 +61,11 @@ export default function SongListPage() {
 
   return (
     <ToastProvider duration={TOAST_DURATION_MS}>
-      <div className="relative flex min-h-full flex-col">
+      <div className="relative flex min-h-full flex-col pt-[env(safe-area-inset-top)]">
         <TopBar onBack={() => navigate(-1)} title="노래 선택하기" titleWeight="regular" />
         <div className="px-[15px] pt-4">
           <SearchInput
+            ref={searchInputRef}
             variant="song"
             value={query}
             onChange={(event) => setQuery(event.target.value)}

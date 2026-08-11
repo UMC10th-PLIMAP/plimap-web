@@ -142,7 +142,10 @@ export default function ProfileImageSetupPage() {
           onZoomChange={setZoom}
           onCropComplete={handleCropComplete}
         />
-        <TopBar onBack={handleCropBack} className="absolute top-[55px] left-0 z-10 w-full" />
+        <TopBar
+          onBack={handleCropBack}
+          className="absolute top-[calc(env(safe-area-inset-top)+16px)] left-0 z-10 w-full"
+        />
         <div className="absolute bottom-0 left-1/2 z-10 flex w-full max-w-[402px] -translate-x-1/2 flex-col items-center px-[10px] pb-[52px]">
           <Button
             variant="cta"
@@ -159,7 +162,7 @@ export default function ProfileImageSetupPage() {
   }
 
   return (
-    <div className="flex h-full min-h-screen flex-col">
+    <div className="flex h-full min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar onBack={() => navigate(-1)} />
 
       <input

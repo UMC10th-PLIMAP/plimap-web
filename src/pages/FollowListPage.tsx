@@ -10,7 +10,7 @@ import { useInfiniteFollowList } from '@/features/profile/queries/useFollowList'
 import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 import { useGoBack } from '@/hooks/useGoBack';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
-import { useMyProfile } from '@/features/home/hooks/useMyProfile';
+import { useMyProfile } from '@/hooks/useMyProfile';
 import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
 
 import type { FollowTab } from '@/features/profile/types';
@@ -143,7 +143,7 @@ export default function FollowListPage() {
   const emptyState = isOtherMember ? OTHER_EMPTY_STATE[tab] : EMPTY_STATE[tab];
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar title={titleNickname} titleWeight="medium" onBack={goBack} />
 
       <div
@@ -212,9 +212,12 @@ export default function FollowListPage() {
               <FollowUserRow
                 key={user.id}
                 user={user}
-                onClick={(target) => navigate(`/app/users/${target.id}`)}
+                onClick={(target) =>
+                  navigate(target.id === myProfile?.id ? '/app/my' : `/app/users/${target.id}`)
+                }
                 onActionClick={handleActionClick}
                 disabled={pendingMemberIds.has(user.id)}
+                hideAction={user.id === myProfile?.id}
               />
             ))}
           </ul>

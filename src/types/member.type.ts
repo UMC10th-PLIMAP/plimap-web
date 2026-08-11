@@ -34,6 +34,7 @@ export type FollowListItem = {
   profileImageUrl: string | null;
   followedAt: string;
   isFollowing: boolean;
+  isFollowingViewer: boolean;
 };
 
 export type FollowListResponse = {
@@ -55,6 +56,8 @@ export type MemberSearchItem = {
   name: string | null;
   profileImageUrl: string | null;
   isFollowing: boolean;
+  isFollowingViewer: boolean;
+  joinedAt: string;
 };
 
 export type MemberSearchResponse = {
@@ -73,6 +76,7 @@ export type MemberProfileResponse = {
   followingCount: number;
   pinCount: number;
   isFollowing: boolean;
+  isFollowingViewer: boolean;
 };
 
 export type UpdateMyProfileRequest = {

@@ -15,6 +15,7 @@ export const DEV_MOCK_MAP_PINS: MapPin[] = [
     coverUrl: undefined,
     nickname: '냥코',
     introduction: '도가니 살리기 위잉잉잉~',
+    hasBookmarkedPlace: true,
   },
   {
     id: 'dev-mock:2',
@@ -23,6 +24,7 @@ export const DEV_MOCK_MAP_PINS: MapPin[] = [
     coverUrl: undefined,
     nickname: '한강러버',
     introduction: '야경 보면서 듣기 딱 좋아요',
+    hasBookmarkedPlace: false,
   },
   {
     id: 'dev-mock:3',
@@ -31,6 +33,7 @@ export const DEV_MOCK_MAP_PINS: MapPin[] = [
     coverUrl: undefined,
     nickname: '산책러',
     introduction: '퇴근길 산책 플레이리스트',
+    hasBookmarkedPlace: false,
   },
   {
     id: 'dev-mock:4',
@@ -39,5 +42,6 @@ export const DEV_MOCK_MAP_PINS: MapPin[] = [
     coverUrl: undefined,
     nickname: '댄스머신',
     introduction: '기분 좋아지는 노래 추천',
+    hasBookmarkedPlace: true,
   },
 ];

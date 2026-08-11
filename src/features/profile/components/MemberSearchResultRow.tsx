@@ -1,4 +1,5 @@
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
+import { getFollowActionLabel } from '@/features/profile/utils/getFollowActionLabel';
 import type { MemberSearchItem } from '@/types/member.type';
 
 type MemberSearchResultRowProps = {
@@ -40,14 +41,14 @@ export function MemberSearchResultRow({
         type="button"
         onClick={() => onToggleFollow(member)}
         disabled={isFollowPending}
-        aria-label={`${member.nickname} ${member.isFollowing ? '팔로우 취소' : '팔로우'}`}
+        aria-label={`${member.nickname} ${member.isFollowing ? '팔로우 취소' : getFollowActionLabel(member)}`}
         className={`flex h-8 min-w-[102px] shrink-0 items-center justify-center rounded-lg etc-13-sb cursor-pointer disabled:opacity-50 ${
           member.isFollowing
             ? 'bg-pli-black-50 text-grayscale-100'
             : 'bg-neon-2 text-grayscale-1200'
         }`}
       >
-        {member.isFollowing ? '팔로잉' : '팔로우'}
+        {getFollowActionLabel(member)}
       </button>
     </li>
   );

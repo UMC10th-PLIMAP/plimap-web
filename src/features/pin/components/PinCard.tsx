@@ -8,9 +8,11 @@ import { cn } from '@/lib/utils';
 type PinCardProps = {
   pin: Pin;
   onClick?: () => void;
+  /** false면 하트(찜) UI 숨김 — 상세 열람 불가 진입 */
+  showLike?: boolean;
 };
 
-export function PinCard({ pin, onClick }: PinCardProps) {
+export function PinCard({ pin, onClick, showLike = true }: PinCardProps) {
   const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
   const { mutate: deleteLikedTrack, isPending: isDeletePending } = useDeleteLikedTrack();
   const isPending = isPutPending || isDeletePending;
@@ -44,28 +46,43 @@ export function PinCard({ pin, onClick }: PinCardProps) {
           : undefined
       }
       className={cn(
-        'flex w-full items-center justify-between rounded-xl bg-pli-black-85 px-4.5 pt-4 pb-3 text-left',
+        'flex w-full items-center justify-between rounded-xl bg-pli-black-85 px-4.5 text-left',
+        showLike ? 'pt-4 pb-3' : 'py-4.5',
         onClick && 'cursor-pointer',
       )}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex min-w-0 items-center gap-4">
-          <div className="size-13 overflow-hidden rounded-lg bg-grayscale-0">
+          <div className="flex-shrink-0 h-[52px] w-[52px] overflow-hidden rounded-lg bg-grayscale-0">
             {pin.artworkUrl ? (
               <img
                 src={pin.artworkUrl}
                 alt={pin.trackName ?? undefined}
-                className="size-full object-cover"
+                className="h-full w-full object-cover"
               />
             ) : null}
           </div>
           <div className="flex min-w-0 flex-col items-start gap-[3px]">
-            <p className="w-full truncate body-15-sb text-grayscale-100">{pin.trackName}</p>
-            <p className="w-full truncate body-15-r text-grayscale-500">{pin.artistName}</p>
+            <p
+              className={cn(
+                'w-full truncate body-15-sb',
+                showLike ? 'text-grayscale-100' : 'text-grayscale-500',
+              )}
+            >
+              {pin.trackName}
+            </p>
+            <p
+              className={cn(
+                'w-full truncate body-15-r',
+                showLike ? 'text-grayscale-500' : 'text-grayscale-700',
+              )}
+            >
+              {pin.artistName}
+            </p>
           </div>
         </div>
 
-        {pin.likeCount !== undefined ? (
+        {showLike ? (
           <button
             type="button"
             aria-label={pin.liked ? '좋아요 취소' : '좋아요'}
@@ -78,14 +95,22 @@ export function PinCard({ pin, onClick }: PinCardProps) {
               className={cn('size-[18px]', pin.liked ? 'fill-red text-red' : 'text-grayscale-300')}
               aria-hidden
             />
-            <span>{pin.likeCount}</span>
+            <span>{pin.likeCount ?? 0}</span>
           </button>
         ) : null}
       </div>
 
-      <span className="ml-3 flex items-center gap-1 etc-13-r text-grayscale-300">
+      <span
+        className={cn(
+          'ml-3 flex items-center gap-1 etc-13-r',
+          showLike ? 'text-grayscale-300' : 'text-grayscale-700',
+        )}
+      >
         {pin.pinCount != null ? `${pin.pinCount}명이 등록` : '맵으로 이동'}
-        <NextIcon className="size-5" aria-hidden />
+        <NextIcon
+          className={cn('size-5', showLike ? 'text-grayscale-400' : 'text-grayscale-900')}
+          aria-hidden
+        />
       </span>
     </article>
   );

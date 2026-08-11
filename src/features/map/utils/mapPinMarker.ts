@@ -16,6 +16,7 @@ export const toMapPinMarkerProps = (
   onPlay?: () => void,
   isPlaying = false,
   showMessageBubble = false,
+  isBookmarked = false,
 ): MapPinMarkerProps => ({
   coverUrl: pin.coverUrl,
   isSelected,
@@ -25,6 +26,7 @@ export const toMapPinMarkerProps = (
   introduction: pin.introduction,
   onPlay,
   showMessageBubble,
+  isBookmarked,
 });
 
 export const renderMapPinMarker = (mount: HTMLElement, props: MapPinMarkerProps) => {
@@ -64,6 +66,8 @@ type MapPinOverlayOptions = {
 
 export type MapPinOverlayHandle = google.maps.OverlayView & {
   setZIndex: (zIndex: number) => void;
+  setPosition: (position: google.maps.LatLngLiteral) => void;
+  setOnClick: (onClick: (() => void) | undefined) => void;
 };
 
 export type MapPinOverlayEntry = {
@@ -72,25 +76,26 @@ export type MapPinOverlayEntry = {
 };
 
 export const createMapPinOverlay = ({
-  position,
+  position: initialPosition,
   zIndex = 100,
-  onClick,
+  onClick: initialOnClick,
   ...markerProps
 }: MapPinOverlayOptions): MapPinOverlayEntry => {
   const { anchor, mount } = createMapPinMarkerMount(markerProps);
+  let position = initialPosition;
+  let onClick = initialOnClick;
 
   class MapPinOverlay extends google.maps.OverlayView {
     private container: HTMLDivElement | null = null;
     private currentZIndex = zIndex;
+    private handleClick = () => onClick?.();
 
     onAdd() {
       const container = document.createElement('div');
       container.style.position = 'absolute';
       container.style.zIndex = String(this.currentZIndex);
 
-      if (onClick) {
-        anchor.addEventListener('click', onClick);
-      }
+      anchor.addEventListener('click', this.handleClick);
       container.appendChild(anchor);
 
       this.container = container;
@@ -112,6 +117,7 @@ export const createMapPinOverlay = ({
     }
 
     onRemove() {
+      anchor.removeEventListener('click', this.handleClick);
       this.container?.remove();
       this.container = null;
     }
@@ -121,6 +127,15 @@ export const createMapPinOverlay = ({
       if (this.container) {
         this.container.style.zIndex = String(nextZIndex);
       }
+    }
+
+    setPosition(nextPosition: google.maps.LatLngLiteral) {
+      position = nextPosition;
+      this.draw();
+    }
+
+    setOnClick(nextOnClick: (() => void) | undefined) {
+      onClick = nextOnClick;
     }
   }
 

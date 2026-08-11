@@ -2,9 +2,11 @@ import { useCallback, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 
 import { getPlaceDetail } from '@/api/place';
-import { getPinDetail, getPlaceTrackPins } from '@/api/pin';
+import { getPinDetail, getPlaceTrackPins, postFeedPlaceAccessRequest } from '@/api/pin';
+import { getPlaceTracks } from '@/api/track';
 import type { FocusedFeedPin, PinDetailResponse, PinSearchPlace } from '@/features/pin/types';
 import type { AppOutletContext } from '@/layouts/RootLayout';
+import { useFeedPlaceAccessStore } from '@/store/feedPlaceAccessStore';
 import { getCurrentPosition, getGeolocationErrorMessage } from '@/utils/geolocation';
 
 type OpenPinPlaceOptions = {
@@ -12,13 +14,19 @@ type OpenPinPlaceOptions = {
   placeTrackId?: number | string;
   fallbackPlaceName?: string;
   isMine?: boolean;
-  /** 프로필 피드 등에서 진입 시 ‘등록한 곡 상세 보기’ CTA 표시 */
+  /** 내/친구 프로필 피드 등에서 진입 시 ‘{닉네임} 님이 등록한 곡 상세 보기’ CTA 표시 */
   showMyRegisteredTrackCta?: boolean;
+  /** 친구 피드 장소 접근 토큰 발급 (팔로잉한 친구 핀 진입 시) */
+  requestFeedPlaceAccess?: boolean;
+  /** 지도 상단을 검색창 대신 뒤로가기로 표시 (내 PLIMAP 등) */
+  showMapBackButton?: boolean;
 };
 
 type OpenPlaceTrackOptions = {
   placeTrackId: number | string;
   fallbackPlaceName?: string;
+  /** 지도 상단을 검색창 대신 뒤로가기로 표시 (내 PLIMAP 등) */
+  showMapBackButton?: boolean;
 };
 
 export type OpenPlaceTrackResult = { ok: true } | { ok: false; message: string };
@@ -29,17 +37,18 @@ async function resolvePlace(params: {
   isMine: boolean;
   focusedFeedPin?: FocusedFeedPin;
   mapFocusPin?: FocusedFeedPin;
+  allowTrackDetailAccess?: boolean;
 }) {
   const { pinDetail } = params;
   const positionResult = await getCurrentPosition();
-  const userCoordinate = positionResult.ok
+  const queryCoordinate = positionResult.ok
     ? positionResult.coordinate
     : { lat: pinDetail.latitude, lng: pinDetail.longitude };
 
   const placeDetail = await getPlaceDetail({
     placeId: pinDetail.placeId,
-    latitude: userCoordinate.lat,
-    longitude: userCoordinate.lng,
+    latitude: queryCoordinate.lat,
+    longitude: queryCoordinate.lng,
   });
 
   const place: PinSearchPlace = {
@@ -52,9 +61,18 @@ async function resolvePlace(params: {
     creatorName: pinDetail.writerNickname,
     bookmarkedByMe: placeDetail.bookmarkedByMe,
     isMine: params.isMine || placeDetail.pinnedByMe,
-    selectionLocation: {
-      latitude: userCoordinate.lat,
-      longitude: userCoordinate.lng,
+    allowTrackDetailAccess: params.allowTrackDetailAccess,
+    // GPS 성공 시에만 — 500m 판정에 장소 좌표를 쓰면 안 된다.
+    selectionLocation: positionResult.ok
+      ? {
+          latitude: positionResult.coordinate.lat,
+          longitude: positionResult.coordinate.lng,
+        }
+      : undefined,
+    // 목록/상세 조회용 — GPS 실패 시에도 장소 좌표로 조회 가능해야 한다.
+    queryLocation: {
+      latitude: queryCoordinate.lat,
+      longitude: queryCoordinate.lng,
     },
     coordinates: {
       lat: pinDetail.latitude,
@@ -64,7 +82,10 @@ async function resolvePlace(params: {
     mapFocusPin: params.mapFocusPin,
   };
 
-  return { place, userCoordinate };
+  return {
+    place,
+    userCoordinate: positionResult.ok ? positionResult.coordinate : null,
+  };
 }
 
 type PlaceTrackPinItem = Awaited<ReturnType<typeof getPlaceTrackPins>>['data'][number];
@@ -99,6 +120,8 @@ export function useOpenPinPlaceOnMap() {
       fallbackPlaceName = '',
       isMine = false,
       showMyRegisteredTrackCta = false,
+      requestFeedPlaceAccess = false,
+      showMapBackButton = false,
     }: OpenPinPlaceOptions) => {
       if (isNavigating) return;
 
@@ -106,30 +129,84 @@ export function useOpenPinPlaceOnMap() {
       try {
         const resolvedPinId = Number(pinId);
         const pinDetail = await getPinDetail(String(pinId));
-        const { place } = await resolvePlace({
+
+        const { place, userCoordinate } = await resolvePlace({
           pinDetail,
           fallbackPlaceName,
           isMine,
+          // 내/친구 피드 → 지도 진입이므로 곡 상세 열람 허용
+          allowTrackDetailAccess: true,
         });
+        place.showMapBackButton = showMapBackButton;
 
-        const resolvedPlaceTrackId =
-          showMyRegisteredTrackCta && placeTrackId != null ? Number(placeTrackId) : null;
+        // resolvePlace 최종 isMine( pinnedByMe 반영 ) 기준으로 토큰 발급
+        if (requestFeedPlaceAccess && !place.isMine && place.placeId != null) {
+          const access = await postFeedPlaceAccessRequest(String(place.placeId));
+          useFeedPlaceAccessStore.getState().setToken(place.placeId, access.placeAccessToken);
+          if (access.placeId !== place.placeId) {
+            useFeedPlaceAccessStore.getState().setToken(access.placeId, access.placeAccessToken);
+          }
+          place.placeAccessToken = access.placeAccessToken;
+        }
 
-        if (resolvedPlaceTrackId != null) {
-          place.focusedFeedPin = {
-            pinId: resolvedPinId,
-            placeTrackId: resolvedPlaceTrackId,
-            nickname: pinDetail.writerNickname,
-            avatarUrl: pinDetail.writerProfileImage || undefined,
-            albumImageUrl: pinDetail.albumImageUrl,
-            introduction: pinDetail.introduction,
-            youtubeVideoId: pinDetail.youtubeVideoId,
-            clipStartMs: pinDetail.clipStartMs,
-          };
+        let resolvedPlaceTrackId = (() => {
+          if (placeTrackId == null) return undefined;
+          const parsed = Number(placeTrackId);
+          return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+        })();
+
+        // 내 모든 핀 등에서 placeTrackId가 없으면, 해당 장소의 내 등록 곡으로만 보완한다.
+        // 친구 피드에서는 pinByMe로 내 곡을 잡으면 안 되므로 isMine일 때만 조회한다.
+        if (showMyRegisteredTrackCta && resolvedPlaceTrackId == null && place.placeId != null) {
+          const lookupCoordinate = userCoordinate ?? place.coordinates;
+          try {
+            const placeTracks = await getPlaceTracks(
+              String(place.placeId),
+              '0',
+              50,
+              lookupCoordinate.lat,
+              lookupCoordinate.lng,
+              'LATEST',
+            );
+            if (isMine) {
+              const myTrack = placeTracks.tracks.find((track) => track.pinByMe);
+              if (myTrack?.placeTrackId != null) {
+                resolvedPlaceTrackId = myTrack.placeTrackId;
+              }
+            } else {
+              // 친구 핀: 앨범 이미지로 같은 장소 곡을 찾아 CTA 연결
+              const matchedTrack = placeTracks.tracks.find(
+                (track) => track.artworkUrl != null && track.artworkUrl === pinDetail.albumImageUrl,
+              );
+              if (matchedTrack?.placeTrackId != null) {
+                resolvedPlaceTrackId = matchedTrack.placeTrackId;
+              }
+            }
+          } catch (error) {
+            console.error(error);
+          }
+        }
+
+        // 피드 진입 시 지도 핀 말풍선(MapPinMessageBox)용 데이터
+        place.mapFocusPin = {
+          pinId: resolvedPinId,
+          placeTrackId: resolvedPlaceTrackId,
+          nickname: pinDetail.writerNickname,
+          avatarUrl: pinDetail.writerProfileImage || undefined,
+          albumImageUrl: pinDetail.albumImageUrl,
+          introduction: pinDetail.introduction,
+          youtubeVideoId: pinDetail.youtubeVideoId,
+          clipStartMs: pinDetail.clipStartMs,
+        };
+
+        // 등록 곡 상세 CTA (내 모든 핀·내/친구 프로필 피드 진입)
+        if (showMyRegisteredTrackCta) {
+          place.focusedFeedPin = place.mapFocusPin;
         }
 
         selectMapPlace(place);
         navigate('/app');
+        setIsNavigating(false);
       } catch (error) {
         console.error(error);
         setIsNavigating(false);
@@ -143,6 +220,7 @@ export function useOpenPinPlaceOnMap() {
     async ({
       placeTrackId,
       fallbackPlaceName = '',
+      showMapBackButton = false,
     }: OpenPlaceTrackOptions): Promise<OpenPlaceTrackResult> => {
       if (isNavigating) {
         return { ok: false, message: '이미 지도를 여는 중이에요. 잠시만 기다려 주세요.' };
@@ -184,10 +262,14 @@ export function useOpenPinPlaceOnMap() {
           focusedFeedPin: myPin
             ? toFocusedFeedPin(myPin, resolvedPlaceTrackId, pinDetail)
             : undefined,
+          // 찜한 곡(내 PLIMAP) → 지도 진입이므로 곡 상세 열람 허용
+          allowTrackDetailAccess: true,
         });
+        place.showMapBackButton = showMapBackButton;
 
         selectMapPlace(place);
         navigate('/app');
+        setIsNavigating(false);
         return { ok: true };
       } catch (error) {
         console.error(error);

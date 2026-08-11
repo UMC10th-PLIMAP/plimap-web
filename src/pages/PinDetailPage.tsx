@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
+import { PinDetailSkeleton } from '@/components/skeletons/PinDetailSkeleton';
 
 import { reportPin } from '@/api/report';
 import { ReportModal } from '@/features/pin/components/ReportModal';
-import { SongFeedCard } from '@/features/pin/components/SongFeedCard';
+import { PinFeedCard } from '@/features/pin/components/PinFeedCard';
 import { useDeleteLikedTrack } from '@/features/pin/queries/useDeleteLikedTrack';
 import { useDeletePin } from '@/features/pin/queries/useDeletePin';
 import { usePlaceTrackDetail } from '@/features/pin/queries/usePlaceTrackDetail';
@@ -26,6 +27,12 @@ const SORT_LABEL: Record<PinSort, string> = {
 };
 
 type PlaceTrackPin = GetPlaceTrackPinsResponse['data'][number];
+
+type PinDetailLocationState = {
+  userLatitude?: number;
+  userLongitude?: number;
+  placeAccessToken?: string;
+};
 
 function toPinFeedEntry(pin: PlaceTrackPin): PinFeedEntry {
   return {
@@ -58,26 +65,55 @@ function toGeolocationFailureReason(error: Error): GeolocationFailureReason {
 
 export default function PinDetailPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = (location.state as PinDetailLocationState | null) ?? null;
   const { pinId } = useParams<{ pinId: string }>();
   const [sort, setSort] = useState<PinSort>('LATEST');
   const [reportFeedId, setReportFeedId] = useState<string | null>(null);
   const [deletePinId, setDeletePinId] = useState<string | null>(null);
-  const currentPositionQuery = useCurrentPosition();
+
+  const hasLocationFromState =
+    locationState?.userLatitude != null &&
+    locationState?.userLongitude != null &&
+    Number.isFinite(locationState.userLatitude) &&
+    Number.isFinite(locationState.userLongitude);
+
+  const currentPositionQuery = useCurrentPosition({
+    enabled: !hasLocationFromState,
+  });
+  // 지도/피드에서 navigate state로 넘긴 토큰만 사용 (스토어 잔여 토큰 혼입 방지)
+  const placeAccessToken = locationState?.placeAccessToken;
   const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
 
-  const userLatitude = currentPositionQuery.data?.latitude;
-  const userLongitude = currentPositionQuery.data?.longitude;
+  const userLatitude = hasLocationFromState
+    ? locationState.userLatitude
+    : currentPositionQuery.data?.latitude;
+  const userLongitude = hasLocationFromState
+    ? locationState.userLongitude
+    : currentPositionQuery.data?.longitude;
 
-  const { data: pinDetail } = usePlaceTrackDetail({
+  const {
+    data: pinDetail,
+    isPending: isDetailPending,
+    isError: isDetailError,
+    refetch: refetchDetail,
+  } = usePlaceTrackDetail({
     placeTrackId: pinId,
     userLatitude,
     userLongitude,
+    placeAccessToken,
   });
-  const { data: pinPages } = usePlaceTrackPins({
+  const {
+    data: pinPages,
+    isPending: isPinsPending,
+    isError: isPinsError,
+    refetch: refetchPins,
+  } = usePlaceTrackPins({
     placeTrackId: pinId,
     pinSortType: sort,
     userLatitude,
     userLongitude,
+    placeAccessToken,
   });
 
   const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
@@ -86,15 +122,22 @@ export default function PinDetailPage() {
   const isLikePending = isPutPending || isDeletePending;
 
   const pins = pinPages?.pages.flatMap((page) => page.data.map(toPinFeedEntry)) ?? [];
-  const locationErrorMessage = currentPositionQuery.isError
-    ? getGeolocationErrorMessage(
-        toGeolocationFailureReason(
-          currentPositionQuery.error instanceof Error
-            ? currentPositionQuery.error
-            : new Error('POSITION_UNAVAILABLE'),
-        ),
-      )
-    : null;
+  const locationErrorMessage =
+    !hasLocationFromState && currentPositionQuery.isError
+      ? getGeolocationErrorMessage(
+          toGeolocationFailureReason(
+            currentPositionQuery.error instanceof Error
+              ? currentPositionQuery.error
+              : new Error('POSITION_UNAVAILABLE'),
+          ),
+        )
+      : null;
+
+  const isLocationPending = !hasLocationFromState && currentPositionQuery.isPending;
+  const isContentPending =
+    !locationErrorMessage && (isLocationPending || isDetailPending || isPinsPending);
+  const isContentError =
+    !locationErrorMessage && !isContentPending && (isDetailError || isPinsError);
 
   useEffect(() => {
     preloadYouTubeIframeApi();
@@ -143,12 +186,42 @@ export default function PinDetailPage() {
     );
   }
 
+  if (isContentPending) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <TopBar onBack={() => navigate(-1)} className="pt-[env(safe-area-inset-top)]" />
+        <PinDetailSkeleton />
+      </div>
+    );
+  }
+
+  if (isContentError || !pinDetail) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <TopBar onBack={() => navigate(-1)} className="pt-[env(safe-area-inset-top)]" />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+          <p className="body-15-r text-grayscale-500">곡 정보를 불러오지 못했어요.</p>
+          <button
+            type="button"
+            onClick={() => {
+              void refetchDetail();
+              void refetchPins();
+            }}
+            className="cursor-pointer rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-hide">
-      <div className="relative h-[296px] shrink-0 overflow-hidden">
+      <div className="relative overflow-hidden ">
         <img
-          src={pinDetail?.albumImageUrl}
-          alt={pinDetail?.title}
+          src={pinDetail.albumImageUrl}
+          alt={pinDetail.title}
           aria-hidden
           className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-12 blur-[4px]"
         />
@@ -157,20 +230,22 @@ export default function PinDetailPage() {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-pli-black-100/0 to-pli-black-100"
         />
-        <div className="relative z-10 flex h-full flex-col items-center">
+        <div className="relative z-10 flex w-full flex-col items-center px-15">
           <img
-            src={pinDetail?.albumImageUrl}
-            alt={pinDetail?.title}
+            src={pinDetail.albumImageUrl}
+            alt={pinDetail.title}
             aria-hidden
             className="size-[112px] rounded-lg object-cover"
           />
-          <h1 className="pt-3 head-24-sb text-grayscale-100">{pinDetail?.title}</h1>
-          <p className="body-15-r text-grayscale-600">{pinDetail?.artist}</p>
+          <h1 className="w-full min-w-0 pt-3 text-center head-24-sb text-grayscale-100 line-clamp-2">
+            {pinDetail.title}
+          </h1>
+          <p className="body-15-r text-grayscale-600">{pinDetail.artist}</p>
 
           <button
             type="button"
-            aria-pressed={pinDetail?.userLike}
-            aria-label={pinDetail?.userLike ? '좋아요 취소' : '좋아요'}
+            aria-pressed={pinDetail.userLike}
+            aria-label={pinDetail.userLike ? '좋아요 취소' : '좋아요'}
             disabled={isLikePending}
             onClick={handleLikeClick}
             className="mt-[14px] flex h-11 w-full max-w-[183px] cursor-pointer items-center justify-center gap-[5px] rounded-lg bg-pli-black-75 disabled:opacity-100"
@@ -178,11 +253,11 @@ export default function PinDetailPage() {
             <HeartIcon
               className={cn(
                 'size-[18px]',
-                pinDetail?.userLike ? 'fill-red text-red' : 'text-grayscale-400',
+                pinDetail.userLike ? 'fill-red text-red' : 'text-grayscale-400',
               )}
               aria-hidden
             />
-            <span className="body-15-m text-grayscale-300">{pinDetail?.likeCount}</span>
+            <span className="body-15-m text-grayscale-300">{pinDetail.likeCount}</span>
           </button>
         </div>
       </div>
@@ -203,7 +278,7 @@ export default function PinDetailPage() {
 
       <div className="flex flex-col gap-4 px-[11px] pt-[17.5px] pb-[env(safe-area-inset-bottom)]">
         {pins.map((entry) => (
-          <SongFeedCard
+          <PinFeedCard
             key={entry.id}
             entry={entry}
             isPlaying={playingKey === entry.id}
@@ -219,9 +294,9 @@ export default function PinDetailPage() {
             onEdit={(entryId) => {
               navigate(`/app/pins/${entryId}/edit`, {
                 state: {
-                  title: pinDetail?.title,
-                  artist: pinDetail?.artist,
-                  albumImageUrl: pinDetail?.albumImageUrl,
+                  title: pinDetail.title,
+                  artist: pinDetail.artist,
+                  albumImageUrl: pinDetail.albumImageUrl,
                   introduction: entry.content,
                   tags: entry.tags,
                   feedOpen: true,

@@ -21,7 +21,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: plimap-web
-  API_DOMAIN: ${{ vars.API_DOMAIN }}
+  VITE_API_BASE_URL: https://dev.plimap.kr
   PREVIEW_DEPLOY_ROOT: /home/deploy/product/plimap-web-previews
   PREVIEW_DOMAIN: plimap.kr
   PREVIEW_ROUTE_HELPER: /usr/local/sbin/plimap-preview-route
@@ -73,18 +73,11 @@ jobs:
             exit 1
           fi
 
-          if [[ ! "$API_DOMAIN" =~ ^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
-            echo "API_DOMAIN must be a valid lowercase domain name." >&2
-            exit 1
-          fi
-
           IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           IMAGE_TAG="pr-${PR_NUMBER}-${HEAD_SHA::12}"
-          API_BASE_URL="https://pr-${PR_NUMBER}.${API_DOMAIN}"
 
           echo "image_owner=${IMAGE_OWNER}" >> "$GITHUB_OUTPUT"
           echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
-          echo "api_base_url=${API_BASE_URL}" >> "$GITHUB_OUTPUT"
 
       - name: Validate build configuration
         shell: bash
@@ -126,7 +119,7 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ steps.meta.outputs.image_owner }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
           build-args: |
-            VITE_API_BASE_URL=${{ steps.meta.outputs.api_base_url }}
+            VITE_API_BASE_URL=${{ env.VITE_API_BASE_URL }}
             VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
             VITE_GOOGLE_MAPS_MAP_ID=${{ secrets.VITE_GOOGLE_MAPS_MAP_ID }}
             VITE_KAKAO_REST_API_KEY=${{ secrets.VITE_KAKAO_REST_API_KEY }}

@@ -3,12 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/Logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=contain" />
     <meta name="theme-color" content="#000000" />
     <meta name="color-scheme" content="dark" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>PLIMAP</title>
+    <script>
+      // 100dvh 첫 렌더 오계산 우회 - 첫 페인트 전에 실제 높이를 반영한다.
+      document.documentElement.style.setProperty('--app-vh', window.innerHeight + 'px');
+    </script>
   </head>
   <body>
     <div id="root"></div>

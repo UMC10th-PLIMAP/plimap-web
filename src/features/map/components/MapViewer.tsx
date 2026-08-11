@@ -38,12 +38,15 @@ type MapViewerProps = {
   onMapDragStart?: () => void;
   /** 장소가 1개뿐인 클러스터를 눌러 줌 21로 이동을 마쳤을 때 호출된다. */
   onSingleClusterArrive?: (position: MapCoordinate) => void;
+  /** 북마크 강조 모드 on/off. 켜져 있으면 hasBookmarkedPlace인 핀/클러스터 색이 바뀐다. */
+  isBookmarkHighlightOn?: boolean;
 };
 
 export type MapViewerHandle = {
   /** 지도를 현재 위치 마커로 이동시킨다. 위치를 아직 못 받았으면 아무 동작도 하지 않는다. */
   recenterToCurrentLocation: () => void;
   panTo: (coordinate: MapCoordinate, options?: { notifyCenterChanged?: boolean }) => void;
+  flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
   restoreViewport: (viewport: MapViewport) => void;
   captureViewport: () => MapViewport | null;
 };
@@ -76,6 +79,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onMapClick,
     onMapDragStart,
     onSingleClusterArrive,
+    isBookmarkHighlightOn = false,
   },
   ref,
 ) {
@@ -107,10 +111,11 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     () => ({
       recenterToCurrentLocation,
       panTo,
+      flyTo,
       restoreViewport,
       captureViewport,
     }),
-    [captureViewport, panTo, recenterToCurrentLocation, restoreViewport],
+    [captureViewport, flyTo, panTo, recenterToCurrentLocation, restoreViewport],
   );
 
   usePlaceMarkers({ mapInstanceRef, isLoaded, placeResults, selectedPlaceId, onSelectPlace });
@@ -124,6 +129,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     flyTo,
     onSelectMapPin,
     onPlayPin,
+    isBookmarkHighlightOn,
   });
   useClusterOverlays({
     mapInstanceRef,
@@ -133,6 +139,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     flyTo,
     fitToBounds,
     onSingleClusterArrive,
+    isBookmarkHighlightOn,
   });
   useCoordinateProjection({
     mapInstanceRef,

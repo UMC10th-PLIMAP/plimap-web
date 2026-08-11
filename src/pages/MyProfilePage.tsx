@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SettingsIcon from '@/assets/icons/settings.svg?react';
 import ShareIcon from '@/assets/icons/share.svg?react';
 
+import { ProfileSkeleton } from '@/components/skeletons/ProfileSkeleton';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
 import { ProfileActions } from '@/features/profile/components/ProfileActions';
 import { ProfileInfo } from '@/features/profile/components/ProfileInfo';
@@ -11,10 +12,11 @@ import { ProfileShareDialog } from '@/features/profile/components/ProfileShareDi
 
 import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteMemberMe } from '@/features/pin/queries/useMemberMe';
-import { useMyProfile } from '@/features/home/hooks/useMyProfile';
+import { useMyProfile } from '@/hooks/useMyProfile';
 import { cn } from '@/lib/utils';
 
 const SHARE_TOAST_DURATION_MS = 2_000;
+const MY_PROFILE_STALE_TIME = 60 * 1000;
 
 type ShareToast = {
   attempt: number;
@@ -22,7 +24,7 @@ type ShareToast = {
 
 export default function MyProfilePage() {
   const navigate = useNavigate();
-  const { data: myProfile } = useMyProfile();
+  const { data: myProfile } = useMyProfile({ staleTime: MY_PROFILE_STALE_TIME });
   const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
   const {
     data: memberMePages,
@@ -33,14 +35,16 @@ export default function MyProfilePage() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareToast, setShareToast] = useState<ShareToast | null>(null);
 
-  if (!myProfile) return null;
+  // 실제로는 AuthGuard에서 캐시가 저장되기 때문에 myProfile이 undefined인 경우가 거의 없음
+  // 하지만 혹시 모르니 skeleton을 띄워줌
+  if (!myProfile) return <ProfileSkeleton />;
 
   const nickname = myProfile.nickname?.trim() ?? '';
   const canShareProfile = nickname.length > 0;
 
   return (
     <ToastProvider duration={SHARE_TOAST_DURATION_MS}>
-      <div className="relative flex flex-col pb-[calc(env(safe-area-inset-bottom)+108px)]">
+      <div className="relative flex flex-col pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+108px)]">
         <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
           <div />
           <h1 className="text-center head-24-sb text-grayscale-100">{myProfile.nickname}</h1>

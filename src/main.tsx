@@ -9,6 +9,13 @@ if (import.meta.env.DEV) {
   });
 }
 
+// 초기값은 index.html의 인라인 스크립트가 첫 페인트 전에 반영한다 - 여기선 갱신만 담당.
+function setAppViewportHeight() {
+  document.documentElement.style.setProperty('--app-vh', `${window.innerHeight}px`);
+}
+window.addEventListener('resize', setAppViewportHeight);
+window.addEventListener('orientationchange', setAppViewportHeight);
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

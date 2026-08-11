@@ -3,11 +3,13 @@ import type { MapCoordinate, PinCluster, PinClusterLevel } from '../types';
 import {
   createClusterOverlay,
   disposeClusterOverlay,
+  updateClusterMarker,
   type ClusterOverlayEntry,
 } from '../utils/mapClusterMarker';
 import {
   createMapPinOverlay,
   disposeMapPinOverlay,
+  updateMapPinMarker,
   type MapPinOverlayEntry,
 } from '../utils/mapPinMarker';
 
@@ -15,7 +17,7 @@ import {
 // 여러 장소가 겹친 경우) fitBounds 대신 이동할 다음 단계의 줌 레벨. 각 클러스터
 // 레벨이 다음에 어떤 줌 구간으로 이어지는지는 확정된 줌 구간 표를 따른다.
 const NEXT_TIER_ZOOM: Record<PinClusterLevel, number> = {
-  REGION1: 8,
+  REGION1: 9,
   REGION2: 11,
   REGION3: 14,
   GEOHASH: 20,
@@ -63,6 +65,8 @@ type UseClusterOverlaysParams = {
   fitToBounds: (bounds: google.maps.LatLngBoundsLiteral) => void;
   /** 장소 1개짜리 클러스터를 눌러 줌 21 이동을 마쳤을 때 호출된다(그 좌표를 넘겨줌). */
   onSingleClusterArrive?: (position: MapCoordinate) => void;
+  /** 북마크 강조 모드 on/off. 켜져 있으면 hasBookmarkedPlace인 클러스터 색이 바뀐다. */
+  isBookmarkHighlightOn?: boolean;
 };
 
 /**
@@ -78,12 +82,14 @@ export function useClusterOverlays({
   flyTo,
   fitToBounds,
   onSingleClusterArrive,
+  isBookmarkHighlightOn = false,
 }: UseClusterOverlaysParams) {
   const clusterOverlaysRef = useRef<{ key: string; entry: ClusterOverlayEntry }[]>([]);
   const singlePlacePinOverlaysRef = useRef<{ key: string; entry: MapPinOverlayEntry }[]>([]);
   const flyToRef = useRef(flyTo);
   const fitToBoundsRef = useRef(fitToBounds);
   const onSingleClusterArriveRef = useRef(onSingleClusterArrive);
+  const isBookmarkHighlightOnRef = useRef(isBookmarkHighlightOn);
   // 소수점 zoom을 그대로 의존성에 넣으면 줌 애니메이션 프레임마다 다시 그려 깜빡이므로,
   // 14 문턱을 넘었는지 여부(불리언)만 의존성으로 쓴다.
   const showSinglePlaceAsPin = zoom >= SINGLE_PLACE_PIN_MIN_ZOOM;
@@ -99,6 +105,10 @@ export function useClusterOverlays({
   useEffect(() => {
     fitToBoundsRef.current = fitToBounds;
   }, [fitToBounds]);
+
+  useEffect(() => {
+    isBookmarkHighlightOnRef.current = isBookmarkHighlightOn;
+  }, [isBookmarkHighlightOn]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -157,14 +167,21 @@ export function useClusterOverlays({
         });
       };
 
+      const isBookmarked = isBookmarkHighlightOnRef.current && cluster.hasBookmarkedPlace;
+
       if (isPinMode) {
-        const entry = createMapPinOverlay({ position, onClick });
+        const entry = createMapPinOverlay({ position, onClick, isBookmarked });
         entry.overlay.setMap(map);
         nextPinEntries.push({ key, entry });
         return;
       }
 
-      const entry = createClusterOverlay({ position, placeCount: cluster.placeCount, onClick });
+      const entry = createClusterOverlay({
+        position,
+        placeCount: cluster.placeCount,
+        onClick,
+        isBookmarked,
+      });
       entry.overlay.setMap(map);
       nextClusterEntries.push({ key, entry });
     });
@@ -176,6 +193,30 @@ export function useClusterOverlays({
     clusterOverlaysRef.current = nextClusterEntries;
     singlePlacePinOverlaysRef.current = nextPinEntries;
   }, [isLoaded, clusters, showSinglePlaceAsPin, mapInstanceRef]);
+
+  // --- 북마크 강조 색상 갱신 ---
+  // 위 이펙트는 키가 같으면 기존 오버레이를 재사용해 색을 다시 계산하지 않으므로,
+  // 강조 모드를 켜고 끌 때는 이미 떠 있는 오버레이들의 색만 별도로 갱신한다.
+  useEffect(() => {
+    const clusterByKey = new Map(clusters.map((cluster) => [clusterKey(cluster), cluster]));
+
+    clusterOverlaysRef.current.forEach(({ key, entry }) => {
+      const cluster = clusterByKey.get(key);
+      if (!cluster) return;
+      updateClusterMarker(entry.mount, {
+        placeCount: cluster.placeCount,
+        isBookmarked: isBookmarkHighlightOn && cluster.hasBookmarkedPlace,
+      });
+    });
+
+    singlePlacePinOverlaysRef.current.forEach(({ key, entry }) => {
+      const cluster = clusterByKey.get(key);
+      if (!cluster) return;
+      updateMapPinMarker(entry.mount, {
+        isBookmarked: isBookmarkHighlightOn && cluster.hasBookmarkedPlace,
+      });
+    });
+  }, [clusters, isBookmarkHighlightOn]);
 
   // 언마운트될 때만 정리한다 - 위 이펙트는 재실행마다 자체적으로 diff해서 정리한다.
   useEffect(() => {
