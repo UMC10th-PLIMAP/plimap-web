@@ -561,6 +561,19 @@ const MapPage: React.FC<MapPageProps> = ({
               },
             });
           }}
+          onMyPinClick={(pin) => {
+            // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
+            const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
+            const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
+            navigate(`/app/pins/${pin.placeTrackId}`, {
+              state: {
+                ...(latitude != null && longitude != null
+                  ? { userLatitude: latitude, userLongitude: longitude }
+                  : {}),
+                placeAccessToken: selectedMapPlace.placeAccessToken,
+              },
+            });
+          }}
           onFocusedTrackClick={(placeTrackId) => {
             const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
             const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
@@ -613,6 +626,18 @@ const MapPage: React.FC<MapPageProps> = ({
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
             onSelectMapPinChange(null);
+            navigate(`/app/pins/${pin.placeTrackId}`, {
+              state:
+                currentLocation != null
+                  ? {
+                      userLatitude: currentLocation.lat,
+                      userLongitude: currentLocation.lng,
+                    }
+                  : undefined,
+            });
+          }}
+          onMyPinClick={(pin) => {
+            // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
             navigate(`/app/pins/${pin.placeTrackId}`, {
               state:
                 currentLocation != null
