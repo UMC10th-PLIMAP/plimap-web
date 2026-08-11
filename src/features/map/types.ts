@@ -38,6 +38,7 @@ export type MapPin = {
   introduction: string;
   youtubeVideoId?: string;
   clipStartMs?: number;
+  hasBookmarkedPlace: boolean;
 };
 
 // 행정구역(REGION1~3) 또는 geohash(GEOHASH) 기준 핀 클러스터
@@ -58,6 +59,7 @@ export type PinCluster = {
   longitude: number;
   placeCount: number;
   bounds: PinClusterBounds;
+  hasBookmarkedPlace: boolean;
 };
 
 // 현재 위치 마커 기본 색상

@@ -25,6 +25,7 @@ import {
 } from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
+import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import FocusIcon from '@/assets/icons/focus.svg?react';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
@@ -138,6 +139,8 @@ const MapPage: React.FC<MapPageProps> = ({
   const [sheetCollapseSignal, setSheetCollapseSignal] = useState(0);
   // 등록하기 버튼을 바텀시트 상단에 붙이기 위해 시트의 현재 활성 스냅(0~1)을 추적한다.
   const [activeSheetSnap, setActiveSheetSnap] = useState<number>(PIN_LIST_SHEET_MID_SNAP);
+  // 북마크 버튼을 누르면, 지도 위 핀/클러스터 중 북마크된 것만 색으로 구분해 보여준다.
+  const [isBookmarkHighlightOn, setIsBookmarkHighlightOn] = useState(false);
   // 버튼 위치도 스냅 추적과 같은 기준(window.innerHeight)의 픽셀값으로 계산한다.
   const [viewportInnerHeight, setViewportInnerHeight] = useState(() => window.innerHeight);
   useEffect(() => {
@@ -201,6 +204,7 @@ const MapPage: React.FC<MapPageProps> = ({
       introduction: overlayFocusPin.introduction,
       youtubeVideoId: overlayFocusPin.youtubeVideoId,
       clipStartMs: overlayFocusPin.clipStartMs,
+      hasBookmarkedPlace: false,
     };
 
     return [...pins.filter((pin) => pin.id !== focusedPin.id), focusedPin];
@@ -477,9 +481,15 @@ const MapPage: React.FC<MapPageProps> = ({
             <button
               type="button"
               aria-label="북마크"
+              aria-pressed={isBookmarkHighlightOn}
+              onClick={() => setIsBookmarkHighlightOn((prev) => !prev)}
               className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
             >
-              <BookmarkIcon className="size-7" />
+              {isBookmarkHighlightOn ? (
+                <BookmarkActiveIcon className="size-[26px]" />
+              ) : (
+                <BookmarkIcon className="size-7" />
+              )}
             </button>
             <button
               type="button"
@@ -656,6 +666,7 @@ const MapPage: React.FC<MapPageProps> = ({
         onMapClick={handleMapClick}
         onMapDragStart={handleMapClick}
         onSingleClusterArrive={setPendingClusterPinPosition}
+        isBookmarkHighlightOn={isBookmarkHighlightOn}
       />
     </div>
   );

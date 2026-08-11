@@ -67,6 +67,7 @@ type MapPinPreviewResponse = {
   albumImageUrl: string | null;
   youtubeVideoId: string;
   clipStartMs: number;
+  hasBookmarkedPlace?: boolean;
 };
 
 const toMapPin = (pin: MapPinPreviewResponse): MapPin => ({
@@ -80,6 +81,7 @@ const toMapPin = (pin: MapPinPreviewResponse): MapPin => ({
   introduction: pin.introduction,
   youtubeVideoId: pin.youtubeVideoId,
   clipStartMs: pin.clipStartMs,
+  hasBookmarkedPlace: pin.hasBookmarkedPlace ?? false,
 });
 
 export type MapPinsResponse = {

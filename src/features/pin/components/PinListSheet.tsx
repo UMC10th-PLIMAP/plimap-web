@@ -232,7 +232,7 @@ function PinListContent({
                     !
                   </span>
                 ) : isBookmarked ? (
-                  <BookmarkActiveIcon className="size-7" aria-hidden />
+                  <BookmarkActiveIcon className="size-[26px]" aria-hidden />
                 ) : (
                   <BookmarkIcon className="size-7" aria-hidden />
                 )}
