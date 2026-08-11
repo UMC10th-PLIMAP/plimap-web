@@ -162,7 +162,10 @@ function BottomSheet({
         cancelAnimationFrame(snapReportRafRef.current);
         snapReportRafRef.current = null;
       }
-      if (!node) return;
+      if (!node) {
+        trackingElementRef?.current?.style.removeProperty('--bottom-sheet-visible-height');
+        return;
+      }
 
       const reportFromStyle = () => {
         const match = /translate3d\(0(?:px)?,\s*(-?[\d.]+)px/.exec(node.style.transform);
