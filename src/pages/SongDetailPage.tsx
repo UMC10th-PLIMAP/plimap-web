@@ -464,11 +464,7 @@ export default function SongDetailPage() {
   const waveformPeaks = MOCK_WAVEFORM_PEAKS;
   const durationMs = preparedTrack?.durationMs ?? MOCK_PREVIEW_DURATION * 1_000;
   const hasRequiredTags = selectedTags.length >= MIN_TAG_COUNT;
-  const tagErrorMessage = !hasRequiredTags
-    ? MIN_TAG_ERROR_MESSAGE
-    : hasTagLimitError
-      ? MAX_TAG_ERROR_MESSAGE
-      : null;
+  const tagErrorMessage = hasTagLimitError ? MAX_TAG_ERROR_MESSAGE : null;
 
   const handleCreatePin = () => {
     if (createPinMutation.isPending) return;
