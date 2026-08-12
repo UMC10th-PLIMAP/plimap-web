@@ -21,18 +21,26 @@ const toPinMapViewRequest = (viewport: MapViewport): PinMapViewRequest => ({
   zoomLevel: normalizeMapZoom(viewport.zoom),
 });
 
-/** 메인 지도 화면의 viewport 기반 클러스터&핀 조회. 줌 레벨과 무관하게 항상 조회한다. */
-export function usePinMapView(viewport: MapViewport | null) {
+type UsePinMapViewOptions = {
+  minimumZoom?: number;
+};
+
+/** 지도 viewport 기반 클러스터·핀 조회. minimumZoom 미만에서는 요청하지 않는다. */
+export function usePinMapView(
+  viewport: MapViewport | null,
+  { minimumZoom = MIN_API_ZOOM }: UsePinMapViewOptions = {},
+) {
   const request = viewport ? toPinMapViewRequest(viewport) : null;
+  const shouldFetch = request !== null && request.zoomLevel >= minimumZoom;
 
   return useQuery({
-    queryKey: ['pins', 'map-view', request],
+    queryKey: ['pins', 'map-view', { minimumZoom }, request],
     queryFn: ({ signal }) => {
       if (!request) throw new Error('지도 viewport가 필요합니다.');
       return getPinMapView(request, { signal });
     },
-    enabled: request !== null,
-    placeholderData: keepPreviousData,
+    enabled: shouldFetch,
+    placeholderData: shouldFetch ? keepPreviousData : undefined,
     staleTime: 15_000,
     retry: 1,
   });

@@ -67,14 +67,6 @@ export type FriendPinsResponse = {
   pageSize: number;
 };
 
-export type MapPinsRequest = {
-  southWestLat: number;
-  southWestLng: number;
-  northEastLat: number;
-  northEastLng: number;
-  zoomLevel: number;
-};
-
 type MapPinPreviewResponse = {
   placeId: number;
   latitude: number;
@@ -103,14 +95,6 @@ const toMapPin = (pin: MapPinPreviewResponse): MapPin => ({
   hasBookmarkedPlace: pin.hasBookmarkedPlace ?? false,
   writerId: pin.writerId,
 });
-
-export type MapPinsResponse = {
-  pins: MapPin[];
-};
-
-type MapPinsApiResponse = {
-  pins: MapPinPreviewResponse[] | null;
-};
 
 export type PinMapViewRequest = {
   southWestLat: number;
@@ -239,7 +223,7 @@ export async function getOtherMemberFeed({
   userLongitude?: number;
 }): Promise<MemberMeResponse> {
   const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(
-    `/api/v1/feed/members/${memberId}`,
+    `/api/v1/feeds/members/${memberId}`,
     {
       params: { pageSize, cursor, userLatitude, userLongitude },
     },
@@ -254,7 +238,7 @@ export async function getMemberMe({
   userLatitude,
   userLongitude,
 }: MemberMeRequest): Promise<MemberMeResponse> {
-  const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(`/api/v1/feed/members/me`, {
+  const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(`/api/v1/feeds/members/me`, {
     params: { pageSize, cursor, userLatitude, userLongitude },
   });
   return data.result;
@@ -291,25 +275,6 @@ export async function validatePinAvailability(
 export async function createPin(request: CreatePinRequest): Promise<CreatePinResponse> {
   const { data } = await apiClient.post<ApiResponse<CreatePinResponse>>('/api/v1/pins', request);
   return data.result;
-}
-
-/**
- * GET /api/v1/pins/map 핀 등록 위치 선택기의 viewport 기반 기존 PIN 조회.
- * 메인 지도 화면의 클러스터&핀 조회(getPinMapView)와 같은 엔드포인트를 쓰지만,
- * 여기서는 clusters를 무시하고 pins만 사용한다.
- */
-export async function getMapPins(
-  request: MapPinsRequest,
-  options?: { signal?: AbortSignal },
-): Promise<MapPinsResponse> {
-  const { data } = await apiClient.get<ApiResponse<MapPinsApiResponse>>('/api/v1/pins/map', {
-    params: request,
-    signal: options?.signal,
-  });
-
-  return {
-    pins: (data.result.pins ?? []).map(toMapPin),
-  };
 }
 
 /** GET /api/v1/pins/map 지도 뷰포트 기반 클러스터&핀 조회 (줌 레벨에 따라 clusters 또는 pins가 반환됨) */

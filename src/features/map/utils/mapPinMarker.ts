@@ -18,6 +18,7 @@ export const toMapPinMarkerProps = (
   showMessageBubble = false,
   isBookmarked = false,
   onProfileClick?: () => void,
+  isDimmed = false,
 ): MapPinMarkerProps => ({
   coverUrl: pin.coverUrl,
   isSelected,
@@ -29,6 +30,7 @@ export const toMapPinMarkerProps = (
   onProfileClick,
   showMessageBubble,
   isBookmarked,
+  isDimmed,
 });
 
 export const renderMapPinMarker = (mount: HTMLElement, props: MapPinMarkerProps) => {
@@ -96,6 +98,7 @@ export const createMapPinOverlay = ({
       const container = document.createElement('div');
       container.style.position = 'absolute';
       container.style.zIndex = String(this.currentZIndex);
+      google.maps.OverlayView.preventMapHitsFrom(container);
 
       anchor.addEventListener('click', this.handleClick);
       container.appendChild(anchor);

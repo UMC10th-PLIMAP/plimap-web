@@ -35,6 +35,7 @@ export type PinPlaceSearchProps = {
   placeholder?: string;
   headerContent?: ReactNode;
   noResultsDescription?: string;
+  onQueryChange?: (query: string) => void;
 };
 
 export function PinPlaceSearch({
@@ -53,6 +54,7 @@ export function PinPlaceSearch({
   placeholder = '장소를 검색하세요',
   headerContent,
   noResultsDescription,
+  onQueryChange,
 }: PinPlaceSearchProps) {
   const searchInputRef = useAutoFocusAfterViewTransition<HTMLInputElement>(autoFocus);
   const selectionControllerRef = useRef<AbortController | null>(null);
@@ -134,6 +136,7 @@ export function PinPlaceSearch({
     selectionControllerRef.current?.abort();
     selectionControllerRef.current = null;
     setQuery('');
+    onQueryChange?.('');
     setSelectionConstraintError(null);
     selectPlaceMutation.reset();
   };
@@ -141,7 +144,9 @@ export function PinPlaceSearch({
   const handleQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
     selectionControllerRef.current?.abort();
     selectionControllerRef.current = null;
-    setQuery(event.target.value);
+    const nextQuery = event.target.value;
+    setQuery(nextQuery);
+    onQueryChange?.(nextQuery);
     setSelectionConstraintError(null);
     selectPlaceMutation.reset();
   };

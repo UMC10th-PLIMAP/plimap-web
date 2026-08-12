@@ -11,6 +11,7 @@ export default function PinRegisterSearchPage() {
   const candidateCoordinate = usePinCreationStore((state) => state.candidateCoordinate);
   const currentLocation = usePinCreationStore((state) => state.currentLocation);
   const searchKeyword = usePinCreationStore((state) => state.searchKeyword);
+  const setConfirmationOrigin = usePinCreationStore((state) => state.setConfirmationOrigin);
   const setPlace = usePinCreationStore((state) => state.setPlace);
 
   const navigateToStage = (path: string) => {
@@ -33,6 +34,7 @@ export default function PinRegisterSearchPage() {
       coordinates: place.coordinates,
       distanceMeters: place.distance,
     });
+    setConfirmationOrigin('search');
     navigateToStage('/app/pin/register/confirm');
   };
 

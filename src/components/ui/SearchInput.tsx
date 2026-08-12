@@ -10,8 +10,7 @@ const searchInputVariants = cva('flex w-full items-center rounded-[50px] transit
   variants: {
     variant: {
       map: 'h-[60px] gap-2.5 bg-pli-black-100 px-5 py-2.5 backdrop-blur-[1.95px]',
-      friend:
-        'h-[60px] gap-2 bg-pli-black-75 px-4 py-2 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-neon-2',
+      friend: 'h-[60px] gap-2 bg-pli-black-50 px-4 py-2',
       song: 'h-10 gap-2 bg-pli-black-75 px-4 body-15-r',
     },
   },
@@ -49,6 +48,8 @@ type SearchLauncherProps = Omit<React.ComponentProps<'button'>, 'children'> & {
   placeholder?: string;
   /** 선택된 값(value)이 있을 때 X 버튼을 보여주고, 눌리면 이 콜백을 호출한다. */
   onClear?: () => void;
+  /** 선택된 값에서 이전 검색 화면으로 돌아갈 때 호출한다. */
+  onBack?: () => void;
 };
 
 const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
@@ -153,6 +154,7 @@ const SearchLauncher = React.forwardRef<HTMLButtonElement, SearchLauncherProps>(
       placeholder = '장소를 검색하세요',
       type = 'button',
       onClear,
+      onBack,
       'aria-label': ariaLabel,
       ...props
     },
@@ -167,6 +169,16 @@ const SearchLauncher = React.forwardRef<HTMLButtonElement, SearchLauncherProps>(
         data-variant="map"
         className={cn(searchInputVariants({ variant: 'map' }), className)}
       >
+        {hasValue && onBack ? (
+          <button
+            type="button"
+            aria-label="장소 검색으로 돌아가기"
+            onClick={onBack}
+            className="flex size-7 shrink-0 items-center justify-center"
+          >
+            <BackIcon className="size-7 text-grayscale-400" />
+          </button>
+        ) : null}
         <button
           ref={ref}
           type={type}
@@ -174,11 +186,11 @@ const SearchLauncher = React.forwardRef<HTMLButtonElement, SearchLauncherProps>(
           className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
           {...props}
         >
-          {hasValue ? (
+          {hasValue && !onBack ? (
             <BackIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
-          ) : (
+          ) : !hasValue ? (
             <SearchIcon className="size-7 shrink-0 text-grayscale-400" aria-hidden />
-          )}
+          ) : null}
           <span
             className={cn(
               'min-w-0 flex-1 truncate',

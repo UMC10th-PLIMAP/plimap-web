@@ -28,10 +28,12 @@ type UseCurrentLocationMarkerParams = {
   mapInstanceRef: RefObject<google.maps.Map | null>;
   isLoaded: boolean;
   onCenterChanged?: (center: MapCoordinate) => void;
-  onCurrentLocationChanged?: (coordinate: MapCoordinate) => void;
+  onCurrentLocationChanged?: (coordinate: MapCoordinate | null) => void;
   onCurrentLocationError?: (message: string) => void;
   centerOnFirstLocation?: boolean;
   isTrackingEnabled?: boolean;
+  /** 재중심 이동 시 순간이동 대신 부드럽게 pan+zoom하기 위해 useGoogleMap의 flyTo를 그대로 재사용한다. */
+  flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
 };
 
 /** 현재 위치 마커(방향 쐐기 포함)를 실시간으로 추적/렌더링하고, 재중심 이동 함수를 제공한다. */
@@ -43,6 +45,7 @@ export function useCurrentLocationMarker({
   onCurrentLocationError,
   centerOnFirstLocation = true,
   isTrackingEnabled = true,
+  flyTo,
 }: UseCurrentLocationMarkerParams) {
   const overlayRef = useRef<CurrentLocationOverlayHandle | null>(null);
   const positionRef = useRef<MapCoordinate | null>(null);
@@ -218,6 +221,8 @@ export function useCurrentLocationMarker({
       (error) => {
         if (ignore) return;
         console.warn('현재 위치를 갱신할 수 없습니다:', error.message);
+        disposeLocationState();
+        onCurrentLocationChangedRef.current?.(null);
         onCurrentLocationErrorRef.current?.(
           '현재 위치를 확인할 수 없어요. 위치 권한을 확인한 뒤 다시 시도해 주세요',
         );
@@ -229,7 +234,14 @@ export function useCurrentLocationMarker({
       ignore = true;
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [isLoaded, isTrackingEnabled, enableCompassIfNeeded, mapInstanceRef, applyHeading]);
+  }, [
+    isLoaded,
+    isTrackingEnabled,
+    enableCompassIfNeeded,
+    mapInstanceRef,
+    applyHeading,
+    disposeLocationState,
+  ]);
 
   // --- "현재 위치" 버튼에서 호출할 재중심 이동 ---
   const recenterToCurrentLocation = useCallback(() => {
@@ -240,12 +252,9 @@ export function useCurrentLocationMarker({
     const position = positionRef.current;
     if (!map || !position) return false;
 
-    // 축소된 상태에서 panTo부터 하면 restriction이 넓은 뷰포트 기준으로
-    // 좌표를 다시 clamp해버릴 수 있어, 줌을 먼저 좁힌 뒤에 이동한다.
-    map.setZoom(RECENTER_ZOOM);
-    map.panTo(position);
+    flyTo(position, RECENTER_ZOOM);
     return true;
-  }, [enableCompassIfNeeded, mapInstanceRef]);
+  }, [enableCompassIfNeeded, flyTo, mapInstanceRef]);
 
   return { recenterToCurrentLocation };
 }

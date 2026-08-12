@@ -8,6 +8,19 @@ type SnapPoint = number | string;
 
 const DEFAULT_SNAP_POINTS: SnapPoint[] = [0.5, 1];
 
+function getViewportHeight() {
+  if (typeof window === 'undefined') return 1;
+  return window.innerHeight || document.documentElement.clientHeight || 1;
+}
+
+function getSnapVisibleHeight(snapPoint: SnapPoint | null, viewportHeight: number) {
+  if (typeof snapPoint === 'number') return snapPoint * viewportHeight;
+  if (typeof snapPoint !== 'string') return 0;
+
+  const pixelHeight = Number.parseInt(snapPoint, 10);
+  return Number.isFinite(pixelHeight) ? pixelHeight : 0;
+}
+
 /** Vaul Drawer 루트. 시트 열림/닫힘·스냅 포인트 상태를 관리한다. */
 function SheetRoot({ ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
   return <DrawerPrimitive.Root data-slot="bottom-sheet" {...props} />;
@@ -91,18 +104,10 @@ type BottomSheetProps = {
   snapPoints?: SnapPoint[];
   /** 처음 열릴 때(및 풀페이지에서 뒤로가기 시) 돌아갈 스냅 지점. 생략하면 snapPoints의 첫 값을 쓴다. */
   defaultSnapPoint?: SnapPoint;
-  /**
-   * 이 값이 바뀌면(시트가 열려있는 동안에도) defaultSnapPoint로 스냅을 리셋한다.
-   * 같은 시트가 열린 채로 다른 대상(예: 다른 핀)으로 내용만 바뀌는 경우에 사용한다.
-   */
   resetKey?: string | number;
-  /** 이 값이 바뀔 때마다 snapPoints의 진짜 첫 값(가장 작은 스냅)으로 축소한다. */
   collapseToSmallestSignal?: number;
-  /**
-   * 시트 바깥의 플로팅 UI가 드래그를 따라가야 할 때 지정한다.
-   * React 상태를 거치지 않고 이 요소의 CSS 변수에 현재 시트 높이를 기록한다.
-   */
   trackingElementRef?: React.RefObject<HTMLElement | null>;
+  keepOpenWhileMounted?: boolean;
   className?: string;
 };
 
@@ -123,6 +128,7 @@ function BottomSheet({
   resetKey,
   collapseToSmallestSignal,
   trackingElementRef,
+  keepOpenWhileMounted = false,
   className,
 }: BottomSheetProps) {
   const firstSnap = defaultSnapPoint ?? snapPoints[0] ?? null;
@@ -133,10 +139,11 @@ function BottomSheet({
   const [prevResetKey, setPrevResetKey] = React.useState(resetKey);
   const [prevCollapseSignal, setPrevCollapseSignal] = React.useState(collapseToSmallestSignal);
   const [hasBeenOpen, setHasBeenOpen] = React.useState(open);
-  if (open && !hasBeenOpen) {
+  if (keepOpenWhileMounted && open && !hasBeenOpen) {
     setHasBeenOpen(true);
   }
-  const vaulOpen = hasBeenOpen;
+  const vaulOpen = keepOpenWhileMounted ? hasBeenOpen : open;
+  const [viewportHeight, setViewportHeight] = React.useState(getViewportHeight);
 
   if (open !== prevOpen || resetKey !== prevResetKey) {
     setPrevOpen(open);
@@ -153,8 +160,36 @@ function BottomSheet({
     }
   }
 
+  React.useEffect(() => {
+    const updateViewportHeight = () => setViewportHeight(getViewportHeight());
+    window.addEventListener('resize', updateViewportHeight);
+    return () => window.removeEventListener('resize', updateViewportHeight);
+  }, []);
+
   const snapObserverRef = React.useRef<MutationObserver | null>(null);
   const snapReportRafRef = React.useRef<number | null>(null);
+  const snapObserverTargetRef = React.useRef<HTMLDivElement | null>(null);
+
+  const reportVisibleHeight = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      const trackingElement = trackingElementRef?.current;
+      if (!trackingElement) return;
+
+      const match = node
+        ? /translate3d\(0(?:px)?,\s*(-?[\d.]+)px/.exec(node.style.transform)
+        : null;
+      const visibleHeight = match
+        ? Math.min(viewportHeight, Math.max(0, viewportHeight - Number(match[1])))
+        : getSnapVisibleHeight(activeSnap, viewportHeight);
+      trackingElement.style.setProperty('--bottom-sheet-visible-height', `${visibleHeight}px`);
+    },
+    [activeSnap, trackingElementRef, viewportHeight],
+  );
+
+  // MapPage의 조건부 플로팅 액션이 시트보다 늦게 마운트되어도 현재 높이를 즉시 전달한다.
+  React.useLayoutEffect(() => {
+    reportVisibleHeight(snapObserverTargetRef.current);
+  });
 
   // vaul이 드래그 중 DOM에 직접 반영하는 transform을 실시간 관찰해야 해서 콜백 ref를 쓴다 -
   // vaul/Radix가 content 노드를 교체해도(예: presence 애니메이션) 항상 최신 노드를 관찰한다.
@@ -167,37 +202,26 @@ function BottomSheet({
         cancelAnimationFrame(snapReportRafRef.current);
         snapReportRafRef.current = null;
       }
+      snapObserverTargetRef.current = node;
       if (!node) {
         trackingElementRef?.current?.style.removeProperty('--bottom-sheet-visible-height');
         return;
       }
 
-      const reportFromStyle = () => {
-        const match = /translate3d\(0(?:px)?,\s*(-?[\d.]+)px/.exec(node.style.transform);
-        if (!match) return;
-        const translateY = Number(match[1]);
-        const viewportHeight = window.innerHeight || 1;
-        const visibleHeight = Math.min(viewportHeight, Math.max(0, viewportHeight - translateY));
-        trackingElementRef?.current?.style.setProperty(
-          '--bottom-sheet-visible-height',
-          `${visibleHeight}px`,
-        );
-      };
-
-      reportFromStyle();
+      reportVisibleHeight(node);
       // 드래그 중엔 스타일 변경이 화면 주사율보다 잦을 수 있으므로 프레임당
       // 최대 한 번만 플로팅 UI 위치를 반영한다.
       const observer = new MutationObserver(() => {
         if (snapReportRafRef.current !== null) return;
         snapReportRafRef.current = requestAnimationFrame(() => {
           snapReportRafRef.current = null;
-          reportFromStyle();
+          reportVisibleHeight(node);
         });
       });
       observer.observe(node, { attributes: true, attributeFilter: ['style'] });
       snapObserverRef.current = observer;
     },
-    [trackingElementRef],
+    [reportVisibleHeight, trackingElementRef],
   );
 
   React.useEffect(
@@ -233,7 +257,7 @@ function BottomSheet({
         setActiveSnapPoint={setActiveSnap}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
-            setHasBeenOpen(false);
+            if (keepOpenWhileMounted) setHasBeenOpen(false);
             onClose();
           }
         }}
@@ -250,9 +274,9 @@ function BottomSheet({
               : undefined
           }
           data-full-page={isFullPage ? '' : undefined}
+          style={{ height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` }}
           className={cn(
-            // h-full은 모바일 주소창 노출 시 "큰" 뷰포트 기준이라 하단이 잘려 보인다 - dvh로 교체.
-            'h-dvh max-h-dvh transition-[border-radius,background-color] duration-200',
+            'transition-[border-radius,background-color] duration-200',
             isFullPage
               ? 'rounded-none bg-pli-black-100 pt-[env(safe-area-inset-top)]'
               : 'rounded-t-2xl',

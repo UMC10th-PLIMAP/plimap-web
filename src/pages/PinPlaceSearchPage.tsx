@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 
 import { PinPlaceSearch } from '@/features/pin/components/PinPlaceSearch';
@@ -12,28 +12,37 @@ type PinSearchLocationState = {
   initialQuery?: string;
 };
 
+type MapReturnMode = 'previous-map' | 'selected-map';
+
 export default function PinPlaceSearchPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectMapPlace } = useOutletContext<MapOutletContext>();
+  const { selectMapPlace, currentLocation } = useOutletContext<MapOutletContext>();
   const locationState = location.state as PinSearchLocationState | null;
   const cameFromMap = locationState?.fromMap === true;
-  const [isReturningToMap, setIsReturningToMap] = useState(false);
+  const latestQueryRef = useRef(locationState?.initialQuery ?? '');
+  const [mapReturnMode, setMapReturnMode] = useState<MapReturnMode | null>(null);
+  const isReturningToMap = mapReturnMode !== null;
 
-  const returnToMap = () => {
+  const returnToMap = (mode: MapReturnMode) => {
     if (isReturningToMap) return;
 
-    setIsReturningToMap(true);
+    setMapReturnMode(mode);
   };
 
   // 검색어를 다 지운 상태(SearchInput이 이미 clear까지 처리한 뒤)에서만 호출된다 -
   // 새 장소를 고르지 않고 나가는 것이므로 이전 선택을 지운다.
   const handleBack = () => {
     selectMapPlace(null);
-    returnToMap();
+    returnToMap('previous-map');
   };
 
   const finishReturningToMap = () => {
+    if (mapReturnMode === 'selected-map') {
+      navigate('/app');
+      return;
+    }
+
     if (cameFromMap) {
       navigate(-1);
       return;
@@ -45,17 +54,32 @@ export default function PinPlaceSearchPage() {
   };
 
   const handlePlaceSelect = (place: PinSearchPlace) => {
+    navigate(location.pathname, {
+      replace: true,
+      state: {
+        ...locationState,
+        initialQuery: place.searchQuery ?? latestQueryRef.current,
+      } satisfies PinSearchLocationState,
+    });
     selectMapPlace(place);
-    returnToMap();
+    returnToMap('selected-map');
   };
 
   return (
     <PinPlaceSearch
       isReturningToMap={isReturningToMap}
       initialQuery={locationState?.initialQuery ?? ''}
+      currentLocationOverride={
+        currentLocation
+          ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
+          : undefined
+      }
       onCloseAnimationEnd={finishReturningToMap}
       onPlaceSelect={handlePlaceSelect}
       onBack={handleBack}
+      onQueryChange={(query) => {
+        latestQueryRef.current = query;
+      }}
     />
   );
 }

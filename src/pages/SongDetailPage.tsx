@@ -5,8 +5,9 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import PlayIcon from '@/assets/icons/play.svg?react';
+import StopIcon from '@/assets/icons/stop.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import rectangleBg from '@/assets/Rectangle.png';
 import { useToast } from '@/hooks/useToast';
@@ -25,6 +26,7 @@ import { useCreatePin } from '@/features/pin/queries/useCreatePin';
 import { useGetPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
 import { preloadYouTubeIframeApi, useYouTubeClipPlayer } from '@/hooks/useYouTubeClipPlayer';
 import { cn } from '@/lib/utils';
+import type { AppOutletContext } from '@/layouts/RootLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
 const INTRO_MAX_LENGTH = 100;
@@ -204,7 +206,7 @@ function TrimBar({ trimStartPercent, trimEndPercent, onTrimChange, onDragEnd }: 
     <div className="relative flex h-11 w-[244px] items-center">
       <div ref={trackRef} className="relative h-1 w-full rounded-full bg-pli-black-50">
         <div
-          className="absolute top-1/2 z-10 h-5 -translate-y-1/2 cursor-grab touch-none rounded-full active:cursor-grabbing"
+          className="absolute top-1/2 z-10 h-5 -translate-y-1/2 cursor-grab touch-pan-y rounded-full active:cursor-grabbing"
           style={{
             left: `${trimStartPercent}%`,
             width: `${Math.max(0, trimEndPercent - trimStartPercent)}%`,
@@ -272,7 +274,7 @@ function SongWaveform({
 
       {/* 선택된 웨이브 구간만 드래그 */}
       <div
-        className="absolute inset-y-0 z-10 cursor-grab touch-none active:cursor-grabbing"
+        className="absolute inset-y-0 z-10 cursor-grab touch-pan-y active:cursor-grabbing"
         style={{
           left: `${trimStartPercent}%`,
           width: `${Math.max(0, trimEndPercent - trimStartPercent)}%`,
@@ -383,12 +385,9 @@ function SongPreviewSection({
           className="flex size-7 items-center justify-center rounded-full bg-grayscale-100 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPlaying ? (
-            <span className="flex items-center gap-[3px]" aria-hidden>
-              <span className="h-3.5 w-[3px] rounded-full bg-grayscale-1200" />
-              <span className="h-3.5 w-[3px] rounded-full bg-grayscale-1200" />
-            </span>
+            <StopIcon className="size-4.5 text-grayscale-1300" aria-hidden />
           ) : (
-            <PlayIcon className="size-4.5 text-grayscale-1200" aria-hidden />
+            <PlayIcon className="size-4.5 text-grayscale-1300" aria-hidden />
           )}
         </button>
       </div>
@@ -437,6 +436,7 @@ function FeedVisibilityToggle({
 
 export default function SongDetailPage() {
   const navigate = useNavigate();
+  const { selectMapPlace } = useOutletContext<AppOutletContext>();
   const toast = useToast();
   const { songId } = useParams<{ songId: string }>();
   const place = usePinCreationStore((state) => state.place);
@@ -452,6 +452,7 @@ export default function SongDetailPage() {
   const createPinMutation = useCreatePin();
 
   const [introduction, setIntroduction] = useState('');
+  const [introductionError, setIntroductionError] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [hasTagLimitError, setHasTagLimitError] = useState(false);
   const [isFeedPublic, setIsFeedPublic] = useState(true);
@@ -481,9 +482,10 @@ export default function SongDetailPage() {
 
     const normalizedIntroduction = introduction.trim();
     if (!normalizedIntroduction) {
-      toast.error('소개를 입력해 주세요.');
+      setIntroductionError('소개는 필수로 작성해 주세요.');
       return;
     }
+    setIntroductionError(null);
 
     if (!hasRequiredTags) {
       toast.error(MIN_TAG_ERROR_MESSAGE);
@@ -502,9 +504,41 @@ export default function SongDetailPage() {
         feedOpen: isFeedPublic,
       },
       {
-        onSuccess: () => {
+        onSuccess: (createdPin) => {
+          const focusedPin = {
+            pinId: createdPin.pinId,
+            nickname: createdPin.writerNickname,
+            avatarUrl: createdPin.writerProfileImage ?? undefined,
+            albumImageUrl: preparedTrack.albumImageUrl,
+            introduction: normalizedIntroduction,
+            youtubeVideoId: createdPin.youtubeVideoId,
+            clipStartMs: createdPin.clipStartMs,
+          };
+          selectMapPlace({
+            id: `place:${createdPin.placeId}`,
+            placeId: createdPin.placeId,
+            placeName: place.placeName,
+            category: '',
+            address: place.address,
+            distance: place.distanceMeters,
+            creatorName: createdPin.writerNickname,
+            isMine: true,
+            allowTrackDetailAccess: true,
+            selectionLocation: {
+              latitude: currentLocation.lat,
+              longitude: currentLocation.lng,
+            },
+            queryLocation: {
+              latitude: currentLocation.lat,
+              longitude: currentLocation.lng,
+            },
+            coordinates: place.coordinates,
+            focusedFeedPin: focusedPin,
+            mapFocusPin: focusedPin,
+          });
           resetPinCreation();
           navigate('/app', { replace: true });
+          toast.success('PIN 등록이 완료되었어요!', { placement: 'above-navigation' });
         },
         onError: (error) => {
           toast.error(
@@ -537,8 +571,8 @@ export default function SongDetailPage() {
 
   return (
     <>
-      <div className="relative flex min-h-0 flex-1">
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+      <div className="relative h-full min-h-0">
+        <div className="h-full overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+24px)] scrollbar-hide">
           <section className="relative w-full overflow-hidden pb-4">
             <img
               src={coverUrl}
@@ -625,7 +659,18 @@ export default function SongDetailPage() {
           </section>
 
           <section className="flex flex-col gap-3 px-[15px]">
-            <h3 className="body-15-r text-grayscale-300">소개</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="body-15-r text-grayscale-300">소개</h3>
+              {introductionError ? (
+                <p id="song-intro-error" role="alert" className="etc-13-r text-red">
+                  {introductionError}
+                </p>
+              ) : introduction.length >= INTRO_MAX_LENGTH ? (
+                <p id="song-intro-limit" aria-live="polite" className="etc-13-r text-red">
+                  소개는 최대 100자까지 가능
+                </p>
+              ) : null}
+            </div>
             <div className="relative rounded-xl bg-pli-black-85 p-5 h-[156px]">
               <label htmlFor="song-intro" className="sr-only">
                 소개
@@ -633,11 +678,28 @@ export default function SongDetailPage() {
               <textarea
                 id="song-intro"
                 value={introduction}
-                onChange={(event) => setIntroduction(event.target.value.slice(0, INTRO_MAX_LENGTH))}
+                onChange={(event) => {
+                  const nextIntroduction = event.target.value.slice(0, INTRO_MAX_LENGTH);
+                  setIntroduction(nextIntroduction);
+                  if (nextIntroduction.trim()) setIntroductionError(null);
+                }}
                 placeholder="이 음악을 들었을 때 나의 기분은?"
+                aria-invalid={Boolean(introductionError)}
+                aria-describedby={
+                  introductionError
+                    ? 'song-intro-error'
+                    : introduction.length >= INTRO_MAX_LENGTH
+                      ? 'song-intro-limit'
+                      : undefined
+                }
                 className="body-17-r min-h-[156px] w-full resize-none text-grayscale-300 outline-none placeholder:text-grayscale-1100"
               />
-              <span className="absolute bottom-3 right-4 etc-13-r text-grayscale-600">
+              <span
+                className={cn(
+                  'absolute bottom-3 right-4 etc-13-r',
+                  introduction.length >= INTRO_MAX_LENGTH ? 'text-red' : 'text-grayscale-600',
+                )}
+              >
                 {introduction.length}/{INTRO_MAX_LENGTH}
               </span>
             </div>

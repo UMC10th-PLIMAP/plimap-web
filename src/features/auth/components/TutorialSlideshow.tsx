@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import type { RefObject } from 'react';
+import type { CSSProperties } from 'react';
 
 import NextIcon from '@/assets/icons/next.svg?react';
-import tutorialImage1 from '@/assets/images/onboarding/tutorial-1.png';
-import tutorialImage2 from '@/assets/images/onboarding/tutorial-2.png';
-import tutorialImage3 from '@/assets/images/onboarding/tutorial-3.png';
-import tutorialImage4 from '@/assets/images/onboarding/tutorial-4.png';
-import tutorialImage5 from '@/assets/images/onboarding/tutorial-5.png';
+import tutorialImage1 from '@/assets/images/onboarding/tutorial-1.webp';
+import tutorialImage2 from '@/assets/images/onboarding/tutorial-2.webp';
+import tutorialImage3 from '@/assets/images/onboarding/tutorial-3.webp';
+import tutorialImage4 from '@/assets/images/onboarding/tutorial-4.webp';
+import tutorialImage5 from '@/assets/images/onboarding/tutorial-5.webp';
 import { Carousel, CarouselContent, CarouselItem, useCarousel } from '@/components/ui/carousel';
 import { OnboardingDots } from '@/features/auth/components/OnboardingDots';
 import { cn } from '@/lib/utils';
@@ -30,61 +29,18 @@ export const TUTORIAL_SLIDES: TutorialSlide[] = [
 const IMAGE_ASPECT_WIDTH = 402;
 const IMAGE_ASPECT_HEIGHT = 547;
 const NAV_BUTTON_BOTTOM_OFFSET = 255;
-const NAV_BUTTON_SIDE_OFFSET = -5;
+const NAV_BUTTON_HALF_SIZE = '0.875rem';
 const BOTTOM_GRADIENT_HEIGHT = 64;
-
-type FittedImageBox = {
-  containerWidth: number;
-  renderedWidth: number;
-  renderedHeight: number;
-};
-
-const INITIAL_FITTED_IMAGE_BOX: FittedImageBox = {
-  containerWidth: IMAGE_ASPECT_WIDTH,
-  renderedWidth: IMAGE_ASPECT_WIDTH,
-  renderedHeight: IMAGE_ASPECT_HEIGHT,
-};
-
-function useFittedImageBox(containerRef: RefObject<HTMLDivElement | null>) {
-  const [box, setBox] = useState<FittedImageBox>(INITIAL_FITTED_IMAGE_BOX);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const updateBox = (containerWidth: number, containerHeight: number) => {
-      if (containerWidth <= 0 || containerHeight <= 0) return;
-      const aspect = IMAGE_ASPECT_WIDTH / IMAGE_ASPECT_HEIGHT;
-      let renderedWidth = Math.min(containerWidth, IMAGE_ASPECT_WIDTH);
-      let renderedHeight = renderedWidth / aspect;
-      if (renderedHeight > containerHeight) {
-        renderedHeight = containerHeight;
-        renderedWidth = renderedHeight * aspect;
-      }
-      setBox({ containerWidth, renderedWidth, renderedHeight });
-    };
-
-    updateBox(el.clientWidth, el.clientHeight);
-
-    const observer = new ResizeObserver(([entry]) => {
-      if (!entry) return;
-      updateBox(entry.contentRect.width, entry.contentRect.height);
-    });
-    observer.observe(el);
-
-    return () => observer.disconnect();
-  }, [containerRef]);
-
-  return box;
-}
+const TUTORIAL_IMAGE_WIDTH_EXPR = `min(100cqw, ${IMAGE_ASPECT_WIDTH}px, calc(100cqh * ${IMAGE_ASPECT_WIDTH} / ${IMAGE_ASPECT_HEIGHT}))`;
+const NAV_BUTTON_BOTTOM_EXPR = `calc(var(--tutorial-image-w) * ${NAV_BUTTON_BOTTOM_OFFSET / IMAGE_ASPECT_WIDTH})`;
+const NAV_BUTTON_SIDE_EXPR = `max(0px, calc((100cqw - var(--tutorial-image-w)) / 4 - ${NAV_BUTTON_HALF_SIZE}))`;
+const BOTTOM_GRADIENT_HEIGHT_EXPR = `calc(var(--tutorial-image-w) * ${BOTTOM_GRADIENT_HEIGHT / IMAGE_ASPECT_WIDTH})`;
 
 type TutorialNavButtonProps = {
   direction: 'prev' | 'next';
-  bottomOffset: number;
-  sideOffset: number;
 };
 
-function TutorialNavButton({ direction, bottomOffset, sideOffset }: TutorialNavButtonProps) {
+function TutorialNavButton({ direction }: TutorialNavButtonProps) {
   const { scrollPrev, scrollNext, canScrollPrev, canScrollNext } = useCarousel();
   const isPrev = direction === 'prev';
 
@@ -94,7 +50,7 @@ function TutorialNavButton({ direction, bottomOffset, sideOffset }: TutorialNavB
       aria-label={isPrev ? '이전 화면' : '다음 화면'}
       disabled={isPrev ? !canScrollPrev : !canScrollNext}
       onClick={isPrev ? scrollPrev : scrollNext}
-      style={{ bottom: bottomOffset, [isPrev ? 'left' : 'right']: sideOffset }}
+      style={{ bottom: NAV_BUTTON_BOTTOM_EXPR, [isPrev ? 'left' : 'right']: NAV_BUTTON_SIDE_EXPR }}
       className="absolute flex size-7 items-center justify-center text-grayscale-100 disabled:pointer-events-none"
     >
       <NextIcon className={cn('size-7', isPrev && 'scale-x-[-1]')} aria-hidden />
@@ -108,31 +64,31 @@ type TutorialSlideshowProps = {
   className?: string;
 };
 
-/** 온보딩 튜토리얼(로그인 전)과 설정 > 서비스 이용 가이드가 공유하는 스와이프 슬라이드쇼. */
 export function TutorialSlideshow({
   activeIndex,
   onActiveIndexChange,
   className,
 }: TutorialSlideshowProps) {
-  const carouselBoxRef = useRef<HTMLDivElement>(null);
-  const { containerWidth, renderedWidth, renderedHeight } = useFittedImageBox(carouselBoxRef);
-  const imageScale = renderedHeight / IMAGE_ASPECT_HEIGHT;
-  const navSideOffset = (containerWidth - renderedWidth) / 2 + NAV_BUTTON_SIDE_OFFSET * imageScale;
-  const navBottomOffset = NAV_BUTTON_BOTTOM_OFFSET * imageScale;
-  const bottomGradientHeight = BOTTOM_GRADIENT_HEIGHT * imageScale;
-
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', className)}>
-      <div className="flex shrink-0 flex-col items-center gap-6 pt-[38px]">
+      <div className="flex shrink-0 flex-col items-center gap-[clamp(8px,3dvh,24px)] pt-[clamp(12px,5dvh,38px)]">
         <OnboardingDots total={TUTORIAL_SLIDES.length} current={activeIndex} />
-        <div className="flex min-h-[102px] items-center px-3.5">
+        <div className="flex min-h-[68px] items-end px-3.5">
           <p className="whitespace-pre-line text-center body-24-m text-grayscale-0">
             {TUTORIAL_SLIDES[activeIndex].heading}
           </p>
         </div>
       </div>
 
-      <div ref={carouselBoxRef} className="mt-[24px] min-h-0 w-full max-h-[547px] min-w-0 flex-1">
+      <div
+        className="mt-4 min-h-0 w-full min-w-0 flex-1 [container-type:size]"
+        style={
+          {
+            '--tutorial-image-w': TUTORIAL_IMAGE_WIDTH_EXPR,
+            maxHeight: `min(${IMAGE_ASPECT_HEIGHT}px, calc(100vw * ${IMAGE_ASPECT_HEIGHT} / ${IMAGE_ASPECT_WIDTH}))`,
+          } as CSSProperties
+        }
+      >
         <Carousel
           selectedIndex={activeIndex}
           onSelectedIndexChange={onActiveIndexChange}
@@ -152,7 +108,11 @@ export function TutorialSlideshow({
                   alt=""
                   width={IMAGE_ASPECT_WIDTH}
                   height={IMAGE_ASPECT_HEIGHT}
-                  className="h-auto max-h-full w-auto max-w-full"
+                  className="block h-auto"
+                  style={{
+                    width: 'var(--tutorial-image-w)',
+                    aspectRatio: `${IMAGE_ASPECT_WIDTH} / ${IMAGE_ASPECT_HEIGHT}`,
+                  }}
                 />
               </CarouselItem>
             ))}
@@ -160,18 +120,10 @@ export function TutorialSlideshow({
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-b from-pli-black-85/0 to-pli-black-85 to-[74.219%]"
-            style={{ height: bottomGradientHeight }}
+            style={{ height: BOTTOM_GRADIENT_HEIGHT_EXPR }}
           />
-          <TutorialNavButton
-            direction="prev"
-            bottomOffset={navBottomOffset}
-            sideOffset={navSideOffset}
-          />
-          <TutorialNavButton
-            direction="next"
-            bottomOffset={navBottomOffset}
-            sideOffset={navSideOffset}
-          />
+          <TutorialNavButton direction="prev" />
+          <TutorialNavButton direction="next" />
         </Carousel>
       </div>
     </div>

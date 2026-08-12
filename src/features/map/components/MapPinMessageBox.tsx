@@ -1,6 +1,7 @@
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import SoundWaveIcon from '@/assets/icons/soundwaves.svg?react';
 import PlayIcon from '@/assets/icons/play.svg?react';
+import StopIcon from '@/assets/icons/stop.svg?react';
 import { cn } from '@/lib/utils';
 import './MapPinMessageBox.css';
 
@@ -23,7 +24,7 @@ export function MapPinMessageBox({
 }: MapPinMessageBoxProps) {
   const profileContent = (
     <>
-      <div className="gc-avatar flex items-center justify-center overflow-hidden bg-grayscale-0">
+      <div className="gc-avatar flex items-center justify-center overflow-hidden bg-pli-black-75">
         {avatarUrl ? (
           <img src={avatarUrl} alt="" className="size-full object-cover" />
         ) : (
@@ -67,12 +68,9 @@ export function MapPinMessageBox({
             className="gc-play cursor-pointer text-grayscale-1250"
           >
             {isPlaying ? (
-              <span className="flex items-center gap-[3px]" aria-hidden>
-                <span className="h-[14px] w-[3px] rounded-full bg-grayscale-1250" />
-                <span className="h-[14px] w-[3px] rounded-full bg-grayscale-1250" />
-              </span>
+              <StopIcon className="size-4.5 text-grayscale-1300" aria-hidden />
             ) : (
-              <PlayIcon className="size-[18px]" aria-hidden />
+              <PlayIcon className="size-4.5 text-grayscale-1300" aria-hidden />
             )}
           </button>
         </div>

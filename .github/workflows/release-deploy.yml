@@ -106,14 +106,12 @@ jobs:
         env:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           VITE_GOOGLE_MAPS_MAP_ID: ${{ secrets.VITE_GOOGLE_MAPS_MAP_ID }}
-          VITE_KAKAO_REST_API_KEY: ${{ secrets.VITE_KAKAO_REST_API_KEY }}
         run: |
           set -euo pipefail
 
           required_vars=(
             VITE_GOOGLE_MAPS_API_KEY
             VITE_GOOGLE_MAPS_MAP_ID
-            VITE_KAKAO_REST_API_KEY
           )
 
           for name in "${required_vars[@]}"; do
@@ -143,7 +141,6 @@ jobs:
             VITE_API_BASE_URL=https://dev.${{ env.API_DOMAIN }}
             VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
             VITE_GOOGLE_MAPS_MAP_ID=${{ secrets.VITE_GOOGLE_MAPS_MAP_ID }}
-            VITE_KAKAO_REST_API_KEY=${{ secrets.VITE_KAKAO_REST_API_KEY }}
 
       - name: Start SSH agent
         uses: webfactory/ssh-agent@v0.9.0

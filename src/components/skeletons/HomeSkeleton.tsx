@@ -1,6 +1,6 @@
 import BellIcon from '@/assets/home/bell.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
-import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
+import { HomeBrandLogo } from '@/features/home/components/HomeBrandLogo';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 const FRIEND_PIN_SKELETON_COUNT = 3;
@@ -45,12 +45,14 @@ export function HomeSkeleton() {
       <div className="relative flex flex-col gap-10 pt-[calc(env(safe-area-inset-top)+2px)]">
         <section>
           <header className="flex h-14 items-center justify-between px-4">
-            <PlimapLogo aria-label="PLIMAP" className="h-[30px] w-auto" />
+            <HomeBrandLogo />
             <div
               aria-hidden
               className="flex size-11 items-center justify-center rounded-full bg-pli-black-75"
             >
-              <BellIcon className="h-[22px] w-[18px]" />
+              <span className="flex size-6 items-center justify-center">
+                <BellIcon className="h-[21.4px] w-[17.4px]" />
+              </span>
             </div>
           </header>
 
