@@ -4,15 +4,15 @@ const FOLLOW_ROW_SKELETON_COUNT = 7;
 
 type FollowListSkeletonProps = {
   count?: number;
+  label?: string;
 };
 
-export function FollowListSkeleton({ count = FOLLOW_ROW_SKELETON_COUNT }: FollowListSkeletonProps) {
+export function FollowListSkeleton({
+  count = FOLLOW_ROW_SKELETON_COUNT,
+  label = '팔로우 목록 불러오는 중',
+}: FollowListSkeletonProps) {
   return (
-    <ul
-      className="flex flex-col gap-5 px-4 pt-5"
-      role="status"
-      aria-label="팔로우 목록 불러오는 중"
-    >
+    <ul className="flex flex-col gap-5 px-4 pt-5" role="status" aria-label={label}>
       {Array.from({ length: count }, (_, index) => (
         <li key={index} className="flex h-11 items-center gap-[14px]" aria-hidden>
           <Skeleton className="size-11 shrink-0 rounded-full" />
