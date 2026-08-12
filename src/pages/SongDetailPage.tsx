@@ -538,7 +538,7 @@ export default function SongDetailPage() {
           });
           resetPinCreation();
           navigate('/app', { replace: true });
-          toast.success('PIN 등록이 완료되었어요!');
+          toast.success('PIN 등록이 완료되었어요!', { placement: 'above-navigation' });
         },
         onError: (error) => {
           toast.error(
