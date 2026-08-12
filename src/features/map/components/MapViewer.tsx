@@ -109,6 +109,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onCurrentLocationError,
     centerOnFirstLocation,
     isTrackingEnabled: !isLocationTrackingDisabled,
+    flyTo,
   });
 
   useImperativeHandle(
