@@ -205,7 +205,7 @@ function TrimBar({ trimStartPercent, trimEndPercent, onTrimChange, onDragEnd }: 
     <div className="relative flex h-11 w-[244px] items-center">
       <div ref={trackRef} className="relative h-1 w-full rounded-full bg-pli-black-50">
         <div
-          className="absolute top-1/2 z-10 h-5 -translate-y-1/2 cursor-grab touch-none rounded-full active:cursor-grabbing"
+          className="absolute top-1/2 z-10 h-5 -translate-y-1/2 cursor-grab touch-pan-y rounded-full active:cursor-grabbing"
           style={{
             left: `${trimStartPercent}%`,
             width: `${Math.max(0, trimEndPercent - trimStartPercent)}%`,
@@ -273,7 +273,7 @@ function SongWaveform({
 
       {/* 선택된 웨이브 구간만 드래그 */}
       <div
-        className="absolute inset-y-0 z-10 cursor-grab touch-none active:cursor-grabbing"
+        className="absolute inset-y-0 z-10 cursor-grab touch-pan-y active:cursor-grabbing"
         style={{
           left: `${trimStartPercent}%`,
           width: `${Math.max(0, trimEndPercent - trimStartPercent)}%`,
@@ -573,8 +573,8 @@ export default function SongDetailPage() {
 
   return (
     <>
-      <div className="relative flex min-h-0 flex-1">
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+      <div className="relative h-full min-h-0">
+        <div className="h-full overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+24px)] scrollbar-hide">
           <section className="relative w-full overflow-hidden pb-4">
             <img
               src={coverUrl}
