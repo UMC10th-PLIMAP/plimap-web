@@ -625,7 +625,14 @@ export default function SongDetailPage() {
           </section>
 
           <section className="flex flex-col gap-3 px-[15px]">
-            <h3 className="body-15-r text-grayscale-300">소개</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="body-15-r text-grayscale-300">소개</h3>
+              {introduction.length >= INTRO_MAX_LENGTH ? (
+                <p id="song-intro-limit" aria-live="polite" className="etc-13-r text-red">
+                  소개는 최대 100자까지 가능
+                </p>
+              ) : null}
+            </div>
             <div className="relative rounded-xl bg-pli-black-85 p-5 h-[156px]">
               <label htmlFor="song-intro" className="sr-only">
                 소개
@@ -635,9 +642,17 @@ export default function SongDetailPage() {
                 value={introduction}
                 onChange={(event) => setIntroduction(event.target.value.slice(0, INTRO_MAX_LENGTH))}
                 placeholder="이 음악을 들었을 때 나의 기분은?"
+                aria-describedby={
+                  introduction.length >= INTRO_MAX_LENGTH ? 'song-intro-limit' : undefined
+                }
                 className="body-17-r min-h-[156px] w-full resize-none text-grayscale-300 outline-none placeholder:text-grayscale-1100"
               />
-              <span className="absolute bottom-3 right-4 etc-13-r text-grayscale-600">
+              <span
+                className={cn(
+                  'absolute bottom-3 right-4 etc-13-r',
+                  introduction.length >= INTRO_MAX_LENGTH ? 'text-red' : 'text-grayscale-600',
+                )}
+              >
                 {introduction.length}/{INTRO_MAX_LENGTH}
               </span>
             </div>
