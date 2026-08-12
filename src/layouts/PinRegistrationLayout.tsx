@@ -2,13 +2,14 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Outlet, useLocation, useMatch, useOutletContext } from 'react-router-dom';
 
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
-import { useMapPins } from '@/features/map/queries/useMapPins';
+import { usePinMapView } from '@/features/map/queries/usePinMapView';
 import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import type { MapOutletContext } from '@/layouts/MapLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
 const PIN_REGISTRATION_RADIUS_METERS = 500;
+const PIN_MARKER_MIN_ZOOM = 14;
 
 export type PinRegistrationMapStatus = 'loading' | 'ready' | 'error';
 
@@ -45,7 +46,9 @@ export default function PinRegistrationLayout() {
   const isEntryStage = useMatch('/app/pin/register/place') !== null;
   const isSelectionStage = useMatch('/app/pin/register') !== null;
   const isConfirmStage = useMatch('/app/pin/register/confirm') !== null;
-  const mapPinsQuery = useMapPins(isEntryStage ? null : viewport);
+  const mapPinsQuery = usePinMapView(isEntryStage ? null : viewport, {
+    minimumZoom: PIN_MARKER_MIN_ZOOM,
+  });
   const isMapInteractionLocked = isMapInteractionDisabled || isConfirmStage;
   const stageTargetCoordinate = isConfirmStage
     ? (candidateCoordinate ?? place?.coordinates)
