@@ -11,7 +11,8 @@ const searchInputVariants = cva('flex w-full items-center rounded-[50px] transit
     variant: {
       map: 'h-[60px] gap-2.5 bg-pli-black-100 px-5 py-2.5 backdrop-blur-[1.95px]',
       friend: 'h-[60px] gap-2 bg-pli-black-50 px-4 py-2',
-      song: 'h-10 gap-2 bg-pli-black-75 px-4 body-15-r',
+
+      song: 'h-10 gap-2 bg-pli-black-75 px-4',
     },
   },
   defaultVariants: {
@@ -26,7 +27,8 @@ const searchInputFieldVariants = cva(
       variant: {
         map: 'body-17-m text-grayscale-300 placeholder:text-grayscale-700 placeholder-shown:body-17-r placeholder-shown:text-grayscale-700',
         friend: 'body-17-m text-grayscale-300 placeholder:text-grayscale-700',
-        song: '',
+        // iOS는 input font-size < 16px이면 자동 줌하므로 text-base(16px) 적용
+        song: 'text-base text-grayscale-300 placeholder:text-grayscale-700',
       },
     },
     defaultVariants: {

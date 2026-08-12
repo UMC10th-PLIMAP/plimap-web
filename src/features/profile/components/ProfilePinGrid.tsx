@@ -6,6 +6,17 @@ import { ProfilePinGridSkeleton } from '@/components/skeletons/ProfilePinGridSke
 import type { MemberMeFeedItem } from '@/features/pin/types';
 import { cn } from '@/lib/utils';
 
+const EMPTY_STATE = {
+  mine: {
+    title: '아직 등록한 핀이 없어요',
+    description: '원하는 장소에 나만의 음악을 기록해보세요',
+  },
+  other: {
+    title: '아직 등록한 핀이 없어요',
+    description: '친구가 음악 핀을 등록하면 여기에 표시돼요.',
+  },
+} as const;
+
 type ProfilePinGridProps = {
   pins: MemberMeFeedItem[];
   isPending?: boolean;
@@ -13,6 +24,8 @@ type ProfilePinGridProps = {
   onRetry?: () => void;
   onPinClick?: (pin: MemberMeFeedItem) => void;
   onRegisterPin?: () => void;
+  /** 내 프로필 / 타인 프로필 빈 상태 문구 분기 */
+  emptyVariant?: keyof typeof EMPTY_STATE;
 };
 
 function formatDistanceMeters(distance: number) {
@@ -86,8 +99,10 @@ export function ProfilePinGrid({
   onRetry,
   onPinClick,
   onRegisterPin,
+  emptyVariant = 'mine',
 }: ProfilePinGridProps) {
   const [selectedPinId, setSelectedPinId] = useState<number | null>(null);
+  const emptyState = EMPTY_STATE[emptyVariant];
 
   if (isPending) {
     return <ProfilePinGridSkeleton />;
@@ -112,15 +127,27 @@ export function ProfilePinGrid({
 
   if (pins.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center px-[69px] pt-7.5">
-        <img src={EmptyPinsImage} alt="빈 핀" className="size-[140px] object-cover" />
+      <div
+        className={cn(
+          'flex flex-col items-center px-[69px] text-center',
+          emptyVariant === 'other' ? 'flex-1 justify-center' : 'justify-center pt-7.5',
+        )}
+      >
+        {emptyVariant === 'mine' ? (
+          <img src={EmptyPinsImage} alt="빈 핀" className="size-[140px] object-cover" />
+        ) : null}
 
-        <div className="flex flex-col items-center justify-center pt-6 gap-[2px]">
-          <p className="body-17-m text-grayscale-300">아직 등록한 핀이 없어요</p>
-          <p className=" body-15-m text-grayscale-700">원하는 장소에 나만의 음악을 기록해보세요</p>
+        <div
+          className={cn(
+            'flex flex-col items-center justify-center gap-[2px]',
+            emptyVariant === 'mine' && 'pt-6',
+          )}
+        >
+          <p className="body-17-m text-grayscale-300">{emptyState.title}</p>
+          <p className="body-15-m text-grayscale-700">{emptyState.description}</p>
         </div>
 
-        {onRegisterPin && (
+        {onRegisterPin ? (
           <button
             type="button"
             onClick={onRegisterPin}
@@ -128,7 +155,7 @@ export function ProfilePinGrid({
           >
             핀 등록하러 가기
           </button>
-        )}
+        ) : null}
       </div>
     );
   }
