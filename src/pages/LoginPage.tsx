@@ -8,19 +8,17 @@ import { FullScreenError } from '@/components/ui/FullScreenError';
 import { Button } from '@/components/ui/button';
 import { OnboardingSplash } from '@/features/auth/components/OnboardingSplash';
 import { OnboardingTutorial } from '@/features/auth/components/OnboardingTutorial';
+import { buildApiUrl } from '@/config/api';
 
 export type LoginPageLocationState = {
   oauthError?: boolean;
 };
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
-
-if (!API_BASE_URL) {
-  console.error('VITE_API_BASE_URL is missing in environment variables');
-}
 const FRONTEND_ORIGIN = window.location.origin;
-const KAKAO_LOGIN_URL = `${API_BASE_URL}/oauth/authorization/kakao?frontendOrigin=${FRONTEND_ORIGIN}`;
-const GOOGLE_LOGIN_URL = `${API_BASE_URL}/oauth/authorization/google?frontendOrigin=${FRONTEND_ORIGIN}`;
+const KAKAO_LOGIN_URL = buildApiUrl(`/oauth/authorization/kakao?frontendOrigin=${FRONTEND_ORIGIN}`);
+const GOOGLE_LOGIN_URL = buildApiUrl(
+  `/oauth/authorization/google?frontendOrigin=${FRONTEND_ORIGIN}`,
+);
 
 type OAuthProvider = 'kakao' | 'google';
 

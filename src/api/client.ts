@@ -1,12 +1,7 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 import type { ApiResponse } from '@/api/types';
-
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
-
-if (!API_BASE_URL) {
-  console.error('VITE_API_BASE_URL is missing in environment variables');
-}
+import { API_BASE_URL } from '@/config/api';
 
 export class ApiError extends Error {
   // 백엔드 자체 오류 코드

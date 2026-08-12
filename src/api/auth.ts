@@ -10,7 +10,13 @@ import type { TermId } from '@/features/auth/terms/types';
 
 const ENDPOINT = '/api/v1/auth';
 
-// 1) POST /api/v1/auth/terms - 이용약관 동의
+// GET /api/v1/auth/terms - 현재 사용자의 약관 동의 상태 조회
+export async function getTermsAgreementStatus() {
+  const { data } = await apiClient.get<ApiResponse<TermsAgreementResponse>>(`${ENDPOINT}/terms`);
+  return data.result;
+}
+
+// POST /api/v1/auth/terms - 이용약관 동의
 export async function agreeToTerms(agreements: { id: TermId; agreed: boolean }[]) {
   const body: TermsAgreementRequest = {
     agreements: agreements.map(({ id, agreed }) => ({ type: id, agreed })),
@@ -23,7 +29,7 @@ export async function agreeToTerms(agreements: { id: TermId; agreed: boolean }[]
   return data.result;
 }
 
-// 2) POST /api/v1/auth/onboarding - 온보딩(닉네임/프로필 설정) 완료
+// POST /api/v1/auth/onboarding - 온보딩(닉네임/프로필 설정) 완료
 export async function completeOnboarding(nickname: string) {
   const body: OnboardingRequest = { nickname };
 
@@ -34,7 +40,7 @@ export async function completeOnboarding(nickname: string) {
   return data.result;
 }
 
-// 3) DELETE /api/v1/auth/logout - 로그아웃
+// DELETE /api/v1/auth/logout - 로그아웃
 export async function logout() {
   await apiClient.delete<ApiResponse<null>>(`${ENDPOINT}/logout`);
 }
