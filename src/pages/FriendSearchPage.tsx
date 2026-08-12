@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
+import { FollowListSkeleton } from '@/components/skeletons/FollowListSkeleton';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { useToast } from '@/hooks/useToast';
 import { TopBar } from '@/components/ui/TopBar';
@@ -162,17 +163,11 @@ export default function FriendSearchPage() {
         />
       </div>
 
-      <main className="flex min-h-0 flex-1 flex-col px-4 pt-5 pb-[calc(env(safe-area-inset-bottom)+24px)]">
+      <main className="flex min-h-0 flex-1 flex-col pb-[calc(env(safe-area-inset-bottom)+24px)]">
         {trimmedKeyword.length === 0 ? null : isInitialLoading ? (
-          <div
-            role="status"
-            aria-label="친구 검색 중"
-            className="flex flex-1 items-center justify-center"
-          >
-            <span className="size-10 animate-spin rounded-full border-2 border-grayscale-600 border-r-transparent" />
-          </div>
+          <FollowListSkeleton label="친구 검색 중" />
         ) : searchQuery.isError && !searchQuery.isFetchNextPageError ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 pt-5 text-center">
             <p className="body-15-r text-grayscale-500">친구를 검색하지 못했어요.</p>
             <button
               type="button"
@@ -183,12 +178,15 @@ export default function FriendSearchPage() {
             </button>
           </div>
         ) : members.length === 0 ? (
-          <p className="flex flex-1 items-center justify-center text-center body-15-r text-grayscale-600">
+          <p className="flex flex-1 items-center justify-center px-4 pt-5 text-center body-15-r text-grayscale-600">
             검색 결과가 없어요.
           </p>
         ) : (
           <>
-            <ul className="flex flex-col gap-5" aria-busy={searchQuery.isFetchingNextPage}>
+            <ul
+              className="flex flex-col gap-5 px-4 pt-5"
+              aria-busy={searchQuery.isFetchingNextPage}
+            >
               {members.map((member) => (
                 <MemberSearchResultRow
                   key={member.id}
@@ -201,7 +199,7 @@ export default function FriendSearchPage() {
             </ul>
 
             {searchQuery.isFetchNextPageError ? (
-              <div className="flex flex-col items-center gap-2 py-5">
+              <div className="flex flex-col items-center gap-2 px-4 py-5">
                 <p className="body-15-r text-grayscale-500">더 불러오지 못했어요.</p>
                 <button
                   type="button"
@@ -217,13 +215,7 @@ export default function FriendSearchPage() {
             )}
 
             {searchQuery.isFetchingNextPage ? (
-              <div
-                className="flex justify-center py-4"
-                role="status"
-                aria-label="검색 결과 더 불러오는 중"
-              >
-                <span className="size-6 animate-spin rounded-full border-2 border-grayscale-600 border-r-transparent" />
-              </div>
+              <FollowListSkeleton count={1} label="검색 결과 더 불러오는 중" />
             ) : null}
           </>
         )}
