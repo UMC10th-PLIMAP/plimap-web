@@ -66,14 +66,6 @@ export const router = createBrowserRouter([
     element: <RecommendationContentCarouselPreviewPage />,
   },
   {
-    path: '/preview/service-guide',
-    element: <ServiceGuidePage />,
-  },
-  {
-    path: '/preview/settings',
-    element: <SettingsPage />,
-  },
-  {
     path: '/app',
     element: <RootLayout />,
     children: [
