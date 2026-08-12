@@ -213,12 +213,12 @@ export default function HomePage() {
 
   const handleFriendProfileClick = async (pin: FriendPinItem) => {
     try {
-      const { memberId } = await getPinDetail(String(pin.pinId));
-      if (!Number.isInteger(memberId) || memberId <= 0) {
+      const { writerId } = await getPinDetail(String(pin.pinId));
+      if (!Number.isInteger(writerId) || writerId <= 0) {
         toast.error(FRIEND_PROFILE_ERROR_MESSAGE, { placement: 'above-navigation' });
         return;
       }
-      navigate(`/app/users/${memberId}`);
+      navigate(`/app/users/${writerId}`);
     } catch {
       toast.error(FRIEND_PROFILE_ERROR_MESSAGE, { placement: 'above-navigation' });
     }

@@ -148,7 +148,7 @@ export type GetMyPinsResponse = {
 };
 
 export type PinDetailResponse = {
-  memberId: number;
+  writerId: number;
   placeId: number;
   latitude: number;
   longitude: number;
