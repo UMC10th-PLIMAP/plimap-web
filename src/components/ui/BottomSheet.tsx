@@ -91,18 +91,10 @@ type BottomSheetProps = {
   snapPoints?: SnapPoint[];
   /** 처음 열릴 때(및 풀페이지에서 뒤로가기 시) 돌아갈 스냅 지점. 생략하면 snapPoints의 첫 값을 쓴다. */
   defaultSnapPoint?: SnapPoint;
-  /**
-   * 이 값이 바뀌면(시트가 열려있는 동안에도) defaultSnapPoint로 스냅을 리셋한다.
-   * 같은 시트가 열린 채로 다른 대상(예: 다른 핀)으로 내용만 바뀌는 경우에 사용한다.
-   */
   resetKey?: string | number;
-  /** 이 값이 바뀔 때마다 snapPoints의 진짜 첫 값(가장 작은 스냅)으로 축소한다. */
   collapseToSmallestSignal?: number;
-  /**
-   * 시트 바깥의 플로팅 UI가 드래그를 따라가야 할 때 지정한다.
-   * React 상태를 거치지 않고 이 요소의 CSS 변수에 현재 시트 높이를 기록한다.
-   */
   trackingElementRef?: React.RefObject<HTMLElement | null>;
+  keepOpenWhileMounted?: boolean;
   className?: string;
 };
 
@@ -123,6 +115,7 @@ function BottomSheet({
   resetKey,
   collapseToSmallestSignal,
   trackingElementRef,
+  keepOpenWhileMounted = false,
   className,
 }: BottomSheetProps) {
   const firstSnap = defaultSnapPoint ?? snapPoints[0] ?? null;
@@ -133,10 +126,10 @@ function BottomSheet({
   const [prevResetKey, setPrevResetKey] = React.useState(resetKey);
   const [prevCollapseSignal, setPrevCollapseSignal] = React.useState(collapseToSmallestSignal);
   const [hasBeenOpen, setHasBeenOpen] = React.useState(open);
-  if (open && !hasBeenOpen) {
+  if (keepOpenWhileMounted && open && !hasBeenOpen) {
     setHasBeenOpen(true);
   }
-  const vaulOpen = hasBeenOpen;
+  const vaulOpen = keepOpenWhileMounted ? hasBeenOpen : open;
 
   if (open !== prevOpen || resetKey !== prevResetKey) {
     setPrevOpen(open);
@@ -233,7 +226,7 @@ function BottomSheet({
         setActiveSnapPoint={setActiveSnap}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
-            setHasBeenOpen(false);
+            if (keepOpenWhileMounted) setHasBeenOpen(false);
             onClose();
           }
         }}

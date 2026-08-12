@@ -518,6 +518,7 @@ export function PinListSheet({
         resetKey={resetKey}
         collapseToSmallestSignal={collapseToSmallestSignal}
         trackingElementRef={floatingActionRef}
+        keepOpenWhileMounted
       >
         <BottomSheet.FullPageNav onBack={onFullPageBack} trailing={bookmarkTrailingButton} />
 
