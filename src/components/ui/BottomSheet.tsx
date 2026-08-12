@@ -168,6 +168,28 @@ function BottomSheet({
 
   const snapObserverRef = React.useRef<MutationObserver | null>(null);
   const snapReportRafRef = React.useRef<number | null>(null);
+  const snapObserverTargetRef = React.useRef<HTMLDivElement | null>(null);
+
+  const reportVisibleHeight = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      const trackingElement = trackingElementRef?.current;
+      if (!trackingElement) return;
+
+      const match = node
+        ? /translate3d\(0(?:px)?,\s*(-?[\d.]+)px/.exec(node.style.transform)
+        : null;
+      const visibleHeight = match
+        ? Math.min(viewportHeight, Math.max(0, viewportHeight - Number(match[1])))
+        : getSnapVisibleHeight(activeSnap, viewportHeight);
+      trackingElement.style.setProperty('--bottom-sheet-visible-height', `${visibleHeight}px`);
+    },
+    [activeSnap, trackingElementRef, viewportHeight],
+  );
+
+  // MapPage의 조건부 플로팅 액션이 시트보다 늦게 마운트되어도 현재 높이를 즉시 전달한다.
+  React.useLayoutEffect(() => {
+    reportVisibleHeight(snapObserverTargetRef.current);
+  });
 
   // vaul이 드래그 중 DOM에 직접 반영하는 transform을 실시간 관찰해야 해서 콜백 ref를 쓴다 -
   // vaul/Radix가 content 노드를 교체해도(예: presence 애니메이션) 항상 최신 노드를 관찰한다.
@@ -180,41 +202,26 @@ function BottomSheet({
         cancelAnimationFrame(snapReportRafRef.current);
         snapReportRafRef.current = null;
       }
+      snapObserverTargetRef.current = node;
       if (!node) {
         trackingElementRef?.current?.style.removeProperty('--bottom-sheet-visible-height');
         return;
       }
 
-      trackingElementRef?.current?.style.setProperty(
-        '--bottom-sheet-visible-height',
-        `${getSnapVisibleHeight(activeSnap, viewportHeight)}px`,
-      );
-
-      const reportFromStyle = () => {
-        const match = /translate3d\(0(?:px)?,\s*(-?[\d.]+)px/.exec(node.style.transform);
-        if (!match) return;
-        const translateY = Number(match[1]);
-        const visibleHeight = Math.min(viewportHeight, Math.max(0, viewportHeight - translateY));
-        trackingElementRef?.current?.style.setProperty(
-          '--bottom-sheet-visible-height',
-          `${visibleHeight}px`,
-        );
-      };
-
-      reportFromStyle();
+      reportVisibleHeight(node);
       // 드래그 중엔 스타일 변경이 화면 주사율보다 잦을 수 있으므로 프레임당
       // 최대 한 번만 플로팅 UI 위치를 반영한다.
       const observer = new MutationObserver(() => {
         if (snapReportRafRef.current !== null) return;
         snapReportRafRef.current = requestAnimationFrame(() => {
           snapReportRafRef.current = null;
-          reportFromStyle();
+          reportVisibleHeight(node);
         });
       });
       observer.observe(node, { attributes: true, attributeFilter: ['style'] });
       snapObserverRef.current = observer;
     },
-    [activeSnap, trackingElementRef, viewportHeight],
+    [reportVisibleHeight, trackingElementRef],
   );
 
   React.useEffect(
