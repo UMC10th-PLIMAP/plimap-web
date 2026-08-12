@@ -42,12 +42,7 @@ import NotFoundPage from '@/pages/NotFoundPage';
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/app/home" replace />,
-  },
-  {
-    // 백엔드가 /app 접두사 없이 이 경로로 리다이렉트한다.
-    path: '/oauth/callback',
-    element: <OAuthCallbackPage />,
+    element: <Navigate to="/app" replace />,
   },
   {
     path: '/preview/pin-radius',
