@@ -41,9 +41,8 @@ Browser
 
 - `PROD_VITE_GOOGLE_MAPS_API_KEY`
 - `PROD_VITE_GOOGLE_MAPS_MAP_ID`
-- `PROD_VITE_KAKAO_REST_API_KEY`
 
-브라우저에 포함되는 Vite 빌드 값은 서버 비밀로 간주할 수 없습니다. Google Maps와 Kakao 콘솔에서 Prod 키를 `https://plimap.kr` 사용으로 제한해야 합니다.
+브라우저에 포함되는 Vite 빌드 값은 서버 비밀로 간주할 수 없습니다. Google Maps 콘솔에서 Prod 키를 `https://plimap.kr` 사용으로 제한해야 합니다.
 
 ## Release 및 배포
 

@@ -4,11 +4,13 @@ export type TermsAgreementRequest = {
   agreements: { type: TermId; agreed: boolean }[];
 };
 
-export type TermsAgreementResponse = {
+export type TermsAgreement = {
   type: TermId;
   agreed: boolean;
-  agreedAt: string;
-}[];
+  agreedAt: string | null;
+};
+
+export type TermsAgreementResponse = TermsAgreement[];
 
 export type OnboardingRequest = {
   nickname: string;

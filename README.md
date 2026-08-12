@@ -15,21 +15,20 @@ PLIMAP은 지도 위 장소에 어울리는 음악을 핀으로 남기고, 주�
 
 ## 기술 스택
 
-| 구분                     | 기술             |
-| ------------------------ | ---------------- |
-| Framework                | React            |
-| Language                 | TypeScript       |
-| Build Tool               | Vite             |
-| Package Manager          | pnpm             |
-| Styling                  | Tailwind CSS     |
-| UI Registry              | shadcn/ui        |
-| State Management         | Zustand          |
-| API Client               | axios            |
-| Server State             | TanStack Query   |
-| Routing                  | React Router     |
-| Map API                  | Google Maps      |
-| Place Search / Geocoding | Kakao Local      |
-| Code Convention          | ESLint, Prettier |
+| 구분             | 기술             |
+| ---------------- | ---------------- |
+| Framework        | React            |
+| Language         | TypeScript       |
+| Build Tool       | Vite             |
+| Package Manager  | pnpm             |
+| Styling          | Tailwind CSS     |
+| UI Registry      | shadcn/ui        |
+| State Management | Zustand          |
+| API Client       | axios            |
+| Server State     | TanStack Query   |
+| Routing          | React Router     |
+| Map API          | Google Maps      |
+| Code Convention  | ESLint, Prettier |
 
 ## 폴더 구조
 
