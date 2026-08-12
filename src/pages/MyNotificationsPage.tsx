@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
@@ -20,6 +20,7 @@ export default function MyNotificationsPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [pendingMemberIds, setPendingMemberIds] = useState<Set<number>>(new Set());
   const {
     data,
     error,
@@ -54,6 +55,25 @@ export default function MyNotificationsPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const requestError = !data && isError ? error : null;
+
+  const handleFollowBack = async (actorId: number) => {
+    setPendingMemberIds((current) => new Set(current).add(actorId));
+
+    try {
+      await followBackMutation.mutateAsync({ memberId: actorId, isFollowing: false });
+      void refetch();
+    } catch (mutationError) {
+      toast.error(
+        mutationError instanceof ApiError ? mutationError.message : FOLLOW_BACK_FAILED_MESSAGE,
+      );
+    } finally {
+      setPendingMemberIds((current) => {
+        const next = new Set(current);
+        next.delete(actorId);
+        return next;
+      });
+    }
+  };
 
   if (requestError) {
     return <RequestErrorScreen error={requestError} onRetry={() => void refetch()} />;
@@ -97,27 +117,8 @@ export default function MyNotificationsPage() {
             <NotificationRow
               key={notification.notificationId}
               notification={notification}
-              isFollowPending={
-                followBackMutation.isPending &&
-                followBackMutation.variables?.memberId === notification.actorId
-              }
-              onFollowBack={(actorId) =>
-                followBackMutation.mutate(
-                  { memberId: actorId, isFollowing: false },
-                  {
-                    onSuccess: () => {
-                      void refetch();
-                    },
-                    onError: (mutationError) => {
-                      toast.error(
-                        mutationError instanceof ApiError
-                          ? mutationError.message
-                          : FOLLOW_BACK_FAILED_MESSAGE,
-                      );
-                    },
-                  },
-                )
-              }
+              isFollowPending={pendingMemberIds.has(notification.actorId)}
+              onFollowBack={(actorId) => void handleFollowBack(actorId)}
               onOpenPin={(pinId) => navigate(`/app/pins/${pinId}`)}
             />
           ))}
