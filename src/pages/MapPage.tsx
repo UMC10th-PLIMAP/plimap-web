@@ -13,7 +13,11 @@ import { usePinMapView } from '@/features/map/queries/usePinMapView';
 import { useAutoFocusNearestPin } from '@/features/map/hooks/useAutoFocusNearestPin';
 import { PIN_FOCUS_ZOOM } from '@/features/map/hooks/useMapPinOverlays';
 import { DEV_MOCK_MAP_PINS } from '@/features/map/constants/devMockMapPins';
-import { PinListSheet, type ResolvedPlaceSummary } from '@/features/pin/components/PinListSheet';
+import {
+  PinListSheet,
+  PIN_LIST_SHEET_MID_SNAP,
+  type ResolvedPlaceSummary,
+} from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
@@ -559,7 +563,7 @@ const MapPage: React.FC<MapPageProps> = ({
             ref={registerButtonContainerRef}
             className="pointer-events-none fixed inset-x-0 z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4"
             style={{
-              bottom: 'calc(var(--bottom-sheet-visible-height, 340px) + 16px)',
+              bottom: `calc(var(--bottom-sheet-visible-height, ${PIN_LIST_SHEET_MID_SNAP * 100}dvh) + 16px)`,
             }}
           >
             <Button
