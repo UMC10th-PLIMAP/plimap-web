@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { cn } from '@/lib/utils';
 import { usePutPinLike } from '@/features/pin/queries/usePutPinLike';
 import { useDeletePinLike } from '@/features/pin/queries/useDeletePinLike';
 import type { PinFeedEntry } from '@/features/pin/types';
@@ -7,6 +8,7 @@ import MoreIcon from '@/assets/icons/more.svg?react';
 import LikeIcon from '@/assets/icons/like.svg?react';
 import SoundWaveIcon from '@/assets/icons/soundwaves.svg?react';
 import PlayIcon from '@/assets/icons/play.svg?react';
+import '@/features/map/components/MapPinMessageBox.css';
 
 type PinFeedCardProps = {
   entry: PinFeedEntry;
@@ -139,7 +141,9 @@ export function PinFeedCard({
         </button>
 
         <div className="flex items-center gap-2.5">
-          <SoundWaveIcon className="size-6 text-grayscale-400" aria-hidden />
+          <span className={cn('gc-wave', isPlaying && 'gc-wave--playing')} aria-hidden>
+            <SoundWaveIcon className="size-6" />
+          </span>
           <button
             type="button"
             aria-label={isPlaying ? '미리듣기 일시정지' : '미리듣기 재생'}
