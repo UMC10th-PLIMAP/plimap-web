@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { Navigate, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import PlayIcon from '@/assets/icons/play.svg?react';
+import StopIcon from '@/assets/icons/stop.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import rectangleBg from '@/assets/Rectangle.png';
 import { useToast } from '@/hooks/useToast';
@@ -384,12 +385,9 @@ function SongPreviewSection({
           className="flex size-7 items-center justify-center rounded-full bg-grayscale-100 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPlaying ? (
-            <span className="flex items-center gap-[3px]" aria-hidden>
-              <span className="h-3.5 w-[3px] rounded-full bg-grayscale-1200" />
-              <span className="h-3.5 w-[3px] rounded-full bg-grayscale-1200" />
-            </span>
+            <StopIcon className="size-4.5 text-grayscale-1300" aria-hidden />
           ) : (
-            <PlayIcon className="size-4.5 text-grayscale-1200" aria-hidden />
+            <PlayIcon className="size-4.5 text-grayscale-1300" aria-hidden />
           )}
         </button>
       </div>
