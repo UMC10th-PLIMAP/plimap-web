@@ -256,6 +256,7 @@ export default function HomePage() {
           lat: placeDetail.latitude,
           lng: placeDetail.longitude,
         },
+        showMapBackButton: true,
       });
       navigate('/app');
     } catch {
