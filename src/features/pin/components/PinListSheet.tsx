@@ -68,7 +68,7 @@ type PinListSheetProps = {
 
 // 화면 전체 높이 874 기준 Figma 스냅. 실제 뷰포트 높이에 맞춰 비례하도록 비율로 유지한다.
 const PIN_LIST_SHEET_COLLAPSED_SNAP = 180 / 874;
-export const PIN_LIST_SHEET_MID_SNAP = 340 / 874;
+const PIN_LIST_SHEET_MID_SNAP = 340 / 874;
 // 프로필 피드 진입: MY·장소정보·등록곡 CTA·정렬 탭까지 보이는 높이 (Figma FD-01-04)
 const PIN_LIST_SHEET_FEED_MID_SNAP = 300 / 874;
 

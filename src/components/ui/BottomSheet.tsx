@@ -8,6 +8,19 @@ type SnapPoint = number | string;
 
 const DEFAULT_SNAP_POINTS: SnapPoint[] = [0.5, 1];
 
+function getViewportHeight() {
+  if (typeof window === 'undefined') return 1;
+  return window.innerHeight || document.documentElement.clientHeight || 1;
+}
+
+function getSnapVisibleHeight(snapPoint: SnapPoint | null, viewportHeight: number) {
+  if (typeof snapPoint === 'number') return snapPoint * viewportHeight;
+  if (typeof snapPoint !== 'string') return 0;
+
+  const pixelHeight = Number.parseInt(snapPoint, 10);
+  return Number.isFinite(pixelHeight) ? pixelHeight : 0;
+}
+
 /** Vaul Drawer 루트. 시트 열림/닫힘·스냅 포인트 상태를 관리한다. */
 function SheetRoot({ ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
   return <DrawerPrimitive.Root data-slot="bottom-sheet" {...props} />;
@@ -130,6 +143,7 @@ function BottomSheet({
     setHasBeenOpen(true);
   }
   const vaulOpen = keepOpenWhileMounted ? hasBeenOpen : open;
+  const [viewportHeight, setViewportHeight] = React.useState(getViewportHeight);
 
   if (open !== prevOpen || resetKey !== prevResetKey) {
     setPrevOpen(open);
@@ -145,6 +159,12 @@ function BottomSheet({
       setActiveSnap(smallestSnap);
     }
   }
+
+  React.useEffect(() => {
+    const updateViewportHeight = () => setViewportHeight(getViewportHeight());
+    window.addEventListener('resize', updateViewportHeight);
+    return () => window.removeEventListener('resize', updateViewportHeight);
+  }, []);
 
   const snapObserverRef = React.useRef<MutationObserver | null>(null);
   const snapReportRafRef = React.useRef<number | null>(null);
@@ -165,11 +185,15 @@ function BottomSheet({
         return;
       }
 
+      trackingElementRef?.current?.style.setProperty(
+        '--bottom-sheet-visible-height',
+        `${getSnapVisibleHeight(activeSnap, viewportHeight)}px`,
+      );
+
       const reportFromStyle = () => {
         const match = /translate3d\(0(?:px)?,\s*(-?[\d.]+)px/.exec(node.style.transform);
         if (!match) return;
         const translateY = Number(match[1]);
-        const viewportHeight = window.innerHeight || 1;
         const visibleHeight = Math.min(viewportHeight, Math.max(0, viewportHeight - translateY));
         trackingElementRef?.current?.style.setProperty(
           '--bottom-sheet-visible-height',
@@ -190,7 +214,7 @@ function BottomSheet({
       observer.observe(node, { attributes: true, attributeFilter: ['style'] });
       snapObserverRef.current = observer;
     },
-    [trackingElementRef],
+    [activeSnap, trackingElementRef, viewportHeight],
   );
 
   React.useEffect(
@@ -243,9 +267,9 @@ function BottomSheet({
               : undefined
           }
           data-full-page={isFullPage ? '' : undefined}
+          style={{ height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` }}
           className={cn(
-            // h-full은 모바일 주소창 노출 시 "큰" 뷰포트 기준이라 하단이 잘려 보인다 - dvh로 교체.
-            'h-dvh max-h-dvh transition-[border-radius,background-color] duration-200',
+            'transition-[border-radius,background-color] duration-200',
             isFullPage
               ? 'rounded-none bg-pli-black-100 pt-[env(safe-area-inset-top)]'
               : 'rounded-t-2xl',
