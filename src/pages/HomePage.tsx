@@ -24,6 +24,8 @@ import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type
 
 type HotPlaceFilter = 'nearby' | 'popular';
 
+const FRIEND_PROFILE_ERROR_MESSAGE = '프로필을 열지 못했어요. 다시 시도해 주세요.';
+
 function formatDistanceMeters(distanceMeters: number) {
   const normalizedDistance = Math.max(0, distanceMeters);
 
@@ -181,10 +183,13 @@ export default function HomePage() {
   const handleFriendProfileClick = async (pin: FriendPinItem) => {
     try {
       const { memberId } = await getPinDetail(String(pin.pinId));
-      if (!Number.isInteger(memberId) || memberId <= 0) return;
+      if (!Number.isInteger(memberId) || memberId <= 0) {
+        toast.error(FRIEND_PROFILE_ERROR_MESSAGE, { placement: 'above-navigation' });
+        return;
+      }
       navigate(`/app/users/${memberId}`);
     } catch {
-      return;
+      toast.error(FRIEND_PROFILE_ERROR_MESSAGE, { placement: 'above-navigation' });
     }
   };
 
