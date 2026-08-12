@@ -239,7 +239,7 @@ export async function getOtherMemberFeed({
   userLongitude?: number;
 }): Promise<MemberMeResponse> {
   const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(
-    `/api/v1/feed/members/${memberId}`,
+    `/api/v1/feeds/members/${memberId}`,
     {
       params: { pageSize, cursor, userLatitude, userLongitude },
     },
@@ -254,7 +254,7 @@ export async function getMemberMe({
   userLatitude,
   userLongitude,
 }: MemberMeRequest): Promise<MemberMeResponse> {
-  const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(`/api/v1/feed/members/me`, {
+  const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(`/api/v1/feeds/members/me`, {
     params: { pageSize, cursor, userLatitude, userLongitude },
   });
   return data.result;
