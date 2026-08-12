@@ -559,7 +559,7 @@ const MapPage: React.FC<MapPageProps> = ({
             ref={registerButtonContainerRef}
             className="pointer-events-none fixed inset-x-0 z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4"
             style={{
-              bottom: 'calc(var(--bottom-sheet-visible-height, 340px) + 16px)',
+              bottom: 'calc(var(--bottom-sheet-visible-height) + 16px)',
             }}
           >
             <Button
