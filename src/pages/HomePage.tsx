@@ -1,26 +1,30 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { getPinDetail, type FriendPinItem } from '@/api/pin';
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BellIcon from '@/assets/home/bell.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
-import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { HomeHotPlaceCarouselSkeleton, HomeSkeleton } from '@/components/skeletons/HomeSkeleton';
 import { useToast } from '@/hooks/useToast';
 import { Chip } from '@/components/ui/chip';
+import { HomeBrandLogo } from '@/features/home/components/HomeBrandLogo';
 import { HomeCarouselState } from '@/features/home/components/HomeCarouselState';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
 import { useFriendPins } from '@/features/home/hooks/useFriendPins';
 import { useHomeContext } from '@/features/home/hooks/useHomeContext';
 import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
+import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { cn } from '@/lib/utils';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
 type HotPlaceFilter = 'nearby' | 'popular';
+
+const FRIEND_PROFILE_ERROR_MESSAGE = '프로필을 열지 못했어요. 다시 시도해 주세요.';
 
 function formatDistanceMeters(distanceMeters: number) {
   const normalizedDistance = Math.max(0, distanceMeters);
@@ -103,6 +107,7 @@ function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps
 export default function HomePage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
   const [hotPlaceFilter, setHotPlaceFilter] = useState<HotPlaceFilter>('nearby');
   const [hotPlacePages, setHotPlacePages] = useState<Record<HotPlaceFilter, number>>({
     nearby: 0,
@@ -175,6 +180,19 @@ export default function HomePage() {
     void savedPlacesQuery.refetch();
   };
 
+  const handleFriendProfileClick = async (pin: FriendPinItem) => {
+    try {
+      const { memberId } = await getPinDetail(String(pin.pinId));
+      if (!Number.isInteger(memberId) || memberId <= 0) {
+        toast.error(FRIEND_PROFILE_ERROR_MESSAGE, { placement: 'above-navigation' });
+        return;
+      }
+      navigate(`/app/users/${memberId}`);
+    } catch {
+      toast.error(FRIEND_PROFILE_ERROR_MESSAGE, { placement: 'above-navigation' });
+    }
+  };
+
   if (isHomePending) {
     return <HomeSkeleton />;
   }
@@ -189,7 +207,7 @@ export default function HomePage() {
       <div className="relative flex flex-col">
         <section className="pt-[calc(env(safe-area-inset-top)+2px)]">
           <header className="flex h-14 items-center justify-between px-4">
-            <PlimapLogo aria-label="PLIMAP" className="h-[30px] w-auto" />
+            <HomeBrandLogo />
             <Link
               to="/app/my/notifications"
               aria-label="알림"
@@ -257,10 +275,21 @@ export default function HomePage() {
               )}
             </div>
           ) : (
-            <div className="flex h-44 gap-3 overflow-x-auto px-4 pt-3 pb-10 scrollbar-hide">
+            <div className="flex gap-3 overflow-x-auto px-4 pt-3 pb-10 scrollbar-hide">
               {friendPins.map((pin) => (
                 <RecommendationPinCard
                   key={pin.pinId}
+                  aria-label={`${pin.placeName} 지도에서 PIN 보기`}
+                  profileAriaLabel={`${pin.writerNickname} 프로필 보기`}
+                  onProfileClick={() => void handleFriendProfileClick(pin)}
+                  onClick={() =>
+                    void openPinPlaceOnMap({
+                      pinId: pin.pinId,
+                      fallbackPlaceName: pin.placeName,
+                      showMyRegisteredTrackCta: true,
+                      requestFeedPlaceAccess: true,
+                    })
+                  }
                   pin={{
                     id: String(pin.pinId),
                     place: { name: pin.placeName },

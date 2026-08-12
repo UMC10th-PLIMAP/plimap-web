@@ -10,6 +10,7 @@ import {
   useInfiniteNotifications,
   useNotificationSubscription,
 } from '@/features/notification/queries/useNotifications';
+import { useNotificationResources } from '@/features/notification/queries/useNotificationResources';
 import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 import { useToast } from '@/hooks/useToast';
 
@@ -33,6 +34,7 @@ export default function MyNotificationsPage() {
   } = useInfiniteNotifications();
   const followBackMutation = useToggleFollow();
   const notifications = data?.pages.flatMap((page) => page.data) ?? [];
+  const { pinAlbumImageById, followRelationByActorId } = useNotificationResources(notifications);
 
   const isNotificationStreamDisconnected = useNotificationSubscription();
 
@@ -93,31 +95,44 @@ export default function MyNotificationsPage() {
               <NotificationRowSkeleton key={index} />
             ))}
 
-          {notifications.map((notification) => (
-            <NotificationRow
-              key={notification.notificationId}
-              notification={notification}
-              isFollowPending={
-                followBackMutation.isPending &&
-                followBackMutation.variables?.memberId === notification.actorId
-              }
-              onFollowBack={(actorId) =>
-                followBackMutation.mutate(
-                  { memberId: actorId, isFollowing: false },
-                  {
-                    onError: (mutationError) => {
-                      toast.error(
-                        mutationError instanceof ApiError
-                          ? mutationError.message
-                          : FOLLOW_BACK_FAILED_MESSAGE,
-                      );
+          {notifications.map((notification) => {
+            const followResource = followRelationByActorId.get(notification.actorId);
+
+            return (
+              <NotificationRow
+                key={notification.notificationId}
+                notification={notification}
+                pinAlbumImageUrl={
+                  notification.pinId === null
+                    ? null
+                    : (pinAlbumImageById.get(notification.pinId) ?? null)
+                }
+                followRelation={followResource?.relation}
+                isFollowRelationPending={followResource?.isPending ?? false}
+                isFollowRelationError={followResource?.isError ?? false}
+                isFollowPending={
+                  followBackMutation.isPending &&
+                  followBackMutation.variables?.memberId === notification.actorId
+                }
+                onFollowBack={(actorId) =>
+                  followBackMutation.mutate(
+                    { memberId: actorId, isFollowing: false },
+                    {
+                      onError: (mutationError) => {
+                        toast.error(
+                          mutationError instanceof ApiError
+                            ? mutationError.message
+                            : FOLLOW_BACK_FAILED_MESSAGE,
+                        );
+                      },
                     },
-                  },
-                )
-              }
-              onOpenPin={(pinId) => navigate(`/app/pins/${pinId}`)}
-            />
-          ))}
+                  )
+                }
+                onRetryFollowRelation={() => followResource?.retry()}
+                onOpenPin={(pinId) => navigate(`/app/pins/${pinId}`)}
+              />
+            );
+          })}
 
           {isFetchingNextPage && <NotificationRowSkeleton />}
         </ul>

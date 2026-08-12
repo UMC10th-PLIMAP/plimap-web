@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 
-import { getOtherMemberProfile } from '@/api/member';
 import { getNotifications, subscribeToNotifications } from '@/api/notification';
-import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 
 const NOTIFICATIONS_QUERY_KEY = ['notification', 'infinite'] as const;
 
@@ -41,13 +39,4 @@ export function useNotificationSubscription() {
   }, [queryClient]);
 
   return isDisconnected;
-}
-
-export function useActorProfile(actorId: number, enabled: boolean) {
-  return useQuery({
-    queryKey: memberQueryKeys.profile(actorId),
-    queryFn: () => getOtherMemberProfile(actorId),
-    enabled,
-    staleTime: 60_000,
-  });
 }
