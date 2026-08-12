@@ -36,8 +36,8 @@ function formatCreatedAt(createdAt: string) {
 function ProfileImage({ notification }: { notification: Notification }) {
   if (!notification.actorProfileImageUrl) {
     return (
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-pli-black-50 text-grayscale-600">
-        <UserPlaceholderIcon className="size-7" aria-hidden />
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-pli-black-75">
+        <UserPlaceholderIcon className="size-6 text-pli-black-50" aria-hidden />
       </span>
     );
   }

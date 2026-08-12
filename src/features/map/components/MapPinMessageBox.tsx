@@ -23,7 +23,7 @@ export function MapPinMessageBox({
 }: MapPinMessageBoxProps) {
   const profileContent = (
     <>
-      <div className="gc-avatar flex items-center justify-center overflow-hidden bg-grayscale-0">
+      <div className="gc-avatar flex items-center justify-center overflow-hidden bg-pli-black-75">
         {avatarUrl ? (
           <img src={avatarUrl} alt="" className="size-full object-cover" />
         ) : (
