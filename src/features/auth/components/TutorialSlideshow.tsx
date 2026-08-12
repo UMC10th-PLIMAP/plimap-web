@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 
 import NextIcon from '@/assets/icons/next.svg?react';
-import tutorialImage1 from '@/assets/images/onboarding/tutorial-1.png';
-import tutorialImage2 from '@/assets/images/onboarding/tutorial-2.png';
-import tutorialImage3 from '@/assets/images/onboarding/tutorial-3.png';
-import tutorialImage4 from '@/assets/images/onboarding/tutorial-4.png';
-import tutorialImage5 from '@/assets/images/onboarding/tutorial-5.png';
+import tutorialImage1 from '@/assets/images/onboarding/tutorial-1.webp';
+import tutorialImage2 from '@/assets/images/onboarding/tutorial-2.webp';
+import tutorialImage3 from '@/assets/images/onboarding/tutorial-3.webp';
+import tutorialImage4 from '@/assets/images/onboarding/tutorial-4.webp';
+import tutorialImage5 from '@/assets/images/onboarding/tutorial-5.webp';
 import { Carousel, CarouselContent, CarouselItem, useCarousel } from '@/components/ui/carousel';
 import { OnboardingDots } from '@/features/auth/components/OnboardingDots';
 import { cn } from '@/lib/utils';
