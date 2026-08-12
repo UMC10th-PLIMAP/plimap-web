@@ -16,9 +16,17 @@ type SongSelectSheetProps = {
   onClose: () => void;
   onSelect?: (song: SearchTrack) => void;
   finalFocusRef?: RefObject<HTMLElement | null>;
+  /** 열릴 때 검색창 자동 포커스를 막는다. */
+  preventOpenAutoFocus?: boolean;
 };
 
-export function SongSelectSheet({ open, onClose, onSelect, finalFocusRef }: SongSelectSheetProps) {
+export function SongSelectSheet({
+  open,
+  onClose,
+  onSelect,
+  finalFocusRef,
+  preventOpenAutoFocus = false,
+}: SongSelectSheetProps) {
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
@@ -62,8 +70,9 @@ export function SongSelectSheet({ open, onClose, onSelect, finalFocusRef }: Song
     <BottomSheet
       open={open}
       onClose={onClose}
-      initialFocusRef={searchInputRef}
+      initialFocusRef={preventOpenAutoFocus ? undefined : searchInputRef}
       finalFocusRef={finalFocusRef}
+      preventOpenAutoFocus={preventOpenAutoFocus}
       snapPoints={[0.98, 1]}
       className="z-[80] bg-pli-black-85"
     >
