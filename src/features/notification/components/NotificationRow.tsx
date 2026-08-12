@@ -13,6 +13,7 @@ type NotificationRowProps = {
   notification: Notification;
   isFollowPending: boolean;
   onFollowBack: (actorId: number) => void;
+  onOpenProfile: (actorId: number) => void;
   onOpenPin: (pinId: number) => void;
 };
 
@@ -45,7 +46,7 @@ function ProfileImage({ notification }: { notification: Notification }) {
   return (
     <img
       src={notification.actorProfileImageUrl}
-      alt={`${notification.actorNickname} 프로필`}
+      alt=""
       className="size-10 shrink-0 rounded-full object-cover"
     />
   );
@@ -72,6 +73,7 @@ export function NotificationRow({
   notification,
   isFollowPending,
   onFollowBack,
+  onOpenProfile,
   onOpenPin,
 }: NotificationRowProps) {
   const isFollowNotification = notification.type === 'FOLLOW';
@@ -86,7 +88,14 @@ export function NotificationRow({
 
   return (
     <li className="flex items-center gap-2.5">
-      <ProfileImage notification={notification} />
+      <button
+        type="button"
+        onClick={() => onOpenProfile(notification.actorId)}
+        aria-label={`${notification.actorNickname} 프로필 보기`}
+        className="shrink-0 cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon"
+      >
+        <ProfileImage notification={notification} />
+      </button>
 
       {canOpenPin ? (
         <button

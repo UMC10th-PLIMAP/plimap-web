@@ -119,6 +119,7 @@ export default function MyNotificationsPage() {
               notification={notification}
               isFollowPending={pendingMemberIds.has(notification.actorId)}
               onFollowBack={(actorId) => void handleFollowBack(actorId)}
+              onOpenProfile={(actorId) => navigate(`/app/users/${actorId}`)}
               onOpenPin={(pinId) => navigate(`/app/pins/${pinId}`)}
             />
           ))}
