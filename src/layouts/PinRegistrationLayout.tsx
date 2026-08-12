@@ -48,7 +48,7 @@ export default function PinRegistrationLayout() {
   const mapPinsQuery = useMapPins(isEntryStage ? null : viewport);
   const isMapInteractionLocked = isMapInteractionDisabled || isConfirmStage;
   const stageTargetCoordinate = isConfirmStage
-    ? place?.coordinates
+    ? (candidateCoordinate ?? place?.coordinates)
     : isSelectionStage
       ? candidateCoordinate
       : isEntryStage

@@ -35,6 +35,10 @@ const SINGLE_CLUSTER_MATCH_RADIUS_METERS = 15;
 type MapNavigationState = {
   mapFocusCoordinate?: MapCoordinate;
 };
+type PlaceSearchSource = {
+  entryKey: string;
+  viewport: MapViewport | null;
+};
 type MapPageProps = {
   selectedMapPlace: PinSearchPlace | null;
   onClearMapPlace?: () => void;
@@ -234,6 +238,8 @@ const MapPage: React.FC<MapPageProps> = ({
   const setPinCreationPlace = usePinCreationStore((state) => state.setPlace);
 
   const mapViewerRef = useRef<MapViewerHandle>(null);
+  const placeSearchSourceRef = useRef<PlaceSearchSource | null>(null);
+  const pendingSourceViewportRef = useRef<MapViewport | null>(null);
   const wasCoveredRef = useRef(isCovered);
   const {
     playingKey,
@@ -257,6 +263,27 @@ const MapPage: React.FC<MapPageProps> = ({
 
     mapViewerRef.current?.restoreViewport(savedViewport);
   }, [isCovered, mapLoadStatus, onSaveViewport, savedViewport]);
+
+  // 장소 검색 결과에서 두 번 뒤로 돌아오면 검색을 열기 전 지도 엔트리다.
+  // RootLayout의 선택 상태와 지도 인스턴스는 히스토리 엔트리별로 스냅샷되지
+  // 않으므로, 여기서 선택을 닫고 검색 전 뷰포트를 직접 복원한다.
+  useEffect(() => {
+    const source = placeSearchSourceRef.current;
+    if (!source || location.pathname !== '/app' || location.key !== source.entryKey) return;
+
+    placeSearchSourceRef.current = null;
+    pendingSourceViewportRef.current = source.viewport;
+    onClearMapPlace?.();
+  }, [location.key, location.pathname, onClearMapPlace]);
+
+  useEffect(() => {
+    const sourceViewport = pendingSourceViewportRef.current;
+    if (!sourceViewport || mapLoadStatus !== 'ready' || location.pathname !== '/app') return;
+
+    pendingSourceViewportRef.current = null;
+    mapViewerRef.current?.restoreViewport(sourceViewport);
+    onSaveViewport(sourceViewport);
+  }, [location.pathname, mapLoadStatus, onSaveViewport]);
 
   const handlePlayMapPin = useCallback(
     (pinId: string) => {
@@ -403,6 +430,16 @@ const MapPage: React.FC<MapPageProps> = ({
     if (!isCovered) onSaveViewport(nextViewport);
   };
 
+  const openPlaceSearch = () => {
+    placeSearchSourceRef.current = {
+      entryKey: location.key,
+      viewport: mapViewerRef.current?.captureViewport() ?? savedViewport,
+    };
+    navigate('/app/pin/search', {
+      state: { fromMap: true, initialQuery: selectedMapPlace?.searchQuery ?? '' },
+    });
+  };
+
   const handleRecenterToCurrentLocation = () => {
     const didRecenter = mapViewerRef.current?.recenterToCurrentLocation() ?? false;
     if (didRecenter) return;
@@ -478,14 +515,11 @@ const MapPage: React.FC<MapPageProps> = ({
               className="map-search-hero"
               value={selectedMapPlace?.placeName}
               placeholder="장소를 검색하세요"
-              onClick={() => {
-                // 선택된 장소가 검색어로 찾은 것이면 그 검색어를 그대로 복원해 검색
-                // 결과 화면으로, 최근 검색에서 바로 고른 것이면 검색어 없이 최근
-                // 검색 목록으로 들어간다.
-                navigate('/app/pin/search', {
-                  state: { fromMap: true, initialQuery: selectedMapPlace?.searchQuery ?? '' },
-                });
-              }}
+              onBack={selectedMapPlace?.searchQuery !== undefined ? () => navigate(-1) : undefined}
+              // 선택된 장소가 검색어로 찾은 것이면 그 검색어를 그대로 복원해 검색
+              // 결과 화면으로, 최근 검색에서 바로 고른 것이면 검색어 없이 최근
+              // 검색 목록으로 들어간다.
+              onClick={openPlaceSearch}
               onClear={() => onClearMapPlace?.()}
             />
           )}
@@ -610,10 +644,9 @@ const MapPage: React.FC<MapPageProps> = ({
           onFullPageBack={
             isFeedMapEntry
               ? undefined
-              : () =>
-                  navigate('/app/pin/search', {
-                    state: { fromMap: true, initialQuery: selectedMapPlace.searchQuery ?? '' },
-                  })
+              : selectedMapPlace.searchQuery !== undefined
+                ? () => navigate(-1)
+                : openPlaceSearch
           }
         />
       ) : selectedMapPin ? (
