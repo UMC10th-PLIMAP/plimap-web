@@ -8,6 +8,7 @@ import MoreIcon from '@/assets/icons/more.svg?react';
 import LikeIcon from '@/assets/icons/like.svg?react';
 import SoundWaveIcon from '@/assets/icons/soundwaves.svg?react';
 import PlayIcon from '@/assets/icons/play.svg?react';
+import StopIcon from '@/assets/icons/stop.svg?react';
 import '@/features/map/components/MapPinMessageBox.css';
 
 type PinFeedCardProps = {
@@ -152,12 +153,9 @@ export function PinFeedCard({
             className="flex size-[30px] cursor-pointer items-center justify-center rounded-full bg-gradient-neon text-grayscale-1250"
           >
             {isPlaying ? (
-              <span className="flex items-center gap-[3px]" aria-hidden>
-                <span className="h-3.5 w-[3px] rounded-full bg-grayscale-1250" />
-                <span className="h-3.5 w-[3px] rounded-full bg-grayscale-1250" />
-              </span>
+              <StopIcon className="size-5 text-grayscale-1300s" aria-hidden />
             ) : (
-              <PlayIcon className="size-5" aria-hidden />
+              <PlayIcon className="size-5 text-grayscale-1300" aria-hidden />
             )}
           </button>
         </div>
