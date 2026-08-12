@@ -204,7 +204,7 @@ export default function FollowListPage() {
       </div>
       <div className="px-[15px] pt-3">
         <SearchInput
-          placeholder="사용자의 닉네임을 검색하세요"
+          placeholder="친구의 닉네임을 검색하세요"
           variant="song"
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}

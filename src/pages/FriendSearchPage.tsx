@@ -158,7 +158,7 @@ export default function FriendSearchPage() {
           variant="friend"
           onChange={(event) => updateKeyword(event.target.value)}
           onClear={() => updateKeyword('')}
-          placeholder="사용자의 닉네임을 검색하세요"
+          placeholder="친구의 닉네임을 검색하세요"
           aria-label="친구 닉네임 검색"
         />
       </div>
