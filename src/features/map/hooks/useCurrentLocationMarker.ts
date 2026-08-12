@@ -238,12 +238,13 @@ export function useCurrentLocationMarker({
 
     const map = mapInstanceRef.current;
     const position = positionRef.current;
-    if (!map || !position) return;
+    if (!map || !position) return false;
 
     // 축소된 상태에서 panTo부터 하면 restriction이 넓은 뷰포트 기준으로
     // 좌표를 다시 clamp해버릴 수 있어, 줌을 먼저 좁힌 뒤에 이동한다.
     map.setZoom(RECENTER_ZOOM);
     map.panTo(position);
+    return true;
   }, [enableCompassIfNeeded, mapInstanceRef]);
 
   return { recenterToCurrentLocation };

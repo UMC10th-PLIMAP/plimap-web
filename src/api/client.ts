@@ -27,6 +27,12 @@ export function isUnauthorizedError(error: unknown): boolean {
   return error instanceof ApiError && (error.status === 401 || error.status === 403);
 }
 
+export function isNetworkError(error: unknown): boolean {
+  return axios.isAxiosError(error) && !error.response;
+}
+
+export const SESSION_EXPIRED_EVENT = 'plimap:session-expired';
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
@@ -102,6 +108,10 @@ apiClient.interceptors.response.use(undefined, async (error: AxiosError<ApiRespo
   }
 
   // 에러 응답을 위한 로직
+  if (error.response?.status === 401 && typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+  }
+
   if (error.response?.data?.code) {
     const { data, status } = error.response;
     return Promise.reject(new ApiError(data.code, data.message, status));

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
 import { SearchInput } from '@/components/ui/SearchInput';
+import { useToast } from '@/hooks/useToast';
 import { TopBar } from '@/components/ui/TopBar';
 import { MemberSearchResultRow } from '@/features/profile/components/MemberSearchResultRow';
 import { useMemberSearch } from '@/features/profile/queries/useMemberSearch';
@@ -15,6 +16,7 @@ const FOLLOW_TOGGLE_FAILED_MESSAGE = '요청을 처리하지 못했어요. 다�
 
 export default function FriendSearchPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const goBack = useGoBack('/app/home');
   const [searchParams, setSearchParams] = useSearchParams();
   const [pendingMemberIds, setPendingMemberIds] = useState<Set<number>>(new Set());
@@ -131,7 +133,7 @@ export default function FriendSearchPage() {
         isFollowing: member.isFollowing,
       });
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : FOLLOW_TOGGLE_FAILED_MESSAGE);
+      toast.error(error instanceof ApiError ? error.message : FOLLOW_TOGGLE_FAILED_MESSAGE);
     } finally {
       setPendingMemberIds((current) => {
         const next = new Set(current);
@@ -155,7 +157,7 @@ export default function FriendSearchPage() {
           variant="friend"
           onChange={(event) => updateKeyword(event.target.value)}
           onClear={() => updateKeyword('')}
-          placeholder="찾고 있는 친구의 닉네임은?"
+          placeholder="사용자의 닉네임을 검색하세요"
           aria-label="친구 닉네임 검색"
         />
       </div>

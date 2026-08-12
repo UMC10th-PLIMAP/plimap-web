@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { PinDetailSkeleton } from '@/components/skeletons/PinDetailSkeleton';
+import { useToast } from '@/hooks/useToast';
 
 import { reportPin } from '@/api/report';
 import { ReportModal } from '@/features/pin/components/ReportModal';
@@ -25,6 +27,10 @@ const SORT_LABEL: Record<PinSort, string> = {
   LATEST: '최신순',
   POPULAR: '인기순',
 };
+
+const LIKE_FAILED_MESSAGE = '좋아요를 변경하지 못했어요. 다시 시도해 주세요.';
+const DELETE_FAILED_MESSAGE = '핀을 삭제하지 못했어요. 다시 시도해 주세요.';
+const REPORT_FAILED_MESSAGE = '신고를 접수하지 못했어요. 다시 시도해 주세요.';
 
 type PlaceTrackPin = GetPlaceTrackPinsResponse['data'][number];
 
@@ -65,6 +71,7 @@ function toGeolocationFailureReason(error: Error): GeolocationFailureReason {
 
 export default function PinDetailPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const location = useLocation();
   const locationState = (location.state as PinDetailLocationState | null) ?? null;
   const { pinId } = useParams<{ pinId: string }>();
@@ -84,37 +91,27 @@ export default function PinDetailPage() {
   // 지도/피드에서 navigate state로 넘긴 토큰만 사용 (스토어 잔여 토큰 혼입 방지)
   const placeAccessToken = locationState?.placeAccessToken;
   const { playingKey, toggle: toggleClipPlayback, stop: stopClipPlayback } = useYouTubeClipPlayer();
-
   const userLatitude = hasLocationFromState
     ? locationState.userLatitude
     : currentPositionQuery.data?.latitude;
   const userLongitude = hasLocationFromState
     ? locationState.userLongitude
     : currentPositionQuery.data?.longitude;
-
-  const {
-    data: pinDetail,
-    isPending: isDetailPending,
-    isError: isDetailError,
-    refetch: refetchDetail,
-  } = usePlaceTrackDetail({
+  const pinDetailQuery = usePlaceTrackDetail({
     placeTrackId: pinId,
     userLatitude,
     userLongitude,
     placeAccessToken,
   });
-  const {
-    data: pinPages,
-    isPending: isPinsPending,
-    isError: isPinsError,
-    refetch: refetchPins,
-  } = usePlaceTrackPins({
+  const pinPagesQuery = usePlaceTrackPins({
     placeTrackId: pinId,
     pinSortType: sort,
     userLatitude,
     userLongitude,
     placeAccessToken,
   });
+  const { data: pinDetail } = pinDetailQuery;
+  const { data: pinPages } = pinPagesQuery;
 
   const { mutate: putLikedTrack, isPending: isPutPending } = usePutLikedTrack();
   const { mutate: deleteLikedTrack, isPending: isDeletePending } = useDeleteLikedTrack();
@@ -135,9 +132,15 @@ export default function PinDetailPage() {
 
   const isLocationPending = !hasLocationFromState && currentPositionQuery.isPending;
   const isContentPending =
-    !locationErrorMessage && (isLocationPending || isDetailPending || isPinsPending);
-  const isContentError =
-    !locationErrorMessage && !isContentPending && (isDetailError || isPinsError);
+    !locationErrorMessage &&
+    (isLocationPending || pinDetailQuery.isPending || pinPagesQuery.isPending);
+  const queryError =
+    (!pinDetail ? pinDetailQuery.error : null) ?? (!pinPages ? pinPagesQuery.error : null);
+  const requestError = queryError;
+
+  const handleErrorAction = () => {
+    void Promise.all([pinDetailQuery.refetch(), pinPagesQuery.refetch()]);
+  };
 
   useEffect(() => {
     preloadYouTubeIframeApi();
@@ -161,10 +164,14 @@ export default function PinDetailPage() {
 
     const placeTrackId = String(pinDetail.placeTrackId);
     if (pinDetail.userLike) {
-      deleteLikedTrack(placeTrackId);
+      deleteLikedTrack(placeTrackId, {
+        onError: () => toast.error(LIKE_FAILED_MESSAGE),
+      });
       return;
     }
-    putLikedTrack(placeTrackId);
+    putLikedTrack(placeTrackId, {
+      onError: () => toast.error(LIKE_FAILED_MESSAGE),
+    });
   };
 
   if (locationErrorMessage) {
@@ -195,24 +202,16 @@ export default function PinDetailPage() {
     );
   }
 
-  if (isContentError || !pinDetail) {
+  if (requestError) {
+    return <RequestErrorScreen error={requestError} onRetry={handleErrorAction} />;
+  }
+
+  if (!pinDetail) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <TopBar onBack={() => navigate(-1)} className="pt-[env(safe-area-inset-top)]" />
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
-          <p className="body-15-r text-grayscale-500">곡 정보를 불러오지 못했어요.</p>
-          <button
-            type="button"
-            onClick={() => {
-              void refetchDetail();
-              void refetchPins();
-            }}
-            className="cursor-pointer rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100"
-          >
-            다시 시도
-          </button>
-        </div>
-      </div>
+      <RequestErrorScreen
+        error={new Error('Pin detail response is empty')}
+        onRetry={handleErrorAction}
+      />
     );
   }
 
@@ -312,7 +311,12 @@ export default function PinDetailPage() {
         open={reportFeedId !== null}
         onClose={() => setReportFeedId(null)}
         onSubmit={async (reason, detail) => {
-          await reportPin(Number(reportFeedId), reason, detail);
+          try {
+            await reportPin(Number(reportFeedId), reason, detail);
+          } catch (error) {
+            toast.error(REPORT_FAILED_MESSAGE);
+            throw error;
+          }
         }}
       />
 
@@ -332,6 +336,7 @@ export default function PinDetailPage() {
               if (!deletePinId || isDeletePinPending) return;
               deletePin(deletePinId, {
                 onSuccess: () => setDeletePinId(null),
+                onError: () => toast.error(DELETE_FAILED_MESSAGE),
               });
             },
           },

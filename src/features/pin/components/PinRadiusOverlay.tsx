@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties, type RefObject } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
@@ -8,16 +8,10 @@ import { cn } from '@/lib/utils';
 const PIN_REGISTRATION_RADIUS_METERS = 500;
 const CONFLICT_TOAST_DURATION_MS = 2_000;
 
-export type PinRadiusCenter = {
-  x: number;
-  y: number;
-  radiusPixels?: number;
-};
-
 export type PinRadiusOverlayProps = {
   zoom: number;
   centerLatitude: number;
-  radiusCenter?: PinRadiusCenter;
+  radiusElementRef?: RefObject<HTMLDivElement | null>;
   feedbackMessage?: string | null;
   isCompleting?: boolean;
   isCompleteDisabled?: boolean;
@@ -30,7 +24,7 @@ export type PinRadiusOverlayProps = {
 export function PinRadiusOverlay({
   zoom,
   centerLatitude,
-  radiusCenter,
+  radiusElementRef,
   feedbackMessage,
   isCompleting = false,
   isCompleteDisabled = false,
@@ -40,19 +34,17 @@ export function PinRadiusOverlay({
   className,
 }: PinRadiusOverlayProps) {
   const [toastAttempt, setToastAttempt] = useState(0);
-  const projectedRadiusPixels = radiusCenter?.radiusPixels;
-  const radiusPixels =
-    projectedRadiusPixels && Number.isFinite(projectedRadiusPixels)
-      ? projectedRadiusPixels
-      : calculateMapRadiusPixels(PIN_REGISTRATION_RADIUS_METERS, zoom, centerLatitude);
+  const radiusPixels = calculateMapRadiusPixels(
+    PIN_REGISTRATION_RADIUS_METERS,
+    zoom,
+    centerLatitude,
+  );
   const diameterPixels = radiusPixels * 2;
-  const radiusCenterX = radiusCenter && Number.isFinite(radiusCenter.x) ? radiusCenter.x : '50%';
-  const radiusCenterY = radiusCenter && Number.isFinite(radiusCenter.y) ? radiusCenter.y : '50%';
   const radiusStyle: CSSProperties = {
-    left: radiusCenterX,
-    top: radiusCenterY,
-    width: diameterPixels,
-    height: diameterPixels,
+    left: 'var(--pin-radius-center-x, 50%)',
+    top: 'var(--pin-radius-center-y, 50%)',
+    width: `var(--pin-radius-diameter, ${diameterPixels}px)`,
+    height: `var(--pin-radius-diameter, ${diameterPixels}px)`,
     boxShadow: '0 0 0 200vmax rgba(0, 0, 0, 0.6)',
   };
 
@@ -70,6 +62,7 @@ export function PinRadiusOverlay({
       >
         {showRadius && radiusPixels > 0 ? (
           <div
+            ref={radiusElementRef}
             aria-hidden="true"
             className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-[4px] border-[rgba(247,247,247,0.35)]"
             style={radiusStyle}
@@ -112,7 +105,7 @@ export function PinRadiusOverlay({
           <p className="max-w-full px-6 py-4 text-center body-15-m text-grayscale-200 [text-shadow:0_1px_4px_#000]">
             반경 500m 이내에 PIN을 등록할 수 있어요.
             <br />
-            다른 PIN과 20m 이상 떨어진 곳에 등록해 주세요.
+            다른 PIN과 10m 이상 떨어진 곳에 등록해 주세요.
           </p>
         </div>
       </section>

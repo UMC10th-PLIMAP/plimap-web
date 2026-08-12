@@ -5,7 +5,9 @@ import Cropper, { type Area, type Point } from 'react-easy-crop';
 import { ApiError } from '@/api/client';
 import CameraIcon from '@/assets/icons/camera.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
+import { RequestErrorScreen } from '@/components/ui/RequestErrorScreen';
 import { TopBar } from '@/components/ui/TopBar';
 import { ProfileTextAreaField } from '@/features/profile/components/ProfileTextAreaField';
 import { ProfileTextField } from '@/features/profile/components/ProfileTextField';
@@ -28,21 +30,19 @@ const INVALID_FORMAT_MESSAGE =
   '올릴 수 없는 파일 형식이에요. JPG, PNG 또는 WebP 파일로 선택해 주세요.';
 const IMAGE_PROCESSING_FAILED_MESSAGE = '이미지 처리에 실패했어요. 다시 시도해 주세요.';
 const PROFILE_UPDATE_FAILED_MESSAGE = '프로필 수정에 실패했어요. 다시 시도해 주세요.';
-const PROFILE_LOAD_FAILED_MESSAGE = '프로필을 불러오지 못했어요.';
 
 export default function ProfileEditPage() {
   const navigate = useNavigate();
 
-  const { data: profile, isError } = useMyProfile();
+  const { data: profile, error: profileError, refetch } = useMyProfile();
+
+  if (profileError && !profile) {
+    return <RequestErrorScreen error={profileError} onRetry={() => void refetch()} />;
+  }
 
   return (
     <div className="flex h-full min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar title="프로필 편집" titleWeight="medium" onBack={() => navigate(-1)} />
-      {isError && (
-        <p className="mt-8 text-center body-15-r text-grayscale-600">
-          {PROFILE_LOAD_FAILED_MESSAGE}
-        </p>
-      )}
       {profile && <ProfileEditForm profile={profile} />}
     </div>
   );
@@ -50,6 +50,7 @@ export default function ProfileEditPage() {
 
 function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [imageStep, setImageStep] = useState<ImageStep>('idle');
@@ -91,7 +92,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
     if (!file) return;
 
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      alert(INVALID_FORMAT_MESSAGE);
+      toast.error(INVALID_FORMAT_MESSAGE);
       return;
     }
 
@@ -128,7 +129,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
       setImageStep('idle');
     } catch (error) {
       console.error('크롭 실패:', error);
-      alert(IMAGE_PROCESSING_FAILED_MESSAGE);
+      toast.error(IMAGE_PROCESSING_FAILED_MESSAGE);
     } finally {
       setIsCropProcessing(false);
     }
@@ -168,7 +169,7 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
 
       navigate('/app/my', { replace: true });
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : PROFILE_UPDATE_FAILED_MESSAGE);
+      toast.error(error instanceof ApiError ? error.message : PROFILE_UPDATE_FAILED_MESSAGE);
     }
   };
 
@@ -271,7 +272,6 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           label="닉네임"
           placeholder="내용 입력"
           countLimit={NICKNAME_MAX_LENGTH}
-          maxLength={NICKNAME_MAX_LENGTH}
           {...nicknameField}
         />
         <ProfileTextField
@@ -279,7 +279,6 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           label="이름"
           placeholder="내용 입력"
           countLimit={NAME_MAX_LENGTH}
-          maxLength={NAME_MAX_LENGTH}
           {...nameField}
         />
         <ProfileTextAreaField
@@ -287,7 +286,6 @@ function ProfileEditForm({ profile }: { profile: MyProfileResponse }) {
           label="소개"
           placeholder="내용 입력"
           countLimit={INTRODUCTION_MAX_LENGTH}
-          maxLength={INTRODUCTION_MAX_LENGTH}
           {...introductionField}
         />
       </div>

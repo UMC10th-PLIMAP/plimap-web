@@ -9,33 +9,62 @@ import { cn } from '@/lib/utils';
 type PlaceResultRowProps = Omit<ComponentProps<'button'>, 'type'> & {
   place: PlaceResult;
   variant?: 'search-result' | 'recent-search';
+  isOutOfRange?: boolean;
   onDelete?: () => void;
   isDeleteDisabled?: boolean;
   isDeletePending?: boolean;
 };
 
+function formatDistance(distance: number) {
+  const normalizedDistance = Math.max(0, distance);
+
+  if (normalizedDistance >= 1000) {
+    const kilometers = normalizedDistance / 1000;
+    return {
+      value: Number.isInteger(kilometers) ? String(kilometers) : kilometers.toFixed(1),
+      unit: 'km',
+    };
+  }
+
+  return { value: String(Math.round(normalizedDistance)), unit: 'm' };
+}
+
 export function PlaceResultRow({
   place,
   className,
   variant = 'search-result',
+  isOutOfRange = false,
   onDelete,
   isDeleteDisabled = false,
   isDeletePending = false,
+  disabled,
   ...props
 }: PlaceResultRowProps) {
   const { address, category, creatorName, distance, placeName } = place;
   const isRecentSearch = variant === 'recent-search';
   const showDeleteButton = isRecentSearch && onDelete;
+  const formattedDistance = formatDistance(distance);
+  const isSelectionDisabled = disabled || isOutOfRange;
+  const displayCategory = category.split('>')[0]?.trim() || category;
 
   return (
-    <div className={cn('py-2', showDeleteButton && 'flex w-full items-start gap-4 pr-4')}>
+    <div
+      className={cn(
+        'py-2',
+        showDeleteButton && 'flex w-full items-start gap-4 pr-4',
+        isOutOfRange && 'opacity-40',
+      )}
+    >
       <button
         type="button"
         className={cn(
           'flex min-w-0 items-start gap-4 rounded-xl text-left transition-colors hover:bg-pli-black-75 focus-visible:bg-pli-black-75 focus-visible:outline-none',
           showDeleteButton ? 'flex-1 pl-4' : 'w-full px-4',
+          isSelectionDisabled &&
+            'cursor-not-allowed hover:bg-transparent focus-visible:bg-transparent',
           className,
         )}
+        disabled={isSelectionDisabled}
         {...props}
       >
         <span className="mt-4 flex size-7 shrink-0 items-center justify-center rounded-full bg-pli-black-75">
@@ -49,21 +78,27 @@ export function PlaceResultRow({
         <span className="flex min-w-0 flex-1 flex-col items-start gap-[6px] whitespace-nowrap pb-3 pt-4">
           <span className="flex w-full min-w-0 items-center gap-[6px]">
             <span className="min-w-0 truncate body-17-r text-grayscale-100">{placeName}</span>
-            <span className="shrink-0 etc-13-r text-grayscale-400">{category}</span>
+            <span className="shrink-0 etc-13-r text-grayscale-400">{displayCategory}</span>
           </span>
 
           <span className="w-full truncate body-15-r text-grayscale-500">{address}</span>
 
-          <span className="flex w-full min-w-0 items-start gap-1 text-grayscale-500">
+          <span className="flex w-full min-w-0 items-start gap-1">
             {creatorName ? (
               <>
                 <span className="min-w-0 truncate body-15-r text-grayscale-200">{creatorName}</span>
-                <span className="shrink-0 body-15-m">님이 생성한 PIN</span>
+                <span className="shrink-0 body-15-m text-grayscale-400">님이 생성한 핀</span>
               </>
             ) : (
-              <span className="shrink-0 body-15-m">생성되지 않음</span>
+              <span className="shrink-0 body-15-m text-grayscale-400">생성되지 않음</span>
             )}
-            <span className="shrink-0 body-15-m">∙ {distance}m</span>
+            <span className="shrink-0 body-15-m text-grayscale-300">∙</span>
+            <span className="flex shrink-0 body-15-m">
+              <span className={cn(isOutOfRange ? 'text-red' : 'text-grayscale-300')}>
+                {formattedDistance.value}
+              </span>
+              <span className="text-grayscale-300">{formattedDistance.unit}</span>
+            </span>
           </span>
         </span>
       </button>

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { TopBar } from '@/components/ui/TopBar';
 import { SearchInput } from '@/components/ui/SearchInput';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { SongSelectSkeleton } from '@/components/skeletons/SongSelectSkeleton';
+import { useToast } from '@/hooks/useToast';
 import { SongCard } from '@/features/pin/components/SongCard';
 import { fetchPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
 import { useSearchTracks } from '@/features/pin/queries/useSearchTracks';
@@ -12,32 +13,30 @@ import type { SearchTrack } from '@/features/pin/types';
 import { useAutoFocusAfterViewTransition } from '@/hooks/useAutoFocusAfterViewTransition';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
-const TOAST_DURATION_MS = 2_500;
 const PLAYBACK_ERROR_MESSAGE = '이 곡은 현재 재생할 수 없어요. 다른 곡을 선택해 주세요.';
-
-type SelectToast = {
-  attempt: number;
-  message: string;
-};
 
 export default function SongListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const searchInputRef = useAutoFocusAfterViewTransition<HTMLInputElement>();
+  const toast = useToast();
   const place = usePinCreationStore((state) => state.place);
   const currentLocation = usePinCreationStore((state) => state.currentLocation);
   const [query, setQuery] = useState('');
   const [preparingTrackId, setPreparingTrackId] = useState<number | null>(null);
-  const [toast, setToast] = useState<SelectToast | null>(null);
 
-  const { data: tracks } = useSearchTracks({ keyword: query, limit: 200 });
+  const trackSearchQuery = useSearchTracks({ keyword: query, limit: 200 });
+  const hasSearchQuery = query.trim().length > 0;
+  const isSearchPending =
+    hasSearchQuery && (trackSearchQuery.isDebouncing || trackSearchQuery.isPending);
+  const tracks =
+    hasSearchQuery && !trackSearchQuery.isDebouncing ? (trackSearchQuery.data?.tracks ?? []) : [];
 
-  const showToast = (message: string) => {
-    setToast((current) => ({
-      attempt: (current?.attempt ?? 0) + 1,
-      message,
-    }));
-  };
+  useEffect(() => {
+    if (!trackSearchQuery.isError) return;
+
+    toast.error('검색을 실패했어요.\n네트워크 연결을 확인해 주세요', { duration: 3_000 });
+  }, [toast, trackSearchQuery.error, trackSearchQuery.isError]);
 
   const handleSelectTrack = async (track: SearchTrack) => {
     if (preparingTrackId != null) return;
@@ -48,7 +47,7 @@ export default function SongListPage() {
       await fetchPlaybackPreparations(queryClient, track.itunesTrackId);
       navigate(`/app/song/detail/${track.itunesTrackId}`);
     } catch (error) {
-      showToast(PLAYBACK_ERROR_MESSAGE);
+      toast.error(PLAYBACK_ERROR_MESSAGE, { duration: 2_500 });
       console.error(error);
     } finally {
       setPreparingTrackId(null);
@@ -60,7 +59,7 @@ export default function SongListPage() {
   }
 
   return (
-    <ToastProvider duration={TOAST_DURATION_MS}>
+    <>
       <div className="relative flex min-h-full flex-col pt-[env(safe-area-inset-top)]">
         <TopBar onBack={() => navigate(-1)} title="노래 선택하기" titleWeight="regular" />
         <div className="px-[15px] pt-4">
@@ -74,31 +73,39 @@ export default function SongListPage() {
           />
         </div>
         <div className="px-4 pt-5.5">
-          <ul>
-            {tracks?.tracks.map((track) => (
-              <li key={track.itunesTrackId}>
-                <SongCard
-                  song={track}
-                  disabled={preparingTrackId != null}
-                  isLoading={preparingTrackId === track.itunesTrackId}
-                  onClick={() => {
-                    void handleSelectTrack(track);
-                  }}
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-50 flex justify-center">
-          {toast ? (
-            <Toast key={`${toast.message}:${toast.attempt}`} defaultOpen>
-              {toast.message}
-            </Toast>
-          ) : null}
-          <ToastViewport />
+          {isSearchPending ? (
+            <SongSelectSkeleton />
+          ) : trackSearchQuery.isError ? (
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <p className="body-15-r text-grayscale-500">노래를 검색하지 못했어요.</p>
+              <button
+                type="button"
+                onClick={() => void trackSearchQuery.refetch()}
+                className="body-15-m text-neon-2 cursor-pointer"
+              >
+                다시 시도
+              </button>
+            </div>
+          ) : hasSearchQuery && tracks.length === 0 ? (
+            <p className="py-10 text-center body-17-r text-grayscale-500">검색 결과가 없어요</p>
+          ) : (
+            <ul>
+              {tracks.map((track) => (
+                <li key={track.itunesTrackId}>
+                  <SongCard
+                    song={track}
+                    disabled={preparingTrackId != null}
+                    isLoading={preparingTrackId === track.itunesTrackId}
+                    onClick={() => {
+                      void handleSelectTrack(track);
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
-    </ToastProvider>
+    </>
   );
 }

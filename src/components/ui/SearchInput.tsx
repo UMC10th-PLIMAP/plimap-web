@@ -21,7 +21,7 @@ const searchInputVariants = cva('flex w-full items-center rounded-[50px] transit
 });
 
 const searchInputFieldVariants = cva(
-  'flex-1 outline-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-ms-clear]:hidden',
+  'min-w-0 flex-1 outline-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-ms-clear]:hidden',
   {
     variants: {
       variant: {
@@ -128,9 +128,14 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
             type="button"
             onClick={handleClear}
             aria-label="검색어 지우기"
-            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-pli-black-50"
+            className={cn(
+              'flex size-6 shrink-0 items-center justify-center',
+              variant !== 'friend' && 'rounded-full bg-pli-black-50',
+            )}
           >
-            <CloseIcon className="size-4 text-grayscale-400" />
+            <CloseIcon
+              className={cn('text-grayscale-400', variant === 'friend' ? 'size-6' : 'size-4')}
+            />
           </button>
         ) : null}
       </div>

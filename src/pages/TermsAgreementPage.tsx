@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
 import { TopBar } from '@/components/ui/TopBar';
 import { agreeToTerms } from '@/api/auth';
@@ -23,6 +24,7 @@ const INITIAL_CHECKED: Record<TermId, boolean> = {
 
 export default function TermsAgreementPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [checked, setChecked] = useState<Record<TermId, boolean>>(INITIAL_CHECKED);
   const [detailTermId, setDetailTermId] = useState<TermId | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,7 +54,7 @@ export default function TermsAgreementPage() {
       await agreeToTerms(TERMS.map((term) => ({ id: term.id, agreed: checked[term.id] })));
       navigate('/app/onboarding/nickname');
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : TERMS_AGREEMENT_FAILED_MESSAGE);
+      toast.error(error instanceof ApiError ? error.message : TERMS_AGREEMENT_FAILED_MESSAGE);
       setIsSubmitting(false);
     }
   };

@@ -1,16 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { SearchLauncher } from '@/components/ui/SearchInput';
-import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { FullScreenError } from '@/components/ui/FullScreenError';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
-import type {
-  MapCoordinate,
-  MapPin,
-  MapPlace,
-  MapViewport,
-  PinCluster,
-} from '@/features/map/types';
+import type { MapCoordinate, MapPin, MapViewport, PinCluster } from '@/features/map/types';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceMeters';
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
@@ -18,11 +13,7 @@ import { usePinMapView } from '@/features/map/queries/usePinMapView';
 import { useAutoFocusNearestPin } from '@/features/map/hooks/useAutoFocusNearestPin';
 import { PIN_FOCUS_ZOOM } from '@/features/map/hooks/useMapPinOverlays';
 import { DEV_MOCK_MAP_PINS } from '@/features/map/constants/devMockMapPins';
-import {
-  PinListSheet,
-  PIN_LIST_SHEET_MID_SNAP,
-  type ResolvedPlaceSummary,
-} from '@/features/pin/components/PinListSheet';
+import { PinListSheet, type ResolvedPlaceSummary } from '@/features/pin/components/PinListSheet';
 import type { PinSearchPlace, PlaceInfo } from '@/features/pin/types';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
@@ -30,9 +21,9 @@ import FocusIcon from '@/assets/icons/focus.svg?react';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
+import { useMyProfile } from '@/hooks/useMyProfile';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
-const REGISTRATION_TOAST_DURATION_MS = 2_000;
 // mapViewData 로딩 중(undefined)에는 매 렌더마다 새 배열 리터럴이 생기면 안 된다 -
 // useAutoFocusNearestPin이 mapPins 참조 변경을 감지해 상태를 갱신하므로, 참조가
 // 계속 바뀌면 무한 렌더 루프(React #301)가 된다.
@@ -41,11 +32,9 @@ const EMPTY_MAP_CLUSTERS: PinCluster[] = [];
 // 장소 1개짜리 클러스터를 눌러 줌 21로 이동한 뒤, 근처 몇 m 안 개별 핀을 같은 장소로 본다.
 const SINGLE_CLUSTER_MATCH_RADIUS_METERS = 15;
 
-type RegistrationToast = {
-  attempt: number;
-  message: string;
+type MapNavigationState = {
+  mapFocusCoordinate?: MapCoordinate;
 };
-
 type MapPageProps = {
   selectedMapPlace: PinSearchPlace | null;
   onClearMapPlace?: () => void;
@@ -80,6 +69,7 @@ function mapPinToPlaceInfo(pin: MapPin): PlaceInfo {
     id: pin.id,
     placeId: pin.placeId,
     name: '',
+    creatorName: pin.nickname,
     distance: 0,
     latitude: pin.lat,
     longitude: pin.lng,
@@ -98,15 +88,15 @@ const MapPage: React.FC<MapPageProps> = ({
   onCurrentLocationChange,
 }) => {
   const navigate = useNavigate();
+  const toast = useToast();
+  const location = useLocation();
+  const mapFocusCoordinate = (location.state as MapNavigationState | null)?.mapFocusCoordinate;
   const hasApiKey = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   // --- 상태 관리 ---
   const [zoom, setZoom] = useState<number>(savedViewport?.zoom ?? 19);
   const [mapLoadStatus, setMapLoadStatus] = useState<MapLoadStatus>(
     hasApiKey ? 'loading' : 'error',
-  );
-  const [mapLoadError, setMapLoadError] = useState<string | null>(
-    hasApiKey ? null : '지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.',
   );
   const [currentLocation, setCurrentLocation] = useState<MapCoordinate | null>(null);
   const [currentLocationError, setCurrentLocationError] = useState<string | null>(null);
@@ -119,7 +109,7 @@ const MapPage: React.FC<MapPageProps> = ({
     Boolean(selectedMapPlace) ||
     initialPositionQuery.isSuccess ||
     initialPositionQuery.isError;
-  // 초기 조회 결과를 currentLocation/부모 콜백에도 반영한다.
+  // 초기 조회 결과를 currentLocation에도 반영한다.
   const [trackedInitialPosition, setTrackedInitialPosition] = useState(initialPositionQuery.data);
   if (initialPositionQuery.data !== trackedInitialPosition) {
     setTrackedInitialPosition(initialPositionQuery.data);
@@ -130,24 +120,25 @@ const MapPage: React.FC<MapPageProps> = ({
       };
       setCurrentLocation(coordinate);
       setCurrentLocationError(null);
-      onCurrentLocationChange(coordinate);
     }
   }
-  const [registrationToast, setRegistrationToast] = useState<RegistrationToast | null>(null);
+
+  // 부모 위치 상태는 렌더 중이 아니라 커밋 이후에 동기화한다.
+  useEffect(() => {
+    if (!initialPositionQuery.data) return;
+
+    onCurrentLocationChange({
+      lat: initialPositionQuery.data.latitude,
+      lng: initialPositionQuery.data.longitude,
+    });
+  }, [initialPositionQuery.data, onCurrentLocationChange]);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
   // 지도 빈 곳을 탭하면 시트를 닫지 않고 가장 작은 스냅으로만 축소한다 - 값은 의미 없이 신호로만 쓴다.
   const [sheetCollapseSignal, setSheetCollapseSignal] = useState(0);
-  // 등록하기 버튼을 바텀시트 상단에 붙이기 위해 시트의 현재 활성 스냅(0~1)을 추적한다.
-  const [activeSheetSnap, setActiveSheetSnap] = useState<number>(PIN_LIST_SHEET_MID_SNAP);
   // 북마크 버튼을 누르면, 지도 위 핀/클러스터 중 북마크된 것만 색으로 구분해 보여준다.
   const [isBookmarkHighlightOn, setIsBookmarkHighlightOn] = useState(false);
-  // 버튼 위치도 스냅 추적과 같은 기준(window.innerHeight)의 픽셀값으로 계산한다.
-  const [viewportInnerHeight, setViewportInnerHeight] = useState(() => window.innerHeight);
-  useEffect(() => {
-    const handleResize = () => setViewportInnerHeight(window.innerHeight);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // 드래그 프레임을 React 상태로 올리지 않고 바텀시트가 이 요소의 CSS 변수를 직접 갱신한다.
+  const registerButtonContainerRef = useRef<HTMLDivElement>(null);
   // 등록하기 버튼 활성화 여부(500m 이내·본인 핀 아님) 판단용, 서버에서 해결된 장소 정보.
   const [resolvedActivePlace, setResolvedActivePlace] = useState<ResolvedPlaceSummary | null>(null);
   // 클러스터 응답엔 placeId가 없어 그 자리에서 시트를 못 여니, 목표 좌표를 잡아두고
@@ -183,7 +174,11 @@ const MapPage: React.FC<MapPageProps> = ({
   // 피드/찜한 노래 진입 시: 말풍선용 핀을 주입·덮어쓰고 선택된 상태로 표시한다.
   // CTA(focusedFeedPin)와 말풍선(mapFocusPin)을 분리해, 찜한 노래에서는 내 등록 곡이 없어도 인기 PIN 말풍선은 유지한다.
   const overlayFocusPin = selectedMapPlace?.mapFocusPin ?? selectedMapPlace?.focusedFeedPin;
-  const focusedMapPinId = selectedMapPlace && overlayFocusPin ? selectedMapPlace.id : null;
+  const isNewUnregisteredPlace = Boolean(
+    selectedMapPlace && !overlayFocusPin && !selectedMapPlace.creatorName,
+  );
+  const focusedMapPinId =
+    selectedMapPlace && (overlayFocusPin || isNewUnregisteredPlace) ? selectedMapPlace.id : null;
   const displayMapPins = useMemo(() => {
     let pins = mapPins;
 
@@ -191,38 +186,41 @@ const MapPage: React.FC<MapPageProps> = ({
       pins = [...pins, selectedMapPinSnapshot];
     }
 
-    if (!selectedMapPlace || !overlayFocusPin) return pins;
+    if (!selectedMapPlace || (!overlayFocusPin && !isNewUnregisteredPlace)) return pins;
 
-    const focusedPin: MapPin = {
-      id: selectedMapPlace.id,
-      placeId: selectedMapPlace.placeId,
-      lat: selectedMapPlace.coordinates.lat,
-      lng: selectedMapPlace.coordinates.lng,
-      coverUrl: overlayFocusPin.albumImageUrl || undefined,
-      nickname: overlayFocusPin.nickname,
-      avatarUrl: overlayFocusPin.avatarUrl,
-      introduction: overlayFocusPin.introduction,
-      youtubeVideoId: overlayFocusPin.youtubeVideoId,
-      clipStartMs: overlayFocusPin.clipStartMs,
-      hasBookmarkedPlace: selectedMapPlace.bookmarkedByMe ?? false,
-    };
+    const focusedPin: MapPin = overlayFocusPin
+      ? {
+          id: selectedMapPlace.id,
+          placeId: selectedMapPlace.placeId,
+          lat: selectedMapPlace.coordinates.lat,
+          lng: selectedMapPlace.coordinates.lng,
+          coverUrl: overlayFocusPin.albumImageUrl || undefined,
+          nickname: overlayFocusPin.nickname,
+          avatarUrl: overlayFocusPin.avatarUrl,
+          introduction: overlayFocusPin.introduction,
+          youtubeVideoId: overlayFocusPin.youtubeVideoId,
+          clipStartMs: overlayFocusPin.clipStartMs,
+          hasBookmarkedPlace: selectedMapPlace.bookmarkedByMe ?? false,
+        }
+      : {
+          id: selectedMapPlace.id,
+          placeId: selectedMapPlace.placeId,
+          lat: selectedMapPlace.coordinates.lat,
+          lng: selectedMapPlace.coordinates.lng,
+          nickname: '',
+          introduction: '',
+          hasBookmarkedPlace: selectedMapPlace.bookmarkedByMe ?? false,
+        };
 
     return [...pins.filter((pin) => pin.id !== focusedPin.id), focusedPin];
-  }, [mapPins, overlayFocusPin, selectedMapPlace, selectedMapPinSnapshot]);
+  }, [mapPins, overlayFocusPin, isNewUnregisteredPlace, selectedMapPlace, selectedMapPinSnapshot]);
   // 최대 줌에서 화면 중심 근처 핀을 자동으로 포커스 (탭으로 연 시트가 있으면 그게 우선)
   const autoFocusedPinId = useAutoFocusNearestPin({ mapPins: displayMapPins, viewport });
   const displayedMapPinId = selectedMapPinId ?? autoFocusedPinId;
   const selectedMapPin = selectedMapPinId
     ? (displayMapPins.find((pin) => pin.id === selectedMapPinId) ?? null)
     : null;
-  // develop 방식: selectedMapPlace prop으로 장소 결과 관리
-  // 피드 진입(말풍선)일 때는 장소 검색 InfoWindow(흰 카드)를 띄우지 않는다.
   const isFeedMapEntry = Boolean(selectedMapPlace?.mapFocusPin ?? selectedMapPlace?.focusedFeedPin);
-  const placeResults = useMemo<MapPlace[]>(
-    () => (selectedMapPlace && !isFeedMapEntry ? [selectedMapPlace] : []),
-    [isFeedMapEntry, selectedMapPlace],
-  );
-  const selectedPlaceId = selectedMapPlace && !isFeedMapEntry ? selectedMapPlace.id : null;
   const isPlaceSheetOpen = selectedMapPlace !== null && isUiActive;
   const viewerSelectedMapPinId = focusedMapPinId ?? (selectedMapPlace ? null : displayedMapPinId);
   // 검색 장소든 핀 클릭이든, 피드 진입이 아닐 때만 등록하기 버튼을 보여준다.
@@ -273,6 +271,19 @@ const MapPage: React.FC<MapPageProps> = ({
     [displayMapPins, toggleClipPlayback],
   );
 
+  const { data: myProfile } = useMyProfile();
+  const handleOpenProfile = useCallback(
+    (pin: MapPin) => {
+      if (pin.writerId == null) return;
+      if (pin.writerId === myProfile?.id) {
+        navigate('/app/my');
+        return;
+      }
+      navigate(`/app/users/${pin.writerId}`);
+    },
+    [myProfile?.id, navigate],
+  );
+
   // 말풍선을 띄우는 핀이 바뀌면(선택·자동 포커스 포함) 재생 중인 클립을 멈춘다.
   useEffect(() => {
     stopClipPlayback();
@@ -316,7 +327,6 @@ const MapPage: React.FC<MapPageProps> = ({
       .catch((error) => {
         console.error(error);
         setMapLoadStatus('error');
-        setMapLoadError('지도를 불러오지 못했어요. 네트워크 상태를 확인해주세요.');
       });
   }, []);
 
@@ -351,17 +361,26 @@ const MapPage: React.FC<MapPageProps> = ({
     return () => window.cancelAnimationFrame(frameId);
   }, [mapLoadStatus, selectedMapPlace]);
 
+  // 홈의 현재 위치 링크 등 외부 화면에서 전달한 좌표로 지도를 이동한다.
+  useEffect(() => {
+    if (mapLoadStatus !== 'ready' || !mapFocusCoordinate) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      mapViewerRef.current?.panTo(mapFocusCoordinate);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [mapFocusCoordinate, mapLoadStatus]);
+
   // --- 지도 로드 재시도 (실패한 스크립트 태그를 지우고 다시 요청, 클릭 핸들러이므로 동기 setState 가능) ---
   const handleRetryMapLoad = () => {
     document.getElementById('google-maps-script')?.remove();
     setMapLoadStatus('loading');
-    setMapLoadError(null);
 
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
     if (!apiKey) {
       console.error('VITE_GOOGLE_MAPS_API_KEY is missing in environment variables');
       setMapLoadStatus('error');
-      setMapLoadError('지도를 불러올 수 없어요. 잠시 후 다시 시도해주세요.');
       return;
     }
 
@@ -384,6 +403,16 @@ const MapPage: React.FC<MapPageProps> = ({
     if (!isCovered) onSaveViewport(nextViewport);
   };
 
+  const handleRecenterToCurrentLocation = () => {
+    const didRecenter = mapViewerRef.current?.recenterToCurrentLocation() ?? false;
+    if (didRecenter) return;
+
+    toast.error(
+      currentLocationError ??
+        '현재 위치를 확인하고 있어요. 위치 권한을 확인한 뒤 다시 시도해 주세요.',
+    );
+  };
+
   // 지도 빈 영역 탭/드래그 시작: 시트를 닫지 않고 가장 작은 스냅으로만 축소한다.
   const handleMapClick = () => {
     setSheetCollapseSignal((signal) => signal + 1);
@@ -394,10 +423,7 @@ const MapPage: React.FC<MapPageProps> = ({
     if (!resolvedActivePlace) return;
 
     if (!currentLocation) {
-      setRegistrationToast((currentToast) => ({
-        attempt: (currentToast?.attempt ?? 0) + 1,
-        message: '현재 위치를 확인하고 있어요. 위치 권한을 확인한 뒤 다시 시도해 주세요.',
-      }));
+      toast.error('현재 위치를 확인하고 있어요.\n위치 권한을 확인한 뒤 다시 시도해 주세요.');
       return;
     }
 
@@ -416,18 +442,7 @@ const MapPage: React.FC<MapPageProps> = ({
   };
 
   if (mapLoadStatus === 'error') {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-pli-black-100 p-6 text-center">
-        <p className="body-15-r text-grayscale-300">{mapLoadError}</p>
-        <button
-          type="button"
-          onClick={handleRetryMapLoad}
-          className="rounded-full bg-neon px-6 py-3 body-15-sb text-grayscale-1250"
-        >
-          다시 시도
-        </button>
-      </div>
-    );
+    return <FullScreenError variant="map" onAction={handleRetryMapLoad} />;
   }
 
   if (!hasInitialPosition) {
@@ -494,7 +509,8 @@ const MapPage: React.FC<MapPageProps> = ({
             <button
               type="button"
               aria-label="현재 위치로 이동"
-              onClick={() => mapViewerRef.current?.recenterToCurrentLocation()}
+              aria-busy={!currentLocation && !currentLocationError ? true : undefined}
+              onClick={handleRecenterToCurrentLocation}
               className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
             >
               <FocusIcon className="size-7" />
@@ -504,10 +520,13 @@ const MapPage: React.FC<MapPageProps> = ({
       </div>
 
       {isRegisterButtonVisible ? (
-        <ToastProvider duration={REGISTRATION_TOAST_DURATION_MS}>
+        <>
           <div
+            ref={registerButtonContainerRef}
             className="pointer-events-none fixed inset-x-0 z-[60] mx-auto flex w-full max-w-[402px] justify-end px-4"
-            style={{ bottom: `${activeSheetSnap * viewportInnerHeight + 16}px` }}
+            style={{
+              bottom: 'calc(var(--bottom-sheet-visible-height, 340px) + 16px)',
+            }}
           >
             <Button
               type="button"
@@ -520,21 +539,7 @@ const MapPage: React.FC<MapPageProps> = ({
               등록하기
             </Button>
           </div>
-
-          <ToastPortal>
-            <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
-              {registrationToast ? (
-                <Toast
-                  key={`${registrationToast.message}:${registrationToast.attempt}`}
-                  defaultOpen
-                >
-                  {registrationToast.message}
-                </Toast>
-              ) : null}
-              <ToastViewport />
-            </div>
-          </ToastPortal>
-        </ToastProvider>
+        </>
       ) : null}
 
       {selectedMapPlace ? (
@@ -571,6 +576,19 @@ const MapPage: React.FC<MapPageProps> = ({
               },
             });
           }}
+          onMyPinClick={(pin) => {
+            // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
+            const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
+            const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
+            navigate(`/app/pins/${pin.placeTrackId}`, {
+              state: {
+                ...(latitude != null && longitude != null
+                  ? { userLatitude: latitude, userLongitude: longitude }
+                  : {}),
+                placeAccessToken: selectedMapPlace.placeAccessToken,
+              },
+            });
+          }}
           onFocusedTrackClick={(placeTrackId) => {
             const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
             const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
@@ -586,7 +604,7 @@ const MapPage: React.FC<MapPageProps> = ({
           }}
           resetKey={selectedMapPlace.id}
           collapseToSmallestSignal={sheetCollapseSignal}
-          onActiveSnapChange={setActiveSheetSnap}
+          floatingActionRef={registerButtonContainerRef}
           onResolvedPlaceChange={setResolvedActivePlace}
           // 검색으로 들어온 장소만 "<"를 누르면 검색 화면으로 돌아간다(피드 진입은 기본 접기).
           onFullPageBack={
@@ -606,7 +624,7 @@ const MapPage: React.FC<MapPageProps> = ({
           allowTrackDetailAccess={false}
           resetKey={selectedMapPin.id}
           collapseToSmallestSignal={sheetCollapseSignal}
-          onActiveSnapChange={setActiveSheetSnap}
+          floatingActionRef={registerButtonContainerRef}
           onResolvedPlaceChange={setResolvedActivePlace}
           detailLocation={
             currentLocation
@@ -633,6 +651,18 @@ const MapPage: React.FC<MapPageProps> = ({
                   : undefined,
             });
           }}
+          onMyPinClick={(pin) => {
+            // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
+            navigate(`/app/pins/${pin.placeTrackId}`, {
+              state:
+                currentLocation != null
+                  ? {
+                      userLatitude: currentLocation.lat,
+                      userLongitude: currentLocation.lng,
+                    }
+                  : undefined,
+            });
+          }}
         />
       ) : null}
 
@@ -648,8 +678,8 @@ const MapPage: React.FC<MapPageProps> = ({
             ? { lat: initialPositionQuery.data.latitude, lng: initialPositionQuery.data.longitude }
             : undefined)
         }
-        placeResults={placeResults}
-        selectedPlaceId={selectedPlaceId}
+        placeResults={[]}
+        selectedPlaceId={null}
         mapPins={displayMapPins}
         mapClusters={mapClusters}
         selectedMapPinId={viewerSelectedMapPinId}
@@ -662,6 +692,7 @@ const MapPage: React.FC<MapPageProps> = ({
         onViewportChanged={handleViewportChanged}
         onSelectMapPin={onSelectMapPinChange}
         onPlayPin={handlePlayMapPin}
+        onOpenProfile={handleOpenProfile}
         playingMapPinId={playingKey}
         onMapClick={handleMapClick}
         onMapDragStart={handleMapClick}

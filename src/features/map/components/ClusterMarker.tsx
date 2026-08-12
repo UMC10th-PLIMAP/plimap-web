@@ -11,17 +11,22 @@ export function ClusterMarker({ placeCount, isBookmarked = false }: ClusterMarke
   const isOverflow = placeCount > CLUSTER_COUNT_DISPLAY_MAX;
 
   return (
-    <div
-      className="flex items-center justify-center rounded-full shadow-[0_4px_4px_rgba(0,0,0,0.25)]"
-      style={{
-        width: isOverflow ? 66 : 38,
-        height: isOverflow ? 66 : 38,
-        backgroundColor: isBookmarked ? CLUSTER_BOOKMARKED_COLOR : '#FFFFFF',
-      }}
+    <button
+      type="button"
+      aria-label={`${placeCount}개 장소 클러스터 확대`}
+      className="flex cursor-pointer items-center justify-center rounded-full"
+      style={{ width: isOverflow ? 66 : 44, height: isOverflow ? 66 : 44 }}
     >
-      <span className="head-24-sb text-black">
+      <span
+        className="flex items-center justify-center rounded-full head-24-sb text-black shadow-[0_4px_4px_rgba(0,0,0,0.25)]"
+        style={{
+          width: isOverflow ? 66 : 38,
+          height: isOverflow ? 66 : 38,
+          backgroundColor: isBookmarked ? CLUSTER_BOOKMARKED_COLOR : '#FFFFFF',
+        }}
+      >
         {isOverflow ? `${CLUSTER_COUNT_DISPLAY_MAX}+` : placeCount}
       </span>
-    </div>
+    </button>
   );
 }

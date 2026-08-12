@@ -4,6 +4,8 @@ import { PinPlaceSearch } from '@/features/pin/components/PinPlaceSearch';
 import type { PinSearchPlace } from '@/features/pin/types';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
+const MAX_REGISTRATION_DISTANCE_METERS = 500;
+
 export default function PinRegisterSearchPage() {
   const navigate = useNavigate();
   const candidateCoordinate = usePinCreationStore((state) => state.candidateCoordinate);
@@ -44,6 +46,7 @@ export default function PinRegisterSearchPage() {
           longitude: currentLocation.lng,
         }}
         onBack={() => navigateToStage('/app/pin/register')}
+        maxSelectableDistanceMeters={MAX_REGISTRATION_DISTANCE_METERS}
         validatePlace={(place) =>
           place.withinAccessRange === false
             ? '현재 위치에서 500m 이내의 장소만 선택할 수 있어요.'

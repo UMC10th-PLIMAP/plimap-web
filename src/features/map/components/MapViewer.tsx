@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from 'react';
+import { forwardRef, useImperativeHandle, type RefObject } from 'react';
 import { MapCoordinate, MapPlace, MapPin, MapViewport, PinCluster } from '../types';
 import { useGoogleMap } from '../hooks/useGoogleMap';
 import { useCurrentLocationMarker } from '../hooks/useCurrentLocationMarker';
@@ -6,7 +6,6 @@ import { useMapPinOverlays } from '../hooks/useMapPinOverlays';
 import { useClusterOverlays } from '../hooks/useClusterOverlays';
 import { usePlaceMarkers } from '../hooks/usePlaceMarkers';
 import { useCoordinateProjection } from '../hooks/useCoordinateProjection';
-import type { PinRadiusCenter } from '@/features/pin/components/PinRadiusOverlay';
 
 type MapViewerProps = {
   isLoaded: boolean;
@@ -21,16 +20,18 @@ type MapViewerProps = {
   selectedMapPinId: string | null;
   projectionCoordinate?: MapCoordinate | null;
   projectionRadiusMeters?: number;
+  projectionTargetRef?: RefObject<HTMLElement | null>;
   centerOnFirstLocation?: boolean;
   onZoomChanged?: (newZoom: number) => void;
   onCenterChanged?: (center: MapCoordinate) => void;
   onCurrentLocationChanged?: (coordinate: MapCoordinate) => void;
   onCurrentLocationError?: (message: string) => void;
   onViewportChanged?: (viewport: MapViewport) => void;
-  onProjectionChanged?: (center: PinRadiusCenter | null) => void;
   onSelectPlace?: (placeId: string) => void;
   onSelectMapPin?: (pinId: string) => void;
   onPlayPin?: (pinId: string) => void;
+  /** 말풍선의 프로필(아바타·닉네임) 클릭 시 호출된다. writerId가 있는 핀만 클릭 가능해진다. */
+  onOpenProfile?: (pin: MapPin) => void;
   playingMapPinId?: string | null;
   /** 핀이 아닌 지도의 빈 영역을 클릭했을 때 호출된다. */
   onMapClick?: () => void;
@@ -43,8 +44,8 @@ type MapViewerProps = {
 };
 
 export type MapViewerHandle = {
-  /** 지도를 현재 위치 마커로 이동시킨다. 위치를 아직 못 받았으면 아무 동작도 하지 않는다. */
-  recenterToCurrentLocation: () => void;
+  /** 지도를 현재 위치 마커로 이동시킨다. 위치가 준비되지 않았으면 false를 반환한다. */
+  recenterToCurrentLocation: () => boolean;
   panTo: (coordinate: MapCoordinate, options?: { notifyCenterChanged?: boolean }) => void;
   flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
   restoreViewport: (viewport: MapViewport) => void;
@@ -65,16 +66,17 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     selectedMapPinId,
     projectionCoordinate,
     projectionRadiusMeters,
+    projectionTargetRef,
     centerOnFirstLocation = true,
     onZoomChanged,
     onCenterChanged,
     onCurrentLocationChanged,
     onCurrentLocationError,
     onViewportChanged,
-    onProjectionChanged,
     onSelectPlace,
     onSelectMapPin,
     onPlayPin,
+    onOpenProfile,
     playingMapPinId = null,
     onMapClick,
     onMapDragStart,
@@ -129,6 +131,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     flyTo,
     onSelectMapPin,
     onPlayPin,
+    onOpenProfile,
     isBookmarkHighlightOn,
   });
   useClusterOverlays({
@@ -146,7 +149,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     isLoaded,
     coordinate: projectionCoordinate,
     radiusMeters: projectionRadiusMeters,
-    onProjected: onProjectionChanged,
+    targetElementRef: projectionTargetRef,
   });
 
   return (
@@ -156,7 +159,12 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
           <span className="text-[#9A9A9A]">Loading Google Maps...</span>
         </div>
       )}
-      <div ref={mapRef} className="h-full w-full" />
+      <div
+        ref={mapRef}
+        className="h-full w-full touch-none"
+        // Keep Chrome from claiming an in-progress map pinch for viewport zoom.
+        // Google Maps owns the gesture through gestureHandling: 'greedy'.
+      />
     </main>
   );
 });

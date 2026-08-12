@@ -8,6 +8,7 @@ import { completeOnboarding } from '@/api/auth';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import confettiRaw from '@/assets/lottie/welcome-confetti.json?raw';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
 import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 import { useOnboardingStore } from '@/store/onboardingStore';
@@ -15,7 +16,6 @@ import { useOnboardingStore } from '@/store/onboardingStore';
 const CONFETTI_PRESERVE_ASPECT_RATIO = 'xMidYMid slice';
 const CONFETTI_FADE_OUT_MS = 1000;
 const ONBOARDING_FAILED_MESSAGE = '온보딩 완료 처리에 실패했어요. 다시 시도해주세요.';
-
 function ConfettiLottie({ data }: { data: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFadingOut, setIsFadingOut] = useState(false);
@@ -54,6 +54,7 @@ function ConfettiLottie({ data }: { data: string }) {
 
 export default function WelcomePage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const queryClient = useQueryClient();
   const nickname = useOnboardingStore((state) => state.nickname);
   const profileImageFile = useOnboardingStore((state) => state.profileImageFile);
@@ -82,7 +83,7 @@ export default function WelcomePage() {
       useOnboardingStore.getState().reset();
       navigate('/app', { replace: true });
     } catch (error) {
-      alert(error instanceof ApiError ? error.message : ONBOARDING_FAILED_MESSAGE);
+      toast.error(error instanceof ApiError ? error.message : ONBOARDING_FAILED_MESSAGE);
       setIsSubmitting(false);
     }
   };

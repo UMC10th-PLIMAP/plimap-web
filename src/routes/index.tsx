@@ -33,19 +33,16 @@ import RecommendationPinCardPreviewPage from '@/pages/RecommendationPinCardPrevi
 import SettingsPage from '@/pages/SettingsPage';
 import AccountManagementPage from '@/pages/AccountManagementPage';
 import TermsDetailViewPage from '@/pages/TermsDetailViewPage';
+import ServiceGuidePage from '@/pages/ServiceGuidePage';
 import RecommendationContentCarouselPreviewPage from '@/pages/RecommendationContentCarouselPreviewPage';
 import HomePage from '@/pages/HomePage';
 import FriendSearchPage from '@/pages/FriendSearchPage';
+import NotFoundPage from '@/pages/NotFoundPage';
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/app/home" replace />,
-  },
-  {
-    // 백엔드가 /app 접두사 없이 이 경로로 리다이렉트한다.
-    path: '/oauth/callback',
-    element: <OAuthCallbackPage />,
+    element: <Navigate to="/app" replace />,
   },
   {
     path: '/preview/pin-radius',
@@ -210,6 +207,10 @@ export const router = createBrowserRouter([
             element: <SettingsPage />,
           },
           {
+            path: 'settings/guide',
+            element: <ServiceGuidePage />,
+          },
+          {
             path: 'settings/account',
             element: <AccountManagementPage />,
           },
@@ -219,6 +220,14 @@ export const router = createBrowserRouter([
           },
         ],
       },
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
     ],
+  },
+  {
+    path: '*',
+    element: <Navigate to="/app/not-found" replace />,
   },
 ]);

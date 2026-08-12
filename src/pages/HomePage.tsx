@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BellIcon from '@/assets/home/bell.svg?react';
@@ -7,32 +7,20 @@ import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { HomeHotPlaceCarouselSkeleton, HomeSkeleton } from '@/components/skeletons/HomeSkeleton';
+import { useToast } from '@/hooks/useToast';
 import { Chip } from '@/components/ui/chip';
-import { MOCK_FRIEND_PINS, MOCK_HOME_USER } from '@/features/home/constants/mockHome';
+import { HomeCarouselState } from '@/features/home/components/HomeCarouselState';
 import { RecommendationContentCarousel } from '@/features/home/components/RecommendationContentCarousel';
 import { RecommendationPinCard } from '@/features/home/components/RecommendationPinCard';
+import { useFriendPins } from '@/features/home/hooks/useFriendPins';
+import { useHomeContext } from '@/features/home/hooks/useHomeContext';
 import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
-import { useMyProfile } from '@/hooks/useMyProfile';
+import { cn } from '@/lib/utils';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
 type HotPlaceFilter = 'nearby' | 'popular';
-
-function HomeErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <main className="flex min-h-full shrink-0 flex-col items-center justify-center gap-4 bg-pli-black-100 px-6 text-center">
-      <p className="body-15-r text-grayscale-300">홈 화면을 불러오지 못했어요.</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="rounded-full bg-neon px-6 py-3 body-15-sb text-grayscale-1250"
-      >
-        다시 시도
-      </button>
-    </main>
-  );
-}
 
 function formatDistanceMeters(distanceMeters: number) {
   const normalizedDistance = Math.max(0, distanceMeters);
@@ -114,13 +102,19 @@ function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [hotPlaceFilter, setHotPlaceFilter] = useState<HotPlaceFilter>('nearby');
   const [hotPlacePages, setHotPlacePages] = useState<Record<HotPlaceFilter, number>>({
     nearby: 0,
     popular: 0,
   });
-  const myProfileQuery = useMyProfile();
   const currentPositionQuery = useCurrentPosition();
+  const homeContextQuery = useHomeContext({
+    latitude: currentPositionQuery.data?.latitude ?? null,
+    longitude: currentPositionQuery.data?.longitude ?? null,
+  });
+  const friendPinsQuery = useFriendPins();
+  const friendPins = friendPinsQuery.data?.data ?? [];
   const popularPlacesQuery = usePopularPlaces({
     scope: hotPlaceFilter === 'nearby' ? 'NEARBY' : 'GLOBAL',
     latitude: currentPositionQuery.data?.latitude ?? null,
@@ -133,17 +127,56 @@ export default function HomePage() {
   });
   const toggleBookmarkMutation = useTogglePlaceBookmark();
   const savedPlaces = savedPlacesQuery.data?.items ?? [];
+  const isCurrentPositionError = currentPositionQuery.isLoadingError;
+  const isFriendPinsError = friendPinsQuery.isLoadingError;
+  const isPopularPlacesError = isCurrentPositionError || popularPlacesQuery.isLoadingError;
+  const isSavedPlacesError = isCurrentPositionError || savedPlacesQuery.isLoadingError;
+  const hasFriendPins = friendPins.length > 0;
+  const isSavedPlacesFallback = isSavedPlacesError || savedPlaces.length === 0;
   const isHomePending =
-    myProfileQuery.isPending ||
     currentPositionQuery.isPending ||
-    (!currentPositionQuery.isError && savedPlacesQuery.isPending);
+    friendPinsQuery.isPending ||
+    (!isCurrentPositionError && savedPlacesQuery.isPending);
+
+  const currentLocationLabel = isCurrentPositionError
+    ? '위치 정보를 확인할 수 없어요'
+    : homeContextQuery.isPending
+      ? '주소를 확인하고 있어요'
+      : (homeContextQuery.data?.currentRegion.displayName ?? '현재 위치');
+
+  const handleCurrentLocationClick = () => {
+    if (!currentPositionQuery.data) return;
+
+    navigate('/app', {
+      state: {
+        mapFocusCoordinate: {
+          lat: currentPositionQuery.data.latitude,
+          lng: currentPositionQuery.data.longitude,
+        },
+      },
+    });
+  };
+
+  const handlePopularPlacesRetry = () => {
+    if (isCurrentPositionError) {
+      void currentPositionQuery.refetch();
+      return;
+    }
+
+    void popularPlacesQuery.refetch();
+  };
+
+  const handleSavedPlacesRetry = () => {
+    if (isCurrentPositionError) {
+      void currentPositionQuery.refetch();
+      return;
+    }
+
+    void savedPlacesQuery.refetch();
+  };
 
   if (isHomePending) {
     return <HomeSkeleton />;
-  }
-
-  if (!myProfileQuery.data) {
-    return <HomeErrorState onRetry={() => void myProfileQuery.refetch()} />;
   }
 
   return (
@@ -153,24 +186,24 @@ export default function HomePage() {
         className="absolute inset-x-0 top-0 h-[calc(env(safe-area-inset-top)+331px)] bg-pli-black-85"
       />
 
-      <div className="relative flex flex-col gap-[30px]">
+      <div className="relative flex flex-col">
         <section className="pt-[calc(env(safe-area-inset-top)+2px)]">
           <header className="flex h-14 items-center justify-between px-4">
             <PlimapLogo aria-label="PLIMAP" className="h-[30px] w-auto" />
-            <button
-              type="button"
+            <Link
+              to="/app/my/notifications"
               aria-label="알림"
               className="flex size-11 items-center justify-center rounded-full bg-pli-black-75"
             >
               <BellIcon aria-hidden className="h-[22px] w-[18px]" />
-            </button>
+            </Link>
           </header>
 
           <div className="flex h-[94px] flex-col gap-1 px-4 py-4">
             <h1 className="head-24-sb text-grayscale-100">
-              {myProfileQuery.data.nickname ? (
+              {homeContextQuery.data?.nickname ? (
                 <>
-                  반가워요, <span className="text-neon-2">{myProfileQuery.data.nickname}</span> 님
+                  반가워요, <span className="text-neon-2">{homeContextQuery.data.nickname}</span> 님
                 </>
               ) : (
                 '반가워요!'
@@ -180,42 +213,91 @@ export default function HomePage() {
               <span className="shrink-0 text-grayscale-500">현재 위치</span>
               <button
                 type="button"
+                disabled={!currentPositionQuery.data}
+                onClick={handleCurrentLocationClick}
                 className="flex min-w-0 items-center text-grayscale-30"
-                aria-label={`현재 위치 ${MOCK_HOME_USER.currentLocation}에서 검색`}
+                aria-label={`${currentLocationLabel} 지도에서 보기`}
               >
-                <span className="max-w-[190px] truncate">{MOCK_HOME_USER.currentLocation}</span>
+                <span className="max-w-[190px] truncate">{currentLocationLabel}</span>
                 <NextIcon aria-hidden className="size-4 shrink-0" />
               </button>
             </div>
           </div>
 
-          <div className="flex h-44 gap-3 overflow-x-auto px-4 pt-3 pb-10 scrollbar-hide">
-            {MOCK_FRIEND_PINS.map((pin) => (
-              <RecommendationPinCard key={pin.id} pin={pin} />
-            ))}
-          </div>
+          {isFriendPinsError || !hasFriendPins ? (
+            <div className="mt-4 px-[14px]">
+              {isFriendPinsError ? (
+                <HomeCarouselState
+                  role="alert"
+                  className="h-[148px] border border-pli-black-50"
+                  contentClassName="gap-4"
+                  description={
+                    <>
+                      <span className="block">정보를 불러올 수 없어요.</span>
+                      <span className="block">다시 시도해주세요.</span>
+                    </>
+                  }
+                  actionLabel="다시 시도하기"
+                  actionAriaLabel="친구 PIN 다시 시도하기"
+                  onAction={() => void friendPinsQuery.refetch()}
+                />
+              ) : (
+                <HomeCarouselState
+                  className="h-[148px] border border-pli-black-50"
+                  contentClassName="gap-4"
+                  description={
+                    <>
+                      <span className="block">내가 팔로우한 친구들이 등록한 곡이 나와요.</span>
+                      <span className="block">지금 친구를 찾아볼까요?</span>
+                    </>
+                  }
+                  actionLabel="친구 검색하러 가기"
+                  actionTo="/app/friends/search"
+                />
+              )}
+            </div>
+          ) : (
+            <div className="flex h-44 gap-3 overflow-x-auto px-4 pt-3 pb-10 scrollbar-hide">
+              {friendPins.map((pin) => (
+                <RecommendationPinCard
+                  key={pin.pinId}
+                  pin={{
+                    id: String(pin.pinId),
+                    place: { name: pin.placeName },
+                    creator: {
+                      name: pin.writerNickname,
+                      avatarUrl: pin.writerProfileImage,
+                    },
+                    imageUrl: pin.albumImageUrl,
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
-        <button
-          type="button"
-          onClick={() => navigate('/app/friends/search')}
-          className="mx-4 flex h-[86px] items-center justify-between rounded-xl bg-pli-black-85 px-[18px] text-left"
-        >
-          <span className="flex min-w-0 items-center gap-4">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-pli-black-75 text-neon-2">
-              <SearchIcon aria-hidden className="size-7" />
-            </span>
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate body-15-r text-grayscale-700">
-                닉네임으로 친구를 찾아보세요
+        {hasFriendPins ? (
+          <button
+            type="button"
+            onClick={() => navigate('/app/friends/search')}
+            className="mx-4 mt-[30px] flex h-[86px] items-center justify-between rounded-xl bg-pli-black-85 px-[18px] text-left"
+          >
+            <span className="flex min-w-0 items-center gap-4">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-pli-black-75 text-neon-2">
+                <SearchIcon aria-hidden className="size-7" />
               </span>
-              <span className="truncate body-18-r text-grayscale-100">친구 검색하러 가기</span>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate body-15-r text-grayscale-700">
+                  닉네임으로 친구를 찾아보세요
+                </span>
+                <span className="truncate body-18-r text-grayscale-100">친구 검색하러 가기</span>
+              </span>
             </span>
-          </span>
-          <NextIcon aria-hidden className="size-7 shrink-0 text-grayscale-100" />
-        </button>
+            <NextIcon aria-hidden className="size-7 shrink-0 text-grayscale-100" />
+          </button>
+        ) : null}
 
-        <section className="flex flex-col gap-4">
+        <section className={cn('flex flex-col gap-4', hasFriendPins ? 'mt-[30px]' : 'mt-[52px]')}>
           <h2 className="px-4 text-[22px] leading-[1.4] font-medium text-white">
             내 주변 HOT한 장소🔥
           </h2>
@@ -234,24 +316,23 @@ export default function HomePage() {
             </Chip>
           </div>
           <div className="px-[19px]">
-            {currentPositionQuery.isError ? (
-              <p className="py-6 text-center body-15-r text-grayscale-500">
-                위치 정보를 확인할 수 없어요.
-              </p>
+            {isPopularPlacesError ? (
+              <HomeCarouselState
+                role="alert"
+                className="h-44 bg-pli-black-85"
+                description={
+                  <>
+                    <span className="block">정보를 불러올 수 없어요.</span>
+                    <span className="block">다시 시도해주세요.</span>
+                  </>
+                }
+                actionLabel="다시 시도하기"
+                actionAriaLabel="인기 장소 다시 시도하기"
+                onAction={handlePopularPlacesRetry}
+              />
             ) : popularPlacesQuery.isPending ? (
               <div role="status" aria-label="인기 장소 불러오는 중">
                 <HomeHotPlaceCarouselSkeleton />
-              </div>
-            ) : popularPlacesQuery.isError ? (
-              <div className="flex flex-col items-center gap-3 py-6 text-center">
-                <p className="body-15-r text-grayscale-500">인기 장소를 불러오지 못했어요.</p>
-                <button
-                  type="button"
-                  onClick={() => void popularPlacesQuery.refetch()}
-                  className="rounded-full bg-pli-black-75 px-4 py-2 body-15-m text-grayscale-100"
-                >
-                  다시 시도
-                </button>
               </div>
             ) : (
               <RecommendationContentCarousel
@@ -273,11 +354,38 @@ export default function HomePage() {
           </div>
         </section>
 
-        {savedPlaces.length > 0 ? (
-          <section className="flex flex-col gap-5 px-4">
-            <h2 className="text-[22px] leading-[1.4] font-medium text-white">
-              저장해둔 장소, 지금 근처예요!
-            </h2>
+        <section
+          className={cn(
+            'flex flex-col',
+            hasFriendPins ? 'mt-[30px]' : isPopularPlacesError ? 'mt-[70px]' : 'mt-12',
+            isSavedPlacesFallback ? 'gap-4 pl-3 pr-4' : 'gap-5 px-4',
+          )}
+        >
+          <h2 className="text-[22px] leading-[1.4] font-medium text-white">
+            저장해둔 장소, 지금 근처예요!
+          </h2>
+          {isSavedPlacesError ? (
+            <HomeCarouselState
+              role={savedPlacesQuery.isLoadingError ? 'alert' : undefined}
+              className="h-[148px] bg-pli-black-85"
+              description={
+                <>
+                  <span className="block">정보를 불러올 수 없어요.</span>
+                  <span className="block">다시 시도해주세요.</span>
+                </>
+              }
+              actionLabel="다시 시도하기"
+              actionAriaLabel="저장한 장소 다시 시도하기"
+              onAction={handleSavedPlacesRetry}
+            />
+          ) : savedPlaces.length === 0 ? (
+            <HomeCarouselState
+              className="h-[132px] bg-pli-black-85"
+              description="내가 좋아하는 장소를 저장하면 여기에 나타나요."
+              actionLabel="장소 저장하러 가기"
+              actionTo="/app"
+            />
+          ) : (
             <RecommendationContentCarousel
               ariaLabel="가까운 저장 장소"
               items={savedPlaces}
@@ -291,13 +399,22 @@ export default function HomePage() {
                   place={place}
                   isRemoving={toggleBookmarkMutation.isPending}
                   onUnbookmark={(placeId) =>
-                    toggleBookmarkMutation.mutate({ placeId, bookmarked: false })
+                    toggleBookmarkMutation.mutate(
+                      { placeId, bookmarked: false },
+                      {
+                        onError: () => {
+                          toast.error('북마크를 해제하지 못했어요. 다시 시도해 주세요.', {
+                            placement: 'above-navigation',
+                          });
+                        },
+                      },
+                    )
                   }
                 />
               )}
             />
-          </section>
-        ) : null}
+          )}
+        </section>
       </div>
     </main>
   );

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type RefObject } from 'react';
 
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BookmarkIcon from '@/assets/icons/bookmark.svg?react';
@@ -7,12 +7,13 @@ import NextIcon from '@/assets/icons/next.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
 import { PinListSheetSkeleton } from '@/components/skeletons/PinListSheetSkeleton';
-import { Toast, ToastPortal, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { useToast } from '@/hooks/useToast';
 import { PinCard } from '@/features/pin/components/PinCard';
 import { SortTabs } from '@/features/pin/components/SortTabs';
 import { usePlaceDetail, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { usePlaceTrack } from '@/features/pin/queries/usePlaceTrack';
 import type { FocusedFeedPin, Pin, PinSort, PlaceInfo } from '@/features/pin/types';
+import { useMyProfile } from '@/hooks/useMyProfile';
 import { cn } from '@/lib/utils';
 import type { PlaceSearchHistoryRequest } from '@/types/place.type';
 
@@ -45,6 +46,8 @@ type PinListSheetProps = {
    */
   hasReliableUserLocation?: boolean;
   onPinClick?: (pin: Pin) => void;
+  /** MY 버튼(본인 등록 곡 상세 보기) 클릭 시 호출. 생략하면 onPinClick으로 대체된다. */
+  onMyPinClick?: (pin: Pin) => void;
   onFocusedTrackClick?: (placeTrackId: string) => void;
   /**
    * 내/친구 피드 → 지도 진입 시에만 true로 넘긴다.
@@ -55,22 +58,21 @@ type PinListSheetProps = {
   resetKey?: string | number;
   /** 이 값이 바뀔 때마다 가장 작은 스냅으로 축소한다(지도 빈 곳 탭 시 사용). */
   collapseToSmallestSignal?: number;
-  /** 현재 활성 스냅(0~1)이 바뀔 때마다 호출된다. */
-  onActiveSnapChange?: (snap: number) => void;
+  /** 시트 상단을 따라 움직일 외부 플로팅 액션. */
+  floatingActionRef?: RefObject<HTMLElement | null>;
   /** 서버에서 해결된 장소 정보(등록 가능 거리·본인 핀 여부 포함)가 바뀔 때마다 호출된다. */
   onResolvedPlaceChange?: (summary: ResolvedPlaceSummary | null) => void;
   /** 풀페이지에서 뒤로가기를 눌렀을 때 호출. 생략하면 기본 스냅으로 접는다. */
   onFullPageBack?: () => void;
 };
 
-// 화면 전체 높이 874 기준 Figma 스냅. 헤더(제목·주소·등록자·거리)까지만 보이는 높이.
-const PIN_LIST_SHEET_COLLAPSED_SNAP = 180 / 874;
-// MapPage 등 시트 바깥에서 기본 높이를 알아야 하는 곳에서 재사용한다.
-export const PIN_LIST_SHEET_MID_SNAP = 340 / 874;
+// 콘텐츠가 요구하는 고정 높이. 특정 Figma 아트보드 높이에 따라 축소되지 않게 px 스냅을 쓴다.
+const PIN_LIST_SHEET_COLLAPSED_SNAP = '180px';
+const PIN_LIST_SHEET_MID_SNAP = '340px';
 // 프로필 피드 진입: MY·장소정보·등록곡 CTA·정렬 탭까지 보이는 높이 (Figma FD-01-04)
-const PIN_LIST_SHEET_FEED_MID_SNAP = 300 / 874;
+const PIN_LIST_SHEET_FEED_MID_SNAP = '300px';
 
-function buildSnapPoints(collapsedSnap: number, midSnap: number) {
+function buildSnapPoints(collapsedSnap: string, midSnap: string) {
   return [collapsedSnap, midSnap, 1];
 }
 
@@ -118,10 +120,12 @@ type PinListContentProps = {
   isBookmarkPending: boolean;
   onBookmarkToggle: () => void;
   onPinClick?: (pin: Pin) => void;
+  onMyPinClick?: (pin: Pin) => void;
   onBlockedPinClick?: () => void;
   allowTrackDetailAccess?: boolean;
   focusedFeedPin?: FocusedFeedPin;
   onFocusedTrackClick?: () => void;
+  myPin?: Pin;
 };
 
 function PinListContent({
@@ -135,12 +139,15 @@ function PinListContent({
   isBookmarkPending,
   onBookmarkToggle,
   onPinClick,
+  onMyPinClick,
   onBlockedPinClick,
   allowTrackDetailAccess = false,
   focusedFeedPin,
   onFocusedTrackClick,
+  myPin,
 }: PinListContentProps) {
   const { isFullPage, onClose } = useBottomSheet();
+  const { data: myProfile } = useMyProfile();
   const distance = formatDistance(place.distance);
   const hasPins = pins.length > 0;
   const bookmarkLabel =
@@ -273,6 +280,29 @@ function PinListContent({
             </p>
             <NextIcon className="size-5 shrink-0 text-grayscale-400" aria-hidden />
           </button>
+        ) : myPin ? (
+          <button
+            type="button"
+            onClick={() => (onMyPinClick ?? onPinClick)?.(myPin)}
+            className="mt-4 flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-pli-black-50 bg-pli-black-85 px-3 py-3 text-left"
+          >
+            {myProfile?.profileImageUrl ? (
+              <img
+                src={myProfile.profileImageUrl}
+                alt=""
+                className="size-7 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex size-7 items-center justify-center rounded-full bg-pli-black-75 ">
+                <UserPlaceholderIcon className="size-4 text-pli-black-50" aria-hidden />
+              </span>
+            )}
+            <p className="min-w-0 flex-1 truncate body-15-r text-grayscale-100">
+              <span className="text-neon-2">{myProfile?.nickname ?? '나'} </span>님이 등록한 곡 상세
+              보기
+            </p>
+            <NextIcon className="size-5 shrink-0 text-grayscale-400" aria-hidden />
+          </button>
         ) : null}
 
         {hasPins ? (
@@ -312,15 +342,8 @@ function PinListContent({
   );
 }
 
-const BOOKMARK_TOAST_DURATION_MS = 2_000;
 const TRACK_DETAIL_BLOCKED_TOAST_MESSAGE =
   '현재 위치 500m 이내이거나, 찜한 노래·내 장소·피드에서 진입한 경우에만 곡 상세를 볼 수 있어요.';
-
-type BookmarkToast = {
-  attempt: number;
-  message: string;
-};
-
 export function PinListSheet({
   open,
   onClose,
@@ -330,17 +353,17 @@ export function PinListSheet({
   detailLocationError = null,
   hasReliableUserLocation: hasReliableUserLocationProp,
   onPinClick,
+  onMyPinClick,
   onFocusedTrackClick,
   allowTrackDetailAccess = false,
   resetKey,
   collapseToSmallestSignal,
-  onActiveSnapChange,
+  floatingActionRef,
   onResolvedPlaceChange,
   onFullPageBack,
 }: PinListSheetProps) {
+  const toast = useToast();
   const [sort, setSort] = useState<PinSort>('POPULAR');
-  const [bookmarkToast, setBookmarkToast] = useState<BookmarkToast | null>(null);
-  const [accessToast, setAccessToast] = useState<BookmarkToast | null>(null);
   const normalizedPlaceId = place.id.startsWith('place:')
     ? place.id.slice('place:'.length)
     : place.id;
@@ -425,13 +448,11 @@ export function PinListSheet({
       { placeId, bookmarked: !isBookmarked },
       {
         onError: (error) => {
-          setBookmarkToast((currentToast) => ({
-            attempt: (currentToast?.attempt ?? 0) + 1,
-            message:
-              error instanceof Error
-                ? error.message
-                : '북마크를 변경하지 못했어요. 다시 시도해 주세요.',
-          }));
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : '북마크를 변경하지 못했어요. 다시 시도해 주세요.',
+          );
         },
       },
     );
@@ -442,15 +463,13 @@ export function PinListSheet({
       ...track,
       liked: track.isLiked,
     })) ?? [];
+  const myPin = pins.find((pin) => pin.pinByMe);
 
   const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin, pins);
   const handleFocusedTrackClick = () => {
     if (!onFocusedTrackClick) return;
     if (!focusedPlaceTrackId) {
-      setAccessToast((currentToast) => ({
-        attempt: (currentToast?.attempt ?? 0) + 1,
-        message: '곡 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.',
-      }));
+      toast.error('곡 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.');
       return;
     }
     onFocusedTrackClick(focusedPlaceTrackId);
@@ -471,13 +490,6 @@ export function PinListSheet({
     () => buildSnapPoints(PIN_LIST_SHEET_COLLAPSED_SNAP, midSnap),
     [midSnap],
   );
-  const handleActiveSnapChange = useCallback(
-    (snap: number | string) => {
-      onActiveSnapChange?.(typeof snap === 'number' ? snap : midSnap);
-    },
-    [onActiveSnapChange, midSnap],
-  );
-
   const bookmarkTrailingButton = (
     <button
       type="button"
@@ -496,7 +508,7 @@ export function PinListSheet({
   );
 
   return (
-    <ToastProvider duration={BOOKMARK_TOAST_DURATION_MS}>
+    <>
       <BottomSheet
         open={open}
         onClose={onClose}
@@ -505,7 +517,7 @@ export function PinListSheet({
         defaultSnapPoint={midSnap}
         resetKey={resetKey}
         collapseToSmallestSignal={collapseToSmallestSignal}
-        onActiveSnapChange={handleActiveSnapChange}
+        trackingElementRef={floatingActionRef}
       >
         <BottomSheet.FullPageNav onBack={onFullPageBack} trailing={bookmarkTrailingButton} />
 
@@ -523,34 +535,17 @@ export function PinListSheet({
             isBookmarkPending={bookmarkMutation.isPending}
             onBookmarkToggle={handleBookmarkToggle}
             onPinClick={onPinClick}
+            onMyPinClick={onMyPinClick}
             onBlockedPinClick={() => {
-              setAccessToast((currentToast) => ({
-                attempt: (currentToast?.attempt ?? 0) + 1,
-                message: TRACK_DETAIL_BLOCKED_TOAST_MESSAGE,
-              }));
+              toast.error(TRACK_DETAIL_BLOCKED_TOAST_MESSAGE);
             }}
             allowTrackDetailAccess={canOpenTrackDetail}
             focusedFeedPin={focusedFeedPin}
             onFocusedTrackClick={onFocusedTrackClick ? handleFocusedTrackClick : undefined}
+            myPin={myPin}
           />
         )}
       </BottomSheet>
-
-      <ToastPortal>
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+23px)] z-[90] flex justify-center">
-          {bookmarkToast ? (
-            <Toast key={`bookmark:${bookmarkToast.message}:${bookmarkToast.attempt}`} defaultOpen>
-              {bookmarkToast.message}
-            </Toast>
-          ) : null}
-          {accessToast ? (
-            <Toast key={`access:${accessToast.message}:${accessToast.attempt}`} defaultOpen>
-              {accessToast.message}
-            </Toast>
-          ) : null}
-          <ToastViewport />
-        </div>
-      </ToastPortal>
-    </ToastProvider>
+    </>
   );
 }

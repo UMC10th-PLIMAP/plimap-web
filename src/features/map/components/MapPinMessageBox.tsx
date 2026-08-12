@@ -10,6 +10,7 @@ export type MapPinMessageBoxProps = {
   introduction: string;
   isPlaying?: boolean;
   onPlay?: () => void;
+  onProfileClick?: () => void;
 };
 
 export function MapPinMessageBox({
@@ -18,20 +19,38 @@ export function MapPinMessageBox({
   introduction,
   isPlaying = false,
   onPlay,
+  onProfileClick,
 }: MapPinMessageBoxProps) {
+  const profileContent = (
+    <>
+      <div className="gc-avatar flex items-center justify-center overflow-hidden bg-grayscale-0">
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="size-full object-cover" />
+        ) : (
+          <UserPlaceholderIcon className="size-4 text-pli-black-50" aria-hidden />
+        )}
+      </div>
+      <span className="gc-name">{nickname}</span>
+    </>
+  );
+
   return (
-    <div className="glass-card">
+    <div className="glass-card cursor-default">
       <div className="gc-row">
-        <div className="gc-user">
-          <div className="gc-avatar flex items-center justify-center overflow-hidden bg-grayscale-0">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="size-full object-cover" />
-            ) : (
-              <UserPlaceholderIcon className="size-4 text-pli-black-50" aria-hidden />
-            )}
-          </div>
-          <span className="gc-name">{nickname}</span>
-        </div>
+        {onProfileClick ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onProfileClick();
+            }}
+            className="gc-user cursor-pointer border-0 bg-transparent p-0 text-left"
+          >
+            {profileContent}
+          </button>
+        ) : (
+          <div className="gc-user">{profileContent}</div>
+        )}
 
         <div className="gc-actions">
           <span className={cn('gc-wave', isPlaying && 'gc-wave--playing')} aria-hidden>

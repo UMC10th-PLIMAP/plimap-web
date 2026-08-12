@@ -17,6 +17,7 @@ export const toMapPinMarkerProps = (
   isPlaying = false,
   showMessageBubble = false,
   isBookmarked = false,
+  onProfileClick?: () => void,
 ): MapPinMarkerProps => ({
   coverUrl: pin.coverUrl,
   isSelected,
@@ -25,6 +26,7 @@ export const toMapPinMarkerProps = (
   avatarUrl: pin.avatarUrl,
   introduction: pin.introduction,
   onPlay,
+  onProfileClick,
   showMessageBubble,
   isBookmarked,
 });
@@ -65,8 +67,8 @@ type MapPinOverlayOptions = {
 } & MapPinMarkerProps;
 
 export type MapPinOverlayHandle = google.maps.OverlayView & {
-  setZIndex: (zIndex: number) => void;
   setPosition: (position: google.maps.LatLngLiteral) => void;
+  setZIndex: (zIndex: number) => void;
   setOnClick: (onClick: (() => void) | undefined) => void;
 };
 
@@ -82,7 +84,7 @@ export const createMapPinOverlay = ({
   ...markerProps
 }: MapPinOverlayOptions): MapPinOverlayEntry => {
   const { anchor, mount } = createMapPinMarkerMount(markerProps);
-  let position = initialPosition;
+  let currentPosition = initialPosition;
   let onClick = initialOnClick;
 
   class MapPinOverlay extends google.maps.OverlayView {
@@ -107,7 +109,7 @@ export const createMapPinOverlay = ({
       if (!projection || !this.container) return;
 
       const point = projection.fromLatLngToDivPixel(
-        new google.maps.LatLng(position.lat, position.lng),
+        new google.maps.LatLng(currentPosition.lat, currentPosition.lng),
       );
       if (!point) return;
 
@@ -122,16 +124,16 @@ export const createMapPinOverlay = ({
       this.container = null;
     }
 
+    setPosition(nextPosition: google.maps.LatLngLiteral) {
+      currentPosition = nextPosition;
+      this.draw();
+    }
+
     setZIndex(nextZIndex: number) {
       this.currentZIndex = nextZIndex;
       if (this.container) {
         this.container.style.zIndex = String(nextZIndex);
       }
-    }
-
-    setPosition(nextPosition: google.maps.LatLngLiteral) {
-      position = nextPosition;
-      this.draw();
     }
 
     setOnClick(nextOnClick: (() => void) | undefined) {

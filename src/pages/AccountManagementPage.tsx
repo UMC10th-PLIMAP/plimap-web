@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { ApiError } from '@/api/client';
+import { useToast } from '@/hooks/useToast';
 import { TopBar } from '@/components/ui/TopBar';
 import { SettingsRow } from '@/features/settings/components/SettingsRow';
 import { WithdrawConfirmDialog } from '@/features/settings/components/WithdrawConfirmDialog';
@@ -13,6 +14,7 @@ const WITHDRAW_FAILED_MESSAGE = '탈퇴 처리에 실패했어요. 잠시 후 �
 
 export default function AccountManagementPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const queryClient = useQueryClient();
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const withdrawMutation = useWithdrawMember();
@@ -27,7 +29,7 @@ export default function AccountManagementPage() {
         navigate('/app/login', { replace: true });
       },
       onError: (error) => {
-        alert(error instanceof ApiError ? error.message : WITHDRAW_FAILED_MESSAGE);
+        toast.error(error instanceof ApiError ? error.message : WITHDRAW_FAILED_MESSAGE);
       },
     });
   };

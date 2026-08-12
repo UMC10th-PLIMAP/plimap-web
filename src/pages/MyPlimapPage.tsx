@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { TopBar } from '@/components/ui/TopBar';
 import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { MyAllPinsCardSkeleton } from '@/components/skeletons/MyAllPinsCardSkeleton';
 import { PinCardSkeleton } from '@/components/skeletons/PinCardSkeleton';
 import { MyAllPinsCard } from '@/features/profile/components/MyAllPinsCard';
 import { MyPlimapTabs } from '@/features/profile/components/MyPlimapTabs';
@@ -84,8 +85,8 @@ export default function MyPlimapPage() {
                   <span className="sr-only" role="status">
                     내 핀을 불러오는 중
                   </span>
-                  {Array.from({ length: 4 }, (_, index) => (
-                    <PinCardSkeleton key={index} />
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <MyAllPinsCardSkeleton key={index} />
                   ))}
                 </>
               ) : isMyPinsError ? (
