@@ -598,9 +598,9 @@ const MapPage: React.FC<MapPageProps> = ({
           hasReliableUserLocation={Boolean(currentLocation ?? selectedMapPlace.selectionLocation)}
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
+            // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
             const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
             const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
-            onClearMapPlace?.();
             navigate(`/app/pins/${pin.placeTrackId}`, {
               state: {
                 ...(latitude != null && longitude != null
@@ -624,9 +624,9 @@ const MapPage: React.FC<MapPageProps> = ({
             });
           }}
           onFocusedTrackClick={(placeTrackId) => {
+            // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
             const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
             const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
-            onClearMapPlace?.();
             navigate(`/app/pins/${placeTrackId}`, {
               state: {
                 ...(latitude != null && longitude != null
@@ -673,7 +673,7 @@ const MapPage: React.FC<MapPageProps> = ({
           hasReliableUserLocation={Boolean(currentLocation)}
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
-            onSelectMapPinChange(null);
+            // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
             navigate(`/app/pins/${pin.placeTrackId}`, {
               state:
                 currentLocation != null
