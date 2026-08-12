@@ -6,7 +6,11 @@ export type Notification = {
   actorId: number;
   actorNickname: string;
   actorProfileImageUrl: string | null;
+  isFollowing: boolean;
+  isFollowingViewer: boolean;
   pinId: number | null;
+  placeName: string | null;
+  albumImageUrl: string | null;
   read: boolean;
   createdAt: string;
 };

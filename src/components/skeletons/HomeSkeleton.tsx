@@ -50,7 +50,9 @@ export function HomeSkeleton() {
               aria-hidden
               className="flex size-11 items-center justify-center rounded-full bg-pli-black-75"
             >
-              <BellIcon className="h-[22px] w-[18px]" />
+              <span className="flex size-6 items-center justify-center">
+                <BellIcon className="h-[21.4px] w-[17.4px]" />
+              </span>
             </div>
           </header>
 

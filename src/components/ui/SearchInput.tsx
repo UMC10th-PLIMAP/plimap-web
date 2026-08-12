@@ -10,8 +10,7 @@ const searchInputVariants = cva('flex w-full items-center rounded-[50px] transit
   variants: {
     variant: {
       map: 'h-[60px] gap-2.5 bg-pli-black-100 px-5 py-2.5 backdrop-blur-[1.95px]',
-      friend:
-        'h-[60px] gap-2 bg-pli-black-75 px-4 py-2 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-neon-2',
+      friend: 'h-[60px] gap-2 bg-pli-black-50 px-4 py-2',
       song: 'h-10 gap-2 bg-pli-black-75 px-4 body-15-r',
     },
   },

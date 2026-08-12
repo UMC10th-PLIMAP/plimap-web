@@ -39,7 +39,10 @@ export function MapPinMarker({
   isDimmed = false,
 }: MapPinMarkerProps) {
   return (
-    <div className="relative cursor-pointer select-none" style={{ width: 63, height: 70 }}>
+    <div
+      className={`relative select-none ${isDimmed ? 'cursor-default' : 'cursor-pointer'}`}
+      style={{ width: 63, height: 70 }}
+    >
       {showMessageBubble && nickname && introduction ? (
         <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2">
           <MapPinMessageBox

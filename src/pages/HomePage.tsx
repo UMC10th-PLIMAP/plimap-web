@@ -287,7 +287,9 @@ export default function HomePage() {
               aria-label="알림"
               className="flex size-11 items-center justify-center rounded-full bg-pli-black-75"
             >
-              <BellIcon aria-hidden className="h-[22px] w-[18px]" />
+              <span aria-hidden className="flex size-6 items-center justify-center">
+                <BellIcon className="h-[21.4px] w-[17.4px]" />
+              </span>
             </Link>
           </header>
 

@@ -108,10 +108,21 @@ export function useMapPinOverlays({
     const nextEntries = new Map<string, MapPinOverlayEntry>();
 
     mapPins.forEach((pin) => {
+      const onClick = areMapPinsDimmed
+        ? undefined
+        : () => {
+            const latestPin = mapPinsByIdRef.current.get(pin.id);
+            if (!latestPin) return;
+
+            // 탭 피드백과 시트를 즉시 반영하고, 카메라 이동은 독립적으로 진행한다.
+            onSelectMapPinRef.current?.(pin.id);
+            flyToRef.current({ lat: latestPin.lat, lng: latestPin.lng }, PIN_FOCUS_ZOOM);
+          };
       const existingEntry = previousEntries.get(pin.id);
       if (existingEntry) {
         previousEntries.delete(pin.id);
         existingEntry.overlay.setPosition({ lat: pin.lat, lng: pin.lng });
+        existingEntry.overlay.setOnClick(onClick);
         nextEntries.set(pin.id, existingEntry);
         return;
       }
@@ -119,14 +130,7 @@ export function useMapPinOverlays({
       const entry = createMapPinOverlay({
         position: { lat: pin.lat, lng: pin.lng },
         zIndex: pin.id === selectedMapPinIdRef.current ? 200 : 100,
-        onClick: () => {
-          const latestPin = mapPinsByIdRef.current.get(pin.id);
-          if (!latestPin) return;
-
-          // 탭 피드백과 시트를 즉시 반영하고, 카메라 이동은 독립적으로 진행한다.
-          onSelectMapPinRef.current?.(pin.id);
-          flyToRef.current({ lat: latestPin.lat, lng: latestPin.lng }, PIN_FOCUS_ZOOM);
-        },
+        onClick,
         ...toMapPinMarkerProps(
           pin,
           pin.id === selectedMapPinIdRef.current,
