@@ -97,8 +97,8 @@ export default function UserProfilePage() {
 
   return (
     <>
-      <div className="relative flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-        <header className="grid h-[60px] grid-cols-[24px_1fr_24px] items-center px-4">
+      <div className="relative flex min-h-full flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <header className="grid h-[60px] shrink-0 grid-cols-[24px_1fr_24px] items-center px-4">
           <button
             type="button"
             aria-label="뒤로가기"
@@ -139,8 +139,8 @@ export default function UserProfilePage() {
         </header>
 
         {member ? (
-          <>
-            <div className="mt-[3px] flex flex-col">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="mt-[3px] flex shrink-0 flex-col">
               <ProfileInfo
                 profile={{
                   name: member.name,
@@ -192,11 +192,12 @@ export default function UserProfilePage() {
                 ]}
               />
             </div>
-            <div className="mt-4 mb-4 h-[1px] bg-pli-black-50" />
+            <div className="mt-4 mb-4 h-[1px] shrink-0 bg-pli-black-50" />
             <ProfilePinGrid
               pins={feedPages?.pages.flatMap((page) => page.data) ?? []}
               isPending={isFeedPending}
               isError={isFeedError}
+              emptyVariant="other"
               onRetry={() => {
                 void refetchFeed();
               }}
@@ -213,7 +214,7 @@ export default function UserProfilePage() {
                 });
               }}
             />
-          </>
+          </div>
         ) : id && isMemberPending ? (
           <ProfileSkeleton />
         ) : (
