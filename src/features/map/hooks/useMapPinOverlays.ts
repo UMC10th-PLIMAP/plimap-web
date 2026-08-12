@@ -23,6 +23,8 @@ type UseMapPinOverlaysParams = {
   flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
   onSelectMapPin?: (pinId: string) => void;
   onPlayPin?: (pinId: string) => void;
+  /** 말풍선의 프로필(아바타·닉네임) 클릭 시 호출된다. writerId가 있는 핀만 클릭 가능해진다. */
+  onOpenProfile?: (pin: MapPin) => void;
   /** 북마크 강조 모드 on/off. 켜져 있으면 hasBookmarkedPlace인 핀 색이 바뀐다. */
   isBookmarkHighlightOn?: boolean;
 };
@@ -38,12 +40,14 @@ export function useMapPinOverlays({
   flyTo,
   onSelectMapPin,
   onPlayPin,
+  onOpenProfile,
   isBookmarkHighlightOn = false,
 }: UseMapPinOverlaysParams) {
   const mapPinOverlaysRef = useRef<Map<string, MapPinOverlayEntry>>(new Map());
   const mapPinsByIdRef = useRef<Map<string, MapPin>>(new Map());
   const onSelectMapPinRef = useRef(onSelectMapPin);
   const onPlayPinRef = useRef(onPlayPin);
+  const onOpenProfileRef = useRef(onOpenProfile);
   const selectedMapPinIdRef = useRef(selectedMapPinId);
   const playingMapPinIdRef = useRef(playingMapPinId);
   const flyToRef = useRef(flyTo);
@@ -64,6 +68,10 @@ export function useMapPinOverlays({
   useEffect(() => {
     onPlayPinRef.current = onPlayPin;
   }, [onPlayPin]);
+
+  useEffect(() => {
+    onOpenProfileRef.current = onOpenProfile;
+  }, [onOpenProfile]);
 
   useEffect(() => {
     selectedMapPinIdRef.current = selectedMapPinId;
@@ -124,6 +132,7 @@ export function useMapPinOverlays({
           pin.id === playingMapPinIdRef.current,
           pin.id === selectedMapPinIdRef.current && isAtPinFocusZoomRef.current,
           isBookmarkHighlightOnRef.current && pin.hasBookmarkedPlace,
+          pin.writerId != null ? () => onOpenProfileRef.current?.(pin) : undefined,
         ),
       });
       entry.overlay.setMap(map);
@@ -158,6 +167,7 @@ export function useMapPinOverlays({
           id === playingMapPinId,
           isSelected && isAtPinFocusZoom,
           isBookmarkHighlightOn && pin.hasBookmarkedPlace,
+          pin.writerId != null ? () => onOpenProfileRef.current?.(pin) : undefined,
         ),
       );
       entry.overlay.setZIndex(isSelected ? 200 : 100);

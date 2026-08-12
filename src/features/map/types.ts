@@ -39,6 +39,8 @@ export type MapPin = {
   youtubeVideoId?: string;
   clipStartMs?: number;
   hasBookmarkedPlace: boolean;
+  /** 핀 작성자 회원 id. 프로필 이동에 쓴다. 백엔드 응답에 아직 없으면 undefined. */
+  writerId?: number;
 };
 
 // 행정구역(REGION1~3) 또는 geohash(GEOHASH) 기준 핀 클러스터

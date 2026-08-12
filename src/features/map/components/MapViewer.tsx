@@ -30,6 +30,8 @@ type MapViewerProps = {
   onSelectPlace?: (placeId: string) => void;
   onSelectMapPin?: (pinId: string) => void;
   onPlayPin?: (pinId: string) => void;
+  /** 말풍선의 프로필(아바타·닉네임) 클릭 시 호출된다. writerId가 있는 핀만 클릭 가능해진다. */
+  onOpenProfile?: (pin: MapPin) => void;
   playingMapPinId?: string | null;
   /** 핀이 아닌 지도의 빈 영역을 클릭했을 때 호출된다. */
   onMapClick?: () => void;
@@ -74,6 +76,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onSelectPlace,
     onSelectMapPin,
     onPlayPin,
+    onOpenProfile,
     playingMapPinId = null,
     onMapClick,
     onMapDragStart,
@@ -128,6 +131,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     flyTo,
     onSelectMapPin,
     onPlayPin,
+    onOpenProfile,
     isBookmarkHighlightOn,
   });
   useClusterOverlays({
