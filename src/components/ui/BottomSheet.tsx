@@ -108,8 +108,6 @@ type BottomSheetProps = {
   collapseToSmallestSignal?: number;
   trackingElementRef?: React.RefObject<HTMLElement | null>;
   keepOpenWhileMounted?: boolean;
-  /** 열릴 때 첫 포커스 가능 요소로 자동 포커스하지 않는다. (모바일 키보드 방지 등) */
-  preventOpenAutoFocus?: boolean;
   className?: string;
 };
 
@@ -131,7 +129,6 @@ function BottomSheet({
   collapseToSmallestSignal,
   trackingElementRef,
   keepOpenWhileMounted = false,
-  preventOpenAutoFocus = false,
   className,
 }: BottomSheetProps) {
   const firstSnap = defaultSnapPoint ?? snapPoints[0] ?? null;
@@ -267,16 +264,7 @@ function BottomSheet({
       >
         <SheetContent
           ref={setSnapObserverTarget}
-          onOpenAutoFocus={(event) => {
-            if (initialFocusRef?.current) {
-              event.preventDefault();
-              initialFocusRef.current.focus({ preventScroll: true });
-              return;
-            }
-            if (preventOpenAutoFocus) {
-              event.preventDefault();
-            }
-          }}
+          onOpenAutoFocus={() => initialFocusRef?.current?.focus({ preventScroll: true })}
           onCloseAutoFocus={
             finalFocusRef
               ? (event) => {

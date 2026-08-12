@@ -458,6 +458,7 @@ export default function SongDetailPage() {
   const [isFeedPublic, setIsFeedPublic] = useState(true);
   const [isSongSelectOpen, setIsSongSelectOpen] = useState(false);
   const [clipStartMs, setClipStartMs] = useState(0);
+  const songChangeButtonRef = useRef<HTMLButtonElement>(null);
 
   const preparedTrack = playbackPreparationQuery.data;
   const coverUrl = preparedTrack?.albumImageUrl || rectangleBg;
@@ -624,6 +625,7 @@ export default function SongDetailPage() {
                   <img src={coverUrl} alt="" className="size-16 rounded-md object-cover" />
 
                   <button
+                    ref={songChangeButtonRef}
                     type="button"
                     aria-label="노래 변경"
                     onClick={() => setIsSongSelectOpen(true)}
@@ -744,7 +746,7 @@ export default function SongDetailPage() {
           <SongSelectSheet
             open={isSongSelectOpen}
             onClose={() => setIsSongSelectOpen(false)}
-            preventOpenAutoFocus
+            finalFocusRef={songChangeButtonRef}
             onSelect={(selected) => {
               navigate(`/app/song/detail/${selected.itunesTrackId}`, { replace: true });
             }}
