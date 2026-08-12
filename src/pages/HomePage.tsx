@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 
+import { getPlaceDetail } from '@/api/place';
 import { getPinDetail, type FriendPinItem } from '@/api/pin';
 import BookmarkActiveIcon from '@/assets/home/bookmark-active.svg?react';
 import BellIcon from '@/assets/home/bell.svg?react';
@@ -19,10 +20,16 @@ import { usePopularPlaces } from '@/features/home/hooks/usePopularPlaces';
 import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
+import type { AppOutletContext } from '@/layouts/RootLayout';
 import { cn } from '@/lib/utils';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
 type HotPlaceFilter = 'nearby' | 'popular';
+type MapPlaceTarget = {
+  placeId: number;
+  placeName: string;
+  creatorName?: string;
+};
 
 const FRIEND_PROFILE_ERROR_MESSAGE = '프로필을 열지 못했어요. 다시 시도해 주세요.';
 
@@ -37,14 +44,22 @@ function formatDistanceMeters(distanceMeters: number) {
   return `${Math.round(normalizedDistance)}m`;
 }
 
-function HotPlaceCard({ place }: { place: PopularPlaceItem }) {
+type HotPlaceCardProps = {
+  place: PopularPlaceItem;
+  isOpening: boolean;
+  onOpen: (place: PopularPlaceItem) => void;
+};
+
+function HotPlaceCard({ place, isOpening, onOpen }: HotPlaceCardProps) {
   const distance = formatDistanceMeters(place.distanceMeters);
 
   return (
     <button
       type="button"
       aria-label={`${place.placeName}, ${distance}, ${place.pinCount}개의 핀`}
-      className="relative block size-full overflow-hidden rounded-xl border border-pli-black-50 text-left"
+      disabled={isOpening}
+      onClick={() => onOpen(place)}
+      className="relative block size-full overflow-hidden rounded-xl border border-pli-black-50 text-left disabled:opacity-50"
     >
       {place.representativeImageUrl ? (
         <img src={place.representativeImageUrl} alt="" className="size-full object-cover" />
@@ -67,14 +82,28 @@ function HotPlaceCard({ place }: { place: PopularPlaceItem }) {
 
 type SavedPlaceCardProps = {
   place: PlaceBookmarkListItem;
+  isOpening: boolean;
   isRemoving: boolean;
+  onOpen: (place: PlaceBookmarkListItem) => void;
   onUnbookmark: (placeId: number) => void;
 };
 
-function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps) {
+function SavedPlaceCard({
+  place,
+  isOpening,
+  isRemoving,
+  onOpen,
+  onUnbookmark,
+}: SavedPlaceCardProps) {
   return (
     <article className="flex h-[88px] w-full items-center justify-between rounded-xl bg-pli-black-85 px-5">
-      <button type="button" className="min-w-0 text-left">
+      <button
+        type="button"
+        aria-label={`${place.placeName} 지도에서 PIN 보기`}
+        disabled={isOpening}
+        onClick={() => onOpen(place)}
+        className="min-w-0 text-left disabled:opacity-50"
+      >
         <span className="flex min-w-0 items-center text-grayscale-100">
           <span className="truncate body-17-m">{place.placeName}</span>
           <NextIcon aria-hidden className="size-5 shrink-0" />
@@ -106,8 +135,10 @@ function SavedPlaceCard({ place, isRemoving, onUnbookmark }: SavedPlaceCardProps
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { selectMapPlace } = useOutletContext<AppOutletContext>();
   const toast = useToast();
   const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
+  const [openingPlaceId, setOpeningPlaceId] = useState<number | null>(null);
   const [hotPlaceFilter, setHotPlaceFilter] = useState<HotPlaceFilter>('nearby');
   const [hotPlacePages, setHotPlacePages] = useState<Record<HotPlaceFilter, number>>({
     nearby: 0,
@@ -193,6 +224,50 @@ export default function HomePage() {
     }
   };
 
+  const handlePlaceClick = async (place: MapPlaceTarget) => {
+    const currentPosition = currentPositionQuery.data;
+    if (!currentPosition || openingPlaceId !== null) return;
+
+    setOpeningPlaceId(place.placeId);
+    try {
+      const placeDetail = await getPlaceDetail({
+        placeId: place.placeId,
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
+      });
+      const userLocation = {
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
+      };
+
+      selectMapPlace({
+        id: `place:${placeDetail.placeId}`,
+        placeId: placeDetail.placeId,
+        placeName: placeDetail.placeName,
+        category: placeDetail.category ?? '',
+        address: placeDetail.roadAddress || placeDetail.address,
+        distance: placeDetail.distanceMeters,
+        creatorName: place.creatorName,
+        bookmarkedByMe: placeDetail.bookmarkedByMe,
+        isMine: placeDetail.pinnedByMe,
+        selectionLocation: userLocation,
+        queryLocation: userLocation,
+        coordinates: {
+          lat: placeDetail.latitude,
+          lng: placeDetail.longitude,
+        },
+        showMapBackButton: true,
+      });
+      navigate('/app');
+    } catch {
+      toast.error('지도에서 장소를 열지 못했어요. 다시 시도해 주세요.', {
+        placement: 'above-navigation',
+      });
+    } finally {
+      setOpeningPlaceId(null);
+    }
+  };
+
   if (isHomePending) {
     return <HomeSkeleton />;
   }
@@ -213,7 +288,9 @@ export default function HomePage() {
               aria-label="알림"
               className="flex size-11 items-center justify-center rounded-full bg-pli-black-75"
             >
-              <BellIcon aria-hidden className="h-[22px] w-[18px]" />
+              <span aria-hidden className="flex size-6 items-center justify-center">
+                <BellIcon className="h-[21.4px] w-[17.4px]" />
+              </span>
             </Link>
           </header>
 
@@ -377,7 +454,13 @@ export default function HomePage() {
                 onPageChange={(page) =>
                   setHotPlacePages((pages) => ({ ...pages, [hotPlaceFilter]: page }))
                 }
-                renderItem={(place) => <HotPlaceCard place={place} />}
+                renderItem={(place) => (
+                  <HotPlaceCard
+                    place={place}
+                    isOpening={openingPlaceId === place.placeId}
+                    onOpen={(hotPlace) => void handlePlaceClick(hotPlace)}
+                  />
+                )}
               />
             )}
           </div>
@@ -426,7 +509,15 @@ export default function HomePage() {
               renderItem={(place) => (
                 <SavedPlaceCard
                   place={place}
+                  isOpening={openingPlaceId === place.placeId}
                   isRemoving={toggleBookmarkMutation.isPending}
+                  onOpen={(savedPlace) =>
+                    void handlePlaceClick({
+                      placeId: savedPlace.placeId,
+                      placeName: savedPlace.placeName,
+                      creatorName: savedPlace.firstPinCreatorNickname ?? undefined,
+                    })
+                  }
                   onUnbookmark={(placeId) =>
                     toggleBookmarkMutation.mutate(
                       { placeId, bookmarked: false },

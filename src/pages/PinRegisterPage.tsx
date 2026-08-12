@@ -18,19 +18,14 @@ const availabilityMessage = (status: 'OUT_OF_RANGE' | 'TOO_CLOSE_TO_PIN') =>
 
 export default function PinRegisterPage() {
   const navigate = useNavigate();
-  const {
-    mapStatus,
-    zoom,
-    radiusElementRef,
-    locationError,
-    isOutsideAllowedRadius,
-    setMapInteractionDisabled,
-  } = useOutletContext<PinRegistrationOutletContext>();
+  const { mapStatus, zoom, radiusElementRef, locationError, setMapInteractionDisabled } =
+    useOutletContext<PinRegistrationOutletContext>();
   const candidateCoordinate = usePinCreationStore((state) => state.candidateCoordinate);
   const currentLocation = usePinCreationStore((state) => state.currentLocation);
   const setSearchKeyword = usePinCreationStore((state) => state.setSearchKeyword);
+  const setConfirmationOrigin = usePinCreationStore((state) => state.setConfirmationOrigin);
   const setPlace = usePinCreationStore((state) => state.setPlace);
-  const reset = usePinCreationStore((state) => state.reset);
+  const resetMapSelection = usePinCreationStore((state) => state.resetMapSelection);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
   const requestControllerRef = useRef<AbortController | null>(null);
@@ -48,12 +43,12 @@ export default function PinRegisterPage() {
   };
 
   const handleCancel = () => {
-    reset();
-    navigate('/app', { replace: true });
+    resetMapSelection();
+    navigate('/app/pin/register/place', { replace: true });
   };
 
   const handleComplete = async () => {
-    if (isCompleting || isOutsideAllowedRadius) return;
+    if (isCompleting) return;
     setFeedbackMessage(null);
 
     if (!currentLocation || !candidateCoordinate) {
@@ -118,6 +113,7 @@ export default function PinRegisterPage() {
           coordinates,
           distanceMeters: calculateDistanceMeters(currentLocation, coordinates),
         });
+        setConfirmationOrigin('map');
         navigateToStage('/app/pin/register/confirm');
         return;
       }
@@ -133,6 +129,7 @@ export default function PinRegisterPage() {
         coordinates,
         distanceMeters: availability.distanceFromUserMeters,
       });
+      setConfirmationOrigin('map');
       navigateToStage('/app/pin/register/confirm');
     } catch (error) {
       if (controller.signal.aborted || isApiRequestCanceled(error)) return;
@@ -165,7 +162,7 @@ export default function PinRegisterPage() {
         radiusElementRef={radiusElementRef}
         feedbackMessage={feedbackMessage}
         isCompleting={isCompleting}
-        isCompleteDisabled={mapStatus !== 'ready' || isOutsideAllowedRadius}
+        isCompleteDisabled={mapStatus !== 'ready'}
         showRadius={Boolean(currentLocation)}
         onCancel={handleCancel}
         onComplete={() => void handleComplete()}

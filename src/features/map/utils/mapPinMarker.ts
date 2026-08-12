@@ -18,6 +18,7 @@ export const toMapPinMarkerProps = (
   showMessageBubble = false,
   isBookmarked = false,
   onProfileClick?: () => void,
+  isDimmed = false,
 ): MapPinMarkerProps => ({
   coverUrl: pin.coverUrl,
   isSelected,
@@ -29,6 +30,7 @@ export const toMapPinMarkerProps = (
   onProfileClick,
   showMessageBubble,
   isBookmarked,
+  isDimmed,
 });
 
 export const renderMapPinMarker = (mount: HTMLElement, props: MapPinMarkerProps) => {

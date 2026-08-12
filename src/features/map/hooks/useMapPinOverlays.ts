@@ -27,6 +27,7 @@ type UseMapPinOverlaysParams = {
   onOpenProfile?: (pin: MapPin) => void;
   /** 북마크 강조 모드 on/off. 켜져 있으면 hasBookmarkedPlace인 핀 색이 바뀐다. */
   isBookmarkHighlightOn?: boolean;
+  areMapPinsDimmed?: boolean;
 };
 
 /** 지도 위 핀(OverlayView)을 렌더링하고, 선택 상태에 따라 강조한다. */
@@ -42,6 +43,7 @@ export function useMapPinOverlays({
   onPlayPin,
   onOpenProfile,
   isBookmarkHighlightOn = false,
+  areMapPinsDimmed = false,
 }: UseMapPinOverlaysParams) {
   const mapPinOverlaysRef = useRef<Map<string, MapPinOverlayEntry>>(new Map());
   const mapPinsByIdRef = useRef<Map<string, MapPin>>(new Map());
@@ -106,10 +108,21 @@ export function useMapPinOverlays({
     const nextEntries = new Map<string, MapPinOverlayEntry>();
 
     mapPins.forEach((pin) => {
+      const onClick = areMapPinsDimmed
+        ? undefined
+        : () => {
+            const latestPin = mapPinsByIdRef.current.get(pin.id);
+            if (!latestPin) return;
+
+            // 탭 피드백과 시트를 즉시 반영하고, 카메라 이동은 독립적으로 진행한다.
+            onSelectMapPinRef.current?.(pin.id);
+            flyToRef.current({ lat: latestPin.lat, lng: latestPin.lng }, PIN_FOCUS_ZOOM);
+          };
       const existingEntry = previousEntries.get(pin.id);
       if (existingEntry) {
         previousEntries.delete(pin.id);
         existingEntry.overlay.setPosition({ lat: pin.lat, lng: pin.lng });
+        existingEntry.overlay.setOnClick(onClick);
         nextEntries.set(pin.id, existingEntry);
         return;
       }
@@ -117,14 +130,7 @@ export function useMapPinOverlays({
       const entry = createMapPinOverlay({
         position: { lat: pin.lat, lng: pin.lng },
         zIndex: pin.id === selectedMapPinIdRef.current ? 200 : 100,
-        onClick: () => {
-          const latestPin = mapPinsByIdRef.current.get(pin.id);
-          if (!latestPin) return;
-
-          // 탭 피드백과 시트를 즉시 반영하고, 카메라 이동은 독립적으로 진행한다.
-          onSelectMapPinRef.current?.(pin.id);
-          flyToRef.current({ lat: latestPin.lat, lng: latestPin.lng }, PIN_FOCUS_ZOOM);
-        },
+        onClick,
         ...toMapPinMarkerProps(
           pin,
           pin.id === selectedMapPinIdRef.current,
@@ -133,6 +139,7 @@ export function useMapPinOverlays({
           pin.id === selectedMapPinIdRef.current && isAtPinFocusZoomRef.current,
           isBookmarkHighlightOnRef.current && pin.hasBookmarkedPlace,
           pin.writerId != null ? () => onOpenProfileRef.current?.(pin) : undefined,
+          areMapPinsDimmed,
         ),
       });
       entry.overlay.setMap(map);
@@ -141,7 +148,7 @@ export function useMapPinOverlays({
 
     previousEntries.forEach(disposeMapPinOverlay);
     mapPinOverlaysRef.current = nextEntries;
-  }, [isLoaded, mapPins, mapInstanceRef]);
+  }, [areMapPinsDimmed, isLoaded, mapPins, mapInstanceRef]);
 
   useEffect(
     () => () => {
@@ -168,9 +175,17 @@ export function useMapPinOverlays({
           isSelected && isAtPinFocusZoom,
           isBookmarkHighlightOn && pin.hasBookmarkedPlace,
           pin.writerId != null ? () => onOpenProfileRef.current?.(pin) : undefined,
+          areMapPinsDimmed,
         ),
       );
       entry.overlay.setZIndex(isSelected ? 200 : 100);
     });
-  }, [selectedMapPinId, playingMapPinId, mapPins, isAtPinFocusZoom, isBookmarkHighlightOn]);
+  }, [
+    selectedMapPinId,
+    playingMapPinId,
+    mapPins,
+    isAtPinFocusZoom,
+    isBookmarkHighlightOn,
+    areMapPinsDimmed,
+  ]);
 }
