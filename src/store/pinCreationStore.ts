@@ -22,7 +22,7 @@ type PinCreationState = {
   confirmationOrigin: PinConfirmationOrigin | null;
   place: PinCreationPlace | null;
   setCandidateCoordinate: (coordinate: MapCoordinate) => void;
-  setCurrentLocation: (coordinate: MapCoordinate) => void;
+  setCurrentLocation: (coordinate: MapCoordinate | null) => void;
   setEntrySearchQuery: (query: string) => void;
   setSearchKeyword: (keyword: string) => void;
   setConfirmationOrigin: (origin: PinConfirmationOrigin) => void;

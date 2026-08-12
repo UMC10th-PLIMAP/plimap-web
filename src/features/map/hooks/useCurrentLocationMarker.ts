@@ -28,7 +28,7 @@ type UseCurrentLocationMarkerParams = {
   mapInstanceRef: RefObject<google.maps.Map | null>;
   isLoaded: boolean;
   onCenterChanged?: (center: MapCoordinate) => void;
-  onCurrentLocationChanged?: (coordinate: MapCoordinate) => void;
+  onCurrentLocationChanged?: (coordinate: MapCoordinate | null) => void;
   onCurrentLocationError?: (message: string) => void;
   centerOnFirstLocation?: boolean;
   isTrackingEnabled?: boolean;
@@ -218,6 +218,8 @@ export function useCurrentLocationMarker({
       (error) => {
         if (ignore) return;
         console.warn('현재 위치를 갱신할 수 없습니다:', error.message);
+        disposeLocationState();
+        onCurrentLocationChangedRef.current?.(null);
         onCurrentLocationErrorRef.current?.(
           '현재 위치를 확인할 수 없어요. 위치 권한을 확인한 뒤 다시 시도해 주세요',
         );
@@ -229,7 +231,14 @@ export function useCurrentLocationMarker({
       ignore = true;
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [isLoaded, isTrackingEnabled, enableCompassIfNeeded, mapInstanceRef, applyHeading]);
+  }, [
+    isLoaded,
+    isTrackingEnabled,
+    enableCompassIfNeeded,
+    mapInstanceRef,
+    applyHeading,
+    disposeLocationState,
+  ]);
 
   // --- "현재 위치" 버튼에서 호출할 재중심 이동 ---
   const recenterToCurrentLocation = useCallback(() => {

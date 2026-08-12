@@ -17,7 +17,7 @@ type MapReturnMode = 'previous-map' | 'selected-map';
 export default function PinPlaceSearchPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectMapPlace } = useOutletContext<MapOutletContext>();
+  const { selectMapPlace, currentLocation } = useOutletContext<MapOutletContext>();
   const locationState = location.state as PinSearchLocationState | null;
   const cameFromMap = locationState?.fromMap === true;
   const latestQueryRef = useRef(locationState?.initialQuery ?? '');
@@ -69,6 +69,11 @@ export default function PinPlaceSearchPage() {
     <PinPlaceSearch
       isReturningToMap={isReturningToMap}
       initialQuery={locationState?.initialQuery ?? ''}
+      currentLocationOverride={
+        currentLocation
+          ? { latitude: currentLocation.lat, longitude: currentLocation.lng }
+          : undefined
+      }
       onCloseAnimationEnd={finishReturningToMap}
       onPlaceSelect={handlePlaceSelect}
       onBack={handleBack}
