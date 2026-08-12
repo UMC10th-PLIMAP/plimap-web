@@ -15,10 +15,13 @@ export default function PinRegisterEntryPage() {
   const { mainMapCurrentLocation } = useOutletContext<PinRegistrationOutletContext>();
   const toast = useToast();
   const reset = usePinCreationStore((state) => state.reset);
+  const resetMapSelection = usePinCreationStore((state) => state.resetMapSelection);
   const setCandidateCoordinate = usePinCreationStore((state) => state.setCandidateCoordinate);
   const setPlace = usePinCreationStore((state) => state.setPlace);
   const setCurrentLocation = usePinCreationStore((state) => state.setCurrentLocation);
   const currentLocation = usePinCreationStore((state) => state.currentLocation);
+  const entrySearchQuery = usePinCreationStore((state) => state.entrySearchQuery);
+  const setEntrySearchQuery = usePinCreationStore((state) => state.setEntrySearchQuery);
   const availableCurrentLocation = currentLocation ?? mainMapCurrentLocation;
   const currentLocationOverride = availableCurrentLocation
     ? {
@@ -34,7 +37,7 @@ export default function PinRegisterEntryPage() {
 
   const handleMapSelection = () => {
     const startingCoordinate = availableCurrentLocation;
-    reset();
+    resetMapSelection();
     if (startingCoordinate) {
       setCurrentLocation(startingCoordinate);
       setCandidateCoordinate(startingCoordinate);
@@ -71,6 +74,8 @@ export default function PinRegisterEntryPage() {
     <>
       <div className="pointer-events-auto relative h-full">
         <PinPlaceSearch
+          initialQuery={entrySearchQuery}
+          onQueryChange={setEntrySearchQuery}
           autoFocus={false}
           placeholder="내가 등록할 장소는?"
           onBack={handleBack}

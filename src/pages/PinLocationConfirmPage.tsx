@@ -9,11 +9,14 @@ export default function PinLocationConfirmPage() {
   const navigate = useNavigate();
   const { mapStatus } = useOutletContext<PinRegistrationOutletContext>();
   const place = usePinCreationStore((state) => state.place);
+  const confirmationOrigin = usePinCreationStore((state) => state.confirmationOrigin);
 
   if (!place) return <Navigate to="/app/pin/register" replace />;
 
   const handlePrevious = () => {
-    navigate('/app/pin/register', { viewTransition: true });
+    navigate(confirmationOrigin === 'search' ? '/app/pin/register/search' : '/app/pin/register', {
+      viewTransition: true,
+    });
   };
 
   return (

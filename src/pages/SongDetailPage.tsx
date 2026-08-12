@@ -5,7 +5,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import PlayIcon from '@/assets/icons/play.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import rectangleBg from '@/assets/Rectangle.png';
@@ -25,6 +25,7 @@ import { useCreatePin } from '@/features/pin/queries/useCreatePin';
 import { useGetPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
 import { preloadYouTubeIframeApi, useYouTubeClipPlayer } from '@/hooks/useYouTubeClipPlayer';
 import { cn } from '@/lib/utils';
+import type { AppOutletContext } from '@/layouts/RootLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
 
 const INTRO_MAX_LENGTH = 100;
@@ -437,6 +438,7 @@ function FeedVisibilityToggle({
 
 export default function SongDetailPage() {
   const navigate = useNavigate();
+  const { selectMapPlace } = useOutletContext<AppOutletContext>();
   const toast = useToast();
   const { songId } = useParams<{ songId: string }>();
   const place = usePinCreationStore((state) => state.place);
@@ -452,6 +454,7 @@ export default function SongDetailPage() {
   const createPinMutation = useCreatePin();
 
   const [introduction, setIntroduction] = useState('');
+  const [introductionError, setIntroductionError] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [hasTagLimitError, setHasTagLimitError] = useState(false);
   const [isFeedPublic, setIsFeedPublic] = useState(true);
@@ -481,9 +484,10 @@ export default function SongDetailPage() {
 
     const normalizedIntroduction = introduction.trim();
     if (!normalizedIntroduction) {
-      toast.error('소개를 입력해 주세요.');
+      setIntroductionError('소개는 필수로 작성해 주세요.');
       return;
     }
+    setIntroductionError(null);
 
     if (!hasRequiredTags) {
       toast.error(MIN_TAG_ERROR_MESSAGE);
@@ -502,9 +506,41 @@ export default function SongDetailPage() {
         feedOpen: isFeedPublic,
       },
       {
-        onSuccess: () => {
+        onSuccess: (createdPin) => {
+          const focusedPin = {
+            pinId: createdPin.pinId,
+            nickname: createdPin.writerNickname,
+            avatarUrl: createdPin.writerProfileImage ?? undefined,
+            albumImageUrl: preparedTrack.albumImageUrl,
+            introduction: normalizedIntroduction,
+            youtubeVideoId: createdPin.youtubeVideoId,
+            clipStartMs: createdPin.clipStartMs,
+          };
+          selectMapPlace({
+            id: `place:${createdPin.placeId}`,
+            placeId: createdPin.placeId,
+            placeName: place.placeName,
+            category: '',
+            address: place.address,
+            distance: place.distanceMeters,
+            creatorName: createdPin.writerNickname,
+            isMine: true,
+            allowTrackDetailAccess: true,
+            selectionLocation: {
+              latitude: currentLocation.lat,
+              longitude: currentLocation.lng,
+            },
+            queryLocation: {
+              latitude: currentLocation.lat,
+              longitude: currentLocation.lng,
+            },
+            coordinates: place.coordinates,
+            focusedFeedPin: focusedPin,
+            mapFocusPin: focusedPin,
+          });
           resetPinCreation();
           navigate('/app', { replace: true });
+          toast.success('PIN 등록이 완료되었어요!');
         },
         onError: (error) => {
           toast.error(
@@ -627,7 +663,11 @@ export default function SongDetailPage() {
           <section className="flex flex-col gap-3 px-[15px]">
             <div className="flex items-center gap-2">
               <h3 className="body-15-r text-grayscale-300">소개</h3>
-              {introduction.length >= INTRO_MAX_LENGTH ? (
+              {introductionError ? (
+                <p id="song-intro-error" role="alert" className="etc-13-r text-red">
+                  {introductionError}
+                </p>
+              ) : introduction.length >= INTRO_MAX_LENGTH ? (
                 <p id="song-intro-limit" aria-live="polite" className="etc-13-r text-red">
                   소개는 최대 100자까지 가능
                 </p>
@@ -640,10 +680,19 @@ export default function SongDetailPage() {
               <textarea
                 id="song-intro"
                 value={introduction}
-                onChange={(event) => setIntroduction(event.target.value.slice(0, INTRO_MAX_LENGTH))}
+                onChange={(event) => {
+                  const nextIntroduction = event.target.value.slice(0, INTRO_MAX_LENGTH);
+                  setIntroduction(nextIntroduction);
+                  if (nextIntroduction.trim()) setIntroductionError(null);
+                }}
                 placeholder="이 음악을 들었을 때 나의 기분은?"
+                aria-invalid={Boolean(introductionError)}
                 aria-describedby={
-                  introduction.length >= INTRO_MAX_LENGTH ? 'song-intro-limit' : undefined
+                  introductionError
+                    ? 'song-intro-error'
+                    : introduction.length >= INTRO_MAX_LENGTH
+                      ? 'song-intro-limit'
+                      : undefined
                 }
                 className="body-17-r min-h-[156px] w-full resize-none text-grayscale-300 outline-none placeholder:text-grayscale-1100"
               />

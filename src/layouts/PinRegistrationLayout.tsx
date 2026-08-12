@@ -4,7 +4,6 @@ import { Outlet, useLocation, useMatch, useOutletContext } from 'react-router-do
 import { MapViewer, type MapViewerHandle } from '@/features/map/components/MapViewer';
 import { useMapPins } from '@/features/map/queries/useMapPins';
 import { DEFAULT_CENTER, type MapCoordinate, type MapViewport } from '@/features/map/types';
-import { calculateDistanceMeters } from '@/features/map/utils/calculateDistanceMeters';
 import { loadGoogleMapsScript } from '@/features/map/utils';
 import type { MapOutletContext } from '@/layouts/MapLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
@@ -19,7 +18,6 @@ export type PinRegistrationOutletContext = {
   zoom: number;
   radiusElementRef: RefObject<HTMLDivElement | null>;
   locationError: string | null;
-  isOutsideAllowedRadius: boolean;
   setMapInteractionDisabled: (disabled: boolean) => void;
 };
 
@@ -62,11 +60,6 @@ export default function PinRegistrationLayout() {
     currentLocation ??
     mainMapCurrentLocation ??
     DEFAULT_CENTER;
-  const isOutsideAllowedRadius =
-    currentLocation !== null &&
-    candidateCoordinate !== null &&
-    calculateDistanceMeters(currentLocation, candidateCoordinate) > PIN_REGISTRATION_RADIUS_METERS;
-
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     if (!apiKey) return;
@@ -107,7 +100,8 @@ export default function PinRegistrationLayout() {
   };
 
   const handleCenterChanged = (coordinate: MapCoordinate) => {
-    if (isSelectionStage && currentLocation) setCandidateCoordinate(coordinate);
+    if (!isSelectionStage || !currentLocation) return;
+    setCandidateCoordinate(coordinate);
   };
 
   const outletContext = {
@@ -116,7 +110,6 @@ export default function PinRegistrationLayout() {
     zoom,
     radiusElementRef,
     locationError,
-    isOutsideAllowedRadius,
     setMapInteractionDisabled,
   } satisfies PinRegistrationOutletContext;
 
@@ -133,6 +126,7 @@ export default function PinRegistrationLayout() {
         placeResults={[]}
         selectedPlaceId={null}
         mapPins={mapPinsQuery.data?.pins ?? []}
+        areMapPinsDimmed
         selectedMapPinId={null}
         projectionCoordinate={isSelectionStage ? currentLocation : null}
         projectionRadiusMeters={PIN_REGISTRATION_RADIUS_METERS}

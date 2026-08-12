@@ -27,6 +27,7 @@ type UseMapPinOverlaysParams = {
   onOpenProfile?: (pin: MapPin) => void;
   /** 북마크 강조 모드 on/off. 켜져 있으면 hasBookmarkedPlace인 핀 색이 바뀐다. */
   isBookmarkHighlightOn?: boolean;
+  areMapPinsDimmed?: boolean;
 };
 
 /** 지도 위 핀(OverlayView)을 렌더링하고, 선택 상태에 따라 강조한다. */
@@ -42,6 +43,7 @@ export function useMapPinOverlays({
   onPlayPin,
   onOpenProfile,
   isBookmarkHighlightOn = false,
+  areMapPinsDimmed = false,
 }: UseMapPinOverlaysParams) {
   const mapPinOverlaysRef = useRef<Map<string, MapPinOverlayEntry>>(new Map());
   const mapPinsByIdRef = useRef<Map<string, MapPin>>(new Map());
@@ -133,6 +135,7 @@ export function useMapPinOverlays({
           pin.id === selectedMapPinIdRef.current && isAtPinFocusZoomRef.current,
           isBookmarkHighlightOnRef.current && pin.hasBookmarkedPlace,
           pin.writerId != null ? () => onOpenProfileRef.current?.(pin) : undefined,
+          areMapPinsDimmed,
         ),
       });
       entry.overlay.setMap(map);
@@ -141,7 +144,7 @@ export function useMapPinOverlays({
 
     previousEntries.forEach(disposeMapPinOverlay);
     mapPinOverlaysRef.current = nextEntries;
-  }, [isLoaded, mapPins, mapInstanceRef]);
+  }, [areMapPinsDimmed, isLoaded, mapPins, mapInstanceRef]);
 
   useEffect(
     () => () => {
@@ -168,9 +171,17 @@ export function useMapPinOverlays({
           isSelected && isAtPinFocusZoom,
           isBookmarkHighlightOn && pin.hasBookmarkedPlace,
           pin.writerId != null ? () => onOpenProfileRef.current?.(pin) : undefined,
+          areMapPinsDimmed,
         ),
       );
       entry.overlay.setZIndex(isSelected ? 200 : 100);
     });
-  }, [selectedMapPinId, playingMapPinId, mapPins, isAtPinFocusZoom, isBookmarkHighlightOn]);
+  }, [
+    selectedMapPinId,
+    playingMapPinId,
+    mapPins,
+    isAtPinFocusZoom,
+    isBookmarkHighlightOn,
+    areMapPinsDimmed,
+  ]);
 }

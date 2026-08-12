@@ -16,6 +16,8 @@ type MapViewerProps = {
   placeResults: MapPlace[];
   selectedPlaceId: string | null;
   mapPins: MapPin[];
+  /** 등록 위치 선택 등에서 기존 핀을 비활성 시각 상태로 표시한다. */
+  areMapPinsDimmed?: boolean;
   mapClusters?: PinCluster[];
   selectedMapPinId: string | null;
   projectionCoordinate?: MapCoordinate | null;
@@ -62,6 +64,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     placeResults,
     selectedPlaceId,
     mapPins,
+    areMapPinsDimmed = false,
     mapClusters = [],
     selectedMapPinId,
     projectionCoordinate,
@@ -133,6 +136,7 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     onPlayPin,
     onOpenProfile,
     isBookmarkHighlightOn,
+    areMapPinsDimmed,
   });
   useClusterOverlays({
     mapInstanceRef,
