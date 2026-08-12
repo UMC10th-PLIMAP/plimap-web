@@ -1,5 +1,4 @@
 import { MapPinMarker } from '@/features/map/components/MapPinMarker';
-import PlimapIcon from '@/assets/icons/plimap.svg?react';
 import candidatePinUrl from '@/assets/icons/pin-candidate.svg?url';
 
 type PinCandidateMarkerProps = {
@@ -8,14 +7,7 @@ type PinCandidateMarkerProps = {
 
 export function PinCandidateMarker({ variant = 'candidate' }: PinCandidateMarkerProps) {
   if (variant === 'confirmed') {
-    return (
-      <div className="relative h-[57px] w-[51px]" aria-hidden>
-        <MapPinMarker />
-        <div className="absolute left-[49.7%] top-[36%] flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-grayscale-600 text-grayscale-300">
-          <PlimapIcon className="size-4" />
-        </div>
-      </div>
-    );
+    return <MapPinMarker />;
   }
 
   return (

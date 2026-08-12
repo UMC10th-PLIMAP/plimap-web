@@ -96,9 +96,11 @@ export default function PinRegistrationLayout() {
     setMapLoadAttempt((attempt) => attempt + 1);
   };
 
-  const handleCurrentLocationChanged = (coordinate: MapCoordinate) => {
-    setLocationError(null);
+  const handleCurrentLocationChanged = (coordinate: MapCoordinate | null) => {
     setCurrentLocation(coordinate);
+    if (!coordinate) return;
+
+    setLocationError(null);
     if (isSelectionStage && !candidateCoordinate) setCandidateCoordinate(coordinate);
   };
 

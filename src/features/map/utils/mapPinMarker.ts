@@ -98,6 +98,7 @@ export const createMapPinOverlay = ({
       const container = document.createElement('div');
       container.style.position = 'absolute';
       container.style.zIndex = String(this.currentZIndex);
+      google.maps.OverlayView.preventMapHitsFrom(container);
 
       anchor.addEventListener('click', this.handleClick);
       container.appendChild(anchor);

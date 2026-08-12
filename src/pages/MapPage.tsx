@@ -48,7 +48,7 @@ type MapPageProps = {
   isUiActive: boolean;
   savedViewport: MapViewport | null;
   onSaveViewport: (viewport: MapViewport) => void;
-  onCurrentLocationChange: (coordinate: MapCoordinate) => void;
+  onCurrentLocationChange: (coordinate: MapCoordinate | null) => void;
 };
 
 function toPlaceInfo(place: PinSearchPlace): PlaceInfo {
@@ -419,9 +419,9 @@ const MapPage: React.FC<MapPageProps> = ({
     setZoom(newZoom);
   };
 
-  const handleCurrentLocationChanged = (coordinate: MapCoordinate) => {
+  const handleCurrentLocationChanged = (coordinate: MapCoordinate | null) => {
     setCurrentLocation(coordinate);
-    setCurrentLocationError(null);
+    if (coordinate) setCurrentLocationError(null);
     onCurrentLocationChange(coordinate);
   };
 

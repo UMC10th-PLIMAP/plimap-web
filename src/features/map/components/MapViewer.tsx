@@ -26,7 +26,7 @@ type MapViewerProps = {
   centerOnFirstLocation?: boolean;
   onZoomChanged?: (newZoom: number) => void;
   onCenterChanged?: (center: MapCoordinate) => void;
-  onCurrentLocationChanged?: (coordinate: MapCoordinate) => void;
+  onCurrentLocationChanged?: (coordinate: MapCoordinate | null) => void;
   onCurrentLocationError?: (message: string) => void;
   onViewportChanged?: (viewport: MapViewport) => void;
   onSelectPlace?: (placeId: string) => void;
