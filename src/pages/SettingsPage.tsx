@@ -48,11 +48,14 @@ export default function SettingsPage() {
     <div className="flex min-h-screen flex-col pt-[env(safe-area-inset-top)]">
       <TopBar title="설정" titleWeight="medium" onBack={() => navigate(-1)} />
 
-      <div className="flex flex-col gap-5 px-4 pt-[35px]">
+      <div className="flex flex-col gap-5 px-4">
         <div className="flex flex-col gap-2">
           <p className="etc-13-r text-grayscale-400">고객 지원</p>
           <div className="flex flex-col gap-0.5">
-            <SettingsRow label="서비스 이용가이드" disabled />
+            <SettingsRow
+              label="서비스 이용가이드"
+              onClick={() => navigate('/app/settings/guide')}
+            />
           </div>
         </div>
 

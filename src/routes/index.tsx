@@ -33,6 +33,7 @@ import RecommendationPinCardPreviewPage from '@/pages/RecommendationPinCardPrevi
 import SettingsPage from '@/pages/SettingsPage';
 import AccountManagementPage from '@/pages/AccountManagementPage';
 import TermsDetailViewPage from '@/pages/TermsDetailViewPage';
+import ServiceGuidePage from '@/pages/ServiceGuidePage';
 import RecommendationContentCarouselPreviewPage from '@/pages/RecommendationContentCarouselPreviewPage';
 import HomePage from '@/pages/HomePage';
 import FriendSearchPage from '@/pages/FriendSearchPage';
@@ -209,6 +210,10 @@ export const router = createBrowserRouter([
           {
             path: 'settings',
             element: <SettingsPage />,
+          },
+          {
+            path: 'settings/guide',
+            element: <ServiceGuidePage />,
           },
           {
             path: 'settings/account',
