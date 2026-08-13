@@ -236,6 +236,25 @@ function BottomSheet({
     [trackingElementRef],
   );
 
+  // vaul이 Radix Dialog에 자체 modal prop을 전달하지 않아 Radix가 내부적으로 modal=true로
+  // 동작한다 - 그 결과 DismissableLayer가 document.body에 pointer-events:none을 건다.
+  // vaul이 마운트 시 한 번 requestAnimationFrame으로 되돌리긴 하지만 타이밍이 어긋나면
+  // 안 풀릴 수 있어, 이 시트가 열려있는 동안은 body가 막히면 즉시 되돌린다. 이 시트는
+  // 항상 modeless(modal={false})로만 쓰므로 body를 막아야 할 이유가 없다.
+  React.useEffect(() => {
+    if (!vaulOpen) return;
+    const body = document.body;
+    const restorePointerEvents = () => {
+      if (body.style.pointerEvents === 'none') {
+        body.style.pointerEvents = '';
+      }
+    };
+    restorePointerEvents();
+    const observer = new MutationObserver(restorePointerEvents);
+    observer.observe(body, { attributes: true, attributeFilter: ['style'] });
+    return () => observer.disconnect();
+  }, [vaulOpen]);
+
   const isFullPage = snapPoints.length > 1 && activeSnap === lastSnap;
 
   const collapse = React.useCallback(() => {
