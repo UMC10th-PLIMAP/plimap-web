@@ -21,7 +21,7 @@ type YouTubePlayerConstructor = new (
     events?: {
       onReady?: (event: { target: YouTubePlayer }) => void;
       onStateChange?: (event: { data: number; target: YouTubePlayer }) => void;
-      onError?: () => void;
+      onError?: (event: { data: number; target: YouTubePlayer }) => void;
     };
   },
 ) => YouTubePlayer;
@@ -47,10 +47,16 @@ type ClipTarget = {
   videoId: string;
   clipStartMs: number;
   clipDurationMs?: number;
+  itunesTrackId?: number;
 };
 
 type UseYouTubeClipPlayerOptions = {
   enabled?: boolean;
+  onPlaybackFailure?: (payload: {
+    itunesTrackId: number;
+    youtubeVideoId: string;
+    errorCode: number;
+  }) => void;
 };
 
 let youtubeApiPromise: Promise<YouTubeNamespace> | null = null;
@@ -106,14 +112,19 @@ export function preloadYouTubeIframeApi() {
 }
 
 /** 지도 PIN 말풍선용 YouTube 구간 재생. 화면 안 초소형 플레이어로 오디오만 재생한다. */
-export function useYouTubeClipPlayer({ enabled = true }: UseYouTubeClipPlayerOptions = {}) {
+export function useYouTubeClipPlayer({
+  enabled = true,
+  onPlaybackFailure,
+}: UseYouTubeClipPlayerOptions = {}) {
   const enabledRef = useRef(enabled);
+  const onPlaybackFailureRef = useRef(onPlaybackFailure);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const playerReadyRef = useRef(false);
   const ytRef = useRef<YouTubeNamespace | null>(null);
   const stopTimerRef = useRef<number | null>(null);
   const activeKeyRef = useRef<string | null>(null);
+  const activeClipRef = useRef<ClipTarget | null>(null);
   const activeClipDurationRef = useRef(DEFAULT_CLIP_DURATION_MS);
   const playerReadyPromiseRef = useRef<Promise<YouTubePlayer> | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
@@ -121,6 +132,10 @@ export function useYouTubeClipPlayer({ enabled = true }: UseYouTubeClipPlayerOpt
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
+
+  useEffect(() => {
+    onPlaybackFailureRef.current = onPlaybackFailure;
+  }, [onPlaybackFailure]);
 
   const clearStopTimer = useCallback(() => {
     if (stopTimerRef.current == null) return;
@@ -164,6 +179,7 @@ export function useYouTubeClipPlayer({ enabled = true }: UseYouTubeClipPlayerOpt
   const stop = useCallback(() => {
     clearStopTimer();
     activeKeyRef.current = null;
+    activeClipRef.current = null;
     setPlayingKey(null);
     playerRef.current?.pauseVideo();
   }, [clearStopTimer]);
@@ -239,7 +255,15 @@ export function useYouTubeClipPlayer({ enabled = true }: UseYouTubeClipPlayerOpt
                   stop();
                 }
               },
-              onError: () => {
+              onError: (event) => {
+                const clip = activeClipRef.current;
+                if (clip?.videoId && clip.itunesTrackId != null) {
+                  onPlaybackFailureRef.current?.({
+                    itunesTrackId: clip.itunesTrackId,
+                    youtubeVideoId: clip.videoId,
+                    errorCode: event.data,
+                  });
+                }
                 if (activeKeyRef.current) stop();
               },
             },
@@ -261,6 +285,7 @@ export function useYouTubeClipPlayer({ enabled = true }: UseYouTubeClipPlayerOpt
 
   const playClipOnPlayer = useCallback((player: YouTubePlayer, target: ClipTarget) => {
     const startSec = Math.max(0, target.clipStartMs / 1000);
+    activeClipRef.current = target;
     activeClipDurationRef.current = target.clipDurationMs ?? DEFAULT_CLIP_DURATION_MS;
     player.loadVideoById({
       videoId: target.videoId,
@@ -313,6 +338,7 @@ export function useYouTubeClipPlayer({ enabled = true }: UseYouTubeClipPlayerOpt
     if (!enabled) {
       clearStopTimer();
       activeKeyRef.current = null;
+      activeClipRef.current = null;
       destroyPlayer();
       hostRef.current?.remove();
       hostRef.current = null;
