@@ -179,10 +179,15 @@ const MapPage: React.FC<MapPageProps> = ({
   // CTA(focusedFeedPin)와 말풍선(mapFocusPin)을 분리해, 찜한 노래에서는 내 등록 곡이 없어도 인기 PIN 말풍선은 유지한다.
   const overlayFocusPin = selectedMapPlace?.mapFocusPin ?? selectedMapPlace?.focusedFeedPin;
   const isNewUnregisteredPlace = Boolean(
-    selectedMapPlace && !overlayFocusPin && !selectedMapPlace.creatorName,
+    selectedMapPlace &&
+    !overlayFocusPin &&
+    !selectedMapPlace.creatorName &&
+    !selectedMapPlace.hasPin,
   );
   const focusedMapPinId =
-    selectedMapPlace && (overlayFocusPin || isNewUnregisteredPlace) ? selectedMapPlace.id : null;
+    selectedMapPlace && (overlayFocusPin || isNewUnregisteredPlace || selectedMapPlace.hasPin)
+      ? selectedMapPlace.id
+      : null;
   const displayMapPins = useMemo(() => {
     let pins = mapPins;
 

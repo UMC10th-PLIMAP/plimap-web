@@ -248,6 +248,7 @@ export default function HomePage() {
         address: placeDetail.roadAddress || placeDetail.address,
         distance: placeDetail.distanceMeters,
         creatorName: place.creatorName,
+        hasPin: placeDetail.hasPin,
         bookmarkedByMe: placeDetail.bookmarkedByMe,
         isMine: placeDetail.pinnedByMe,
         selectionLocation: userLocation,
