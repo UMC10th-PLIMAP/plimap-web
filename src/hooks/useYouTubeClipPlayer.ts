@@ -165,7 +165,9 @@ export function useYouTubeClipPlayer({ enabled = true }: UseYouTubeClipPlayerOpt
     clearStopTimer();
     activeKeyRef.current = null;
     setPlayingKey(null);
-    playerRef.current?.pauseVideo();
+    if (playerReadyRef.current) {
+      playerRef.current?.pauseVideo();
+    }
   }, [clearStopTimer]);
 
   const scheduleClipStop = useCallback(
