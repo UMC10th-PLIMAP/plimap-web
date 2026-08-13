@@ -19,14 +19,14 @@ type OpenPinPlaceOptions = {
   showMyRegisteredTrackCta?: boolean;
   /** 친구 피드 장소 접근 토큰 발급 (팔로잉한 친구 핀 진입 시) */
   requestFeedPlaceAccess?: boolean;
-  /** 지도 상단을 검색창 대신 뒤로가기로 표시 (내 PLIMAP 등) */
+  /** 지도 상단을 검색창 대신 뒤로가기로 표시 (핀 카드 진입 기본값: true) */
   showMapBackButton?: boolean;
 };
 
 type OpenPlaceTrackOptions = {
   placeTrackId: number | string;
   fallbackPlaceName?: string;
-  /** 지도 상단을 검색창 대신 뒤로가기로 표시 (내 PLIMAP 등) */
+  /** 지도 상단을 검색창 대신 뒤로가기로 표시 (핀 카드 진입 기본값: true) */
   showMapBackButton?: boolean;
 };
 
@@ -129,7 +129,7 @@ export function useOpenPinPlaceOnMap({
       isMine = false,
       showMyRegisteredTrackCta = false,
       requestFeedPlaceAccess = false,
-      showMapBackButton = false,
+      showMapBackButton = true,
     }: OpenPinPlaceOptions) => {
       if (isNavigating) return;
 
@@ -231,7 +231,7 @@ export function useOpenPinPlaceOnMap({
     async ({
       placeTrackId,
       fallbackPlaceName = '',
-      showMapBackButton = false,
+      showMapBackButton = true,
     }: OpenPlaceTrackOptions): Promise<OpenPlaceTrackResult> => {
       if (isNavigating) {
         return { ok: false, message: '이미 지도를 여는 중이에요. 잠시만 기다려 주세요.' };
