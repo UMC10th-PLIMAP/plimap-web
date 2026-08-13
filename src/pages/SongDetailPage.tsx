@@ -24,7 +24,8 @@ import {
 } from '@/features/pin/data/songPreview';
 import { useCreatePin } from '@/features/pin/queries/useCreatePin';
 import { useGetPlaybackPreparations } from '@/features/pin/queries/useGetPlaybackPreparations';
-import { preloadYouTubeIframeApi, useYouTubeClipPlayer } from '@/hooks/useYouTubeClipPlayer';
+import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
+import { usePostPlaybackFailures } from '@/features/pin/queries/usePostPlaybackFailures';
 import { cn } from '@/lib/utils';
 import type { AppOutletContext } from '@/layouts/RootLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
@@ -291,6 +292,7 @@ type SongPreviewSectionProps = {
   /** playback-preparations의 durationMs (ms) — 타임라인·풀 재생 길이 */
   durationMs: number;
   youtubeVideoId?: string | null;
+  itunesTrackId?: number | null;
   onClipStartChange: (clipStartMs: number) => void;
 };
 
@@ -298,6 +300,7 @@ function SongPreviewSection({
   waveformPeaks,
   durationMs,
   youtubeVideoId,
+  itunesTrackId,
   onClipStartChange,
 }: SongPreviewSectionProps) {
   const timelineDurationSec = Math.max(durationMs / 1_000, 1);
@@ -306,8 +309,11 @@ function SongPreviewSection({
   const [trimEndSec, setTrimEndSec] = useState(defaultTrim.end);
   const [hasSelectedTrim, setHasSelectedTrim] = useState(false);
   const trimRangeRef = useRef({ start: defaultTrim.start, end: defaultTrim.end });
+  const { mutate: reportPlaybackFailure } = usePostPlaybackFailures();
 
-  const { playingKey, toggle, stop } = useYouTubeClipPlayer();
+  const { playingKey, toggle, stop } = useYouTubeClipPlayer({
+    onPlaybackFailure: reportPlaybackFailure,
+  });
   const isPlaying = playingKey === SONG_PREVIEW_PLAY_KEY;
   const canPlay = Boolean(youtubeVideoId);
 
@@ -332,6 +338,7 @@ function SongPreviewSection({
       videoId: youtubeVideoId,
       clipStartMs: Math.round(startSec * 1_000),
       clipDurationMs: Math.max(1, Math.round((endSec - startSec) * 1_000)),
+      itunesTrackId: itunesTrackId ?? undefined,
     });
   };
 
@@ -363,6 +370,7 @@ function SongPreviewSection({
       videoId: youtubeVideoId,
       clipStartMs: 0,
       clipDurationMs: durationMs,
+      itunesTrackId: itunesTrackId ?? undefined,
     });
   };
 
@@ -650,6 +658,7 @@ export default function SongDetailPage() {
                   waveformPeaks={waveformPeaks}
                   durationMs={durationMs}
                   youtubeVideoId={preparedTrack?.youtubeVideoId}
+                  itunesTrackId={preparedTrack?.itunesTrackId ?? itunesTrackId}
                   onClipStartChange={setClipStartMs}
                 />
               </div>

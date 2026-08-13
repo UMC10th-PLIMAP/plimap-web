@@ -104,6 +104,12 @@ export type GetPlaybackPreparationsResponse = {
   durationMs: number;
 };
 
+export type PostPlaybackFailuresRequest = {
+  itunesTrackId: number;
+  youtubeVideoId: string;
+  errorCode: number;
+};
+
 export type GetPlaceTrackPinsResponse = {
   data: {
     memberId: number;
