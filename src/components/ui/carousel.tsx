@@ -34,6 +34,7 @@ type CarouselProps = ComponentProps<'div'> & {
   onSelectedIndexChange?: (index: number) => void;
   snapAlignment?: CarouselSnapAlignment;
   containScroll?: boolean;
+  dragFree?: boolean;
 };
 
 const CarouselContext = createContext<CarouselContextValue | null>(null);
@@ -70,6 +71,7 @@ function Carousel({
   onSelectedIndexChange,
   snapAlignment = 'center',
   containScroll = true,
+  dragFree = false,
   className,
   children,
   onKeyDownCapture,
@@ -81,6 +83,7 @@ function Carousel({
     align: snapAlignment,
     containScroll: containScroll ? 'trimSnaps' : false,
     startIndex: initialSelectedIndex,
+    dragFree,
   });
   const prefersReducedMotion = usePrefersReducedMotion();
   const lastSyncedApiRef = useRef<EmblaApi>(undefined);
