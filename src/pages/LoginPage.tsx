@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import GoogleIcon from '@/assets/icons/google.svg?react';
@@ -33,15 +33,6 @@ const OAUTH_LOGIN_URL: Record<OAuthProvider, string> = {
 // 로그인 화면 진입 시 항상 스플래시 → 튜토리얼 → 로그인 버튼 순서로 노출한다.
 type LoginStep = 'splash' | 'tutorial' | 'credentials';
 
-function OAuthSpinner() {
-  return (
-    <span
-      className="size-6 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
-      aria-hidden
-    />
-  );
-}
-
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,19 +41,8 @@ export default function LoginPage() {
   const [step, setStep] = useState<LoginStep>(() =>
     locationState?.oauthError || accountSanction ? 'credentials' : 'splash',
   );
-  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [isSanctionModalOpen, setIsSanctionModalOpen] = useState(accountSanction !== null);
   const hasOAuthError = locationState?.oauthError === true;
-
-  // 뒤로가기로 돌아왔을 때 로딩 스피너 도는 현상 방지
-  useEffect(() => {
-    const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) setLoadingProvider(null);
-    };
-
-    window.addEventListener('pageshow', handlePageShow);
-    return () => window.removeEventListener('pageshow', handlePageShow);
-  }, []);
 
   if (hasOAuthError) {
     return (
@@ -79,7 +59,6 @@ export default function LoginPage() {
   };
 
   const handleOAuthClick = (provider: OAuthProvider) => () => {
-    setLoadingProvider(provider);
     window.location.href = OAUTH_LOGIN_URL[provider];
   };
 
@@ -104,31 +83,19 @@ export default function LoginPage() {
         <Button
           variant="kakao"
           size="social"
-          disabled={loadingProvider !== null}
-          aria-busy={loadingProvider === 'kakao'}
           onClick={handleOAuthClick('kakao')}
           className="w-full gap-3"
         >
-          {loadingProvider === 'kakao' ? (
-            <OAuthSpinner />
-          ) : (
-            <KakaoIcon className="size-6 shrink-0" />
-          )}
+          <KakaoIcon className="size-6 shrink-0" />
           카카오로 시작하기
         </Button>
         <Button
           variant="google"
           size="social"
-          disabled={loadingProvider !== null}
-          aria-busy={loadingProvider === 'google'}
           onClick={handleOAuthClick('google')}
           className="w-full gap-3"
         >
-          {loadingProvider === 'google' ? (
-            <OAuthSpinner />
-          ) : (
-            <GoogleIcon className="size-6 shrink-0" />
-          )}
+          <GoogleIcon className="size-6 shrink-0" />
           Google로 시작하기
         </Button>
       </div>
