@@ -125,6 +125,8 @@ export function useYouTubeClipPlayer({
   const stopTimerRef = useRef<number | null>(null);
   const activeKeyRef = useRef<string | null>(null);
   const activeClipRef = useRef<ClipTarget | null>(null);
+  const playbackRequestIdRef = useRef(0);
+  const activePlaybackRequestIdRef = useRef<number | null>(null);
   const activeClipDurationRef = useRef(DEFAULT_CLIP_DURATION_MS);
   const playerReadyPromiseRef = useRef<Promise<YouTubePlayer> | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
@@ -180,6 +182,7 @@ export function useYouTubeClipPlayer({
     clearStopTimer();
     activeKeyRef.current = null;
     activeClipRef.current = null;
+    activePlaybackRequestIdRef.current = null;
     setPlayingKey(null);
     playerRef.current?.pauseVideo();
   }, [clearStopTimer]);
@@ -256,8 +259,10 @@ export function useYouTubeClipPlayer({
                 }
               },
               onError: (event) => {
+                const requestId = activePlaybackRequestIdRef.current;
                 const clip = activeClipRef.current;
-                if (clip?.videoId && clip.itunesTrackId != null) {
+                // loadVideoById는 비동기라 이전 요청의 onError가 새 재생 시작 뒤에 올 수 있다.
+                if (requestId != null && clip?.videoId && clip.itunesTrackId != null) {
                   onPlaybackFailureRef.current?.({
                     itunesTrackId: clip.itunesTrackId,
                     youtubeVideoId: clip.videoId,
@@ -285,6 +290,9 @@ export function useYouTubeClipPlayer({
 
   const playClipOnPlayer = useCallback((player: YouTubePlayer, target: ClipTarget) => {
     const startSec = Math.max(0, target.clipStartMs / 1000);
+    const requestId = playbackRequestIdRef.current + 1;
+    playbackRequestIdRef.current = requestId;
+    activePlaybackRequestIdRef.current = requestId;
     activeClipRef.current = target;
     activeClipDurationRef.current = target.clipDurationMs ?? DEFAULT_CLIP_DURATION_MS;
     player.loadVideoById({
@@ -339,6 +347,7 @@ export function useYouTubeClipPlayer({
       clearStopTimer();
       activeKeyRef.current = null;
       activeClipRef.current = null;
+      activePlaybackRequestIdRef.current = null;
       destroyPlayer();
       hostRef.current?.remove();
       hostRef.current = null;
@@ -353,6 +362,9 @@ export function useYouTubeClipPlayer({
   useEffect(() => {
     return () => {
       clearStopTimer();
+      activeKeyRef.current = null;
+      activeClipRef.current = null;
+      activePlaybackRequestIdRef.current = null;
       destroyPlayer();
       hostRef.current?.remove();
       hostRef.current = null;
