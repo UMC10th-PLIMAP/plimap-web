@@ -10,6 +10,7 @@ import {
   useInfiniteNotifications,
   useNotificationSubscription,
 } from '@/features/notification/queries/useNotifications';
+import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 import { useToast } from '@/hooks/useToast';
 
@@ -19,6 +20,7 @@ const FOLLOW_BACK_FAILED_MESSAGE = '맞팔로우하지 못했어요. 다시 시�
 export default function MyNotificationsPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { openPinPlaceOnMap } = useOpenPinPlaceOnMap();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [pendingMemberIds, setPendingMemberIds] = useState<Set<number>>(new Set());
   const {
@@ -120,7 +122,14 @@ export default function MyNotificationsPage() {
               isFollowPending={pendingMemberIds.has(notification.actorId)}
               onFollowBack={(actorId) => void handleFollowBack(actorId)}
               onOpenProfile={(actorId) => navigate(`/app/users/${actorId}`)}
-              onOpenPin={(pinId) => navigate(`/app/pins/${pinId}`)}
+              onOpenPin={(pinId) => {
+                void openPinPlaceOnMap({
+                  pinId,
+                  isMine: notification.type === 'PIN_LIKED',
+                  requestFeedPlaceAccess:
+                    notification.type === 'PIN_CREATED' && notification.isFollowing,
+                });
+              }}
             />
           ))}
 

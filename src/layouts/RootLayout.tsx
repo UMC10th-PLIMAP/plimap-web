@@ -3,6 +3,8 @@ import { Outlet, useNavigate } from 'react-router-dom';
 
 import { SESSION_EXPIRED_EVENT } from '@/api/client';
 import { FullScreenError } from '@/components/ui/FullScreenError';
+import { AccountSanctionModal } from '@/features/auth/components/AccountSanctionModal';
+import { useAccountSanctionListener } from '@/features/auth/hooks/useAccountSanctionListener';
 import type { PinSearchPlace } from '@/features/pin/types';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
@@ -17,6 +19,7 @@ const RootLayout = () => {
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
   const [isSessionExpired, setIsSessionExpired] = useState(false);
+  const { sanction: accountSanction, clearSanction } = useAccountSanctionListener();
   const [selectedMapPlace, setSelectedMapPlace] = useState<PinSearchPlace | null>(null);
   const [selectedMapPinId, setSelectedMapPinId] = useState<string | null>(null);
   // 장소 검색 결과 시트와 핀 탭 시트는 동시에 뜨면 안 되므로 상호 배타적으로 둔다.
@@ -48,6 +51,12 @@ const RootLayout = () => {
     navigate('/app/login', { replace: true });
   };
 
+  // 세션 도중 정지/탈퇴가 확인된 경우, 안내를 확인시킨 뒤 로그인 화면으로 내보낸다.
+  const handleAccountSanctionModalClose = () => {
+    clearSanction();
+    navigate('/app/login', { replace: true });
+  };
+
   return (
     <div className="mx-auto flex h-[var(--app-vh,100dvh)] max-w-[402px] flex-col overflow-y-auto bg-pli-black-100 scrollbar-hide">
       {!isOnline ? (
@@ -57,6 +66,11 @@ const RootLayout = () => {
       ) : (
         <Outlet context={outletContext} />
       )}
+      <AccountSanctionModal
+        open={accountSanction !== null}
+        sanction={accountSanction}
+        onClose={handleAccountSanctionModalClose}
+      />
     </div>
   );
 };

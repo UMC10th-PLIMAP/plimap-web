@@ -9,6 +9,7 @@ import NextIcon from '@/assets/icons/next.svg?react';
 import SearchIcon from '@/assets/icons/search.svg?react';
 import { HomeHotPlaceCarouselSkeleton, HomeSkeleton } from '@/components/skeletons/HomeSkeleton';
 import { useToast } from '@/hooks/useToast';
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { Chip } from '@/components/ui/chip';
 import { HomeBrandLogo } from '@/features/home/components/HomeBrandLogo';
 import { HomeCarouselState } from '@/features/home/components/HomeCarouselState';
@@ -248,6 +249,7 @@ export default function HomePage() {
         address: placeDetail.roadAddress || placeDetail.address,
         distance: placeDetail.distanceMeters,
         creatorName: place.creatorName,
+        hasPin: placeDetail.hasPin,
         bookmarkedByMe: placeDetail.bookmarkedByMe,
         isMine: placeDetail.pinnedByMe,
         selectionLocation: userLocation,
@@ -352,33 +354,36 @@ export default function HomePage() {
               )}
             </div>
           ) : (
-            <div className="flex gap-3 overflow-x-auto px-4 pt-3 pb-10 scrollbar-hide">
-              {friendPins.map((pin) => (
-                <RecommendationPinCard
-                  key={pin.pinId}
-                  aria-label={`${pin.placeName} 지도에서 PIN 보기`}
-                  profileAriaLabel={`${pin.writerNickname} 프로필 보기`}
-                  onProfileClick={() => void handleFriendProfileClick(pin)}
-                  onClick={() =>
-                    void openPinPlaceOnMap({
-                      pinId: pin.pinId,
-                      fallbackPlaceName: pin.placeName,
-                      showMyRegisteredTrackCta: true,
-                      requestFeedPlaceAccess: true,
-                    })
-                  }
-                  pin={{
-                    id: String(pin.pinId),
-                    place: { name: pin.placeName },
-                    creator: {
-                      name: pin.writerNickname,
-                      avatarUrl: pin.writerProfileImage,
-                    },
-                    imageUrl: pin.albumImageUrl,
-                  }}
-                />
-              ))}
-            </div>
+            <Carousel dragFree snapAlignment="start">
+              <CarouselContent className="gap-3 px-4 pt-3 pb-10 touch-pan-y">
+                {friendPins.map((pin) => (
+                  <CarouselItem key={pin.pinId} className="w-auto basis-auto">
+                    <RecommendationPinCard
+                      aria-label={`${pin.placeName} 지도에서 PIN 보기`}
+                      profileAriaLabel={`${pin.writerNickname} 프로필 보기`}
+                      onProfileClick={() => void handleFriendProfileClick(pin)}
+                      onClick={() =>
+                        void openPinPlaceOnMap({
+                          pinId: pin.pinId,
+                          fallbackPlaceName: pin.placeName,
+                          showMyRegisteredTrackCta: true,
+                          requestFeedPlaceAccess: true,
+                        })
+                      }
+                      pin={{
+                        id: String(pin.pinId),
+                        place: { name: pin.placeName },
+                        creator: {
+                          name: pin.writerNickname,
+                          avatarUrl: pin.writerProfileImage,
+                        },
+                        imageUrl: pin.albumImageUrl,
+                      }}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
           )}
         </section>
 
@@ -493,7 +498,7 @@ export default function HomePage() {
           ) : savedPlaces.length === 0 ? (
             <HomeCarouselState
               className="h-[132px] bg-pli-black-85"
-              description="내가 좋아하는 장소를 저장하면 여기에 나타나요."
+              description="내가 좋아하는 장소가 500m 이내에 있으면 나타나요."
               actionLabel="장소 저장하러 가기"
               actionTo="/app"
             />

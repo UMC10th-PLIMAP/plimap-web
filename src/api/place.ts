@@ -36,6 +36,7 @@ type GetPlaceDetailRequest = {
 const toPinSearchPlace = (item: PlaceSearchItem): PinSearchPlace => ({
   id: `${item.resultType}:${item.providerPlaceId ?? `${item.latitude}:${item.longitude}`}`,
   creatorName: item.hasPin ? (item.firstPinCreatorNickname ?? undefined) : undefined,
+  hasPin: item.hasPin,
   category: item.category || '장소',
   placeName: item.placeName,
   address: item.roadAddress || item.address,
@@ -59,6 +60,7 @@ const toRecentPinSearchPlace = (item: PlaceSearchHistoryItem): PinSearchPlace =>
   placeId: item.placeId,
   searchHistoryId: item.historyId,
   creatorName: item.hasPin ? (item.firstPinCreatorNickname ?? undefined) : undefined,
+  hasPin: item.hasPin,
   category: item.category || '장소',
   placeName: item.placeName,
   address: item.roadAddress || item.address,
@@ -207,6 +209,7 @@ export async function selectSearchPlace({
     withinAccessRange: selection.withinAccessRange,
     id: `place:${selection.placeId}`,
     creatorName: selection.hasPin ? (selection.firstPinCreatorNickname ?? undefined) : undefined,
+    hasPin: selection.hasPin,
     placeName: selection.placeName,
     address: selection.roadAddress || selection.address,
     distance: selection.distanceMeters,

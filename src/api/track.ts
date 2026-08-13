@@ -7,6 +7,7 @@ import type {
   PutLikedTracksResponse,
   GetPlaceTrackDetailResponse,
   GetPlaybackPreparationsResponse,
+  PostPlaybackFailuresRequest,
 } from '@/features/pin/types';
 
 // 1) PUT /api/v1/place-tracks/{placeTrackId}/likes - 장소별 곡 좋아요 등록
@@ -35,7 +36,21 @@ export async function getPlaybackPreparations(
   );
   return data.result;
 }
-// 4) GET /api/v1/tracks/search -  음악 검색
+
+// 4) POST /api/v1/tracks/playback-failures - YouTube 재생 실패 보고
+export async function postPlaybackFailures({
+  itunesTrackId,
+  youtubeVideoId,
+  errorCode,
+}: PostPlaybackFailuresRequest): Promise<void> {
+  await apiClient.post<ApiResponse<null>>(`/api/v1/tracks/playback-failures`, {
+    itunesTrackId,
+    youtubeVideoId,
+    errorCode,
+  });
+}
+
+// 5) GET /api/v1/tracks/search -  음악 검색
 export async function searchTracks(
   keyword: string,
   limit: number = 20,
@@ -46,7 +61,7 @@ export async function searchTracks(
   return data.result;
 }
 
-// 5) GET /api/v1/places/{placeId}/tracks - 장소별 곡 목록 조회
+// 6) GET /api/v1/places/{placeId}/tracks - 장소별 곡 목록 조회
 
 export async function getPlaceTracks(
   placeId: string,
@@ -65,7 +80,7 @@ export async function getPlaceTracks(
   return data.result;
 }
 
-// 6) GET /api/v1/place-tracks/{placeTrackId} - 장소 노래 상세 조회
+// 7) GET /api/v1/place-tracks/{placeTrackId} - 장소 노래 상세 조회
 export type GetPlaceTrackDetailRequest = {
   placeTrackId: string;
   userLatitude: number;
@@ -90,7 +105,7 @@ export async function getPlaceTrackDetail({
   return data.result;
 }
 
-// 7) GET /api/v1/place-tracks/likes - 좋아요한 장소별 곡 목록 조회
+// 8) GET /api/v1/place-tracks/likes - 좋아요한 장소별 곡 목록 조회
 export async function getLikedTracks(
   page: string,
   size: number = 20,

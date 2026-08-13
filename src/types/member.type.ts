@@ -9,6 +9,17 @@ export type ProfileImageUploadResponse = {
   imageUrl: string;
 };
 
+export type MemberStatus = 'ACTIVE' | 'SUSPENDED' | 'WITHDRAWN';
+
+export type MemberSanctionReasonCategory =
+  | 'PERSONAL_INFORMATION_EXPOSURE'
+  | 'OBSCENE_OR_HARMFUL'
+  | 'ABUSE_OR_HATE_SPEECH'
+  | 'COMMERCIAL_OR_PROMOTIONAL'
+  | 'OTHER';
+
+export type MemberSuspensionPeriod = 'ONE_DAY' | 'THREE_DAYS' | 'FIVE_DAYS' | 'PERMANENT';
+
 export type MyProfileResponse = {
   id: number;
   nickname: string | null;
@@ -19,6 +30,13 @@ export type MyProfileResponse = {
   followingCount: number;
   pinCount: number;
   onboardingCompletedAt: string | null;
+  status: MemberStatus;
+  suspendedUntil: string | null;
+  withdrawalReason: 'PENALTY' | null;
+  reasonCategory: MemberSanctionReasonCategory | null;
+  reasonDetail: string | null;
+  penaltyPoint: number;
+  lastPenaltyPeriod: MemberSuspensionPeriod | null;
 };
 
 export type FollowListRequest = {

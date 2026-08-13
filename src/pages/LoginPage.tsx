@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import GoogleIcon from '@/assets/icons/google.svg?react';
@@ -6,12 +6,15 @@ import KakaoIcon from '@/assets/icons/kakao.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { FullScreenError } from '@/components/ui/FullScreenError';
 import { Button } from '@/components/ui/button';
+import { AccountSanctionModal } from '@/features/auth/components/AccountSanctionModal';
 import { OnboardingSplash } from '@/features/auth/components/OnboardingSplash';
 import { OnboardingTutorial } from '@/features/auth/components/OnboardingTutorial';
+import type { AccountSanctionInfo } from '@/features/auth/types';
 import { buildApiUrl } from '@/config/api';
 
 export type LoginPageLocationState = {
   oauthError?: boolean;
+  accountSanction?: AccountSanctionInfo;
 };
 
 const FRONTEND_ORIGIN = window.location.origin;
@@ -30,35 +33,16 @@ const OAUTH_LOGIN_URL: Record<OAuthProvider, string> = {
 // 로그인 화면 진입 시 항상 스플래시 → 튜토리얼 → 로그인 버튼 순서로 노출한다.
 type LoginStep = 'splash' | 'tutorial' | 'credentials';
 
-function OAuthSpinner() {
-  return (
-    <span
-      className="size-6 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
-      aria-hidden
-    />
-  );
-}
-
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  // OAuth 실패로 돌아온 경우에는 에러를 바로 보여줘야 하므로 스플래시/튜토리얼을 건너뛴다.
-  const [step, setStep] = useState<LoginStep>(() => {
-    const state = location.state as LoginPageLocationState | null;
-    return state?.oauthError ? 'credentials' : 'splash';
-  });
-  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
-  const hasOAuthError = (location.state as LoginPageLocationState | null)?.oauthError === true;
-
-  // 뒤로가기로 돌아왔을 때 로딩 스피너 도는 현상 방지
-  useEffect(() => {
-    const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) setLoadingProvider(null);
-    };
-
-    window.addEventListener('pageshow', handlePageShow);
-    return () => window.removeEventListener('pageshow', handlePageShow);
-  }, []);
+  const locationState = location.state as LoginPageLocationState | null;
+  const accountSanction = locationState?.accountSanction ?? null;
+  const [step, setStep] = useState<LoginStep>(() =>
+    locationState?.oauthError || accountSanction ? 'credentials' : 'splash',
+  );
+  const [isSanctionModalOpen, setIsSanctionModalOpen] = useState(accountSanction !== null);
+  const hasOAuthError = locationState?.oauthError === true;
 
   if (hasOAuthError) {
     return (
@@ -69,8 +53,12 @@ export default function LoginPage() {
     );
   }
 
+  const handleCloseSanctionModal = () => {
+    setIsSanctionModalOpen(false);
+    navigate('.', { replace: true, state: null });
+  };
+
   const handleOAuthClick = (provider: OAuthProvider) => () => {
-    setLoadingProvider(provider);
     window.location.href = OAUTH_LOGIN_URL[provider];
   };
 
@@ -95,31 +83,19 @@ export default function LoginPage() {
         <Button
           variant="kakao"
           size="social"
-          disabled={loadingProvider !== null}
-          aria-busy={loadingProvider === 'kakao'}
           onClick={handleOAuthClick('kakao')}
           className="w-full gap-3"
         >
-          {loadingProvider === 'kakao' ? (
-            <OAuthSpinner />
-          ) : (
-            <KakaoIcon className="size-6 shrink-0" />
-          )}
+          <KakaoIcon className="size-6 shrink-0" />
           카카오로 시작하기
         </Button>
         <Button
           variant="google"
           size="social"
-          disabled={loadingProvider !== null}
-          aria-busy={loadingProvider === 'google'}
           onClick={handleOAuthClick('google')}
           className="w-full gap-3"
         >
-          {loadingProvider === 'google' ? (
-            <OAuthSpinner />
-          ) : (
-            <GoogleIcon className="size-6 shrink-0" />
-          )}
+          <GoogleIcon className="size-6 shrink-0" />
           Google로 시작하기
         </Button>
       </div>
@@ -129,6 +105,12 @@ export default function LoginPage() {
           {'회원가입 시 PLIMAP의 \n개인정보 처리방침 및 이용약관에 동의하게 됩니다'}
         </p>
       </div>
+
+      <AccountSanctionModal
+        open={isSanctionModalOpen}
+        sanction={accountSanction}
+        onClose={handleCloseSanctionModal}
+      />
     </div>
   );
 }

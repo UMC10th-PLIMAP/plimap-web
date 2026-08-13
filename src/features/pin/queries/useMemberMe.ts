@@ -12,13 +12,10 @@ export function useInfiniteMemberMe({
   pageSize = 10,
   enabled = true,
 }: UseInfiniteMemberMeParams = {}) {
-  const {
-    data: currentPosition,
-    isFetched: isPositionFetched,
-    isError: isPositionError,
-  } = useCurrentPosition({ enabled });
+  const currentPositionQuery = useCurrentPosition({ enabled });
+  const { data: currentPosition, isError: isPositionError } = currentPositionQuery;
 
-  return useInfiniteQuery({
+  const feedQuery = useInfiniteQuery({
     queryKey: [
       'pin',
       'memberMe',
@@ -29,16 +26,27 @@ export function useInfiniteMemberMe({
         userLongitude: currentPosition?.longitude,
       },
     ],
-    queryFn: ({ pageParam }) =>
-      getMemberMe({
+    queryFn: ({ pageParam }) => {
+      if (!currentPosition) throw new Error('Current position is required to load the feed.');
+
+      return getMemberMe({
         pageSize,
         cursor: pageParam,
-        userLatitude: currentPosition?.latitude,
-        userLongitude: currentPosition?.longitude,
-      }),
+        userLatitude: currentPosition.latitude,
+        userLongitude: currentPosition.longitude,
+      });
+    },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
-    // 위치 조회가 끝나거나 실패해도 피드는 조회한다 (위치 실패 ≠ 빈 피드)
-    enabled: enabled && (isPositionFetched || isPositionError),
+    enabled: enabled && Boolean(currentPosition),
   });
+
+  return {
+    ...feedQuery,
+    error: currentPositionQuery.error ?? feedQuery.error,
+    isError: isPositionError || feedQuery.isError,
+    isPending:
+      enabled && !isPositionError && (currentPositionQuery.isPending || feedQuery.isPending),
+    refetch: isPositionError ? currentPositionQuery.refetch : feedQuery.refetch,
+  };
 }

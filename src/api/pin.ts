@@ -219,8 +219,8 @@ export async function getOtherMemberFeed({
   memberId: number;
   pageSize?: number;
   cursor?: string;
-  userLatitude?: number;
-  userLongitude?: number;
+  userLatitude: number;
+  userLongitude: number;
 }): Promise<MemberMeResponse> {
   const { data } = await apiClient.get<ApiResponse<MemberMeResponse>>(
     `/api/v1/feeds/members/${memberId}`,
@@ -258,15 +258,16 @@ export async function getFriendPins({
   return data.result;
 }
 
-/** POST /api/v1/pins/availability 지도 선택 위치의 PIN 등록 가능 여부 검증 */
 export async function validatePinAvailability(
   request: PinAvailabilityRequest,
   options?: { signal?: AbortSignal },
 ): Promise<PinAvailabilityResponse> {
-  const { data } = await apiClient.post<ApiResponse<PinAvailabilityResponse>>(
+  const { data } = await apiClient.get<ApiResponse<PinAvailabilityResponse>>(
     '/api/v1/pins/availability',
-    request,
-    { signal: options?.signal },
+    {
+      params: request,
+      signal: options?.signal,
+    },
   );
   return data.result;
 }

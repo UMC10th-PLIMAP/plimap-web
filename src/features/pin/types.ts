@@ -33,8 +33,8 @@ export type LikedTrack = GetLikedTracksResponse['tracks'][number];
 export type MemberMeRequest = {
   pageSize?: number;
   cursor?: string;
-  userLatitude?: number;
-  userLongitude?: number;
+  userLatitude: number;
+  userLongitude: number;
 };
 
 export type MemberMeFeedItem = {
@@ -104,6 +104,12 @@ export type GetPlaybackPreparationsResponse = {
   durationMs: number;
 };
 
+export type PostPlaybackFailuresRequest = {
+  itunesTrackId: number;
+  youtubeVideoId: string;
+  errorCode: number;
+};
+
 export type GetPlaceTrackPinsResponse = {
   data: {
     memberId: number;
@@ -125,7 +131,8 @@ export type GetPlaceTrackPinsResponse = {
 };
 
 export type LikeCountResponse = {
-  pinCount: number;
+  likeCount: number;
+  likedByMe: boolean;
 };
 
 export type GetMyPinsResponse = {
@@ -158,22 +165,20 @@ export type PinDetailResponse = {
   albumImageUrl: string;
   youtubeVideoId: string;
   clipStartMs: number;
-  tags: string[];
-  feedOpen: boolean;
+  tags?: string[];
+  feedOpen?: boolean;
 };
 
 export type PatchPinRequest = {
-  introduction: string;
-  tags: string[];
-  feedOpen: boolean;
-  clipStartMs?: number;
+  introduction?: string;
+  tags?: string[];
+  feedOpen?: boolean;
 };
 
 export type PatchPinResponse = {
   introduction: string;
   tags: string[];
   feedOpen: boolean;
-  clipStartMs?: number;
 };
 
 export type postFeedPlaceAccessResponse = {
@@ -301,8 +306,13 @@ export type PinSearchPlace = PlaceResult & {
   /** 선택 당시 입력창에 있던 검색어. 지도 검색 화면 재진입 시 그대로 복원한다. */
   searchQuery?: string;
   /**
-   * 찜한 노래/내 모든 핀 등에서 지도로 진입했을 때
+   * 핀 카드/알림 등에서 지도로 진입했을 때
    * 상단 검색창 대신 ‘뒤로가기’를 표시한다.
    */
   showMapBackButton?: boolean;
+  /**
+   * 이 장소에 등록된 핀이 있는지. creatorName이 없는 경로(예: 인기 장소 카드)에서도
+   * 마커를 신규 미등록 장소용 기본 아이콘으로 잘못 그리지 않기 위해 별도로 둔다.
+   */
+  hasPin?: boolean;
 };
