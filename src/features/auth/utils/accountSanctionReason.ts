@@ -18,5 +18,5 @@ export function getAccountSanctionReasonLabel(
 export function isAccountSanctionReasonCategory(
   value: string | null,
 ): value is AccountSanctionReasonCategory {
-  return value !== null && value in ACCOUNT_SANCTION_REASON_LABEL;
+  return value !== null && Object.hasOwn(ACCOUNT_SANCTION_REASON_LABEL, value);
 }

@@ -13,5 +13,5 @@ export function getSuspensionPeriodLabel(period: SuspensionPeriod | null): strin
 }
 
 export function isSuspensionPeriod(value: string | null): value is SuspensionPeriod {
-  return value !== null && value in SUSPENSION_PERIOD_LABEL;
+  return value !== null && Object.hasOwn(SUSPENSION_PERIOD_LABEL, value);
 }
