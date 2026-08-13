@@ -6,12 +6,15 @@ import KakaoIcon from '@/assets/icons/kakao.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { FullScreenError } from '@/components/ui/FullScreenError';
 import { Button } from '@/components/ui/button';
+import { AccountSanctionModal } from '@/features/auth/components/AccountSanctionModal';
 import { OnboardingSplash } from '@/features/auth/components/OnboardingSplash';
 import { OnboardingTutorial } from '@/features/auth/components/OnboardingTutorial';
+import type { AccountSanctionInfo } from '@/features/auth/types';
 import { buildApiUrl } from '@/config/api';
 
 export type LoginPageLocationState = {
   oauthError?: boolean;
+  accountSanction?: AccountSanctionInfo;
 };
 
 const FRONTEND_ORIGIN = window.location.origin;
@@ -42,13 +45,14 @@ function OAuthSpinner() {
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  // OAuth 실패로 돌아온 경우에는 에러를 바로 보여줘야 하므로 스플래시/튜토리얼을 건너뛴다.
-  const [step, setStep] = useState<LoginStep>(() => {
-    const state = location.state as LoginPageLocationState | null;
-    return state?.oauthError ? 'credentials' : 'splash';
-  });
+  const locationState = location.state as LoginPageLocationState | null;
+  const accountSanction = locationState?.accountSanction ?? null;
+  const [step, setStep] = useState<LoginStep>(() =>
+    locationState?.oauthError || accountSanction ? 'credentials' : 'splash',
+  );
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
-  const hasOAuthError = (location.state as LoginPageLocationState | null)?.oauthError === true;
+  const [isSanctionModalOpen, setIsSanctionModalOpen] = useState(accountSanction !== null);
+  const hasOAuthError = locationState?.oauthError === true;
 
   // 뒤로가기로 돌아왔을 때 로딩 스피너 도는 현상 방지
   useEffect(() => {
@@ -68,6 +72,11 @@ export default function LoginPage() {
       />
     );
   }
+
+  const handleCloseSanctionModal = () => {
+    setIsSanctionModalOpen(false);
+    navigate('.', { replace: true, state: null });
+  };
 
   const handleOAuthClick = (provider: OAuthProvider) => () => {
     setLoadingProvider(provider);
@@ -129,6 +138,12 @@ export default function LoginPage() {
           {'회원가입 시 PLIMAP의 \n개인정보 처리방침 및 이용약관에 동의하게 됩니다'}
         </p>
       </div>
+
+      <AccountSanctionModal
+        open={isSanctionModalOpen}
+        sanction={accountSanction}
+        onClose={handleCloseSanctionModal}
+      />
     </div>
   );
 }
