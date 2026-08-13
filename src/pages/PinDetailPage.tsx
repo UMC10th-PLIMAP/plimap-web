@@ -298,7 +298,6 @@ export default function PinDetailPage() {
                   albumImageUrl: pinDetail.albumImageUrl,
                   introduction: entry.content,
                   tags: entry.tags,
-                  feedOpen: true,
                 },
               });
             }}

@@ -126,7 +126,8 @@ export default function MyNotificationsPage() {
                 void openPinPlaceOnMap({
                   pinId,
                   isMine: notification.type === 'PIN_LIKED',
-                  requestFeedPlaceAccess: notification.type === 'PIN_CREATED',
+                  requestFeedPlaceAccess:
+                    notification.type === 'PIN_CREATED' && notification.isFollowing,
                 });
               }}
             />
