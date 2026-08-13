@@ -27,6 +27,8 @@ export function isNetworkError(error: unknown): boolean {
 }
 
 export const SESSION_EXPIRED_EVENT = 'plimap:session-expired';
+export const ACCOUNT_SANCTIONED_EVENT = 'plimap:account-sanctioned';
+const ACCOUNT_SANCTION_ERROR_CODES = new Set(['MEMBER_SUSPENDED', 'MEMBER_WITHDRAWN']);
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -109,6 +111,9 @@ apiClient.interceptors.response.use(undefined, async (error: AxiosError<ApiRespo
 
   if (error.response?.data?.code) {
     const { data, status } = error.response;
+    if (typeof window !== 'undefined' && ACCOUNT_SANCTION_ERROR_CODES.has(data.code)) {
+      window.dispatchEvent(new Event(ACCOUNT_SANCTIONED_EVENT));
+    }
     return Promise.reject(new ApiError(data.code, data.message, status));
   }
   return Promise.reject(error);
