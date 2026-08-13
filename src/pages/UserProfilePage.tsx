@@ -209,6 +209,7 @@ export default function UserProfilePage() {
                   isMine: false,
                   // 팔로잉 친구 피드 → 지도에서도 '{닉네임} 님이 등록한 곡 상세 보기' CTA 표시
                   showMyRegisteredTrackCta: true,
+                  showMapBackButton: true,
                   // 팔로잉한 친구 피드 핀이면 장소 접근 토큰 발급
                   requestFeedPlaceAccess: Boolean(member?.isFollowing),
                 });

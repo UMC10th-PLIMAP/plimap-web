@@ -101,6 +101,7 @@ export default function MyProfilePage() {
               fallbackPlaceName: pin.placeName,
               isMine: true,
               showMyRegisteredTrackCta: true,
+              showMapBackButton: true,
             });
           }}
           onRegisterPin={() => navigate('/app')}
