@@ -258,7 +258,6 @@ export async function getFriendPins({
   return data.result;
 }
 
-/** GET /api/v1/pins/availability 지도 선택 위치의 PIN 등록 가능 여부 검증 */
 export async function validatePinAvailability(
   request: PinAvailabilityRequest,
   options?: { signal?: AbortSignal },

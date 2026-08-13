@@ -165,7 +165,6 @@ export type PinDetailResponse = {
   albumImageUrl: string;
   youtubeVideoId: string;
   clipStartMs: number;
-  /** The current backend PinPreview response does not expose edit-only fields. */
   tags?: string[];
   feedOpen?: boolean;
 };
