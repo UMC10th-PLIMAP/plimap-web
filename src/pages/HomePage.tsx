@@ -354,7 +354,7 @@ export default function HomePage() {
             </div>
           ) : (
             <Carousel dragFree snapAlignment="start">
-              <CarouselContent className="gap-3 px-4 pt-3 pb-10">
+              <CarouselContent className="gap-3 px-4 pt-3 pb-10 touch-pan-y">
                 {friendPins.map((pin) => (
                   <CarouselItem key={pin.pinId} className="w-auto basis-auto">
                     <RecommendationPinCard
