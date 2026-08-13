@@ -498,7 +498,7 @@ export default function HomePage() {
           ) : savedPlaces.length === 0 ? (
             <HomeCarouselState
               className="h-[132px] bg-pli-black-85"
-              description="내가 좋아하는 장소를 저장하면 여기에 나타나요."
+              description="내가 좋아하는 장소가 500m 이내에 있으면 나타나요."
               actionLabel="장소 저장하러 가기"
               actionTo="/app"
             />
