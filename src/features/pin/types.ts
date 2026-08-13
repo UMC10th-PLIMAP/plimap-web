@@ -33,8 +33,8 @@ export type LikedTrack = GetLikedTracksResponse['tracks'][number];
 export type MemberMeRequest = {
   pageSize?: number;
   cursor?: string;
-  userLatitude?: number;
-  userLongitude?: number;
+  userLatitude: number;
+  userLongitude: number;
 };
 
 export type MemberMeFeedItem = {
@@ -131,7 +131,8 @@ export type GetPlaceTrackPinsResponse = {
 };
 
 export type LikeCountResponse = {
-  pinCount: number;
+  likeCount: number;
+  likedByMe: boolean;
 };
 
 export type GetMyPinsResponse = {
@@ -164,22 +165,20 @@ export type PinDetailResponse = {
   albumImageUrl: string;
   youtubeVideoId: string;
   clipStartMs: number;
-  tags: string[];
-  feedOpen: boolean;
+  tags?: string[];
+  feedOpen?: boolean;
 };
 
 export type PatchPinRequest = {
-  introduction: string;
-  tags: string[];
-  feedOpen: boolean;
-  clipStartMs?: number;
+  introduction?: string;
+  tags?: string[];
+  feedOpen?: boolean;
 };
 
 export type PatchPinResponse = {
   introduction: string;
   tags: string[];
   feedOpen: boolean;
-  clipStartMs?: number;
 };
 
 export type postFeedPlaceAccessResponse = {

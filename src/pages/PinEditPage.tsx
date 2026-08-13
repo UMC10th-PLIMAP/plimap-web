@@ -81,8 +81,8 @@ export default function PinEditPage() {
   const isMutating = patchPinMutation.isPending || deletePinMutation.isPending;
 
   const baselineIntroduction = locationState?.introduction ?? pinDetail?.introduction ?? '';
-  const baselineTags = locationState?.tags ?? pinDetail?.tags ?? [];
-  const baselineFeedOpen = locationState?.feedOpen ?? pinDetail?.feedOpen ?? true;
+  const baselineTags = locationState?.tags ?? pinDetail?.tags;
+  const baselineFeedOpen = locationState?.feedOpen ?? pinDetail?.feedOpen;
 
   const [introductionDraft, setIntroductionDraft] = useState<string | null>(
     locationState?.introduction ?? null,
@@ -93,12 +93,15 @@ export default function PinEditPage() {
   );
 
   const introduction = introductionDraft ?? baselineIntroduction;
-  const selectedTags = tagsDraft ?? baselineTags;
-  const isFeedPublic = feedOpenDraft ?? baselineFeedOpen;
+  const selectedTags = tagsDraft ?? baselineTags ?? [];
+  const isFeedPublic = feedOpenDraft ?? baselineFeedOpen ?? false;
+  const isFeedVisibilityKnown = baselineFeedOpen !== undefined;
 
   const hasIntroductionChanged = introduction !== baselineIntroduction;
-  const hasTagsChanged = !areSameTags(selectedTags, baselineTags);
-  const hasFeedOpenChanged = isFeedPublic !== baselineFeedOpen;
+  const hasTagsChanged =
+    tagsDraft !== null && (baselineTags === undefined || !areSameTags(selectedTags, baselineTags));
+  const hasFeedOpenChanged =
+    feedOpenDraft !== null && baselineFeedOpen !== undefined && isFeedPublic !== baselineFeedOpen;
   const hasChanges = hasIntroductionChanged || hasTagsChanged || hasFeedOpenChanged;
   const isBaselineReady = Boolean(locationState) || Boolean(pinDetail);
 
@@ -109,7 +112,7 @@ export default function PinEditPage() {
 
   const toggleTag = (tag: string) => {
     setTagsDraft((prev) => {
-      const current = prev ?? baselineTags;
+      const current = prev ?? baselineTags ?? [];
       if (current.includes(tag)) return current.filter((item) => item !== tag);
       if (current.length >= MAX_TAG_COUNT) return current;
       return [...current, tag];
@@ -125,23 +128,21 @@ export default function PinEditPage() {
       return;
     }
 
-    patchPinMutation.mutate(
-      {
-        pinId,
-        introduction: normalizedIntroduction,
-        tags: selectedTags,
-        feedOpen: isFeedPublic,
-        clipStartMs: pinDetail?.clipStartMs,
+    const request = {
+      pinId,
+      ...(hasIntroductionChanged ? { introduction: normalizedIntroduction } : {}),
+      ...(hasTagsChanged ? { tags: selectedTags } : {}),
+      ...(hasFeedOpenChanged ? { feedOpen: isFeedPublic } : {}),
+    };
+
+    patchPinMutation.mutate(request, {
+      onSuccess: () => navigate(-1),
+      onError: (error) => {
+        toast.error(
+          error instanceof Error ? error.message : '핀을 수정하지 못했어요. 다시 시도해 주세요.',
+        );
       },
-      {
-        onSuccess: () => navigate(-1),
-        onError: (error) => {
-          toast.error(
-            error instanceof Error ? error.message : '핀을 수정하지 못했어요. 다시 시도해 주세요.',
-          );
-        },
-      },
-    );
+    });
   };
 
   const handleDelete = () => {
@@ -267,11 +268,17 @@ export default function PinEditPage() {
 
                 <section className="flex flex-col gap-3">
                   <span className="body-15-r text-grayscale-300">피드 공개</span>
-                  <FeedVisibilityToggle
-                    checked={isFeedPublic}
-                    onChange={(checked) => setFeedOpenDraft(checked)}
-                    disabled={isMutating}
-                  />
+                  {isFeedVisibilityKnown ? (
+                    <FeedVisibilityToggle
+                      checked={isFeedPublic}
+                      onChange={(checked) => setFeedOpenDraft(checked)}
+                      disabled={isMutating}
+                    />
+                  ) : (
+                    <p className="etc-13-r text-grayscale-700">
+                      공개 상태를 불러올 수 없어 이번 수정에서는 기존 설정을 유지해요.
+                    </p>
+                  )}
                 </section>
 
                 <div className="flex justify-center pt-[5px]">
