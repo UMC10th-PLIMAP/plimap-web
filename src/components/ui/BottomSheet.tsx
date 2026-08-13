@@ -236,8 +236,9 @@ function BottomSheet({
     [trackingElementRef],
   );
 
+  // vaulOpen은 keepOpenWhileMounted 중엔 open=false에도 true로 남으니, 감시 구간은 open 기준으로 잡는다.
   React.useEffect(() => {
-    if (!vaulOpen) return;
+    if (!open) return;
     const body = document.body;
     const restorePointerEvents = () => {
       if (body.style.pointerEvents === 'none') {
@@ -248,7 +249,7 @@ function BottomSheet({
     const observer = new MutationObserver(restorePointerEvents);
     observer.observe(body, { attributes: true, attributeFilter: ['style'] });
     return () => observer.disconnect();
-  }, [vaulOpen]);
+  }, [open]);
 
   const isFullPage = snapPoints.length > 1 && activeSnap === lastSnap;
 
