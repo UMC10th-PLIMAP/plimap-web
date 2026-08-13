@@ -126,7 +126,6 @@ export default function MyNotificationsPage() {
                 void openPinPlaceOnMap({
                   pinId,
                   isMine: notification.type === 'PIN_LIKED',
-                  showMyRegisteredTrackCta: true,
                   requestFeedPlaceAccess: notification.type === 'PIN_CREATED',
                 });
               }}
