@@ -305,4 +305,9 @@ export type PinSearchPlace = PlaceResult & {
    * 상단 검색창 대신 ‘뒤로가기’를 표시한다.
    */
   showMapBackButton?: boolean;
+  /**
+   * 이 장소에 등록된 핀이 있는지. creatorName이 없는 경로(예: 인기 장소 카드)에서도
+   * 마커를 신규 미등록 장소용 기본 아이콘으로 잘못 그리지 않기 위해 별도로 둔다.
+   */
+  hasPin?: boolean;
 };
