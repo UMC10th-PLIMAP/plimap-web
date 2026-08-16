@@ -20,6 +20,15 @@ const placeQueryKeys = {
     [...placeQueryKeys.histories(), location] as const,
 };
 
+const getSearchKeywordFromQueryKey = (queryKey: readonly unknown[]) => {
+  const searchParams = queryKey.at(-1);
+  if (typeof searchParams !== 'object' || searchParams === null || !('keyword' in searchParams)) {
+    return null;
+  }
+
+  return typeof searchParams.keyword === 'string' ? searchParams.keyword : null;
+};
+
 type UsePlaceSearchParams = {
   keyword: string;
   location: PlaceSearchHistoryRequest | null;
@@ -50,6 +59,11 @@ export function usePlaceSearch({
       });
     },
     enabled: enabled && Boolean(location) && debouncedKeyword.length > 0 && isDebounced,
+    // Keep the list stable for location-only key changes; a new keyword still starts empty.
+    placeholderData: (previousData, previousQuery) =>
+      getSearchKeywordFromQueryKey(previousQuery?.queryKey ?? []) === debouncedKeyword
+        ? previousData
+        : undefined,
     staleTime: 60_000,
   });
 
