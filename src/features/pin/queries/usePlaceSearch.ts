@@ -79,6 +79,7 @@ export function useRecentSearchPlaces(location: PlaceSearchHistoryRequest | null
       return getRecentSearchPlaces({ ...location, signal });
     },
     enabled: enabled && Boolean(location),
+    placeholderData: (previousData) => previousData,
     staleTime: 60_000,
   });
 }
