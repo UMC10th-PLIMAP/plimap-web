@@ -1,4 +1,4 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 
 import type { ApiResponse } from '@/api/types';
 import { API_BASE_URL } from '@/config/api';
@@ -29,6 +29,15 @@ export function isNetworkError(error: unknown): boolean {
 export const SESSION_EXPIRED_EVENT = 'plimap:session-expired';
 export const ACCOUNT_SANCTIONED_EVENT = 'plimap:account-sanctioned';
 const ACCOUNT_SANCTION_ERROR_CODES = new Set(['MEMBER_SUSPENDED', 'MEMBER_WITHDRAWN']);
+
+export type ApiRequestConfig = AxiosRequestConfig & {
+  skipSessionExpiredEvent?: boolean;
+};
+
+const INTERNAL_AUTH_REQUEST_CONFIG: ApiRequestConfig = {
+  // The original request decides whether a failed refresh represents an expired session.
+  skipSessionExpiredEvent: true,
+};
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -69,14 +78,17 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
-type RetriableRequestConfig = InternalAxiosRequestConfig & { _retriedAfterReissue?: boolean };
+type RetriableRequestConfig = InternalAxiosRequestConfig & {
+  _retriedAfterReissue?: boolean;
+  skipSessionExpiredEvent?: boolean;
+};
 
 let reissueRequest: Promise<void> | null = null;
 
 function reissueTokens() {
   if (!reissueRequest) {
     reissueRequest = apiClient
-      .post(REISSUE_URL)
+      .post(REISSUE_URL, undefined, INTERNAL_AUTH_REQUEST_CONFIG)
       .then(() => undefined)
       .finally(() => {
         reissueRequest = null;
@@ -105,7 +117,11 @@ apiClient.interceptors.response.use(undefined, async (error: AxiosError<ApiRespo
   }
 
   // 에러 응답을 위한 로직
-  if (error.response?.status === 401 && typeof window !== 'undefined') {
+  if (
+    error.response?.status === 401 &&
+    !config?.skipSessionExpiredEvent &&
+    typeof window !== 'undefined'
+  ) {
     window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
   }
 

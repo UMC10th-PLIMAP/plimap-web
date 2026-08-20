@@ -1,4 +1,4 @@
-import { apiClient, ApiError } from '@/api/client';
+import { apiClient, ApiError, type ApiRequestConfig } from '@/api/client';
 import type { ApiResponse } from '@/api/types';
 import type {
   FollowListRequest,
@@ -14,6 +14,10 @@ import type {
 } from '@/types/member.type';
 
 const ENDPOINT = '/api/v1/members';
+const SESSION_CHECK_REQUEST_CONFIG: ApiRequestConfig = {
+  // AuthGuard handles an unauthenticated first visit by routing to the splash flow.
+  skipSessionExpiredEvent: true,
+};
 
 // 1) GET /api/v1/members/nickname/check - 닉네임 사용 가능 여부 확인
 export async function checkNicknameAvailability(nickname: string) {
@@ -43,7 +47,10 @@ export async function deleteProfileImage() {
 
 // 4) GET /api/v1/members/me - 내 프로필 조회 (로그인 여부 확인 용도로도 사용)
 export async function getMyProfile() {
-  const { data } = await apiClient.get<ApiResponse<MyProfileResponse>>(`${ENDPOINT}/me`);
+  const { data } = await apiClient.get<ApiResponse<MyProfileResponse>>(
+    `${ENDPOINT}/me`,
+    SESSION_CHECK_REQUEST_CONFIG,
+  );
   return data.result;
 }
 
