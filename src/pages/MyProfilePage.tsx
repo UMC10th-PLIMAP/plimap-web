@@ -248,6 +248,7 @@ export default function MyProfilePage() {
           onClose={() => setIsSongSelectOpen(false)}
           onSelect={setRepresentativeTrack}
           finalFocusRef={representativeMusicButtonRef}
+          preventOpenAutoFocus
         />
       </div>
     </>
