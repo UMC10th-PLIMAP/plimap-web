@@ -25,6 +25,7 @@ import PinRegisterPage from '@/pages/PinRegisterPage';
 import PinLocationConfirmPage from '@/pages/PinLocationConfirmPage';
 import PinRegisterSearchPage from '@/pages/PinRegisterSearchPage';
 import PinRegisterEntryPage from '@/pages/PinRegisterEntryPage';
+import PinPhotoAnalysisPage from '@/pages/PinPhotoAnalysisPage';
 import PinRegistrationLayout from '@/layouts/PinRegistrationLayout';
 import PinRadiusOverlayPreviewPage from '@/pages/PinRadiusOverlayPreviewPage';
 import ReportModalPreviewPage from '@/pages/ReportModalPreviewPage';
@@ -104,6 +105,11 @@ export const router = createBrowserRouter([
                     handle: { bottomNavItem: 'my', mapPresentation: 'covered' },
                   },
                 ],
+              },
+              {
+                path: 'pin/register/photo',
+                element: <PinPhotoAnalysisPage />,
+                handle: { mapPresentation: 'covered' },
               },
               {
                 path: 'pin/register',

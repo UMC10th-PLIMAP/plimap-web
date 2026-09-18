@@ -11,6 +11,8 @@ type MapViewerProps = {
   isLoaded: boolean;
   isInteractionDisabled?: boolean;
   isLocationTrackingDisabled?: boolean;
+  currentLocationCharacterUrl?: string;
+  currentLocationCharacterFrontUrl?: string;
   zoom: number;
   initialCenter?: MapCoordinate;
   placeResults: MapPlace[];
@@ -59,6 +61,8 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     isLoaded,
     isInteractionDisabled = false,
     isLocationTrackingDisabled = false,
+    currentLocationCharacterUrl,
+    currentLocationCharacterFrontUrl,
     zoom,
     initialCenter,
     placeResults,
@@ -110,6 +114,8 @@ export const MapViewer = forwardRef<MapViewerHandle, MapViewerProps>(function Ma
     centerOnFirstLocation,
     isTrackingEnabled: !isLocationTrackingDisabled,
     flyTo,
+    characterUrl: currentLocationCharacterUrl,
+    characterFrontUrl: currentLocationCharacterFrontUrl,
   });
 
   useImperativeHandle(

@@ -24,6 +24,7 @@ import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import type { AppOutletContext } from '@/layouts/RootLayout';
 import { cn } from '@/lib/utils';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
+import { HomeAiSections } from '@/features/ai-mvp/HomeAiSections';
 
 type HotPlaceFilter = 'nearby' | 'popular';
 type MapPlaceTarget = {
@@ -540,6 +541,8 @@ export default function HomePage() {
             />
           )}
         </section>
+
+        <HomeAiSections />
       </div>
     </main>
   );
