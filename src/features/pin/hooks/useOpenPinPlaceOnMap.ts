@@ -102,6 +102,7 @@ function toFocusedFeedPin(
 ): FocusedFeedPin {
   return {
     pinId: pin.pinId,
+    writerId: pin.memberId,
     placeTrackId,
     nickname: pin.writerNickname,
     avatarUrl: pin.writerProfileImage || undefined,
@@ -198,6 +199,7 @@ export function useOpenPinPlaceOnMap({
         // 피드 진입 시 지도 핀 말풍선(MapPinMessageBox)용 데이터
         place.mapFocusPin = {
           pinId: resolvedPinId,
+          writerId: pinDetail.writerId,
           placeTrackId: resolvedPlaceTrackId,
           nickname: pinDetail.writerNickname,
           avatarUrl: pinDetail.writerProfileImage || undefined,

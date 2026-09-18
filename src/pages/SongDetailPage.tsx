@@ -29,6 +29,7 @@ import { usePostPlaybackFailures } from '@/features/pin/queries/usePostPlaybackF
 import { cn } from '@/lib/utils';
 import type { AppOutletContext } from '@/layouts/RootLayout';
 import { usePinCreationStore } from '@/store/pinCreationStore';
+import { AI_RECOMMENDED_PLAYBACK, AI_RECOMMENDED_TRACK } from '@/features/ai-mvp/mockAi';
 
 const INTRO_MAX_LENGTH = 100;
 const MIN_TAG_COUNT = 1;
@@ -453,9 +454,11 @@ export default function SongDetailPage() {
   const parsedTrackId = Number(songId);
   const itunesTrackId =
     Number.isSafeInteger(parsedTrackId) && parsedTrackId > 0 ? parsedTrackId : null;
+  const isAiRecommendedTrack = itunesTrackId === AI_RECOMMENDED_TRACK.itunesTrackId;
   const playbackPreparationQuery = useGetPlaybackPreparations({
     itunesTrackId: itunesTrackId?.toString(),
-    enabled: Boolean(place && currentLocation && itunesTrackId),
+    enabled: Boolean(place && currentLocation && itunesTrackId && !isAiRecommendedTrack),
+    initialData: isAiRecommendedTrack ? AI_RECOMMENDED_PLAYBACK : undefined,
   });
   const createPinMutation = useCreatePin();
 

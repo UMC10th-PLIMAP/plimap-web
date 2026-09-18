@@ -34,6 +34,8 @@ type UseCurrentLocationMarkerParams = {
   isTrackingEnabled?: boolean;
   /** 재중심 이동 시 순간이동 대신 부드럽게 pan+zoom하기 위해 useGoogleMap의 flyTo를 그대로 재사용한다. */
   flyTo: (position: MapCoordinate, targetZoom: number, onArrive?: () => void) => void;
+  characterUrl?: string;
+  characterFrontUrl?: string;
 };
 
 /** 현재 위치 마커(방향 쐐기 포함)를 실시간으로 추적/렌더링하고, 재중심 이동 함수를 제공한다. */
@@ -46,12 +48,15 @@ export function useCurrentLocationMarker({
   centerOnFirstLocation = true,
   isTrackingEnabled = true,
   flyTo,
+  characterUrl,
+  characterFrontUrl,
 }: UseCurrentLocationMarkerParams) {
   const overlayRef = useRef<CurrentLocationOverlayHandle | null>(null);
   const positionRef = useRef<MapCoordinate | null>(null);
   const bestAccuracyRef = useRef(Infinity);
   const lastAcceptedAtRef = useRef(0);
   const deviceHeadingRef = useRef<number | null>(null);
+  const movementHeadingRef = useRef<number | null>(null);
   const mapHeadingRef = useRef(0);
   const headingListenerRef = useRef<google.maps.MapsEventListener | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
@@ -84,9 +89,9 @@ export function useCurrentLocationMarker({
   // 쐐기는 지도와 함께 회전하는 floatPane 안에 그려지므로, 기기 나침반 값(진북 기준)에서
   // 지도 자체의 회전값을 빼야 화면상 항상 실제 방향을 가리킨다.
   const applyHeading = useCallback(() => {
-    if (deviceHeadingRef.current === null) return;
-    const relativeHeading =
-      (((deviceHeadingRef.current - mapHeadingRef.current) % 360) + 360) % 360;
+    const absoluteHeading = deviceHeadingRef.current ?? movementHeadingRef.current;
+    if (absoluteHeading === null) return;
+    const relativeHeading = (((absoluteHeading - mapHeadingRef.current) % 360) + 360) % 360;
     overlayRef.current?.setHeading(relativeHeading);
   }, []);
 
@@ -158,11 +163,16 @@ export function useCurrentLocationMarker({
     headingListenerRef.current = null;
     mapHeadingRef.current = 0;
     deviceHeadingRef.current = null;
+    movementHeadingRef.current = null;
   }, []);
 
   useEffect(() => {
     if (!isLoaded) disposeLocationState();
   }, [disposeLocationState, isLoaded]);
+
+  useEffect(() => {
+    disposeLocationState();
+  }, [characterFrontUrl, characterUrl, disposeLocationState]);
 
   useEffect(() => disposeLocationState, [disposeLocationState]);
 
@@ -193,6 +203,12 @@ export function useCurrentLocationMarker({
         lastAcceptedAtRef.current = now;
 
         const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+        if (
+          typeof position.coords.heading === 'number' &&
+          Number.isFinite(position.coords.heading)
+        ) {
+          movementHeadingRef.current = position.coords.heading;
+        }
         positionRef.current = pos;
         onCurrentLocationChangedRef.current?.(pos);
 
@@ -202,7 +218,12 @@ export function useCurrentLocationMarker({
           }
 
           // 핀(overlayMouseTarget, zIndex 최대 200)보다 항상 위에 보이도록 floatPane에 렌더링한다.
-          overlayRef.current = createCurrentLocationOverlay(DEFAULT_MARKER_COLOR, pos);
+          overlayRef.current = createCurrentLocationOverlay(
+            DEFAULT_MARKER_COLOR,
+            pos,
+            characterUrl,
+            characterFrontUrl,
+          );
           overlayRef.current.setMap(map);
 
           mapHeadingRef.current = map.getHeading() ?? 0;
@@ -217,6 +238,7 @@ export function useCurrentLocationMarker({
         } else {
           overlayRef.current.setPosition(pos);
         }
+        applyHeading();
       },
       (error) => {
         if (ignore) return;
@@ -241,6 +263,8 @@ export function useCurrentLocationMarker({
     mapInstanceRef,
     applyHeading,
     disposeLocationState,
+    characterFrontUrl,
+    characterUrl,
   ]);
 
   // --- "현재 위치" 버튼에서 호출할 재중심 이동 ---

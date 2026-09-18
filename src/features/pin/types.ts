@@ -260,6 +260,7 @@ export type PlaceResult = {
 
 export type FocusedFeedPin = {
   pinId: number;
+  writerId?: number;
   placeTrackId?: number;
   nickname: string;
   avatarUrl?: string;

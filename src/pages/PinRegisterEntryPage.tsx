@@ -63,7 +63,7 @@ export default function PinRegisterEntryPage() {
       coordinates: place.coordinates,
       distanceMeters: place.distance,
     });
-    navigate('/app/song/list');
+    navigate('/app/pin/register/photo');
   };
 
   const handleValidationError = (message: string) => {

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useMatches, useOutlet, useOutletContext } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useMatches, useOutlet, useOutletContext } from 'react-router-dom';
 
 import type { MapCoordinate, MapViewport } from '@/features/map/types';
 import type { AppOutletContext } from '@/layouts/RootLayout';
@@ -18,7 +18,9 @@ export type MapOutletContext = Pick<AppOutletContext, 'selectMapPlace'> & {
 
 const MapLayout = () => {
   const appContext = useOutletContext<AppOutletContext>();
+  const { pathname } = useLocation();
   const matches = useMatches();
+  const contentRef = useRef<HTMLDivElement>(null);
   const mapPresentation = matches.reduce<MapPresentation>((presentation, { handle }) => {
     return (handle as MapRouteHandle | undefined)?.mapPresentation ?? presentation;
   }, 'visible');
@@ -32,6 +34,10 @@ const MapLayout = () => {
   const shouldRenderMap = hasVisitedMap || mapPresentation !== 'covered';
   const isMapCovered = mapPresentation === 'covered';
   const isMapUiActive = mapPresentation === 'visible';
+
+  useEffect(() => {
+    contentRef.current?.scrollTo(0, 0);
+  }, [pathname]);
 
   return (
     <div className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -57,6 +63,7 @@ const MapLayout = () => {
 
       {outlet ? (
         <div
+          ref={contentRef}
           className={cn(
             'absolute inset-0',
             mapPresentation === 'visible' && 'pointer-events-none z-50',

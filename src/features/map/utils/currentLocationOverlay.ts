@@ -8,12 +8,27 @@ export type CurrentLocationOverlayHandle = google.maps.OverlayView & {
 export const createCurrentLocationOverlay = (
   color: string,
   initialPosition: google.maps.LatLngLiteral,
+  characterUrl?: string,
+  characterFrontUrl?: string,
 ): CurrentLocationOverlayHandle => {
   const container = document.createElement('div');
   container.style.position = 'absolute';
   container.style.pointerEvents = 'none';
   container.innerHTML = `
-    <svg width="48" height="48" viewBox="-24 -24 48 48">
+    ${
+      characterUrl
+        ? `<span class="current-location-character-heading" data-facing="back">
+            <img class="current-location-character current-location-character-back" src="${characterUrl}" alt="" />
+            ${
+              characterFrontUrl
+                ? `<img class="current-location-character current-location-character-front" src="${characterFrontUrl}" alt="" />`
+                : ''
+            }
+          </span>`
+        : ''
+    }
+    <svg class="current-location-default-marker" width="48" height="48" viewBox="-24 -24 48 48"
+      style="${characterUrl ? 'display:none' : ''}">
       <circle class="current-location-pulse" cx="0" cy="0" r="9" fill="${color}" />
       <path class="heading-wedge" d="M -6,-16 L 0,-23 L 6,-16 Z" fill="${color}"
         stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round" transform="rotate(0)" />
@@ -21,7 +36,25 @@ export const createCurrentLocationOverlay = (
       <circle cx="0" cy="0" r="9" fill="${color}" />
     </svg>
   `;
-  const headingWedge = container.querySelector('.heading-wedge') as SVGPathElement;
+  const defaultMarker = container.querySelector(
+    '.current-location-default-marker',
+  ) as SVGElement | null;
+  const headingWedge = container.querySelector('.heading-wedge') as SVGPathElement | null;
+  const characterHeading = container.querySelector(
+    '.current-location-character-heading',
+  ) as HTMLSpanElement | null;
+  const characterImages = container.querySelectorAll<HTMLImageElement>(
+    '.current-location-character',
+  );
+  characterImages.forEach((image) => {
+    image.addEventListener('error', () => {
+      image.remove();
+      if (!characterHeading?.querySelector('.current-location-character')) {
+        characterHeading?.remove();
+        if (defaultMarker) defaultMarker.style.display = '';
+      }
+    });
+  });
 
   let position = initialPosition;
 
@@ -54,7 +87,22 @@ export const createCurrentLocationOverlay = (
     }
 
     setHeading(heading: number) {
-      headingWedge.setAttribute('transform', `rotate(${heading})`);
+      const normalizedHeading = ((heading % 360) + 360) % 360;
+      headingWedge?.setAttribute('transform', `rotate(${normalizedHeading})`);
+      if (!characterHeading) return;
+      const desiredFacing = normalizedHeading <= 90 || normalizedHeading >= 270 ? 'back' : 'front';
+      const hasDesiredImage = characterHeading.querySelector(
+        `.current-location-character-${desiredFacing}`,
+      );
+      characterHeading.dataset.facing = hasDesiredImage
+        ? desiredFacing
+        : desiredFacing === 'back'
+          ? 'front'
+          : 'back';
+      characterHeading.style.setProperty(
+        '--current-location-character-scale-x',
+        normalizedHeading > 180 ? '-1' : '1',
+      );
     }
   }
 
