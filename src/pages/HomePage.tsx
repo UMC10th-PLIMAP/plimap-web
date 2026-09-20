@@ -22,6 +22,7 @@ import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap'
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import type { AppOutletContext } from '@/layouts/RootLayout';
+import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
@@ -184,6 +185,7 @@ export default function HomePage() {
   const handleCurrentLocationClick = () => {
     if (!currentPositionQuery.data) return;
 
+    trackEvent('home_current_location_click');
     navigate('/app', {
       state: {
         mapFocusCoordinate: {
@@ -213,6 +215,7 @@ export default function HomePage() {
   };
 
   const handleFriendProfileClick = async (pin: FriendPinItem) => {
+    trackEvent('home_friend_profile_click', { pin_id: pin.pinId });
     try {
       const { writerId } = await getPinDetail(String(pin.pinId));
       if (!Number.isInteger(writerId) || writerId <= 0) {
@@ -229,6 +232,10 @@ export default function HomePage() {
     const currentPosition = currentPositionQuery.data;
     if (!currentPosition || openingPlaceId !== null) return;
 
+    trackEvent('home_place_open_click', {
+      place_id: place.placeId,
+      source: place.creatorName ? 'saved' : 'hot',
+    });
     setOpeningPlaceId(place.placeId);
     try {
       const placeDetail = await getPlaceDetail({
@@ -362,14 +369,15 @@ export default function HomePage() {
                       aria-label={`${pin.placeName} 지도에서 PIN 보기`}
                       profileAriaLabel={`${pin.writerNickname} 프로필 보기`}
                       onProfileClick={() => void handleFriendProfileClick(pin)}
-                      onClick={() =>
+                      onClick={() => {
+                        trackEvent('home_friend_pin_click', { pin_id: pin.pinId });
                         void openPinPlaceOnMap({
                           pinId: pin.pinId,
                           fallbackPlaceName: pin.placeName,
                           showMyRegisteredTrackCta: true,
                           requestFeedPlaceAccess: true,
-                        })
-                      }
+                        });
+                      }}
                       pin={{
                         id: String(pin.pinId),
                         place: { name: pin.placeName },
@@ -390,7 +398,10 @@ export default function HomePage() {
         {hasFriendPins ? (
           <button
             type="button"
-            onClick={() => navigate('/app/friends/search')}
+            onClick={() => {
+              trackEvent('home_friend_search_click');
+              navigate('/app/friends/search');
+            }}
             className="mx-4 mt-[30px] flex h-[86px] items-center justify-between rounded-xl bg-pli-black-85 px-[18px] text-left"
           >
             <span className="flex min-w-0 items-center gap-4">
@@ -415,13 +426,19 @@ export default function HomePage() {
           <div className="flex gap-3 px-[19px]">
             <Chip
               variant={hotPlaceFilter === 'nearby' ? 'selected' : 'default'}
-              onClick={() => setHotPlaceFilter('nearby')}
+              onClick={() => {
+                trackEvent('home_hot_place_filter_click', { filter: 'nearby' });
+                setHotPlaceFilter('nearby');
+              }}
             >
               나와 가까운
             </Chip>
             <Chip
               variant={hotPlaceFilter === 'popular' ? 'selected' : 'default'}
-              onClick={() => setHotPlaceFilter('popular')}
+              onClick={() => {
+                trackEvent('home_hot_place_filter_click', { filter: 'popular' });
+                setHotPlaceFilter('popular');
+              }}
             >
               많이 등록된
             </Chip>

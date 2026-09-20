@@ -13,6 +13,7 @@ import { ProfileShareDialog } from '@/features/profile/components/ProfileShareDi
 import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap';
 import { useInfiniteMemberMe } from '@/features/pin/queries/useMemberMe';
 import { useMyProfile } from '@/hooks/useMyProfile';
+import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 
 const MY_PROFILE_STALE_TIME = 60 * 1000;
@@ -48,7 +49,10 @@ export default function MyProfilePage() {
           <button
             type="button"
             aria-label="설정"
-            onClick={() => navigate('/app/settings')}
+            onClick={() => {
+              trackEvent('my_settings_click');
+              navigate('/app/settings');
+            }}
             className="flex size-6 items-center text-grayscale-100 cursor-pointer"
           >
             <SettingsIcon className="size-6" />
@@ -58,23 +62,36 @@ export default function MyProfilePage() {
         <div className="mt-[3px] flex flex-col ">
           <ProfileInfo
             profile={myProfile}
-            onFollowingClick={() => navigate('/app/my/following')}
-            onFollowerClick={() => navigate('/app/my/followers')}
+            onFollowingClick={() => {
+              trackEvent('my_following_click');
+              navigate('/app/my/following');
+            }}
+            onFollowerClick={() => {
+              trackEvent('my_followers_click');
+              navigate('/app/my/followers');
+            }}
           />
           <ProfileActions
             actions={[
               {
                 label: '프로필 편집',
-                onClick: () => navigate('/app/my/edit'),
+                onClick: () => {
+                  trackEvent('my_profile_edit_click');
+                  navigate('/app/my/edit');
+                },
               },
               {
                 label: '내 PLIMAP',
-                onClick: () => navigate('/app/my/plimap'),
+                onClick: () => {
+                  trackEvent('my_plimap_click');
+                  navigate('/app/my/plimap');
+                },
               },
               {
                 label: <ShareIcon />,
                 onClick: () => {
                   if (!canShareProfile) return;
+                  trackEvent('my_share_click');
                   setIsShareOpen(true);
                 },
                 'aria-label': '프로필 공유',
@@ -95,6 +112,7 @@ export default function MyProfilePage() {
             void refetchMemberMe();
           }}
           onPinClick={(pin) => {
+            trackEvent('my_pin_click', { pin_id: pin.pinId, place_track_id: pin.placeTrackId });
             void openPinPlaceOnMap({
               pinId: pin.pinId,
               placeTrackId: pin.placeTrackId,
@@ -104,7 +122,10 @@ export default function MyProfilePage() {
               showMapBackButton: true,
             });
           }}
-          onRegisterPin={() => navigate('/app')}
+          onRegisterPin={() => {
+            trackEvent('my_register_pin_click');
+            navigate('/app');
+          }}
         />
 
         {canShareProfile ? (
