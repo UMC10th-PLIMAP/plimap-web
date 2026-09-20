@@ -1,5 +1,4 @@
 import type { MapPin } from '@/features/map/types';
-import { SEOUL_CITY_HALL_MOCK } from '@/features/ai-mvp/mockAi';
 
 /**
  * 개발 환경에서 실제 API 응답이 비어있을 때(근처에 등록된 PIN이 없을 때)
@@ -10,14 +9,12 @@ import { SEOUL_CITY_HALL_MOCK } from '@/features/ai-mvp/mockAi';
  */
 export const DEV_MOCK_MAP_PINS: MapPin[] = [
   {
-    id: SEOUL_CITY_HALL_MOCK.id,
-    placeId: SEOUL_CITY_HALL_MOCK.placeId,
-    lat: SEOUL_CITY_HALL_MOCK.latitude,
-    lng: SEOUL_CITY_HALL_MOCK.longitude,
-    title: SEOUL_CITY_HALL_MOCK.placeName,
+    id: 'dev-mock:1',
+    lat: 37.5663,
+    lng: 126.9779,
     coverUrl: undefined,
-    nickname: '서울시청 플레이리스트',
-    introduction: 'AI가 이 장소의 대표 노래를 분석했어요',
+    nickname: '냥코',
+    introduction: '도가니 살리기 위잉잉잉~',
     hasBookmarkedPlace: true,
   },
   {

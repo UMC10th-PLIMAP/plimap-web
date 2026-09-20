@@ -6,8 +6,6 @@ import CloseIcon from '@/assets/icons/close.svg?react';
 import NextIcon from '@/assets/icons/next.svg?react';
 import UserPlaceholderIcon from '@/assets/icons/user-placeholder.svg?react';
 import { BottomSheet, useBottomSheet } from '@/components/ui/BottomSheet';
-import { Dialog } from '@/components/ui/Dialog';
-import { Button } from '@/components/ui/button';
 import { PinListSheetSkeleton } from '@/components/skeletons/PinListSheetSkeleton';
 import { useToast } from '@/hooks/useToast';
 import { PinCard } from '@/features/pin/components/PinCard';
@@ -18,11 +16,6 @@ import type { FocusedFeedPin, Pin, PinSort, PlaceInfo } from '@/features/pin/typ
 import { useMyProfile } from '@/hooks/useMyProfile';
 import { cn } from '@/lib/utils';
 import type { PlaceSearchHistoryRequest } from '@/types/place.type';
-import {
-  SEOUL_CITY_HALL_MOCK,
-  SEOUL_CITY_HALL_TRACKS,
-  analyzePlaceSongs,
-} from '@/features/ai-mvp/mockAi';
 
 type BookmarkStatus = 'loading' | 'error' | 'ready';
 
@@ -133,8 +126,6 @@ type PinListContentProps = {
   focusedFeedPin?: FocusedFeedPin;
   onFocusedTrackClick?: () => void;
   myPin?: Pin;
-  showAiAnalysis?: boolean;
-  onAiAnalysis?: () => void;
 };
 
 function PinListContent({
@@ -154,8 +145,6 @@ function PinListContent({
   focusedFeedPin,
   onFocusedTrackClick,
   myPin,
-  showAiAnalysis = false,
-  onAiAnalysis,
 }: PinListContentProps) {
   const { isFullPage, onClose } = useBottomSheet();
   const { data: myProfile } = useMyProfile();
@@ -321,22 +310,6 @@ function PinListContent({
             <SortTabs value={sort} onChange={onSortChange} />
           </div>
         ) : null}
-
-        {showAiAnalysis ? (
-          <button
-            type="button"
-            onClick={onAiAnalysis}
-            className="mt-4 flex w-full items-center justify-between rounded-xl bg-gradient-to-r from-neon/20 to-[#8bc8ff]/20 px-4 py-3 text-left"
-          >
-            <span>
-              <span className="block etc-13-sb text-neon-2">AI PLACE MIX</span>
-              <span className="body-15-m text-grayscale-100">이 장소의 노래 분석하기</span>
-            </span>
-            <span aria-hidden className="text-xl">
-              ✨
-            </span>
-          </button>
-        ) : null}
       </BottomSheet.Header>
 
       <BottomSheet.Content className={cn('mt-5 px-4 scrollbar-hide', !hasPins && 'flex flex-col')}>
@@ -391,17 +364,11 @@ export function PinListSheet({
 }: PinListSheetProps) {
   const toast = useToast();
   const [sort, setSort] = useState<PinSort>('POPULAR');
-  const [isAiAnalysisOpen, setIsAiAnalysisOpen] = useState(false);
-  const [isAiAnalysisPending, setIsAiAnalysisPending] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<
-    Awaited<ReturnType<typeof analyzePlaceSongs>> | undefined
-  >();
   const normalizedPlaceId = place.id.startsWith('place:')
     ? place.id.slice('place:'.length)
     : place.id;
   const parsedPlaceId = place.placeId ?? Number(normalizedPlaceId);
   const placeId = Number.isSafeInteger(parsedPlaceId) && parsedPlaceId > 0 ? parsedPlaceId : null;
-  const isAiDemoPlace = placeId === SEOUL_CITY_HALL_MOCK.placeId;
   // 조회 좌표가 없으면 장소 좌표로 폴백 — GPS 실패해도 목록은 볼 수 있어야 한다.
   const listQueryLocation =
     detailLocation ??
@@ -416,43 +383,22 @@ export function PinListSheet({
     placeId,
     latitude: queryLatitude,
     longitude: queryLongitude,
-    enabled: open && canQueryPlace && !isAiDemoPlace,
+    enabled: open && canQueryPlace,
   });
   // 지도 핀 탭으로 열렸을 때(place.name이 아직 없음)만 최초 로딩 스켈레톤을 보여준다.
   // 검색 결과로 열렸을 때는 이미 이름/주소가 있어 부분 데이터를 그대로 보여준다.
   const isInitialLoading = !place.name && placeDetailQuery.isLoading;
-  const resolvedPlace: PlaceInfo = isAiDemoPlace
-    ? {
-        ...place,
-        name: SEOUL_CITY_HALL_MOCK.placeName,
-        address: SEOUL_CITY_HALL_MOCK.address,
-      }
-    : {
-        ...place,
-        name: placeDetailQuery.data?.placeName ?? place.name,
-        distance: placeDetailQuery.data?.distanceMeters ?? place.distance,
-        address: placeDetailQuery.data
-          ? placeDetailQuery.data.roadAddress || placeDetailQuery.data.address
-          : place.address,
-        isMine: placeDetailQuery.data?.pinnedByMe ?? place.isMine,
-      };
+  const resolvedPlace: PlaceInfo = {
+    ...place,
+    name: placeDetailQuery.data?.placeName ?? place.name,
+    distance: placeDetailQuery.data?.distanceMeters ?? place.distance,
+    address: placeDetailQuery.data
+      ? placeDetailQuery.data.roadAddress || placeDetailQuery.data.address
+      : place.address,
+    isMine: placeDetailQuery.data?.pinnedByMe ?? place.isMine,
+  };
   useEffect(() => {
     if (!onResolvedPlaceChange) return;
-
-    if (isAiDemoPlace) {
-      onResolvedPlaceChange({
-        placeId: SEOUL_CITY_HALL_MOCK.placeId,
-        placeName: SEOUL_CITY_HALL_MOCK.placeName,
-        address: SEOUL_CITY_HALL_MOCK.address,
-        roadAddress: SEOUL_CITY_HALL_MOCK.address,
-        latitude: SEOUL_CITY_HALL_MOCK.latitude,
-        longitude: SEOUL_CITY_HALL_MOCK.longitude,
-        distance: place.distance,
-        isMine: false,
-        withinAccessRange: true,
-      });
-      return;
-    }
 
     const detail = placeDetailQuery.data;
     if (!detail) {
@@ -471,19 +417,15 @@ export function PinListSheet({
       isMine: detail.pinnedByMe,
       withinAccessRange: detail.withinAccessRange,
     });
-  }, [isAiDemoPlace, onResolvedPlaceChange, place.distance, placeDetailQuery.data]);
+  }, [onResolvedPlaceChange, placeDetailQuery.data]);
 
   const bookmarkMutation = useTogglePlaceBookmark();
-  const resolvedBookmarkState = isAiDemoPlace
-    ? false
-    : (placeDetailQuery.data?.bookmarkedByMe ?? place.bookmarkedByMe);
-  const detailErrorMessage = isAiDemoPlace
-    ? null
-    : !canQueryPlace
-      ? detailLocationError
-      : placeDetailQuery.isError
-        ? '장소 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
-        : null;
+  const resolvedBookmarkState = placeDetailQuery.data?.bookmarkedByMe ?? place.bookmarkedByMe;
+  const detailErrorMessage = !canQueryPlace
+    ? detailLocationError
+    : placeDetailQuery.isError
+      ? '장소 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
+      : null;
   const bookmarkStatus: BookmarkStatus =
     resolvedBookmarkState !== undefined ? 'ready' : detailErrorMessage ? 'error' : 'loading';
   const isCurrentPlaceMutation = bookmarkMutation.variables?.placeId === placeId;
@@ -496,28 +438,11 @@ export function PinListSheet({
     latitude: queryLatitude,
     longitude: queryLongitude,
     sort: sort === 'LATEST' ? 'LATEST' : 'POPULAR',
-    enabled: open && canQueryPlace && !isAiDemoPlace,
+    enabled: open && canQueryPlace,
   });
 
-  const handleAiAnalysis = async () => {
-    setIsAiAnalysisOpen(true);
-    if (aiAnalysis || isAiAnalysisPending) return;
-    setIsAiAnalysisPending(true);
-    try {
-      setAiAnalysis(await analyzePlaceSongs());
-    } finally {
-      setIsAiAnalysisPending(false);
-    }
-  };
-
   const handleBookmarkToggle = () => {
-    if (
-      isAiDemoPlace ||
-      placeId === null ||
-      bookmarkMutation.isPending ||
-      bookmarkStatus !== 'ready'
-    )
-      return;
+    if (placeId === null || bookmarkMutation.isPending || bookmarkStatus !== 'ready') return;
 
     bookmarkMutation.mutate(
       { placeId, bookmarked: !isBookmarked },
@@ -533,12 +458,11 @@ export function PinListSheet({
     );
   };
 
-  const pins: Pin[] = isAiDemoPlace
-    ? SEOUL_CITY_HALL_TRACKS
-    : (data?.tracks.map((track) => ({
-        ...track,
-        liked: track.isLiked,
-      })) ?? []);
+  const pins: Pin[] =
+    data?.tracks.map((track) => ({
+      ...track,
+      liked: track.isLiked,
+    })) ?? [];
   const myPin = pins.find((pin) => pin.pinByMe);
 
   const focusedPlaceTrackId = findFocusedPlaceTrackId(focusedFeedPin, pins);
@@ -620,59 +544,9 @@ export function PinListSheet({
             focusedFeedPin={focusedFeedPin}
             onFocusedTrackClick={onFocusedTrackClick ? handleFocusedTrackClick : undefined}
             myPin={myPin}
-            showAiAnalysis={isAiDemoPlace}
-            onAiAnalysis={() => void handleAiAnalysis()}
           />
         )}
       </BottomSheet>
-
-      <Dialog
-        open={isAiAnalysisOpen}
-        onClose={() => setIsAiAnalysisOpen(false)}
-        className="w-[calc(100%-32px)] max-w-[370px] p-5"
-      >
-        <Dialog.Title className="head-20-sb text-grayscale-100">서울시청 노래 분석</Dialog.Title>
-        {isAiAnalysisPending ? (
-          <div role="status" className="flex h-48 flex-col items-center justify-center gap-4">
-            <span
-              aria-hidden
-              className="size-10 animate-spin rounded-full border-4 border-white/20 border-t-neon"
-            />
-            <p className="body-15-r text-grayscale-400">쌓인 노래를 분석하고 있어요</p>
-          </div>
-        ) : aiAnalysis ? (
-          <div className="mt-4">
-            <div className="rounded-xl bg-pli-black-85 p-4">
-              <p className="etc-13-sb text-neon-2">대표 노래</p>
-              <p className="mt-1 body-17-m text-grayscale-100">
-                {aiAnalysis.representativeTrack.trackName}
-              </p>
-              <p className="body-15-r text-grayscale-500">
-                {aiAnalysis.representativeTrack.artistName}
-              </p>
-            </div>
-            <ul className="mt-4 space-y-2">
-              {aiAnalysis.genres.map((genre) => (
-                <li key={genre.name} className="flex justify-between body-15-r text-grayscale-300">
-                  <span>{genre.name}</span>
-                  <span>{genre.count}곡</span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 rounded-xl bg-neon/10 p-3 body-15-r text-grayscale-200">
-              {aiAnalysis.summary}
-            </p>
-            <Button
-              variant="confirm"
-              size="bt"
-              className="mt-5 w-full"
-              onClick={() => setIsAiAnalysisOpen(false)}
-            >
-              확인
-            </Button>
-          </div>
-        ) : null}
-      </Dialog>
     </>
   );
 }

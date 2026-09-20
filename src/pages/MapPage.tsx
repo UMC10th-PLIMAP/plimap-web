@@ -22,8 +22,6 @@ import { usePinCreationStore } from '@/store/pinCreationStore';
 import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { useMyProfile } from '@/hooks/useMyProfile';
-import { getUnlockedCharacters } from '@/features/ai-mvp/mockAi';
-import { useAiMvpStore } from '@/features/ai-mvp/useAiMvpStore';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 // mapViewData 로딩 중(undefined)에는 매 렌더마다 새 배열 리터럴이 생기면 안 된다 -
@@ -74,7 +72,7 @@ function mapPinToPlaceInfo(pin: MapPin): PlaceInfo {
   return {
     id: pin.id,
     placeId: pin.placeId,
-    name: pin.title ?? '',
+    name: '',
     creatorName: pin.nickname,
     distance: 0,
     latitude: pin.lat,
@@ -207,7 +205,6 @@ const MapPage: React.FC<MapPageProps> = ({
           lng: selectedMapPlace.coordinates.lng,
           coverUrl: overlayFocusPin.albumImageUrl || undefined,
           nickname: overlayFocusPin.nickname,
-          writerId: overlayFocusPin.writerId,
           avatarUrl: overlayFocusPin.avatarUrl,
           introduction: overlayFocusPin.introduction,
           youtubeVideoId: overlayFocusPin.youtubeVideoId,
@@ -307,22 +304,16 @@ const MapPage: React.FC<MapPageProps> = ({
   );
 
   const { data: myProfile } = useMyProfile();
-  const selectedCharacterId = useAiMvpStore((state) => state.selectedCharacterId);
-  const selectedCharacter = getUnlockedCharacters(myProfile?.pinCount ?? 0).find(
-    (character) => character.id === selectedCharacterId,
-  );
   const handleOpenProfile = useCallback(
     (pin: MapPin) => {
       if (pin.writerId == null) return;
-      onSelectMapPinChange(null);
-      onClearMapPlace?.();
       if (pin.writerId === myProfile?.id) {
         navigate('/app/my');
         return;
       }
       navigate(`/app/users/${pin.writerId}`);
     },
-    [myProfile?.id, navigate, onClearMapPlace, onSelectMapPinChange],
+    [myProfile?.id, navigate],
   );
 
   // 말풍선을 띄우는 핀이 바뀌면(선택·자동 포커스 포함) 재생 중인 클립을 멈춘다.
@@ -489,7 +480,7 @@ const MapPage: React.FC<MapPageProps> = ({
       coordinates: { lat: resolvedActivePlace.latitude, lng: resolvedActivePlace.longitude },
       distanceMeters: resolvedActivePlace.distance,
     });
-    navigate('/app/pin/register/photo');
+    navigate('/app/song/list');
   };
 
   if (mapLoadStatus === 'error') {
@@ -718,8 +709,6 @@ const MapPage: React.FC<MapPageProps> = ({
         isLoaded={mapLoadStatus === 'ready'}
         isInteractionDisabled={!isUiActive}
         isLocationTrackingDisabled={isCovered}
-        currentLocationCharacterUrl={selectedCharacter?.markerUrl}
-        currentLocationCharacterFrontUrl={selectedCharacter?.cardUrl}
         zoom={zoom}
         initialCenter={
           savedViewport?.center ??

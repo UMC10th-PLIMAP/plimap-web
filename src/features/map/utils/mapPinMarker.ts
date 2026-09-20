@@ -44,8 +44,8 @@ export const renderMapPinMarker = (mount: HTMLElement, props: MapPinMarkerProps)
 
 export const unmountMapPinMarker = (mount: HTMLElement) => {
   const root = markerRoots.get(mount);
+  root?.unmount();
   markerRoots.delete(mount);
-  if (root) queueMicrotask(() => root.unmount());
 };
 
 export const createMapPinMarkerMount = (props: MapPinMarkerProps): MapPinMarkerMount => {

@@ -19,9 +19,6 @@ import { useToggleFollow } from '@/features/profile/queries/useToggleFollow';
 import { getFollowActionLabel } from '@/features/profile/utils/getFollowActionLabel';
 import { useGoBack } from '@/hooks/useGoBack';
 import { useOtherMemberProfile } from '@/hooks/useOtherMemberProfile';
-import { Dialog } from '@/components/ui/Dialog';
-import { Button } from '@/components/ui/button';
-import { analyzeMusicCompatibility } from '@/features/ai-mvp/mockAi';
 
 const FOLLOW_TOGGLE_FAILED_MESSAGE = '요청을 처리하지 못했어요. 다시 시도해 주세요.';
 const REPORT_FAILED_MESSAGE = '신고를 접수하지 못했어요. 다시 시도해 주세요.';
@@ -39,11 +36,6 @@ export default function UserProfilePage() {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
-  const [isCompatibilityOpen, setIsCompatibilityOpen] = useState(false);
-  const [isCompatibilityPending, setIsCompatibilityPending] = useState(false);
-  const [compatibility, setCompatibility] = useState<
-    Awaited<ReturnType<typeof analyzeMusicCompatibility>> | undefined
-  >();
   const [trackedMemberId, setTrackedMemberId] = useState(id);
 
   if (id !== trackedMemberId) {
@@ -51,8 +43,6 @@ export default function UserProfilePage() {
     setIsMoreOpen(false);
     setIsReportOpen(false);
     setIsShareOpen(false);
-    setIsCompatibilityOpen(false);
-    setCompatibility(undefined);
   }
 
   const {
@@ -74,18 +64,6 @@ export default function UserProfilePage() {
 
   const nickname = member?.nickname?.trim() ?? '';
   const canShareProfile = nickname.length > 0;
-
-  const handleCompatibility = async () => {
-    if (!id) return;
-    setIsCompatibilityOpen(true);
-    if (compatibility || isCompatibilityPending) return;
-    setIsCompatibilityPending(true);
-    try {
-      setCompatibility(await analyzeMusicCompatibility(id));
-    } finally {
-      setIsCompatibilityPending(false);
-    }
-  };
 
   useEffect(() => {
     const loadMoreElement = loadMoreRef.current;
@@ -211,11 +189,6 @@ export default function UserProfilePage() {
                       setIsShareOpen(true);
                     },
                   },
-                  {
-                    label: '장르 궁합',
-                    onClick: () => void handleCompatibility(),
-                    className: 'text-neon-2',
-                  },
                 ]}
               />
             </div>
@@ -291,49 +264,6 @@ export default function UserProfilePage() {
             }
           }}
         />
-
-        <Dialog
-          open={isCompatibilityOpen}
-          onClose={() => setIsCompatibilityOpen(false)}
-          className="w-[calc(100%-32px)] max-w-[370px] p-5"
-        >
-          <Dialog.Title className="head-20-sb text-grayscale-100">친구와 장르 궁합</Dialog.Title>
-          {isCompatibilityPending ? (
-            <div role="status" className="flex h-56 flex-col items-center justify-center gap-4">
-              <span
-                aria-hidden
-                className="size-11 animate-spin rounded-full border-4 border-white/20 border-t-neon"
-              />
-              <p className="body-15-r text-grayscale-400">두 사람의 노래 취향을 비교하고 있어요</p>
-            </div>
-          ) : compatibility ? (
-            <div className="mt-4">
-              <div className="rounded-2xl bg-gradient-to-br from-neon/20 to-[#8bc8ff]/15 p-5 text-center">
-                <p className="etc-13-sb text-neon-2">MUSIC MATCH</p>
-                <p className="mt-1 text-[48px] font-semibold leading-none text-grayscale-100">
-                  {compatibility.score}%
-                </p>
-                <p className="mt-3 body-15-r text-grayscale-300">
-                  공통 장르 · {compatibility.sharedGenres.join(' · ')}
-                </p>
-              </div>
-              <p className="mt-4 body-15-r text-grayscale-400">{compatibility.differentTaste}</p>
-              <div className="mt-4 rounded-xl bg-pli-black-85 p-3">
-                <p className="etc-13-r text-grayscale-500">같이 듣기 좋은 곡</p>
-                <p className="mt-1 body-17-m text-grayscale-100">{compatibility.track.trackName}</p>
-                <p className="body-15-r text-grayscale-500">{compatibility.track.artistName}</p>
-              </div>
-              <Button
-                variant="confirm"
-                size="bt"
-                className="mt-5 w-full"
-                onClick={() => setIsCompatibilityOpen(false)}
-              >
-                확인
-              </Button>
-            </div>
-          ) : null}
-        </Dialog>
       </div>
     </>
   );
