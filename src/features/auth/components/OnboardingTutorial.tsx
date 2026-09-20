@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { TutorialSlideshow } from '@/features/auth/components/TutorialSlideshow';
+import { trackEvent } from '@/lib/analytics';
 
 type OnboardingTutorialProps = {
   onFinish: () => void;
@@ -19,7 +20,10 @@ export function OnboardingTutorial({ onFinish }: OnboardingTutorialProps) {
           variant="cta"
           size="cta"
           type="button"
-          onClick={onFinish}
+          onClick={() => {
+            trackEvent('onboarding_start_click', { slide_index: activeIndex });
+            onFinish();
+          }}
           className="w-full bg-gradient-neon"
         >
           <span className="head-20-sb text-grayscale-1200">바로 시작하기</span>

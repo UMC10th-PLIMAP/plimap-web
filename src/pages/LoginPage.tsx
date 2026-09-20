@@ -11,6 +11,7 @@ import { OnboardingSplash } from '@/features/auth/components/OnboardingSplash';
 import { OnboardingTutorial } from '@/features/auth/components/OnboardingTutorial';
 import type { AccountSanctionInfo } from '@/features/auth/types';
 import { buildApiUrl } from '@/config/api';
+import { trackEvent } from '@/lib/analytics';
 
 export type LoginPageLocationState = {
   oauthError?: boolean;
@@ -59,6 +60,7 @@ export default function LoginPage() {
   };
 
   const handleOAuthClick = (provider: OAuthProvider) => () => {
+    trackEvent('login_click', { method: provider });
     window.location.href = OAUTH_LOGIN_URL[provider];
   };
 
