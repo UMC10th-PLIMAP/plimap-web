@@ -136,18 +136,6 @@ export default function PinPhotoAnalysisPage() {
             사진은 분석 화면에서만 사용되며 서버에 저장되지 않아요.
           </p>
         )}
-
-        {status !== 'done' ? (
-          <Button
-            type="button"
-            variant="cancel"
-            size="bt"
-            className="mt-6 w-full shrink-0"
-            onClick={() => navigate('/app/song/list')}
-          >
-            건너뛰기
-          </Button>
-        ) : null}
       </div>
     </main>
   );
