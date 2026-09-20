@@ -31,7 +31,7 @@ export default function PinLocationConfirmPage() {
         <Button variant="cancel" size="bt" onClick={handlePrevious}>
           이전
         </Button>
-        <Button variant="confirm" size="bt" onClick={() => navigate('/app/pin/register/photo')}>
+        <Button variant="confirm" size="bt" onClick={() => navigate('/app/song/list')}>
           확정
         </Button>
       </div>

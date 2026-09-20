@@ -1,12 +1,10 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query';
 
 import { getPlaybackPreparations } from '@/api/track';
-import type { GetPlaybackPreparationsResponse } from '@/features/pin/types';
 
 type UseGetPlaybackPreparationsParams = {
   itunesTrackId?: string;
   enabled?: boolean;
-  initialData?: GetPlaybackPreparationsResponse;
 };
 
 export function playbackPreparationsQueryKey(itunesTrackId: string | number) {
@@ -24,12 +22,10 @@ export function fetchPlaybackPreparations(queryClient: QueryClient, itunesTrackI
 export function useGetPlaybackPreparations({
   itunesTrackId,
   enabled = true,
-  initialData,
 }: UseGetPlaybackPreparationsParams = {}) {
   return useQuery({
     queryKey: playbackPreparationsQueryKey(itunesTrackId ?? ''),
     queryFn: () => getPlaybackPreparations(Number(itunesTrackId)),
     enabled: enabled && Boolean(itunesTrackId) && !isNaN(Number(itunesTrackId)),
-    initialData,
   });
 }
