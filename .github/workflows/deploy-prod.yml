@@ -45,6 +45,7 @@ jobs:
         env:
           WIF_PROVIDER: ${{ vars.PROD_GCP_WIF_PROVIDER }}
           DEPLOYER_SERVICE_ACCOUNT: ${{ vars.PROD_GCP_DEPLOYER_SERVICE_ACCOUNT }}
+          PROD_VITE_GA_MEASUREMENT_ID: ${{ vars.PROD_VITE_GA_MEASUREMENT_ID }}
           PROD_VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.PROD_VITE_GOOGLE_MAPS_API_KEY }}
           PROD_VITE_GOOGLE_MAPS_MAP_ID: ${{ secrets.PROD_VITE_GOOGLE_MAPS_MAP_ID }}
         run: |
@@ -60,6 +61,7 @@ jobs:
             PUBLIC_SMOKE_ENABLED
             WIF_PROVIDER
             DEPLOYER_SERVICE_ACCOUNT
+            PROD_VITE_GA_MEASUREMENT_ID
             PROD_VITE_GOOGLE_MAPS_API_KEY
             PROD_VITE_GOOGLE_MAPS_MAP_ID
           )
@@ -104,6 +106,7 @@ jobs:
       - name: Build and push immutable frontend image
         shell: bash
         env:
+          PROD_VITE_GA_MEASUREMENT_ID: ${{ vars.PROD_VITE_GA_MEASUREMENT_ID }}
           PROD_VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.PROD_VITE_GOOGLE_MAPS_API_KEY }}
           PROD_VITE_GOOGLE_MAPS_MAP_ID: ${{ secrets.PROD_VITE_GOOGLE_MAPS_MAP_ID }}
         run: |
@@ -113,6 +116,7 @@ jobs:
           docker build --pull \
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             --build-arg "VITE_API_BASE_URL=${PUBLIC_BASE_URL}" \
+            --build-arg "VITE_GA_MEASUREMENT_ID=${PROD_VITE_GA_MEASUREMENT_ID}" \
             --build-arg "VITE_GOOGLE_MAPS_API_KEY=${PROD_VITE_GOOGLE_MAPS_API_KEY}" \
             --build-arg "VITE_GOOGLE_MAPS_MAP_ID=${PROD_VITE_GOOGLE_MAPS_MAP_ID}" \
             --tag "$image" \
