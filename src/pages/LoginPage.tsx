@@ -16,7 +16,7 @@ import type { AccountSanctionInfo } from '@/features/auth/types';
 import { clearDemoSession } from '@/features/auth/utils/demoSession';
 import { buildApiUrl } from '@/config/api';
 import { useToast } from '@/hooks/useToast';
-import { trackEvent } from '@/lib/analytics';
+import { AnalyticsEvent, track } from '@/lib/analytics';
 
 export type LoginPageLocationState = {
   oauthError?: boolean;
@@ -71,7 +71,7 @@ export default function LoginPage() {
 
   const handleOAuthClick = (provider: OAuthProvider) => () => {
     clearDemoSession();
-    trackEvent('login_click', { method: provider });
+    track(AnalyticsEvent.LoginClick, { method: provider });
     window.location.href = OAUTH_LOGIN_URL[provider];
   };
 

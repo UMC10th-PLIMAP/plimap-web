@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { TutorialSlideshow } from '@/features/auth/components/TutorialSlideshow';
-import { trackEvent } from '@/lib/analytics';
+import { AnalyticsEvent, track } from '@/lib/analytics';
 
 type OnboardingTutorialProps = {
   onFinish: () => void;
@@ -21,7 +21,7 @@ export function OnboardingTutorial({ onFinish }: OnboardingTutorialProps) {
           size="cta"
           type="button"
           onClick={() => {
-            trackEvent('onboarding_start_click', { slide_index: activeIndex });
+            track(AnalyticsEvent.OnboardingStartClick, { slide_index: activeIndex });
             onFinish();
           }}
           className="w-full bg-gradient-neon"

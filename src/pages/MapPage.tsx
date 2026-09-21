@@ -22,7 +22,7 @@ import { usePinCreationStore } from '@/store/pinCreationStore';
 import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { useMyProfile } from '@/hooks/useMyProfile';
-import { trackEvent } from '@/lib/analytics';
+import { AnalyticsEvent, track } from '@/lib/analytics';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 // mapViewData 로딩 중(undefined)에는 매 렌더마다 새 배열 리터럴이 생기면 안 된다 -
@@ -296,7 +296,7 @@ const MapPage: React.FC<MapPageProps> = ({
       const pin = displayMapPins.find((candidate) => candidate.id === pinId);
       if (!pin?.youtubeVideoId) return;
 
-      trackEvent('map_pin_play_click', { pin_id: pinId, place_id: pin.placeId });
+      track(AnalyticsEvent.MapPinPlayClick, { pin_id: pinId, place_id: pin.placeId });
       toggleClipPlayback(pinId, {
         videoId: pin.youtubeVideoId,
         clipStartMs: pin.clipStartMs ?? 0,
@@ -309,7 +309,7 @@ const MapPage: React.FC<MapPageProps> = ({
   const handleOpenProfile = useCallback(
     (pin: MapPin) => {
       if (pin.writerId == null) return;
-      trackEvent('map_pin_profile_click', {
+      track(AnalyticsEvent.MapPinProfileClick, {
         pin_id: pin.id,
         writer_id: pin.writerId,
         is_mine: pin.writerId === myProfile?.id,
@@ -443,7 +443,7 @@ const MapPage: React.FC<MapPageProps> = ({
   };
 
   const openPlaceSearch = () => {
-    trackEvent('map_place_search_click');
+    track(AnalyticsEvent.MapPlaceSearchClick);
     placeSearchSourceRef.current = {
       entryKey: location.key,
       viewport: mapViewerRef.current?.captureViewport() ?? savedViewport,
@@ -454,7 +454,7 @@ const MapPage: React.FC<MapPageProps> = ({
   };
 
   const handleRecenterToCurrentLocation = () => {
-    trackEvent('map_recenter_click');
+    track(AnalyticsEvent.MapRecenterClick);
     const didRecenter = mapViewerRef.current?.recenterToCurrentLocation() ?? false;
     if (didRecenter) return;
 
@@ -478,7 +478,7 @@ const MapPage: React.FC<MapPageProps> = ({
       return;
     }
 
-    trackEvent('map_register_click', { place_id: resolvedActivePlace.placeId });
+    track(AnalyticsEvent.MapRegisterClick, { place_id: resolvedActivePlace.placeId });
     resetPinCreation();
     setPinCreationCurrentLocation(currentLocation);
     setPinCreationPlace({
@@ -547,7 +547,7 @@ const MapPage: React.FC<MapPageProps> = ({
               aria-label="북마크"
               aria-pressed={isBookmarkHighlightOn}
               onClick={() => {
-                trackEvent('map_bookmark_filter_click', {
+                track(AnalyticsEvent.MapBookmarkFilterClick, {
                   enabled: !isBookmarkHighlightOn,
                 });
                 setIsBookmarkHighlightOn((prev) => !prev);
@@ -618,7 +618,7 @@ const MapPage: React.FC<MapPageProps> = ({
           hasReliableUserLocation={Boolean(currentLocation ?? selectedMapPlace.selectionLocation)}
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
-            trackEvent('map_pin_detail_click', {
+            track(AnalyticsEvent.MapPinDetailClick, {
               place_track_id: pin.placeTrackId,
               is_mine: false,
             });
@@ -635,7 +635,7 @@ const MapPage: React.FC<MapPageProps> = ({
             });
           }}
           onMyPinClick={(pin) => {
-            trackEvent('map_pin_detail_click', {
+            track(AnalyticsEvent.MapPinDetailClick, {
               place_track_id: pin.placeTrackId,
               is_mine: true,
             });
@@ -652,7 +652,7 @@ const MapPage: React.FC<MapPageProps> = ({
             });
           }}
           onFocusedTrackClick={(placeTrackId) => {
-            trackEvent('map_pin_detail_click', {
+            track(AnalyticsEvent.MapPinDetailClick, {
               place_track_id: placeTrackId,
               is_mine: false,
               source: 'focused_track',
@@ -706,7 +706,7 @@ const MapPage: React.FC<MapPageProps> = ({
           hasReliableUserLocation={Boolean(currentLocation)}
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
-            trackEvent('map_pin_detail_click', {
+            track(AnalyticsEvent.MapPinDetailClick, {
               place_track_id: pin.placeTrackId,
               is_mine: false,
               source: 'map_pin_sheet',
@@ -723,7 +723,7 @@ const MapPage: React.FC<MapPageProps> = ({
             });
           }}
           onMyPinClick={(pin) => {
-            trackEvent('map_pin_detail_click', {
+            track(AnalyticsEvent.MapPinDetailClick, {
               place_track_id: pin.placeTrackId,
               is_mine: true,
               source: 'map_pin_sheet',
