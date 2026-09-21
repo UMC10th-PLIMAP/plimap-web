@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type { NavItemId } from '@/components/BottomNav';
-import { trackEvent } from '@/lib/analytics';
+import { AnalyticsEvent, track } from '@/lib/analytics';
 
 const NAV_ROUTES: Record<NavItemId, string> = {
   home: '/app/home',
@@ -15,7 +15,7 @@ export function useBottomNavigation() {
 
   return useCallback(
     (id: NavItemId) => {
-      trackEvent('bottom_nav_click', { tab: id });
+      track(AnalyticsEvent.BottomNavClick, { tab: id });
       navigate(NAV_ROUTES[id]);
     },
     [navigate],

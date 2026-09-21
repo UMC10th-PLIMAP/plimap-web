@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from '@/App';
-import { initGA, trackPageView } from '@/lib/analytics';
+import { initAnalytics, trackPageView } from '@/lib/analytics';
 import { router } from '@/routes';
 import '@/index.css';
 
@@ -11,7 +11,7 @@ if (import.meta.env.DEV) {
   });
 }
 
-initGA();
+initAnalytics();
 trackPageView(router.state.location.pathname + router.state.location.search);
 router.subscribe((state) => {
   trackPageView(state.location.pathname + state.location.search);

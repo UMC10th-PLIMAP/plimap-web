@@ -11,6 +11,11 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+interface Window {
+  dataLayer: unknown[];
+  gtag: (...args: unknown[]) => void;
+}
+
 declare module '*.svg?react' {
   import type { FC, SVGProps } from 'react';
   const ReactComponent: FC<SVGProps<SVGSVGElement>>;

@@ -22,7 +22,7 @@ import { useOpenPinPlaceOnMap } from '@/features/pin/hooks/useOpenPinPlaceOnMap'
 import { usePlaceBookmarks, useTogglePlaceBookmark } from '@/features/pin/queries/usePlaceBookmark';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import type { AppOutletContext } from '@/layouts/RootLayout';
-import { trackEvent } from '@/lib/analytics';
+import { AnalyticsEvent, track } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import type { PopularPlaceItem, PlaceBookmarkListItem } from '@/types/place.type';
 
@@ -185,7 +185,7 @@ export default function HomePage() {
   const handleCurrentLocationClick = () => {
     if (!currentPositionQuery.data) return;
 
-    trackEvent('home_current_location_click');
+    track(AnalyticsEvent.HomeCurrentLocationClick);
     navigate('/app', {
       state: {
         mapFocusCoordinate: {
@@ -215,7 +215,7 @@ export default function HomePage() {
   };
 
   const handleFriendProfileClick = async (pin: FriendPinItem) => {
-    trackEvent('home_friend_profile_click', { pin_id: pin.pinId });
+    track(AnalyticsEvent.HomeFriendProfileClick, { pin_id: pin.pinId });
     try {
       const { writerId } = await getPinDetail(String(pin.pinId));
       if (!Number.isInteger(writerId) || writerId <= 0) {
@@ -232,7 +232,7 @@ export default function HomePage() {
     const currentPosition = currentPositionQuery.data;
     if (!currentPosition || openingPlaceId !== null) return;
 
-    trackEvent('home_place_open_click', {
+    track(AnalyticsEvent.HomePlaceOpenClick, {
       place_id: place.placeId,
       source: place.creatorName ? 'saved' : 'hot',
     });
@@ -370,7 +370,7 @@ export default function HomePage() {
                       profileAriaLabel={`${pin.writerNickname} 프로필 보기`}
                       onProfileClick={() => void handleFriendProfileClick(pin)}
                       onClick={() => {
-                        trackEvent('home_friend_pin_click', { pin_id: pin.pinId });
+                        track(AnalyticsEvent.HomeFriendPinClick, { pin_id: pin.pinId });
                         void openPinPlaceOnMap({
                           pinId: pin.pinId,
                           fallbackPlaceName: pin.placeName,
@@ -399,7 +399,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => {
-              trackEvent('home_friend_search_click');
+              track(AnalyticsEvent.HomeFriendSearchClick);
               navigate('/app/friends/search');
             }}
             className="mx-4 mt-[30px] flex h-[86px] items-center justify-between rounded-xl bg-pli-black-85 px-[18px] text-left"
@@ -427,7 +427,7 @@ export default function HomePage() {
             <Chip
               variant={hotPlaceFilter === 'nearby' ? 'selected' : 'default'}
               onClick={() => {
-                trackEvent('home_hot_place_filter_click', { filter: 'nearby' });
+                track(AnalyticsEvent.HomeHotPlaceFilterClick, { filter: 'nearby' });
                 setHotPlaceFilter('nearby');
               }}
             >
@@ -436,7 +436,7 @@ export default function HomePage() {
             <Chip
               variant={hotPlaceFilter === 'popular' ? 'selected' : 'default'}
               onClick={() => {
-                trackEvent('home_hot_place_filter_click', { filter: 'popular' });
+                track(AnalyticsEvent.HomeHotPlaceFilterClick, { filter: 'popular' });
                 setHotPlaceFilter('popular');
               }}
             >
