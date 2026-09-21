@@ -28,6 +28,7 @@ export function isNetworkError(error: unknown): boolean {
 
 export const SESSION_EXPIRED_EVENT = 'plimap:session-expired';
 export const ACCOUNT_SANCTIONED_EVENT = 'plimap:account-sanctioned';
+export const DEMO_ACCOUNT_WITHDRAWAL_NOT_ALLOWED_CODE = 'AUTH_DEMO_ACCOUNT_WITHDRAWAL_NOT_ALLOWED';
 const ACCOUNT_SANCTION_ERROR_CODES = new Set(['MEMBER_SUSPENDED', 'MEMBER_WITHDRAWN']);
 
 export type ApiRequestConfig = AxiosRequestConfig & {
@@ -104,8 +105,16 @@ apiClient.interceptors.response.use(undefined, async (error: AxiosError<ApiRespo
 
   const isReissueRequest = config?.url === REISSUE_URL;
   const isTokenError = error.response?.status === 401 || error.response?.status === 403;
+  const isDemoWithdrawalError =
+    error.response?.data?.code === DEMO_ACCOUNT_WITHDRAWAL_NOT_ALLOWED_CODE;
 
-  if (isTokenError && config && !isReissueRequest && !config._retriedAfterReissue) {
+  if (
+    isTokenError &&
+    !isDemoWithdrawalError &&
+    config &&
+    !isReissueRequest &&
+    !config._retriedAfterReissue
+  ) {
     config._retriedAfterReissue = true;
 
     try {

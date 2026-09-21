@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from '@/App';
+import { initGA, trackPageView } from '@/lib/analytics';
+import { router } from '@/routes';
 import '@/index.css';
 
 if (import.meta.env.DEV) {
@@ -8,6 +10,12 @@ if (import.meta.env.DEV) {
     setupLocatorUI();
   });
 }
+
+initGA();
+trackPageView(router.state.location.pathname + router.state.location.search);
+router.subscribe((state) => {
+  trackPageView(state.location.pathname + state.location.search);
+});
 
 // 초기값은 index.html의 인라인 스크립트가 첫 페인트 전에 반영한다 - 여기선 갱신만 담당.
 function setAppViewportHeight() {

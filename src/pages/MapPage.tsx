@@ -22,6 +22,7 @@ import { usePinCreationStore } from '@/store/pinCreationStore';
 import { useYouTubeClipPlayer, preloadYouTubeIframeApi } from '@/hooks/useYouTubeClipPlayer';
 import { useCurrentPosition } from '@/hooks/useCurrentPosition';
 import { useMyProfile } from '@/hooks/useMyProfile';
+import { trackEvent } from '@/lib/analytics';
 
 type MapLoadStatus = 'loading' | 'ready' | 'error';
 // mapViewData 로딩 중(undefined)에는 매 렌더마다 새 배열 리터럴이 생기면 안 된다 -
@@ -295,6 +296,7 @@ const MapPage: React.FC<MapPageProps> = ({
       const pin = displayMapPins.find((candidate) => candidate.id === pinId);
       if (!pin?.youtubeVideoId) return;
 
+      trackEvent('map_pin_play_click', { pin_id: pinId, place_id: pin.placeId });
       toggleClipPlayback(pinId, {
         videoId: pin.youtubeVideoId,
         clipStartMs: pin.clipStartMs ?? 0,
@@ -307,6 +309,11 @@ const MapPage: React.FC<MapPageProps> = ({
   const handleOpenProfile = useCallback(
     (pin: MapPin) => {
       if (pin.writerId == null) return;
+      trackEvent('map_pin_profile_click', {
+        pin_id: pin.id,
+        writer_id: pin.writerId,
+        is_mine: pin.writerId === myProfile?.id,
+      });
       if (pin.writerId === myProfile?.id) {
         navigate('/app/my');
         return;
@@ -436,6 +443,7 @@ const MapPage: React.FC<MapPageProps> = ({
   };
 
   const openPlaceSearch = () => {
+    trackEvent('map_place_search_click');
     placeSearchSourceRef.current = {
       entryKey: location.key,
       viewport: mapViewerRef.current?.captureViewport() ?? savedViewport,
@@ -446,6 +454,7 @@ const MapPage: React.FC<MapPageProps> = ({
   };
 
   const handleRecenterToCurrentLocation = () => {
+    trackEvent('map_recenter_click');
     const didRecenter = mapViewerRef.current?.recenterToCurrentLocation() ?? false;
     if (didRecenter) return;
 
@@ -469,6 +478,7 @@ const MapPage: React.FC<MapPageProps> = ({
       return;
     }
 
+    trackEvent('map_register_click', { place_id: resolvedActivePlace.placeId });
     resetPinCreation();
     setPinCreationCurrentLocation(currentLocation);
     setPinCreationPlace({
@@ -536,7 +546,12 @@ const MapPage: React.FC<MapPageProps> = ({
               type="button"
               aria-label="북마크"
               aria-pressed={isBookmarkHighlightOn}
-              onClick={() => setIsBookmarkHighlightOn((prev) => !prev)}
+              onClick={() => {
+                trackEvent('map_bookmark_filter_click', {
+                  enabled: !isBookmarkHighlightOn,
+                });
+                setIsBookmarkHighlightOn((prev) => !prev);
+              }}
               className="pointer-events-auto flex size-[52px] items-center justify-center rounded-full bg-pli-black-100 shadow-[0_0_4.21px_rgba(0,0,0,0.15)] backdrop-blur-[8.26px]"
             >
               {isBookmarkHighlightOn ? (
@@ -603,6 +618,10 @@ const MapPage: React.FC<MapPageProps> = ({
           hasReliableUserLocation={Boolean(currentLocation ?? selectedMapPlace.selectionLocation)}
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
+            trackEvent('map_pin_detail_click', {
+              place_track_id: pin.placeTrackId,
+              is_mine: false,
+            });
             // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
             const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
             const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
@@ -616,6 +635,10 @@ const MapPage: React.FC<MapPageProps> = ({
             });
           }}
           onMyPinClick={(pin) => {
+            trackEvent('map_pin_detail_click', {
+              place_track_id: pin.placeTrackId,
+              is_mine: true,
+            });
             // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
             const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
             const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
@@ -629,6 +652,11 @@ const MapPage: React.FC<MapPageProps> = ({
             });
           }}
           onFocusedTrackClick={(placeTrackId) => {
+            trackEvent('map_pin_detail_click', {
+              place_track_id: placeTrackId,
+              is_mine: false,
+              source: 'focused_track',
+            });
             // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
             const latitude = currentLocation?.lat ?? selectedMapPlace.selectionLocation?.latitude;
             const longitude = currentLocation?.lng ?? selectedMapPlace.selectionLocation?.longitude;
@@ -678,6 +706,11 @@ const MapPage: React.FC<MapPageProps> = ({
           hasReliableUserLocation={Boolean(currentLocation)}
           detailLocationError={currentLocationError}
           onPinClick={(pin) => {
+            trackEvent('map_pin_detail_click', {
+              place_track_id: pin.placeTrackId,
+              is_mine: false,
+              source: 'map_pin_sheet',
+            });
             // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
             navigate(`/app/pins/${pin.placeTrackId}`, {
               state:
@@ -690,6 +723,11 @@ const MapPage: React.FC<MapPageProps> = ({
             });
           }}
           onMyPinClick={(pin) => {
+            trackEvent('map_pin_detail_click', {
+              place_track_id: pin.placeTrackId,
+              is_mine: true,
+              source: 'map_pin_sheet',
+            });
             // 뒤로가기 시 같은 바텀시트로 복귀해야 하므로 선택 상태를 지우지 않는다.
             navigate(`/app/pins/${pin.placeTrackId}`, {
               state:

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { ApiError } from '@/api/client';
+import { ApiError, DEMO_ACCOUNT_WITHDRAWAL_NOT_ALLOWED_CODE } from '@/api/client';
 import { useToast } from '@/hooks/useToast';
 import { TopBar } from '@/components/ui/TopBar';
 import { SettingsRow } from '@/features/settings/components/SettingsRow';
@@ -29,6 +29,11 @@ export default function AccountManagementPage() {
         navigate('/app/login', { replace: true });
       },
       onError: (error) => {
+        if (error instanceof ApiError && error.code === DEMO_ACCOUNT_WITHDRAWAL_NOT_ALLOWED_CODE) {
+          toast.error(error.message);
+          return;
+        }
+
         toast.error(error instanceof ApiError ? error.message : WITHDRAW_FAILED_MESSAGE);
       },
     });
