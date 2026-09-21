@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/useToast';
 import { TopBar } from '@/components/ui/TopBar';
 import { ConfirmAlertDialog } from '@/features/settings/components/ConfirmAlertDialog';
 import { SettingsRow } from '@/features/settings/components/SettingsRow';
+import { clearDemoSession } from '@/features/auth/utils/demoSession';
 import { memberQueryKeys } from '@/features/profile/queries/memberQueryKeys';
 import type { TermId } from '@/features/auth/terms/types';
 
@@ -33,6 +34,7 @@ export default function SettingsPage() {
 
     try {
       await logout();
+      clearDemoSession();
       setIsLogoutDialogOpen(false);
       queryClient.removeQueries({ queryKey: memberQueryKeys.all });
       navigate('/app/login', { replace: true });

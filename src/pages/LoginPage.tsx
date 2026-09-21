@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { ApiError } from '@/api/client';
 import GoogleIcon from '@/assets/icons/google.svg?react';
 import KakaoIcon from '@/assets/icons/kakao.svg?react';
 import PlimapLogo from '@/assets/logo/plimap-logo.svg?react';
 import { FullScreenError } from '@/components/ui/FullScreenError';
 import { Button } from '@/components/ui/button';
 import { AccountSanctionModal } from '@/features/auth/components/AccountSanctionModal';
+import { DemoLoginNoticeDialog } from '@/features/auth/components/DemoLoginNoticeDialog';
 import { OnboardingSplash } from '@/features/auth/components/OnboardingSplash';
 import { OnboardingTutorial } from '@/features/auth/components/OnboardingTutorial';
+import { useDemoLogin } from '@/features/auth/hooks/useDemoLogin';
 import type { AccountSanctionInfo } from '@/features/auth/types';
+import { clearDemoSession } from '@/features/auth/utils/demoSession';
 import { buildApiUrl } from '@/config/api';
+import { useToast } from '@/hooks/useToast';
 import { trackEvent } from '@/lib/analytics';
 
 export type LoginPageLocationState = {
@@ -31,18 +36,23 @@ const OAUTH_LOGIN_URL: Record<OAuthProvider, string> = {
   google: GOOGLE_LOGIN_URL,
 };
 
+const DEMO_LOGIN_FAILED_MESSAGE = '체험 계정 로그인에 실패했어요. 잠시 후 다시 시도해주세요.';
+
 // 로그인 화면 진입 시 항상 스플래시 → 튜토리얼 → 로그인 버튼 순서로 노출한다.
 type LoginStep = 'splash' | 'tutorial' | 'credentials';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
+  const demoLoginMutation = useDemoLogin();
   const locationState = location.state as LoginPageLocationState | null;
   const accountSanction = locationState?.accountSanction ?? null;
   const [step, setStep] = useState<LoginStep>(() =>
     locationState?.oauthError || accountSanction ? 'credentials' : 'splash',
   );
   const [isSanctionModalOpen, setIsSanctionModalOpen] = useState(accountSanction !== null);
+  const [isDemoNoticeOpen, setIsDemoNoticeOpen] = useState(false);
   const hasOAuthError = locationState?.oauthError === true;
 
   if (hasOAuthError) {
@@ -60,8 +70,19 @@ export default function LoginPage() {
   };
 
   const handleOAuthClick = (provider: OAuthProvider) => () => {
+    clearDemoSession();
     trackEvent('login_click', { method: provider });
     window.location.href = OAUTH_LOGIN_URL[provider];
+  };
+
+  const handleDemoNoticeClose = () => {
+    setIsDemoNoticeOpen(false);
+    demoLoginMutation.mutate(undefined, {
+      onSuccess: () => navigate('/app', { replace: true }),
+      onError: (error) => {
+        toast.error(error instanceof ApiError ? error.message : DEMO_LOGIN_FAILED_MESSAGE);
+      },
+    });
   };
 
   if (step === 'splash') {
@@ -100,6 +121,14 @@ export default function LoginPage() {
           <GoogleIcon className="size-6 shrink-0" />
           Google로 시작하기
         </Button>
+        <button
+          type="button"
+          onClick={() => setIsDemoNoticeOpen(true)}
+          disabled={demoLoginMutation.isPending}
+          className="mt-2 cursor-pointer body-15-m text-grayscale-300 underline underline-offset-2 disabled:cursor-not-allowed disabled:text-grayscale-700"
+        >
+          {demoLoginMutation.isPending ? '접속 중...' : '로그인 없이 사용해보기'}
+        </button>
       </div>
 
       <div className="flex flex-1 shrink-0 items-start justify-center pt-5">
@@ -113,6 +142,7 @@ export default function LoginPage() {
         sanction={accountSanction}
         onClose={handleCloseSanctionModal}
       />
+      <DemoLoginNoticeDialog open={isDemoNoticeOpen} onClose={handleDemoNoticeClose} />
     </div>
   );
 }

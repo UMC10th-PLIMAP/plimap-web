@@ -4,6 +4,7 @@ import RootLayout from '@/layouts/RootLayout';
 import BottomNavLayout from '@/layouts/BottomNavLayout';
 import MapLayout from '@/layouts/MapLayout';
 import AuthGuard from '@/layouts/AuthGuard';
+import OnboardingGuard from '@/layouts/OnboardingGuard';
 import ProfileImageSetupPage from '@/pages/ProfileImageSetupPage';
 import LoginPage from '@/pages/LoginPage';
 import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
@@ -155,20 +156,25 @@ export const router = createBrowserRouter([
             element: <FriendSearchPage />,
           },
           {
-            path: 'onboarding/terms',
-            element: <TermsAgreementPage />,
-          },
-          {
-            path: 'onboarding/nickname',
-            element: <NicknameSetupPage />,
-          },
-          {
-            path: 'onboarding/profile-image',
-            element: <ProfileImageSetupPage />,
-          },
-          {
-            path: 'onboarding/welcome',
-            element: <WelcomePage />,
+            element: <OnboardingGuard />,
+            children: [
+              {
+                path: 'onboarding/terms',
+                element: <TermsAgreementPage />,
+              },
+              {
+                path: 'onboarding/nickname',
+                element: <NicknameSetupPage />,
+              },
+              {
+                path: 'onboarding/profile-image',
+                element: <ProfileImageSetupPage />,
+              },
+              {
+                path: 'onboarding/welcome',
+                element: <WelcomePage />,
+              },
+            ],
           },
           {
             path: 'users/:memberId',
