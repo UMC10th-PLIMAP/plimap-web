@@ -10,6 +10,11 @@ import type { TermId } from '@/features/auth/terms/types';
 
 const ENDPOINT = '/api/v1/auth';
 
+// POST /api/v1/auth/demo - 공용 테스트 계정으로 로그인
+export async function loginWithDemoAccount() {
+  await apiClient.post<ApiResponse<null>>(`${ENDPOINT}/demo`);
+}
+
 // GET /api/v1/auth/terms - 현재 사용자의 약관 동의 상태 조회
 export async function getTermsAgreementStatus() {
   const { data } = await apiClient.get<ApiResponse<TermsAgreementResponse>>(`${ENDPOINT}/terms`);
