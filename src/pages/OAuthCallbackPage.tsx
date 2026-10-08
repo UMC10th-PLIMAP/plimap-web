@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import type { AccountSanctionInfo } from '@/features/auth/types';
 import { isAccountSanctionReasonCategory } from '@/features/auth/utils/accountSanctionReason';
-import { clearDemoSession } from '@/features/auth/utils/demoSession';
 import { isSuspensionPeriod } from '@/features/auth/utils/suspensionPeriod';
 import type { LoginPageLocationState } from '@/pages/LoginPage';
 
@@ -38,7 +37,6 @@ export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    clearDemoSession();
     const error = searchParams.get('error');
 
     const accountSanction = parseAccountSanctionInfo(error, searchParams);
