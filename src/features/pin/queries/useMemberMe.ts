@@ -26,6 +26,9 @@ export function useInfiniteMemberMe({
         userLongitude: currentPosition?.longitude,
       },
     ],
+    staleTime: 10 * 60 * 1000, // 사용하지 않는 캐시를 10분간 보관
+    gcTime: 10 * 60 * 1000, // 사용하지 않는 캐시를 10분간 보관
+
     queryFn: ({ pageParam }) => {
       if (!currentPosition) throw new Error('Current position is required to load the feed.');
 
