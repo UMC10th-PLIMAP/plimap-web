@@ -21,11 +21,22 @@ ENV VITE_GOOGLE_MAPS_MAP_ID=$VITE_GOOGLE_MAPS_MAP_ID
 
 RUN ./node_modules/.bin/tsc -b && ./node_modules/.bin/vite build
 
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginx:1.30.7-alpine@sha256:b24de00298eb7fb23839442d46c780991be7bc7ddb081b6c0876ac777012e352
+
+# Preview runs as UID 101 with a read-only root filesystem and writable /tmp.
+RUN sed -i '/^user /d; s@/run/nginx.pid;@/tmp/nginx.pid;@' /etc/nginx/nginx.conf \
+    && printf '%s\n' \
+        'client_body_temp_path /tmp/client_temp;' \
+        'proxy_temp_path /tmp/proxy_temp;' \
+        'fastcgi_temp_path /tmp/fastcgi_temp;' \
+        'uwsgi_temp_path /tmp/uwsgi_temp;' \
+        'scgi_temp_path /tmp/scgi_temp;' \
+        > /etc/nginx/conf.d/temp-paths.conf
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+USER 101:101
 EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
